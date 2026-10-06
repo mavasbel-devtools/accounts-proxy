@@ -1,0 +1,19 @@
+{
+  "name": "@inference-router/router",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "The inference-router daemon and CLI (application services, HTTP/CLI adapters, composition root).",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*",
+    "@inference-router/provider-claude": "workspace:*",
+    "@inference-router/provider-antigravity": "workspace:*",
+    "@inference-router/dialect-anthropic": "workspace:*",
+    "@inference-router/dialect-openai": "workspace:*",
+    "@inference-router/dialect-gemini": "workspace:*"
+  }
+}

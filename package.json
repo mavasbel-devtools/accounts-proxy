@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "inference-router",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mavasbel/inference-router.git"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:arch": "bun test tests/arch",
+    "test": "bun scripts/gate/run-tests.ts unit",
+    "coverage": "bun scripts/gate/run-tests.ts coverage",
+    "test:e2e": "bun scripts/gate/run-tests.ts e2e",
+    "coverage:merged": "bun scripts/gate/merge-coverage.ts",
+    "test:live": "bun scripts/gate/run-tests.ts live",
+    "lint:docs": "bun scripts/gate/lint-docs.ts",
+    "verify": "bun scripts/gate/verify.ts",
+    "fetch:specs": "bun scripts/evidence/fetch-specs.ts"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.1",
+    "@babel/plugin-transform-typescript": "8.0.1",
+    "@types/bun": "1.4.2",
+    "@types/istanbul-lib-coverage": "2.0.6",
+    "@types/istanbul-lib-report": "3.0.3",
+    "@types/istanbul-reports": "3.0.4",
+    "babel-plugin-istanbul": "8.0.0",
+    "istanbul-lib-coverage": "3.2.2",
+    "istanbul-lib-report": "3.0.1",
+    "istanbul-reports": "3.2.0",
+    "typescript": "5.9.3"
+  }
+}

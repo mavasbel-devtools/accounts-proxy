@@ -1,0 +1,14 @@
+{
+  "name": "@inference-router/provider-claude",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Claude subscription provider (outbound adapters).",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  }
+}

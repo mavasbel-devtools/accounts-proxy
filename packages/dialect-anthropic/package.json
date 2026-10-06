@@ -1,0 +1,14 @@
+{
+  "name": "@inference-router/dialect-anthropic",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Anthropic Messages dialect codec (inbound adapters).",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  }
+}

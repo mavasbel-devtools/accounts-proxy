@@ -1,0 +1,102 @@
+[
+  {
+    "file": "anthropic-messages.md",
+    "url": "https://platform.claude.com/docs/en/api/messages.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 1005243,
+    "sha256": "b9084a922860daa4b0714894a46b43ff6bff1e7ec95f8586ce34d35c7a047ca3",
+    "fetchedAt": "2026-10-06T06:29:56.719Z"
+  },
+  {
+    "file": "anthropic-streaming.md",
+    "url": "https://platform.claude.com/docs/en/build-with-claude/streaming.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 51266,
+    "sha256": "2ac3217c9d40f87c9758d0083b668c5b3ba9506a4f1d78e3209fea4383ba12a2",
+    "fetchedAt": "2026-10-06T06:29:57.021Z"
+  },
+  {
+    "file": "anthropic-errors.md",
+    "url": "https://platform.claude.com/docs/en/api/errors.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 32356,
+    "sha256": "0cd05f4f8ccde5a447edbe92365d3e92db35ae5e0bb7c37b8c566a232ca20b09",
+    "fetchedAt": "2026-10-06T06:29:57.168Z"
+  },
+  {
+    "file": "anthropic-count-tokens.md",
+    "url": "https://platform.claude.com/docs/en/api/messages-count-tokens.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 97040,
+    "sha256": "dd170c06ae43634b6c36926e390fc7154333e33b3b2ed3cff55ca047fc542878",
+    "fetchedAt": "2026-10-06T06:29:57.540Z"
+  },
+  {
+    "file": "anthropic-models-list.md",
+    "url": "https://platform.claude.com/docs/en/api/models-list.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 8999,
+    "sha256": "b83a30ae6ad4adaf596c4601c13f4a33e92709406a33ab06de191fceb2840441",
+    "fetchedAt": "2026-10-06T06:29:57.811Z"
+  },
+  {
+    "file": "openai-openapi.yaml",
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+    "status": 200,
+    "contentType": "text/plain; charset=utf-8",
+    "bytes": 3979098,
+    "sha256": "161b617df0b33f5db0712210abb013641dba022f1c9c6f20cf4658759f04d62f",
+    "commit": "unresolved (GitHub API HTTP 404)",
+    "fetchedAt": "2026-10-06T06:29:58.085Z"
+  },
+  {
+    "file": "gemini-generate-content.md",
+    "url": "https://ai.google.dev/api/generate-content.md.txt",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 232847,
+    "sha256": "512812da5d9c75fcc59497a1362786fdad5aa6e29affde169373094be8fbeea3",
+    "fetchedAt": "2026-10-06T06:29:58.271Z"
+  },
+  {
+    "file": "gemini-models.md",
+    "url": "https://ai.google.dev/api/models.md.txt",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 13039,
+    "sha256": "ee9590a996811a4d43dfa4538e928d7c659a4c0ccbd54e8dee08fd0ea122afa8",
+    "fetchedAt": "2026-10-06T06:29:58.379Z"
+  },
+  {
+    "file": "gemini-tokens.md",
+    "url": "https://ai.google.dev/api/tokens.md.txt",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 27819,
+    "sha256": "4e6f4228c4f4e47113929d2da7978b86cc8eb574c1009a116724360a769ab60c",
+    "fetchedAt": "2026-10-06T06:29:58.536Z"
+  },
+  {
+    "file": "gemini-troubleshooting.md",
+    "url": "https://ai.google.dev/gemini-api/docs/troubleshooting.md.txt",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 12062,
+    "sha256": "2dc91fd111a82e9d5658f9f5314b29944db9d1c66c69e2ccaf6115f294628948",
+    "fetchedAt": "2026-10-06T06:29:58.660Z"
+  },
+  {
+    "file": "gemini-v1beta-discovery.json",
+    "url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
+    "status": 200,
+    "contentType": "application/json; charset=UTF-8",
+    "bytes": 382104,
+    "sha256": "964aee4f0bd84fba535360df0a9f3ad3b0ca265b408b0f04ccc13daeb2df2671",
+    "fetchedAt": "2026-10-06T06:29:58.993Z"
+  }
+]

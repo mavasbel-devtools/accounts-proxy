@@ -1,0 +1,13 @@
+# inference-router configuration (example; the daemon reads ~/.local/share/inference-router/router.yaml).
+# Default port 4141: measured free and outside every Windows excluded range on 2026-10-06 (P0-E5).
+port: 4141
+providers:
+  claude-subscription:
+    enabled: true
+    # Required. Anthropic restricts subscription OAuth to its own apps; see docs/research §3.
+    acknowledgeTermsRisk: true
+  antigravity:
+    enabled: true
+    # Required. Google's Antigravity terms prohibit third-party access; see docs/research §3.
+    acknowledgeTermsRisk: true
+aliases: {}

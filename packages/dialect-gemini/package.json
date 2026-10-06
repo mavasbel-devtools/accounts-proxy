@@ -1,0 +1,14 @@
+{
+  "name": "@inference-router/dialect-gemini",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Gemini generateContent dialect codec (inbound adapters).",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  }
+}
