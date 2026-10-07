@@ -5,6 +5,10 @@ export abstract class ClockPort {
   abstract now(): number;
 }
 
+export abstract class TimerPort {
+  abstract sleep(ms: number): Promise<void>;
+}
+
 export abstract class RandomPort {
   abstract uuid(): string;
   abstract bytes(length: number): Uint8Array;

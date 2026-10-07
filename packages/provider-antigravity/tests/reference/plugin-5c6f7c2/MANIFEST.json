@@ -1,0 +1,57 @@
+{
+  "repo": "opencode plugin",
+  "commit": "5c6f7c2697fdc187bfc1d5f0208b8f5563620875",
+  "alias": "@antigravity/",
+  "files": [
+    {
+      "file": "domain/services/RequestTransformService.ts",
+      "blob": "1db1f243a6e4f5f8125ef633b0656dcc17c52937",
+      "aliasRewrites": 3
+    },
+    {
+      "file": "domain/services/TrajectoryStateService.ts",
+      "blob": "e01e9aacff383de23e5f46c510a1e84377e55e9e",
+      "aliasRewrites": 2
+    },
+    {
+      "file": "domain/services/ModelCatalogService.ts",
+      "blob": "722ede311dbd1377f248d050bd8770158fd2b90e",
+      "aliasRewrites": 1
+    },
+    {
+      "file": "domain/services/ProjectResolver.ts",
+      "blob": "65f425e9c8ac1c072bfa4185112aee5b0d2faefb",
+      "aliasRewrites": 1
+    },
+    {
+      "file": "domain/services/QuotaService.ts",
+      "blob": "148866d6b36f13794d96d41ca7803bc5752384bb",
+      "aliasRewrites": 1
+    },
+    {
+      "file": "domain/ports/inbound/index.ts",
+      "blob": "64ad005a2d6559c93b7dfae639a214811c0935d9",
+      "aliasRewrites": 2
+    },
+    {
+      "file": "domain/ports/outbound/index.ts",
+      "blob": "a9a069783574ed43b36b229220320ff9197b3747",
+      "aliasRewrites": 2
+    },
+    {
+      "file": "domain/entities/Account.ts",
+      "blob": "05bca0c3ff0b3895c24dbbe3a75db382ab0b4b15",
+      "aliasRewrites": 0
+    },
+    {
+      "file": "domain/entities/ModelDescriptor.ts",
+      "blob": "4b0a81580a329ddbf1bad6244c3e792731e903ea",
+      "aliasRewrites": 0
+    },
+    {
+      "file": "domain/entities/QuotaSnapshot.ts",
+      "blob": "0af3fc60b136d732fd3661b5f1ce40d7ce5acf1f",
+      "aliasRewrites": 0
+    }
+  ]
+}

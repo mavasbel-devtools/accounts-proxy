@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "buckets": [
+        {
+          "bucketId": "gemini-weekly",
+          "displayName": "Weekly Limit Remaining",
+          "window": "weekly",
+          "resetTime": "2026-09-01T20:23:54Z",
+          "description": "You have used some of your weekly limit.",
+          "remainingFraction": 0.98993546
+        }
+      ],
+      "displayName": "Gemini Models",
+      "description": "Models within this group: Gemini Flash, Gemini Pro"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"Hello, world"}]}}],"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":4,"totalTokenCount":124,"thoughtsTokenCount":0},"modelVersion":"gemini-3.6-flash-medium","responseId":"resp-1"},"traceId":"trace-1","metadata":{}}
+
+data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"!"}]}}],"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":5,"totalTokenCount":125,"thoughtsTokenCount":0},"modelVersion":"gemini-3.6-flash-medium","responseId":"resp-1"},"traceId":"trace-1","metadata":{}}
+
+data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"thoughtSignature":"c2FtcGxlLXNpZ25hdHVyZQ==","text":""}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":5,"totalTokenCount":125,"thoughtsTokenCount":11},"modelVersion":"gemini-3.6-flash-medium","responseId":"resp-1"},"traceId":"trace-1","metadata":{}}
+

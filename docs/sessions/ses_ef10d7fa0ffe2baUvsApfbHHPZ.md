@@ -14,10 +14,18 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
 - 2026-10-06 P1 scaffold: workspace, 7 workspaces with tests/{unit,component,live,e2e}, arch test, removeTemporary,
   istanbul gate scripts, verify, docs lint, AGENTS/README/drawio.
 
+- 2026-10-06 P2 core (commit 56a4a7f): canonical domain, RouterError tree, negotiate/drop, SseCodec, base64url, ports.
+- 2026-10-07 P3a provider-claude (commit fee4757): byte-parity gate vs opencode-claude-auth@6292741 (44 cases),
+  fixes F1 streaming, F2 locked single-flight refresh, F3 no budget clamp, F4 loopback login (+user:plugins),
+  F7 64-hex device id (official iD()), F8 own-property model lookup; D-4 (client anthropic-beta merge) deferred to
+  P0-LIVE. Unit gate 100% (577/577 st, 454/454 br, 120/120 fn, 472/472 ln). Spec/fixture bytes verified after commit.
+
 ## Progress map
 | Phase | State |
 |---|---|
 | P0-E1/E5/E6 | done |
 | P0-E2/E3/E4 | waiting on the P0-LIVE gate (needs the user's browser logins after P3) |
-| P1 | in progress |
-| P2–P10 | not started |
+| P1 | done |
+| P2 | done |
+| P3 | provider-claude done; provider-antigravity next; then router login CLI + outbound adapters |
+| P4–P10 | not started |

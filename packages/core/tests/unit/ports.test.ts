@@ -6,7 +6,7 @@ import { ChatPort, CountTokensPort, ListModelsPort, PassthroughPort } from "../.
 import { CredentialStorePort } from "../../src/ports/outbound/credentials.ts";
 import { CallbackServerPort, ManualCodePort, OAuthClientPort } from "../../src/ports/outbound/oauth.ts";
 import { ProviderPort } from "../../src/ports/outbound/provider.ts";
-import { BrowserLauncherPort, ClockPort, HashPort, LockPort, LoggerPort, RandomPort } from "../../src/ports/outbound/system.ts";
+import { BrowserLauncherPort, ClockPort, HashPort, LockPort, LoggerPort, RandomPort, TimerPort } from "../../src/ports/outbound/system.ts";
 import { KeyValueStorePort } from "../../src/ports/outbound/state.ts";
 import { HttpTransportPort } from "../../src/ports/outbound/transport.ts";
 
@@ -38,6 +38,7 @@ describe("ports", () => {
       RandomPort,
       HttpTransportPort,
       KeyValueStorePort,
+      TimerPort,
     ];
     for (const Port of ports) {
       const Impl = class extends (Port as unknown as new () => object) {};

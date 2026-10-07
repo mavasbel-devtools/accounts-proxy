@@ -1,0 +1,84 @@
+{
+ "models": {
+  "gemini-2.5-flash-thinking": {
+   "displayName": "Gemini 3.1 Flash Lite",
+   "maxTokens": 1048576,
+   "maxOutputTokens": 65535,
+   "quotaInfo": {
+    "remainingFraction": 0.9878784,
+    "resetTime": "2026-08-26T01:23:54Z"
+   },
+   "model": "MODEL_GOOGLE_GEMINI_2_5_FLASH_THINKING",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE"
+  },
+  "gemini-3.6-flash-low": {
+   "displayName": "Gemini 3.6 Flash (Low)",
+   "supportsImages": true,
+   "supportsThinking": true,
+   "thinkingBudget": 1000,
+   "minThinkingBudget": 32,
+   "recommended": true,
+   "maxTokens": 1048576,
+   "maxOutputTokens": 65536,
+   "quotaInfo": {
+    "remainingFraction": 0.9878784,
+    "resetTime": "2026-08-26T01:23:54Z"
+   },
+   "model": "MODEL_PLACEHOLDER_M73",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE",
+   "supportsVideo": true,
+   "tagTitle": "Fast"
+  },
+  "gemini-3.7-flash-tiered": {
+   "displayName": "Gemini 3.7 Flash (Tiered)",
+   "supportsImages": true,
+   "supportsThinking": true,
+   "thinkingBudget": -1,
+   "minThinkingBudget": 32,
+   "maxTokens": 1048576,
+   "maxOutputTokens": 65536,
+   "quotaInfo": {
+    "remainingFraction": 0.5,
+    "resetTime": "2026-08-26T01:23:54Z"
+   },
+   "model": "MODEL_PLACEHOLDER_M74",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE"
+  },
+  "chat_20706": {
+   "displayName": "Chat (no output limit)",
+   "maxTokens": 1048576,
+   "model": "MODEL_PLACEHOLDER_CHAT",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE"
+  },
+  "tab_88888_preview": {
+   "displayName": "Tab Preview",
+   "maxTokens": 16384,
+   "maxOutputTokens": 4096,
+   "model": "MODEL_PLACEHOLDER_TAB",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE"
+  },
+  "gemini-old-pro": {
+   "displayName": "Gemini Old Pro",
+   "maxTokens": 1048576,
+   "maxOutputTokens": 65535,
+   "model": "MODEL_PLACEHOLDER_OLD",
+   "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+   "modelProvider": "MODEL_PROVIDER_GOOGLE"
+  }
+ },
+ "tabModelIds": [
+  "tab_88888_preview"
+ ],
+ "deprecatedModelIds": {
+  "gemini-old-pro": {
+   "newModelId": "gemini-3.6-flash-low",
+   "oldModelEnum": "MODEL_PLACEHOLDER_OLD",
+   "newModelEnum": "MODEL_PLACEHOLDER_M73"
+  }
+ }
+}

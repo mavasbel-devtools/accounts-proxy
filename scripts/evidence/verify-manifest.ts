@@ -5,13 +5,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = resolve(process.argv[2] ?? join(import.meta.dir, "..", "..", "docs", "reference", "specs"));
-const manifest = JSON.parse(readFileSync(join(resolve(join(import.meta.dir, "..", "..", "docs", "reference", "specs")), "manifest.json"), "utf8")) as {
-  file: string;
-  bytes: number;
-  sha256: string;
-}[];
+type Entry = { file: string; bytes: number; sha256: string };
+const raw = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "docs", "reference", "specs", "manifest.json"), "utf8")) as Entry[] | Record<string, Entry>;
 let failures = 0;
-for (const entry of Array.isArray(manifest) ? manifest : Object.values(manifest)) {
+for (const entry of Array.isArray(raw) ? raw : Object.values(raw)) {
   const path = join(root, entry.file);
   if (!existsSync(path)) {
     console.log(`MISSING  ${entry.file}`);

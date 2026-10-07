@@ -1,0 +1,527 @@
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { activeAccount, EMPTY_POOL, upsertAccount } from "../../../core/src/domain/accounts.ts";
+import { ProviderAuthRequiredError, QuotaExhaustedError, UnsupportedFeatureError, UpstreamError } from "../../../core/src/domain/errors.ts";
+import { TimerPort } from "../../../core/src/ports/outbound/system.ts";
+import {
+  FixedClock,
+  MemoryCredentialStore,
+  MemoryKeyValueStore,
+  MemoryLogger,
+  RecordingLock,
+  ScriptedTransport,
+  SequenceRandom,
+  type ScriptedResponse,
+} from "../../../../tests/support/fakes.ts";
+import { AntigravityApiClient } from "../../src/adapters/outbound/antigravity-api-client.ts";
+import { AntigravityCatalog } from "../../src/adapters/outbound/antigravity-catalog.ts";
+import { AntigravityChat } from "../../src/adapters/outbound/antigravity-chat.ts";
+import { AntigravityProvider } from "../../src/adapters/outbound/antigravity-provider.ts";
+import { AntigravityQuota } from "../../src/adapters/outbound/antigravity-quota.ts";
+import { AntigravitySession, REFRESH_LOCK } from "../../src/adapters/outbound/antigravity-session.ts";
+import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "../../src/adapters/outbound/antigravity-state.ts";
+import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "../../src/adapters/outbound/google-oauth-client.ts";
+import { withActive } from "../../src/adapters/outbound/with-active.ts";
+import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "../../src/domain/account.ts";
+import { CLIENT_ID, CLIENT_SECRET, SCOPES, SUCCESS_REDIRECT, USER_AGENT } from "../../src/domain/constants.ts";
+import type { ChatChunk, ChatRequest, StreamEnvelope } from "../../src/domain/generate.ts";
+import type { GenerateParams } from "../../src/domain/upstream.ts";
+import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravitySessionPort, AntigravityStatePort, type ActiveAccount } from "../../src/ports/outbound/antigravity.ts";
+
+const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
+const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
+const json = (body: unknown, status = 200): ScriptedResponse => ({ status, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+const tokens: AuthTokens = { accessToken: "at", refreshToken: "rt", expiresAt: 9_000_000_000_000 };
+const acct = (extra: Partial<AntigravityAccount> = {}): AntigravityAccount => ({ email: "me@x", tokens, projectIds: ["proj-1"], activeProjectId: "proj-1", ...extra });
+
+async function drain<T>(iterable: AsyncIterable<T>): Promise<T[]> {
+  const out: T[] = [];
+  for await (const item of iterable) out.push(item);
+  return out;
+}
+
+describe("AntigravityApiClient", () => {
+  const make = (handler: ConstructorParameters<typeof ScriptedTransport>[0]) => {
+    const transport = new ScriptedTransport(handler);
+    const logger = new MemoryLogger();
+    return { transport, logger, client: new AntigravityApiClient(transport, logger, "http://up", "http://userinfo") };
+  };
+  const callHeaders = { "content-type": "application/json", authorization: "Bearer at", "user-agent": USER_AGENT };
+
+  test("UA law: every /v1internal call carries the captured user agent; bodies and urls per operation", async () => {
+    const { client, transport } = make(() => json({ ok: 1 }));
+    expect(await client.loadCodeAssist(tokens)).toEqual({ ok: 1 });
+    await client.onboardUser(tokens);
+    await client.fetchAvailableModels(tokens);
+    await client.retrieveUserQuotaSummary(tokens);
+    expect(transport.requests.map((r) => [r.method, r.url, JSON.parse(r.body!)])).toEqual([
+      ["POST", "http://up/v1internal:loadCodeAssist", { metadata: { ideType: "ANTIGRAVITY" } }],
+      ["POST", "http://up/v1internal:onboardUser", { tier_id: "free-tier", metadata: { ide_type: "ANTIGRAVITY", ide_version: "2.5.5", ide_name: "antigravity" } }],
+      ["POST", "http://up/v1internal:fetchAvailableModels", {}],
+      ["POST", "http://up/v1internal:retrieveUserQuotaSummary", {}],
+    ]);
+    for (const r of transport.requests) expect(r.headers).toEqual(callHeaders);
+  });
+
+  test("unparsable or non-object success bodies become {}", async () => {
+    for (const body of ["not json", "[1]", "null"]) {
+      const { client } = make(() => ({ status: 200, body }));
+      expect(await client.fetchAvailableModels(tokens)).toEqual({});
+    }
+  });
+
+  test("failures: 429 → quota with retry-after, others → upstream error", async () => {
+    await expect(make(() => ({ status: 429, headers: { "retry-after": "7" }, body: "RESOURCE_EXHAUSTED" })).client.fetchAvailableModels(tokens)).rejects.toBeInstanceOf(QuotaExhaustedError);
+    await expect(make(() => ({ status: 500, body: "boom" })).client.loadCodeAssist(tokens)).rejects.toBeInstanceOf(UpstreamError);
+  });
+
+  test("fetchUserInfo: userSettings email first, else Google userinfo with UA", async () => {
+    expect(await make(() => json({ userSettings: { email: "s@x" } })).client.fetchUserInfo(tokens)).toEqual({ email: "s@x" });
+    const { client, transport } = make((_r, i) => (i === 0 ? json({ userSettings: null }) : json({ email: "g@x" })));
+    expect(await client.fetchUserInfo(tokens)).toEqual({ email: "g@x" });
+    expect(transport.requests[1]).toEqual({ method: "GET", url: "http://userinfo", headers: { authorization: "Bearer at", "user-agent": USER_AGENT } });
+    expect(await make((_r, i) => (i === 0 ? json({}) : json({ name: "n" }))).client.fetchUserInfo(tokens)).toEqual({});
+    await expect(make((_r, i) => (i === 0 ? json({}) : { status: 403, body: "no" })).client.fetchUserInfo(tokens)).rejects.toBeInstanceOf(UpstreamError);
+  });
+
+  const params: GenerateParams = { project: "proj-1", requestId: "agent/s/1/t/3", body: { contents: [] }, modelWireId: "gemini-x" };
+
+  test("stream: captured SSE decoded; request envelope, url and header allowlist", async () => {
+    const { client, transport } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: [text("stream-generate.sample.sse").slice(0, 50), text("stream-generate.sample.sse").slice(50)] }));
+    const envelopes = await drain(client.streamGenerate(params, tokens));
+    expect(envelopes).toHaveLength(3);
+    expect(envelopes[2]!.response?.candidates?.[0]?.finishReason).toBe("STOP");
+    const sent = transport.requests[0]!;
+    expect(sent.url).toBe("http://up/v1internal:streamGenerateContent?alt=sse");
+    expect(sent.headers).toEqual({ ...callHeaders, "accept-encoding": "gzip" });
+    expect(JSON.parse(sent.body!)).toEqual({ project: "proj-1", requestId: "agent/s/1/t/3", request: { contents: [] }, model: "gemini-x", userAgent: "antigravity", requestType: "agent" });
+  });
+
+  test("stream: [DONE] and empty data skipped, malformed events dropped with a warning, non-response payload throws", async () => {
+    const body = 'data: [DONE]\n\ndata:\n\ndata: {bad\n\ndata: {"response":{}}\n\n';
+    const { client, logger } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body }));
+    expect(await drain(client.streamGenerate(params, tokens))).toEqual([{ response: {} }]);
+    expect(logger.lines[0]).toContain("dropping malformed SSE event");
+    const bad = make(() => ({ status: 200, body: 'data: {"error":{"code":429}}\n\n' }));
+    await expect(drain(bad.client.streamGenerate(params, tokens))).rejects.toThrow("non-response payload");
+  });
+
+  test("stream: JSON transport (single, array with non-object, malformed) and HTTP failure", async () => {
+    expect(await drain(make(() => json({ response: { responseId: "1" } })).client.streamGenerate(params, tokens))).toEqual([{ response: { responseId: "1" } }]);
+    const arr = make(() => ({ status: 200, headers: { "content-type": "Application/JSON; charset=utf-8" }, body: '[{"response":{}}, 3]' }));
+    expect(await drain(arr.client.streamGenerate(params, tokens))).toEqual([{ response: {} }]);
+    expect(arr.logger.lines[0]).toContain("non-object JSON stream envelope (number)");
+    await expect(drain(make(() => ({ status: 200, headers: { "content-type": "application/json" }, body: "{oops" })).client.streamGenerate(params, tokens))).rejects.toThrow("malformed JSON stream body");
+    await expect(drain(make(() => ({ status: 400, body: "User location is not supported" })).client.streamGenerate(params, tokens))).rejects.toBeInstanceOf(UpstreamError);
+  });
+
+  test("defaults: daily host and Google userinfo", async () => {
+    const transport = new ScriptedTransport((_r, i) => (i === 0 ? json({}) : json({})));
+    const client = new AntigravityApiClient(transport, new MemoryLogger());
+    await client.fetchUserInfo(tokens);
+    expect(transport.requests.map((r) => r.url)).toEqual(["https://daily-cloudcode-pa.googleapis.com/v1internal:fetchUserInfo", "https://www.googleapis.com/oauth2/v2/userinfo"]);
+  });
+});
+
+class ScriptedApi extends AntigravityApiPort {
+  calls: string[] = [];
+  streams: GenerateParams[] = [];
+  userInfo: () => Promise<{ email?: string }> = async () => ({ email: "me@x" });
+  codeAssist: () => Promise<Record<string, unknown>> = async () => ({ cloudaicompanionProject: "proj-1" });
+  onboard: () => Promise<Record<string, unknown>> = async () => ({ response: { cloudaicompanionProject: { id: "onboarded" } } });
+  models: (t: AuthTokens) => Promise<Record<string, unknown>> = async () => JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>;
+  quota: () => Promise<Record<string, unknown>> = async () => JSON.parse(text("retrieve-user-quota-summary.sample.json")) as Record<string, unknown>;
+  stream: (p: GenerateParams, t: AuthTokens, call: number) => AsyncIterable<StreamEnvelope> = async function* () {};
+  loadCodeAssist() {
+    this.calls.push("loadCodeAssist");
+    return this.codeAssist();
+  }
+  onboardUser() {
+    this.calls.push("onboardUser");
+    return this.onboard();
+  }
+  fetchUserInfo() {
+    this.calls.push("fetchUserInfo");
+    return this.userInfo();
+  }
+  fetchAvailableModels(t: AuthTokens) {
+    this.calls.push("fetchAvailableModels");
+    return this.models(t);
+  }
+  retrieveUserQuotaSummary() {
+    this.calls.push("retrieveUserQuotaSummary");
+    return this.quota();
+  }
+  streamGenerate(p: GenerateParams, t: AuthTokens) {
+    this.streams.push(p);
+    return this.stream(p, t, this.streams.length);
+  }
+}
+
+describe("GoogleOAuthClient", () => {
+  const make = (handler: ConstructorParameters<typeof ScriptedTransport>[0], api = new ScriptedApi()) => {
+    const transport = new ScriptedTransport(handler);
+    const logger = new MemoryLogger();
+    return { transport, api, logger, client: new GoogleOAuthClient(transport, api, new FixedClock(1_000), new SequenceRandom(), logger, { authorizeUrl: "http://auth", tokenUrl: "http://token" }) };
+  };
+
+  test("authorize URL parameters in the source order; loopback metadata", () => {
+    const { client } = make(() => json({}));
+    const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5/oauth-callback", state: "st" }));
+    expect([...url.searchParams.entries()]).toEqual([
+      ["access_type", "offline"],
+      ["scope", SCOPES.join(" ")],
+      ["state", "st"],
+      ["prompt", "consent"],
+      ["response_type", "code"],
+      ["client_id", CLIENT_ID],
+      ["redirect_uri", "http://localhost:5/oauth-callback"],
+    ]);
+    expect([client.callbackPath, client.usesPkce, client.manualRedirectUri, client.successRedirect()]).toEqual(["/oauth-callback", false, undefined, SUCCESS_REDIRECT]);
+    expect(PRODUCTION_ENDPOINTS).toEqual({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", tokenUrl: "https://oauth2.googleapis.com/token" });
+    const production = new GoogleOAuthClient(new ScriptedTransport(() => json({})), new ScriptedApi(), new FixedClock(), new SequenceRandom(), new MemoryLogger());
+    expect(production.authorizeUrl({ redirectUri: "r", state: "s" }).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
+  });
+
+  test("exchange: form body, bootstrap (userinfo → loadCodeAssist), account id = e-mail", async () => {
+    const { client, transport, api } = make(() => json({ access_token: "a1", refresh_token: "r1", expires_in: 3599 }));
+    const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback" });
+    expect(transport.requests[0]!.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
+    expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "authorization_code", code: "c", client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: "http://localhost:5/oauth-callback" });
+    expect(api.calls).toEqual(["fetchUserInfo", "loadCodeAssist"]);
+    expect(credential.id).toBe("me@x");
+    expect(fromCredential(credential)).toEqual({ email: "me@x", tokens: { accessToken: "a1", refreshToken: "r1", expiresAt: 1_000 + 3_599_000 }, projectIds: ["proj-1"], activeProjectId: "proj-1" });
+  });
+
+  test("bootstrap degrades: failed userinfo/loadCodeAssist are logged, then onboarding provides the project", async () => {
+    const api = new ScriptedApi();
+    api.userInfo = () => Promise.reject(new Error("u"));
+    api.codeAssist = () => Promise.reject(new Error("l"));
+    const { client, logger } = make(() => json({ access_token: "a1", expires_in: "60" }), api);
+    const account = fromCredential(await client.exchange({ code: "c", state: "s", redirectUri: "r" }))!;
+    expect(account).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 61_000 }, projectIds: ["onboarded"], activeProjectId: "onboarded" });
+    expect(logger.lines).toEqual(["WARN antigravity: fetchUserInfo failed (Error: u)", "WARN antigravity: loadCodeAssist failed (Error: l)"]);
+    const empty = new ScriptedApi();
+    empty.userInfo = async () => ({});
+    empty.codeAssist = async () => ({});
+    empty.onboard = async () => ({});
+    const none = fromCredential(await make(() => json({ access_token: "a1" }), empty).client.exchange({ code: "c", state: "s", redirectUri: "r" }))!;
+    expect(none).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 1_000 + 3_600_000 }, projectIds: [] });
+  });
+
+  test("refresh keeps the refresh token unless rotated; needs one", async () => {
+    const { client, transport } = make(() => json({ access_token: "a2", expires_in: 10 }));
+    expect(await client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt", expiresAt: 11_000 });
+    expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+    expect(await make(() => json({ access_token: "a2", refresh_token: "rt2", expires_in: 10 })).client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt2", expiresAt: 11_000 });
+    await expect(client.refresh({ accessToken: "a", expiresAt: 0 })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+  });
+
+  test.each([
+    [{ status: 400, body: '{"error":"invalid_grant"}' }, ProviderAuthRequiredError],
+    [{ status: 401, body: "" }, ProviderAuthRequiredError],
+    [{ status: 503, body: "down" }, UpstreamError],
+    [{ status: 200, body: "not json" }, UpstreamError],
+    [{ status: 200, body: '{"access_token":""}' }, UpstreamError],
+  ])("token endpoint %p", async (response, kind) => {
+    await expect(make(() => response).client.refresh(tokens)).rejects.toBeInstanceOf(kind);
+  });
+});
+
+class StubOAuth extends AntigravityOAuthPort {
+  readonly provider = "antigravity";
+  readonly callbackPath = "/oauth-callback";
+  readonly usesPkce = false;
+  readonly manualRedirectUri = undefined;
+  calls = 0;
+  constructor(private readonly result: (t: AuthTokens) => Promise<AuthTokens> = async () => ({ accessToken: "SECRET-new", expiresAt: 9_000_000_000_000 })) {
+    super();
+  }
+  authorizeUrl() {
+    return "";
+  }
+  async exchange(): Promise<never> {
+    throw new Error("unused");
+  }
+  successRedirect() {
+    return "";
+  }
+  refresh(t: AuthTokens) {
+    this.calls++;
+    return this.result(t);
+  }
+}
+
+describe("AntigravitySession", () => {
+  const setup = (stored?: AntigravityAccount, oauth = new StubOAuth()) => {
+    const store = new MemoryCredentialStore();
+    if (stored) store.pools.set("antigravity", upsertAccount(EMPTY_POOL, { ...toCredential(stored, "me@x"), label: "Me" }));
+    const lock = new RecordingLock();
+    const logger = new MemoryLogger();
+    return { store, lock, oauth, logger, session: new AntigravitySession(store, oauth, lock, new FixedClock(1_000_000), logger) };
+  };
+
+  test("fresh token: no lock, no refresh", async () => {
+    const { session, lock, oauth } = setup(acct());
+    expect((await session.active()).account.tokens.accessToken).toBe("at");
+    expect([lock.acquired, oauth.calls]).toEqual([[], 0]);
+  });
+
+  test("G5: an expiring token is refreshed before use, persisted with the label, logged without secrets", async () => {
+    const { session, store, lock, logger } = setup(acct({ tokens: { accessToken: "old", refreshToken: "SECRET-rt", expiresAt: 1_060_000 } }));
+    const active = await session.active();
+    expect(active.account.tokens).toEqual({ accessToken: "SECRET-new", refreshToken: "SECRET-rt", expiresAt: 9_000_000_000_000 });
+    expect(lock.acquired).toEqual([REFRESH_LOCK]);
+    const saved = activeAccount(await store.load("antigravity"))!;
+    expect(saved.label).toBe("Me");
+    expect(fromCredential(saved)!.tokens.accessToken).toBe("SECRET-new");
+    expect(logger.lines.join("\n")).not.toContain("SECRET");
+  });
+
+  test("single flight and another process's rotation reused", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const slow = new StubOAuth(async () => {
+      await gate;
+      return { accessToken: "SECRET-new", expiresAt: 9_000_000_000_000 };
+    });
+    const { session } = setup(acct({ tokens: { accessToken: "old", refreshToken: "r", expiresAt: 0 } }), slow);
+    const all = Promise.all([session.active(), session.active()]);
+    await Bun.sleep(5);
+    release();
+    expect((await all).map((a) => a.account.tokens.accessToken)).toEqual(["SECRET-new", "SECRET-new"]);
+    expect(slow.calls).toBe(1);
+    const other = setup(acct({ tokens: { accessToken: "old", refreshToken: "r", expiresAt: 0 } }));
+    other.lock.onAcquire = () => other.store.save("antigravity", upsertAccount(EMPTY_POOL, toCredential(acct({ tokens: { accessToken: "by-other", expiresAt: 9_000_000_000_000 } }), "me@x")));
+    expect((await other.session.active()).account.tokens.accessToken).toBe("by-other");
+    expect(other.oauth.calls).toBe(0);
+  });
+
+  test("forceRotate rotates regardless of expiry, or reuses a token already rotated by someone else", async () => {
+    const { session, oauth } = setup(acct());
+    const current = await session.active();
+    expect((await session.forceRotate(current)).account.tokens.accessToken).toBe("SECRET-new");
+    expect(oauth.calls).toBe(1);
+    expect((await session.forceRotate(current)).account.tokens.accessToken).toBe("SECRET-new");
+    expect(oauth.calls).toBe(1);
+  });
+
+  test("missing or unreadable account", async () => {
+    await expect(setup().session.active()).rejects.toThrow("no active account");
+    const { session, store } = setup();
+    store.pools.set("antigravity", upsertAccount(EMPTY_POOL, { provider: "antigravity", id: "bad", label: "bad", data: {} }));
+    await expect(session.active()).rejects.toThrow("stored credential of bad is unreadable");
+  });
+});
+
+describe("AntigravityState", () => {
+  test("session id minted once (FNV int64), persisted, reused; an invalid stored value is replaced", async () => {
+    const kv = new MemoryKeyValueStore();
+    const state = new AntigravityState(kv, new SequenceRandom());
+    const id = await state.sessionId();
+    expect(id).toMatch(/^-?\d+$/);
+    expect(kv.values.get(SESSION_ID_KEY)).toBe(id);
+    expect(await state.sessionId()).toBe(id);
+    expect(await new AntigravityState(kv, new SequenceRandom()).sessionId()).toBe(id);
+    kv.values.set(SESSION_ID_KEY, 12345);
+    expect(await new AntigravityState(kv, new SequenceRandom()).sessionId()).toBe(id);
+  });
+
+  test("signatures: tolerant load, write-through, re-capture refreshes age, oldest evicted past the cap", async () => {
+    const kv = new MemoryKeyValueStore();
+    kv.values.set(SIGNATURES_KEY, { a: "1", bad: 2 });
+    const state = new AntigravityState(kv, new SequenceRandom(), 2);
+    expect(await state.signatures()).toEqual({ a: "1" });
+    await state.saveSignature("b", "2");
+    await state.saveSignature("a", "1b");
+    await state.saveSignature("c", "3");
+    expect(kv.values.get(SIGNATURES_KEY)).toEqual({ a: "1b", c: "3" });
+    const arrayStored = new MemoryKeyValueStore();
+    arrayStored.values.set(SIGNATURES_KEY, ["x"]);
+    expect(await new AntigravityState(arrayStored, new SequenceRandom()).signatures()).toEqual({});
+    expect(await new AntigravityState(new MemoryKeyValueStore(), new SequenceRandom()).signatures()).toEqual({});
+  });
+});
+
+class FixedSession extends AntigravitySessionPort {
+  rotations = 0;
+  constructor(private current: ActiveAccount = { id: "me@x", account: acct() }) {
+    super();
+  }
+  async active() {
+    return this.current;
+  }
+  async forceRotate(_c: ActiveAccount) {
+    this.rotations++;
+    this.current = { ...this.current, account: { ...this.current.account, tokens: { ...tokens, accessToken: `rotated-${this.rotations}` } } };
+    return this.current;
+  }
+}
+
+describe("withActive", () => {
+  test("401 → one forced rotation and a retry; other errors and missing refresh tokens propagate", async () => {
+    const session = new FixedSession();
+    let n = 0;
+    expect(await withActive(session, async (a) => (n++ === 0 ? Promise.reject(new UpstreamError("antigravity", 401, "")) : a.account.tokens.accessToken))).toBe("rotated-1");
+    await expect(withActive(session, () => Promise.reject(new UpstreamError("antigravity", 500, "")))).rejects.toBeInstanceOf(UpstreamError);
+    const noRefresh = new FixedSession({ id: "x", account: acct({ tokens: { accessToken: "a", expiresAt: 9e12 } }) });
+    await expect(withActive(noRefresh, () => Promise.reject(new UpstreamError("antigravity", 401, "")))).rejects.toBeInstanceOf(UpstreamError);
+    expect(noRefresh.rotations).toBe(0);
+  });
+});
+
+describe("AntigravityCatalog and AntigravityQuota", () => {
+  test("descriptors fetched live and memoized; a miss refetches once; unknown stays undefined", async () => {
+    const api = new ScriptedApi();
+    const logger = new MemoryLogger();
+    const catalog = new AntigravityCatalog(api, new FixedSession(), logger);
+    expect((await catalog.descriptor("gemini-3.6-flash-low"))?.enumPlaceholder).toBe("MODEL_PLACEHOLDER_M73");
+    expect(await catalog.descriptor("gemini-3.6-flash-low")).toBeDefined();
+    expect(api.calls).toEqual(["fetchAvailableModels"]);
+    expect(await catalog.descriptor("nope")).toBeUndefined();
+    expect(api.calls).toEqual(["fetchAvailableModels", "fetchAvailableModels"]);
+    expect(logger.lines[0]).toBe("INFO antigravity: resolved 4 models for me@x");
+  });
+
+  test("quota usage view", async () => {
+    const view = await new AntigravityQuota(new ScriptedApi(), new FixedSession(), new FixedClock(5)).usage();
+    expect(view.capturedAt).toBe(5);
+    expect(view.text.startsWith("Antigravity usage:")).toBe(true);
+  });
+});
+
+class InstantTimer extends TimerPort {
+  readonly waits: number[] = [];
+  async sleep(ms: number) {
+    this.waits.push(ms);
+  }
+}
+
+class MemoryState extends AntigravityStatePort {
+  saved: Record<string, string> = {};
+  fail = false;
+  async sessionId() {
+    return "-42";
+  }
+  async signatures() {
+    return { known: "SIG-K" };
+  }
+  async saveSignature(id: string, sig: string) {
+    if (this.fail) throw new Error("disk full");
+    this.saved[id] = sig;
+  }
+}
+
+describe("AntigravityChat", () => {
+  const request: ChatRequest = { modelWireId: "gemini-3.6-flash-low", modelEnum: "MODEL_PLACEHOLDER_M73", messages: [{ role: "user", text: "hi" }] };
+  const capture = (): StreamEnvelope[] =>
+    text("stream-generate.sample.sse")
+      .split("\n")
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => JSON.parse(l.slice(5)) as StreamEnvelope);
+  const make = (stream: ScriptedApi["stream"], session = new FixedSession(), state = new MemoryState()) => {
+    const api = new ScriptedApi();
+    api.stream = stream;
+    const timer = new InstantTimer();
+    const logger = new MemoryLogger();
+    return { api, timer, logger, session, state, chat: new AntigravityChat(api, session, state, new SequenceRandom(), new FixedClock(77), timer, logger) };
+  };
+  async function* from(envelopes: StreamEnvelope[]) {
+    for (const e of envelopes) yield e;
+  }
+
+  test("captured stream → chunks; trajectory envelope; step counter advances after completion", async () => {
+    const { chat, api } = make(() => from(capture()));
+    const chunks = await drain(chat.stream(request));
+    expect(chunks.map((c) => c.deltaText ?? c.finishReason)).toEqual(["Hello, world", "!", "STOP"]);
+    await drain(chat.stream({ ...request, messages: [...request.messages, { role: "assistant", text: "Hello, world!" }, { role: "user", text: "again" }] }));
+    expect(api.streams.map((p) => [p.project, p.modelWireId, p.requestId])).toEqual([
+      ["proj-1", "gemini-3.6-flash-low", "agent/uuid-1/77/uuid-2/3"],
+      ["proj-1", "gemini-3.6-flash-low", "agent/uuid-1/77/uuid-2/6"],
+    ]);
+    const body = api.streams[0]!.body as { labels: Record<string, string>; sessionId: string };
+    expect(body.sessionId).toBe("-42");
+    expect(body.labels.model_enum).toBe("MODEL_PLACEHOLDER_M73");
+  });
+
+  test("a clean end without finishReason yields STOP; content-free envelopes are skipped", async () => {
+    const { chat } = make(() => from([{}, { response: { candidates: [{ content: { parts: [{ text: "x" }] } }] } }]));
+    expect(await drain(chat.stream({ ...request, modelEnum: undefined } as never))).toEqual([{ deltaText: "x" }, { finishReason: "STOP" }]);
+  });
+
+  test("captured signatures are persisted; a persist failure is only warned", async () => {
+    const env: StreamEnvelope = { response: { candidates: [{ content: { parts: [{ functionCall: { id: "f1", name: "ls" }, thoughtSignature: "SIG-1" }] }, finishReason: "STOP" }] } };
+    const ok = make(() => from([env]));
+    await drain(ok.chat.stream(request));
+    expect(ok.state.saved).toEqual({ f1: "SIG-1" });
+    const failing = new MemoryState();
+    failing.fail = true;
+    const bad = make(() => from([env]), new FixedSession(), failing);
+    await drain(bad.chat.stream(request));
+    await Bun.sleep(1);
+    expect(bad.logger.lines.some((l) => l.includes("signature persist failed (Error: disk full)"))).toBe(true);
+  });
+
+  test("an unsigned replayed Gemini call is dropped and the warning reaches the logger", async () => {
+    const { chat, logger, api } = make(() => from(capture()));
+    await drain(chat.stream({ ...request, messages: [{ role: "user", text: "q" }, { role: "assistant", text: "", toolCalls: [{ id: "lost", name: "ls", arguments: "{}" }] }, { role: "tool", text: "r", toolCallId: "lost", toolName: "ls" }, { role: "user", text: "next" }] }));
+    expect(logger.lines.some((l) => l.startsWith("WARN antigravity: dropping replayed function call lost (ls)"))).toBe(true);
+    expect(JSON.stringify(api.streams[0]!.body)).not.toContain("lost");
+  });
+
+  test("an account without a project is an auth error", async () => {
+    const { chat } = make(() => from([]), new FixedSession({ id: "x", account: acct({ projectIds: [], activeProjectId: undefined } as never) }));
+    await expect(drain(chat.stream(request))).rejects.toThrow("account x has no project assigned");
+  });
+
+  test("401 → one forced rotation then success; a second 401 propagates", async () => {
+    const once = make((_p, _t, call) => (call === 1 ? (async function* () { throw new UpstreamError("antigravity", 401, ""); })() : from(capture())));
+    expect((await drain(once.chat.stream(request))).length).toBe(3);
+    expect(once.session.rotations).toBe(1);
+    expect(once.api.streams[0]!.requestId).toBe(once.api.streams[1]!.requestId);
+    const twice = make(() => (async function* () { throw new UpstreamError("antigravity", 401, ""); })());
+    await expect(drain(twice.chat.stream(request))).rejects.toBeInstanceOf(UpstreamError);
+    expect(twice.session.rotations).toBe(1);
+  });
+
+  test("geo gate retried twice with 2 s / 8 s backoff, then propagated; never retried after a chunk", async () => {
+    const gate = () => (async function* () { throw new UpstreamError("antigravity", 400, "User location is not supported for the API use"); })();
+    const { chat, timer, logger } = make(gate);
+    await expect(drain(chat.stream(request))).rejects.toBeInstanceOf(UpstreamError);
+    expect(timer.waits).toEqual([2000, 8000]);
+    expect(logger.lines.filter((l) => l.includes("geo gate"))).toHaveLength(2);
+    const late = make(() => (async function* () {
+      yield { response: { candidates: [{ content: { parts: [{ text: "x" }] } }] } } as StreamEnvelope;
+      throw new UpstreamError("antigravity", 400, "User location is not supported");
+    })());
+    const seen: ChatChunk[] = [];
+    await expect((async () => { for await (const c of late.chat.stream(request)) seen.push(c); })()).rejects.toBeInstanceOf(UpstreamError);
+    expect(seen).toEqual([{ deltaText: "x" }]);
+    expect(late.timer.waits).toEqual([]);
+  });
+});
+
+class FixedCatalog extends AntigravityCatalogPort {
+  async descriptors() {
+    const { toModelDescriptors } = await import("../../src/domain/catalog.ts");
+    return toModelDescriptors(JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>);
+  }
+  async descriptor() {
+    return undefined;
+  }
+}
+
+describe("AntigravityProvider", () => {
+  test("models with advertised limits (80k clamp; omitted when output is unknown); request cells pending", async () => {
+    const provider = new AntigravityProvider(new FixedCatalog());
+    expect([provider.id, provider.nativeDialect, provider.capabilities().size]).toEqual(["antigravity", "gemini", 0]);
+    const models = await provider.models();
+    expect(models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });
+    expect(models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)" });
+    const canonical = { model: { provider: "antigravity" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
+    await expect(provider.countTokens(canonical)).rejects.toBeInstanceOf(UnsupportedFeatureError);
+    await expect(drain(provider.stream(canonical))).rejects.toBeInstanceOf(UnsupportedFeatureError);
+    await expect(provider.passthrough("m", { path: "/", headers: {}, body: "" })).rejects.toBeInstanceOf(UnsupportedFeatureError);
+  });
+});
