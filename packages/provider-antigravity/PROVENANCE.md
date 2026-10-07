@@ -2,7 +2,7 @@
 
 **Source:** `opencode-antigravity-auth` @ `5c6f7c2697fdc187bfc1d5f0208b8f5563620875`. Its `src/` working tree was clean at extraction (2026-10-07).
 
-**Parity reference:** `tests/reference/plugin-5c6f7c2/` was exported with `scripts/evidence/vendor-reference.ts`. The only edit is rewriting the `@antigravity/` alias into relative paths. Source blob ids are in `MANIFEST.json`.
+**Parity reference:** `tests/reference/plugin-5c6f7c2/` was exported with `scripts/evidence/vendor-reference.ts` and is **byte-identical** to the source: each file's `git hash-object --no-filters` equals its source blob (listed in `MANIFEST.json`). The plugin's own `@antigravity/` alias is resolved by the reference's `tsconfig.json` (`"@antigravity/*": ["./*"]`).
 
 **Fixtures:** `tests/fixtures/plugin-5c6f7c2/` was exported byte-exact with `scripts/evidence/export-files.ts` from `test/fixtures/capture/`. Blobs:
 - `745cb4e6`: quota summary

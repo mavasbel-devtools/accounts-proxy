@@ -91,6 +91,21 @@ flowchart LR
 The full component diagram is [docs/architecture.drawio](docs/architecture.drawio). The architecture rules are in
 [AGENTS.md](AGENTS.md).
 
+Workspaces:
+
+| Workspace | Directory | Role |
+|---|---|---|
+| `@inference-router/core` | `packages/core` | canonical domain and ports |
+| `@inference-router/provider-claude` | `packages/provider-claude` | Claude subscription provider |
+| `@inference-router/provider-antigravity` | `packages/provider-antigravity` | Antigravity provider |
+| `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs (P4/P5) |
+| `@inference-router/router` | `apps/router` | application, adapters, composition, CLI |
+| `@inference-router/test-support` | `tests/support` | shared test doubles, guarded temp directories |
+| `@inference-router/scripts` | `scripts` | release gate and evidence scripts |
+
+Every import of the repository's own code uses the workspace name, `@inference-router/<workspace>/<subpath>.ts`,
+also inside one workspace. Relative imports are rejected by the architecture gate.
+
 ## Development
 
 | Command | What it does |

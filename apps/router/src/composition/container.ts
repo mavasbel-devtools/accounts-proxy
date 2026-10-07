@@ -20,19 +20,19 @@ import { ClaudeIdentity } from "@inference-router/provider-claude/adapters/outbo
 import { ClaudeOAuthClient } from "@inference-router/provider-claude/adapters/outbound/claude-oauth-client.ts";
 import { ClaudeSession } from "@inference-router/provider-claude/adapters/outbound/claude-session.ts";
 import { ClaudeSubscriptionProvider } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
-import { CliDriver, type Writer } from "../adapters/inbound/cli/cli-driver.ts";
-import type { Driver } from "../adapters/inbound/driver.ts";
-import { SystemBrowserLauncher } from "../adapters/outbound/browser-launcher.ts";
-import { FetchTransport } from "../adapters/outbound/fetch-transport.ts";
-import { FileLock } from "../adapters/outbound/file-lock.ts";
-import { FileCredentialStore, FileKeyValueStore } from "../adapters/outbound/file-stores.ts";
-import { LoopbackCallbackServerFactory } from "../adapters/outbound/loopback-callback-server.ts";
-import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "../adapters/outbound/system.ts";
-import { TerminalManualCode } from "../adapters/outbound/terminal-manual-code.ts";
-import { YamlConfigFile } from "../adapters/outbound/yaml-config-file.ts";
-import { AccountAdminService, UsageService } from "../application/account-services.ts";
-import { ListModelsService } from "../application/list-models-service.ts";
-import { LoginService } from "../application/login-service.ts";
+import { CliDriver, type Writer } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
+import type { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
+import { SystemBrowserLauncher } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
+import { FetchTransport } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { FileLock } from "@inference-router/router/adapters/outbound/file-lock.ts";
+import { FileCredentialStore, FileKeyValueStore } from "@inference-router/router/adapters/outbound/file-stores.ts";
+import { LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
+import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
+import { TerminalManualCode } from "@inference-router/router/adapters/outbound/terminal-manual-code.ts";
+import { YamlConfigFile } from "@inference-router/router/adapters/outbound/yaml-config-file.ts";
+import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
+import { ListModelsService } from "@inference-router/router/application/list-models-service.ts";
+import { LoginService } from "@inference-router/router/application/login-service.ts";
 
 export type ContainerOptions = {
   /** Data directory: router.yaml, accounts-*.json, state/, locks/, logs/. */

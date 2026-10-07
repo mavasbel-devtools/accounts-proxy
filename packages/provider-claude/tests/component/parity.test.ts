@@ -4,8 +4,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { transformRequest, type TransformContext, type WireRequestBody } from "../../src/domain/request-transform.ts";
-import type { CatalogModelEntry } from "../../src/domain/model-envelope.ts";
+import { transformRequest, type TransformContext, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 // Loaded through a computed specifier so the typecheck does not compile the verbatim (differently linted) source.
 type ReferenceService = new (
   random: { uuid(): string; sha256Base64Url(input: string): string },
@@ -17,7 +17,7 @@ type ReferenceService = new (
     ctx: { accessToken: string; accountUuid: string; deviceId: string; sessionId: string; previousMessageId: string | null },
   ): { headers: Record<string, string>; url: string; body: string };
 };
-const referencePath = join(import.meta.dir, "..", "reference", "plugin-6292741", "RequestTransformService.ts");
+const referencePath = join(import.meta.dir, "..", "reference", "plugin-6292741", "domain", "services", "RequestTransformService.ts");
 const { RequestTransformService } = (await import(referencePath)) as { RequestTransformService: ReferenceService };
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");

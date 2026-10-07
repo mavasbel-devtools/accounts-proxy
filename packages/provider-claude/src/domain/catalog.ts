@@ -1,6 +1,6 @@
 // Live `GET /v1/models` parsing. Port of opencode-claude-auth @ 6292741
 // src/infrastructure/adapters/outbound/protocol/AnthropicModelsApiAdapter.ts#parseCatalogEntry (pure part).
-import type { CatalogModelEntry, ModelCapabilities } from "./model-envelope.ts";
+import type { CatalogModelEntry, ModelCapabilities } from "@inference-router/provider-claude/domain/model-envelope.ts";
 
 type Flag = { readonly supported?: unknown } | undefined;
 export type ModelsApiEntry = {

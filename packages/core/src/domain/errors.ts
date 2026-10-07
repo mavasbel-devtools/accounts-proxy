@@ -13,7 +13,7 @@
 //       ├── ProviderDisabledError     503 provider_disabled
 //       ├── QuotaExhaustedError       429 quota_exhausted
 //       └── UpstreamError             <upstream status> upstream_error
-import type { ProviderId } from "./models.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type RouterErrorCode =
   | "invalid_request"

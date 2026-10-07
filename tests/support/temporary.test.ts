@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isStrictlyInsideTemporary, makeTemporary, removeTemporary, temporaryRoot } from "./temporary.ts";
+import { isStrictlyInsideTemporary, makeTemporary, removeTemporary, temporaryRoot } from "@inference-router/test-support/temporary.ts";
 
 describe("removeTemporary guard", () => {
   test("deletes a directory created by makeTemporary", () => {

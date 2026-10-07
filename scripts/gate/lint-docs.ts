@@ -5,7 +5,7 @@
 //  - every *.drawio file is an <mxfile> document.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { repositoryRoot } from "./instrument.ts";
+import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 
 const DATED = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const SESSION = /^ses_[A-Za-z0-9]+\.md$/;

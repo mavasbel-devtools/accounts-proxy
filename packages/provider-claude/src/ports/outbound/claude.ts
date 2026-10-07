@@ -1,8 +1,8 @@
 // Provider-internal abstractions. ClaudeSubscriptionProvider depends only on these; the adapters in
 // adapters/outbound implement them and composition wires them.
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { ClaudeTokens } from "../../domain/credential.ts";
-import type { CatalogModelEntry } from "../../domain/model-envelope.ts";
+import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
+import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 
 export abstract class ClaudeOAuthPort extends OAuthClientPort {
   /** Rotate the access token (and the refresh token when the server issues a new one). */

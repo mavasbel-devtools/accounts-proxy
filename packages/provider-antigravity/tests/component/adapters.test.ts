@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { activeAccount, EMPTY_POOL, upsertAccount } from "../../../core/src/domain/accounts.ts";
-import { ProviderAuthRequiredError, QuotaExhaustedError, UnsupportedFeatureError, UpstreamError } from "../../../core/src/domain/errors.ts";
-import { TimerPort } from "../../../core/src/ports/outbound/system.ts";
+import { activeAccount, EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, QuotaExhaustedError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { TimerPort } from "@inference-router/core/ports/outbound/system.ts";
 import {
   FixedClock,
   MemoryCredentialStore,
@@ -13,21 +13,21 @@ import {
   ScriptedTransport,
   SequenceRandom,
   type ScriptedResponse,
-} from "../../../../tests/support/fakes.ts";
-import { AntigravityApiClient } from "../../src/adapters/outbound/antigravity-api-client.ts";
-import { AntigravityCatalog } from "../../src/adapters/outbound/antigravity-catalog.ts";
-import { AntigravityChat } from "../../src/adapters/outbound/antigravity-chat.ts";
-import { AntigravityProvider } from "../../src/adapters/outbound/antigravity-provider.ts";
-import { AntigravityQuota } from "../../src/adapters/outbound/antigravity-quota.ts";
-import { AntigravitySession, REFRESH_LOCK } from "../../src/adapters/outbound/antigravity-session.ts";
-import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "../../src/adapters/outbound/antigravity-state.ts";
-import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "../../src/adapters/outbound/google-oauth-client.ts";
-import { withActive } from "../../src/adapters/outbound/with-active.ts";
-import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "../../src/domain/account.ts";
-import { CLIENT_ID, CLIENT_SECRET, SCOPES, SUCCESS_REDIRECT, USER_AGENT } from "../../src/domain/constants.ts";
-import type { ChatChunk, ChatRequest, StreamEnvelope } from "../../src/domain/generate.ts";
-import type { GenerateParams } from "../../src/domain/upstream.ts";
-import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravitySessionPort, AntigravityStatePort, type ActiveAccount } from "../../src/ports/outbound/antigravity.ts";
+} from "@inference-router/test-support/fakes.ts";
+import { AntigravityApiClient } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
+import { AntigravityCatalog } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
+import { AntigravityChat } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-chat.ts";
+import { AntigravityProvider } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-provider.ts";
+import { AntigravityQuota } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-quota.ts";
+import { AntigravitySession, REFRESH_LOCK } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-session.ts";
+import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-state.ts";
+import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-antigravity/adapters/outbound/google-oauth-client.ts";
+import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
+import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
+import { CLIENT_ID, CLIENT_SECRET, SCOPES, SUCCESS_REDIRECT, USER_AGENT } from "@inference-router/provider-antigravity/domain/constants.ts";
+import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
+import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravitySessionPort, AntigravityStatePort, type ActiveAccount } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -504,7 +504,7 @@ describe("AntigravityChat", () => {
 
 class FixedCatalog extends AntigravityCatalogPort {
   async descriptors() {
-    const { toModelDescriptors } = await import("../../src/domain/catalog.ts");
+    const { toModelDescriptors } = await import("@inference-router/provider-antigravity/domain/catalog.ts");
     return toModelDescriptors(JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>);
   }
   async descriptor() {

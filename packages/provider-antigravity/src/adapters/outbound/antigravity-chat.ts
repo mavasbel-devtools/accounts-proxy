@@ -5,18 +5,18 @@
 // the call (source used bare loadActive); the 401 retry additionally requires that nothing was yielded yet.
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
 import type { ClockPort, LoggerPort, RandomPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { activeProject } from "../../domain/account.ts";
-import { LOCATION_RETRY_BACKOFF_MS } from "../../domain/constants.ts";
-import { chunkHasContent, GenerateCodec, type ChatChunk, type ChatRequest } from "../../domain/generate.ts";
-import { TrajectoryState } from "../../domain/trajectory.ts";
-import { isLocationGate, isUnauthorized } from "../../domain/upstream.ts";
+import { activeProject } from "@inference-router/provider-antigravity/domain/account.ts";
+import { LOCATION_RETRY_BACKOFF_MS } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { chunkHasContent, GenerateCodec, type ChatChunk, type ChatRequest } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { TrajectoryState } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+import { isLocationGate, isUnauthorized } from "@inference-router/provider-antigravity/domain/upstream.ts";
 import {
   AntigravityChatPort,
   type ActiveAccount,
   type AntigravityApiPort,
   type AntigravitySessionPort,
   type AntigravityStatePort,
-} from "../../ports/outbound/antigravity.ts";
+} from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 export class AntigravityChat extends AntigravityChatPort {
   private ready: Promise<{ trajectory: TrajectoryState; codec: GenerateCodec }> | undefined;

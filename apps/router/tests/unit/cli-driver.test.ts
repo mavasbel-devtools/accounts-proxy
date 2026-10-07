@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { ProviderAuthRequiredError } from "../../../../packages/core/src/domain/errors.ts";
-import type { ModelInfo, ProviderId } from "../../../../packages/core/src/domain/models.ts";
-import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "../../../../packages/core/src/ports/inbound/accounts.ts";
-import { ListModelsPort } from "../../../../packages/core/src/ports/inbound/routing.ts";
-import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, USAGE } from "../../src/adapters/inbound/cli/cli-driver.ts";
-import { Driver } from "../../src/adapters/inbound/driver.ts";
+import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
+import type { ModelInfo, ProviderId } from "@inference-router/core/domain/models.ts";
+import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
+import { ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, USAGE } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
+import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 
 class Login extends LoginPort {
   calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl">][] = [];

@@ -1,0 +1,14 @@
+{
+  "name": "@inference-router/test-support",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Shared test doubles (port fakes) and the guarded temporary-directory helpers.",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  }
+}

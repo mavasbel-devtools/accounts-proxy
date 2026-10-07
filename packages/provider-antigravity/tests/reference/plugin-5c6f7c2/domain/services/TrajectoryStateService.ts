@@ -1,5 +1,5 @@
-import type { ChatMessage } from '../../domain/ports/inbound/index.ts'
-import type { ClockPort, DeviceIdentityStorePort, RandomPort } from '../../domain/ports/outbound/index.ts'
+import type { ChatMessage } from '@antigravity/domain/ports/inbound/index.ts'
+import type { ClockPort, DeviceIdentityStorePort, RandomPort } from '@antigravity/domain/ports/outbound/index.ts'
 
 /** Wire model family used to drive the sticky trajectory flags. */
 export type ModelFamily = 'gemini' | 'claude' | 'other'

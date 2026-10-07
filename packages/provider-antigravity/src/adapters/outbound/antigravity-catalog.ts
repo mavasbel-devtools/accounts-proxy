@@ -3,9 +3,9 @@
 // this map per process"). Router addition: a memo miss for a requested id triggers one refetch, so a model added
 // upstream after start-up is usable without restarting the daemon.
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { toModelDescriptors, type ModelDescriptor } from "../../domain/catalog.ts";
-import { AntigravityCatalogPort, type AntigravityApiPort, type AntigravitySessionPort } from "../../ports/outbound/antigravity.ts";
-import { withActive } from "./with-active.ts";
+import { toModelDescriptors, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { AntigravityCatalogPort, type AntigravityApiPort, type AntigravitySessionPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
 
 export class AntigravityCatalog extends AntigravityCatalogPort {
   private memo: readonly ModelDescriptor[] | undefined;

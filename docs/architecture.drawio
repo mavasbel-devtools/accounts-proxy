@@ -1,47 +1,69 @@
-<mxfile host="inference-router" version="1">
-  <diagram id="components" name="Components (P1 target)">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1600" pageHeight="900">
+<mxfile host="inference-router" version="2">
+  <diagram id="components" name="Components (P3 state; dashed = planned P4/P5)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="1700" pageHeight="1000">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
         <mxCell id="clients" value="Clients&#10;Anthropic SDK / Claude Code · OpenAI SDK · Google GenAI SDK" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
           <mxGeometry x="40" y="380" width="200" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="http" value="apps/router · adapters/inbound/http&#10;HttpServerAdapter (node:http, 127.0.0.1:4141)&#10;AuthGuard (router token, constant-time)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+        <mxCell id="user" value="User (terminal)&#10;bun run router · inference-router bin" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="http" value="PLANNED P4 · apps/router · adapters/inbound/http&#10;HttpServerAdapter (node:http, 127.0.0.1:4141)&#10;AuthGuard (router token, constant-time)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="300" y="370" width="260" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="cli" value="apps/router · adapters/inbound/cli&#10;serve · login (browser loopback) · account · token · status · models · quota" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
-          <mxGeometry x="300" y="560" width="260" height="90" as="geometry"/>
+        <mxCell id="cli" value="apps/router · adapters/inbound&#10;Driver ← CliDriver: login (browser loopback, --manual) · account list/use · quota · models · help&#10;(PLANNED: serve · token · status)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="300" y="560" width="260" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="dialects" value="packages/dialect-anthropic · dialect-openai · dialect-gemini&#10;adapters/inbound codecs (wire ⇄ canonical, SSE)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+        <mxCell id="main" value="apps/router · main/cli.ts&#10;process → composition main()" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="300" y="720" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="dialects" value="PLANNED P4/P5 · packages/dialect-anthropic · dialect-openai · dialect-gemini&#10;adapters/inbound codecs (wire ⇄ canonical, SSE)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="300" y="200" width="260" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="app" value="apps/router · application&#10;RouteChatService · RouteCountService · ListModelsService · PassthroughService · AccountAdminService" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
-          <mxGeometry x="640" y="370" width="260" height="110" as="geometry"/>
+        <mxCell id="app" value="apps/router · application&#10;LoginService · AccountAdminService · UsageService · ListModelsService&#10;(PLANNED: RouteChatService · RouteCountService · PassthroughService)" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="640" y="370" width="260" height="120" as="geometry"/>
         </mxCell>
-        <mxCell id="core" value="packages/core&#10;domain: canonical model · errors · ModelAddress · FeatureSupport&#10;ports/inbound: ChatPort · CountTokensPort · ListModelsPort · PassthroughPort&#10;ports/outbound: ProviderPort · CredentialStorePort · TokenRefresherPort · LockPort · Clock · Random · Logger · HttpTransport" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
-          <mxGeometry x="960" y="340" width="300" height="170" as="geometry"/>
+        <mxCell id="core" value="packages/core&#10;domain: canonical model · RouterError tree · accounts · config (router.yaml) · oauth-flow · ModelAddress · FeatureSupport · SseCodec · base64url&#10;ports/inbound: LoginPort · AccountAdminPort · UsagePort · ListModelsPort · ChatPort · CountTokensPort · PassthroughPort&#10;ports/outbound: ProviderPort · OAuthClientPort · CallbackServerPort · CallbackServerFactoryPort · ManualCodePort · CredentialStorePort · KeyValueStorePort · ConfigSourcePort · UsageReporterPort · HttpTransportPort · LockPort · ClockPort · TimerPort · RandomPort · HashPort · LoggerPort · BrowserLauncherPort" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="960" y="300" width="340" height="250" as="geometry"/>
         </mxCell>
-        <mxCell id="claude" value="packages/provider-claude · adapters/outbound&#10;ClaudeSubscriptionProvider" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
-          <mxGeometry x="1320" y="300" width="240" height="80" as="geometry"/>
+        <mxCell id="claude" value="packages/provider-claude · adapters/outbound&#10;ClaudeSubscriptionProvider · ClaudeOAuthClient · ClaudeSession · ClaudeCatalog · ClaudeIdentity&#10;(ports/outbound: ClaudeOAuthPort · ClaudeSessionPort · ClaudeCatalogPort · ClaudeIdentityPort)" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="200" width="300" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="antigravity" value="packages/provider-antigravity · adapters/outbound&#10;AntigravityProvider" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
-          <mxGeometry x="1320" y="470" width="240" height="80" as="geometry"/>
+        <mxCell id="antigravity" value="packages/provider-antigravity · adapters/outbound&#10;AntigravityProvider · GoogleOAuthClient · AntigravityApiClient · AntigravitySession · AntigravityState · AntigravityCatalog · AntigravityQuota · AntigravityChat&#10;(ports/outbound: AntigravityApiPort · AntigravityOAuthPort · AntigravitySessionPort · AntigravityStatePort · AntigravityCatalogPort · AntigravityChatPort · AntigravityQuotaPort)" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="470" width="300" height="140" as="geometry"/>
         </mxCell>
-        <mxCell id="outbound" value="apps/router · adapters/outbound&#10;FileCredentialStore · FileLock · FileLogger · NodeHttpTransport · SystemClock/Random · YamlConfigLoader" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
-          <mxGeometry x="960" y="580" width="300" height="90" as="geometry"/>
+        <mxCell id="outbound" value="apps/router · adapters/outbound&#10;FileCredentialStore · FileKeyValueStore · FileLock · FetchTransport · LoopbackCallbackServer(+Factory) · SystemBrowserLauncher · TerminalManualCode · YamlConfigFile · SystemClock · SystemTimer · CryptoRandom · NodeHash · FileLogger" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="960" y="640" width="340" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="composition" value="apps/router · composition/container.ts&#10;the ONLY place adapters are constructed" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
-          <mxGeometry x="640" y="120" width="260" height="70" as="geometry"/>
+        <mxCell id="composition" value="apps/router · composition/container.ts&#10;the ONLY place adapters are constructed; providers wired only when enabled + acknowledgeTermsRisk" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="640" y="120" width="260" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="e1" edge="1" parent="1" source="clients" target="http" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e2" edge="1" parent="1" source="http" target="dialects" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e3" edge="1" parent="1" source="http" target="app" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="support" value="tests/support · @inference-router/test-support (no layers)&#10;port fakes · removeTemporary guard" style="rounded=1;whiteSpace=wrap;fillColor=#eeeeee;" vertex="1" parent="1">
+          <mxGeometry x="640" y="820" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="scripts" value="scripts · @inference-router/scripts (no layers)&#10;gate (coverage, verify, docs lint) · evidence" style="rounded=1;whiteSpace=wrap;fillColor=#eeeeee;" vertex="1" parent="1">
+          <mxGeometry x="960" y="820" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="rule" value="Import law: every import is @inference-router/&lt;workspace&gt;/&lt;subpath&gt;.ts (self-reference inside a workspace); no relative imports outside the byte-identical vendored references; imported workspaces must be declared (workspace:*)" style="text;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="820" width="560" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="clients" target="http" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="http" target="dialects" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="http" target="app" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e4" edge="1" parent="1" source="cli" target="app" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e5" value="depends on ports" edge="1" parent="1" source="app" target="core" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e6" value="implements ProviderPort" edge="1" parent="1" source="claude" target="core" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e7" value="implements ProviderPort" edge="1" parent="1" source="antigravity" target="core" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="implements ProviderPort, OAuthClientPort" edge="1" parent="1" source="claude" target="core" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="implements ProviderPort, OAuthClientPort, UsageReporterPort" edge="1" parent="1" source="antigravity" target="core" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e8" value="implements outbound ports" edge="1" parent="1" source="outbound" target="core" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="user" target="main" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" value="builds" edge="1" parent="1" source="main" target="composition" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" value="wires" edge="1" parent="1" source="composition" target="cli" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" value="wires" edge="1" parent="1" source="composition" target="app" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="wires" edge="1" parent="1" source="composition" target="claude" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e14" value="wires" edge="1" parent="1" source="composition" target="antigravity" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e15" value="wires" edge="1" parent="1" source="composition" target="outbound" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

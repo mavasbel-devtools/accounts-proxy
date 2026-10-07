@@ -3,11 +3,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "../../src/domain/catalog.ts";
-import { GenerateCodec, sanitizeSchema, toWireTools, type ChatRequest, type StreamEnvelope } from "../../src/domain/generate.ts";
-import { extractProjectIds } from "../../src/domain/project.ts";
-import { formatUsage, lowestRemaining, parseGroupModels, toQuotaSnapshot } from "../../src/domain/quota.ts";
-import { mintSessionId, TrajectoryState } from "../../src/domain/trajectory.ts";
+import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { GenerateCodec, sanitizeSchema, toWireTools, type ChatRequest, type StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { extractProjectIds } from "@inference-router/provider-antigravity/domain/project.ts";
+import { formatUsage, lowestRemaining, parseGroupModels, toQuotaSnapshot } from "@inference-router/provider-antigravity/domain/quota.ts";
+import { mintSessionId, TrajectoryState } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 
 const ref = join(import.meta.dir, "..", "reference", "plugin-5c6f7c2", "domain");
 const load = async <T>(path: string): Promise<T> => (await import(join(ref, path))) as T;

@@ -1,6 +1,6 @@
-import type { JsonObject } from "../json.ts";
-import type { ModelAddress } from "../models.ts";
-import type { Part, TextPart } from "./parts.ts";
+import type { JsonObject } from "@inference-router/core/domain/json.ts";
+import type { ModelAddress } from "@inference-router/core/domain/models.ts";
+import type { Part, TextPart } from "@inference-router/core/domain/canonical/parts.ts";
 
 export type Role = "user" | "assistant";
 export type Message = { readonly role: Role; readonly parts: readonly Part[] };

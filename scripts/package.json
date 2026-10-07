@@ -1,0 +1,11 @@
+{
+  "name": "@inference-router/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Release-gate and evidence scripts (run from the repository root).",
+  "exports": {
+    "./*": "./*"
+  }
+}

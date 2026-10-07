@@ -1,4 +1,4 @@
-import type { ModelDescriptor } from '../../domain/entities/ModelDescriptor.ts'
+import type { ModelDescriptor } from '@antigravity/domain/entities/ModelDescriptor.ts'
 
 type RawModel = {
   displayName?: string

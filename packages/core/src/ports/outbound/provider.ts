@@ -1,9 +1,9 @@
 // ProviderPort: the general abstraction every provider adapter extends (plan §2).
-import type { CanonicalEvent } from "../../domain/canonical/events.ts";
-import type { CanonicalRequest } from "../../domain/canonical/request.ts";
-import type { Dialect, ModelInfo, ProviderId } from "../../domain/models.ts";
-import type { Feature } from "../../domain/services/feature-support.ts";
-import type { HttpResponse, RawRequest } from "../../domain/wire.ts";
+import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
+import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
+import type { Dialect, ModelInfo, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
+import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 
 export abstract class ProviderPort {
   abstract readonly id: ProviderId;

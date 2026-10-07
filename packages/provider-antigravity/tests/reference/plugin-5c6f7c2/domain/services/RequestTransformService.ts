@@ -1,6 +1,6 @@
-import type { ChatChunk, ChatMessage, ChatRequest, ToolSpec } from '../../domain/ports/inbound/index.ts'
-import type { LoggerPort, SignatureStorePort, StreamEnvelope } from '../../domain/ports/outbound/index.ts'
-import type { TrajectoryLabels } from '../../domain/services/TrajectoryStateService.ts'
+import type { ChatChunk, ChatMessage, ChatRequest, ToolSpec } from '@antigravity/domain/ports/inbound/index.ts'
+import type { LoggerPort, SignatureStorePort, StreamEnvelope } from '@antigravity/domain/ports/outbound/index.ts'
+import type { TrajectoryLabels } from '@antigravity/domain/services/TrajectoryStateService.ts'
 
 export interface GenerateContentPart {
   text?: string

@@ -8,10 +8,10 @@ import { readAll } from "@inference-router/core/domain/wire.ts";
 import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { ClockPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { accountId, toCredential, type AntigravityAccount, type AuthTokens } from "../../domain/account.ts";
-import { AUTHORIZE_URL, CLIENT_ID, CLIENT_SECRET, DEFAULT_EXPIRES_IN_S, LOOPBACK_CALLBACK_PATH, SCOPES, SUCCESS_REDIRECT, TOKEN_URL } from "../../domain/constants.ts";
-import { extractProjectIds, onboardedProjectId } from "../../domain/project.ts";
-import { AntigravityOAuthPort, type AntigravityApiPort } from "../../ports/outbound/antigravity.ts";
+import { accountId, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
+import { AUTHORIZE_URL, CLIENT_ID, CLIENT_SECRET, DEFAULT_EXPIRES_IN_S, LOOPBACK_CALLBACK_PATH, SCOPES, SUCCESS_REDIRECT, TOKEN_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { extractProjectIds, onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
+import { AntigravityOAuthPort, type AntigravityApiPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 export type GoogleOAuthEndpoints = { readonly authorizeUrl: string; readonly tokenUrl: string };
 export const PRODUCTION_ENDPOINTS: GoogleOAuthEndpoints = { authorizeUrl: AUTHORIZE_URL, tokenUrl: TOKEN_URL };

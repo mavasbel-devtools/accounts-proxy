@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { ConfigError, DEFAULT_CONFIG, enabledProviders, parseRouterConfig } from "../../src/domain/config.ts";
-import { ProviderAuthRequiredError } from "../../src/domain/errors.ts";
-import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "../../src/domain/services/oauth-flow.ts";
+import { ConfigError, DEFAULT_CONFIG, enabledProviders, parseRouterConfig } from "@inference-router/core/domain/config.ts";
+import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
+import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "@inference-router/core/domain/services/oauth-flow.ts";
 
 describe("parseRouterConfig", () => {
   test("no document → defaults, everything disabled, port 4141", () => {

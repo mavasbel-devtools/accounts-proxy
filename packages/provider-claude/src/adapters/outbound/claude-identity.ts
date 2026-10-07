@@ -4,7 +4,7 @@
 // (binary offsets 197,801,488 and 203,147,170); the captured fixtures' sanitized device_id is 64 hex characters too.
 import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
 import type { RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import { ClaudeIdentityPort } from "../../ports/outbound/claude.ts";
+import { ClaudeIdentityPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 export const DEVICE_ID_KEY = "claude-subscription/device-id";
 const DEVICE_ID = /^[0-9a-f]{64}$/;

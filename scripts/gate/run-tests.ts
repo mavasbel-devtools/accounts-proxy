@@ -7,8 +7,8 @@
 // Exit codes: 0 pass, 1 fail, 3 incomplete (the tier has no test files yet — reported, never treated as a pass).
 import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { loadMaps, report, scopeMap } from "./coverage-report.ts";
-import { repositoryRoot } from "./instrument.ts";
+import { loadMaps, report, scopeMap } from "@inference-router/scripts/gate/coverage-report.ts";
+import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 
 export const INCOMPLETE = 3;
 

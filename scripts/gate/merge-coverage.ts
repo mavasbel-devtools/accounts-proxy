@@ -1,9 +1,9 @@
 // Merged (unit ∪ e2e) coverage gate. Both inputs must exist; a missing input is a failure, never skipped.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { loadMaps, report } from "./coverage-report.ts";
-import { repositoryRoot } from "./instrument.ts";
-import { INCOMPLETE, tierDirectories } from "./run-tests.ts";
+import { loadMaps, report } from "@inference-router/scripts/gate/coverage-report.ts";
+import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
+import { INCOMPLETE, tierDirectories } from "@inference-router/scripts/gate/run-tests.ts";
 
 const inputs = [
   join(repositoryRoot, "coverage", "unit", "coverage-final.json"),

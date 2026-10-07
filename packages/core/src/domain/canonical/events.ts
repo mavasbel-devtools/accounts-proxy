@@ -1,5 +1,5 @@
 // Canonical streaming events. A provider emits them; a dialect codec encodes them for the client.
-import type { RouterErrorCode } from "../errors.ts";
+import type { RouterErrorCode } from "@inference-router/core/domain/errors.ts";
 
 export type Usage = {
   readonly inputTokens: number;

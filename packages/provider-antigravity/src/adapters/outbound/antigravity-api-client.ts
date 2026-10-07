@@ -9,11 +9,11 @@ import { UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import type { AuthTokens } from "../../domain/account.ts";
-import { DAILY_HOST, IDE_METADATA, USER_AGENT, USERINFO_URL } from "../../domain/constants.ts";
-import type { StreamEnvelope } from "../../domain/generate.ts";
-import { asResponseEnvelope, outerEnvelope, upstreamFailure, type GenerateParams } from "../../domain/upstream.ts";
-import { AntigravityApiPort } from "../../ports/outbound/antigravity.ts";
+import type { AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
+import { DAILY_HOST, IDE_METADATA, USER_AGENT, USERINFO_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
+import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { asResponseEnvelope, outerEnvelope, upstreamFailure, type GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
+import { AntigravityApiPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 const bearer = (tokens: AuthTokens) => `Bearer ${tokens.accessToken}`;
 

@@ -1,6 +1,6 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 domain/services/ModelCatalogService.ts (blob 722ede31) and the pure
 // parts of application/use-cases/ResolveModelsUseCase.ts (descriptorToEntry limit rule, wireDefaults).
-import { IDE_WORKING_SET_CONTEXT_CAP } from "./constants.ts";
+import { IDE_WORKING_SET_CONTEXT_CAP } from "@inference-router/provider-antigravity/domain/constants.ts";
 
 export type ModelDescriptor = {
   readonly wireId: string;

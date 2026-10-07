@@ -4,7 +4,7 @@
 // Wire laws kept: 5 sanitized tools, 6 thoughtSignature on the part + unsigned Gemini replay dropped, 7 functionResponse
 // in MODEL-role contents, 8 content-free messages dropped, 12 trailing assistants stripped AFTER the unsigned drop,
 // captured request key order (contents, systemInstruction, tools, toolConfig, labels, generationConfig, sessionId).
-import type { TrajectoryLabels } from "./trajectory.ts";
+import type { TrajectoryLabels } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 
 export type ToolSpec = { readonly name: string; readonly description?: string; readonly parameters?: Readonly<Record<string, unknown>> };
 export type ToolCall = { readonly id: string; readonly name: string; readonly arguments: string };

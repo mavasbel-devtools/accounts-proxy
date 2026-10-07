@@ -1,7 +1,7 @@
 // Provider accounts held by the router (own store, never shared with Claude Code or the plugins).
-import { UnknownAccountError } from "./errors.ts";
-import type { JsonObject } from "./json.ts";
-import type { ProviderId } from "./models.ts";
+import { UnknownAccountError } from "@inference-router/core/domain/errors.ts";
+import type { JsonObject } from "@inference-router/core/domain/json.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type AccountCredential = {
   readonly provider: ProviderId;

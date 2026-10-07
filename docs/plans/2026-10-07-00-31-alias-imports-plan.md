@@ -1,6 +1,6 @@
 # Plan: replace relative imports with `@` aliases (sources and tests)
 
-Status: **proposed, awaiting approval**. Requested 2026-10-07: "use aliases with @ in the imports instead of relative imports, for all sources and tests".
+Status: **executed 2026-10-07** (approved: Q1 = A, Q2 = yes, Q3 = byte-identical). Requested 2026-10-07: "use aliases with @ in the imports instead of relative imports, for all sources and tests". Evidence: [docs/reference/2026-10-07-00-47-alias-imports-evidence.md](../reference/2026-10-07-00-47-alias-imports-evidence.md).
 
 ## 1. Measured starting point
 
@@ -129,6 +129,31 @@ Cons:
    - The session record.
 9. **Commit and push** as one commit; verify the remote SHA through the GitHub API.
 
-## 6. Rollback
+## 6. Execution record
+
+- **Step 0 probes** (scratch workspace), all passed:
+  - a `tests/support` workspace imported by name from a package test and from `scripts/`;
+  - a `scripts` workspace imported by name;
+  - a dependency cycle (package devDepends test-support, test-support depends package) kept one module identity;
+  - a nested `tsconfig.json` with `paths` inside a reference folder is honoured by Bun at runtime.
+  - **New finding:** Bun 1.4.2's isolated linker links a workspace only into workspaces that declare it. The first
+    probe failed with "Cannot find module" until `workspace:*` dependencies were declared. Hence the
+    declared-dependency rule in AGENTS.md §2 and the gate.
+- **Step 1:** P3c committed as `89cb5f5` (unit gate 340 tests, 100%); remote verified with `git ls-remote`.
+- **Step 2:**
+  - `tests/support/package.json` (`@inference-router/test-support`, depends on core) and `scripts/package.json` (`@inference-router/scripts`) added; root `workspaces` extended;
+  - `devDependencies` on test-support added to provider-claude, provider-antigravity and router;
+  - `bun.lock` gained only these workspace entries plus the router `bin` entry that `89cb5f5` had added to `package.json` (`bun install --frozen-lockfile` had not flagged it).
+  - `scaffold-packages.ts` documents the two non-layered workspaces.
+- **Step 3:** codemod rewrote 250 specifiers in 69 files, 0 errors. The first dry run caught that `ts.preProcessFile` `pos` is the opening quote, so nothing was written until that was handled.
+- **Step 4:** 250/250 logged rewrites verified; one allowed non-import change (the Claude parity test's reference path, which moved with step 5).
+- **Step 5:** both references re-exported byte-identical:
+  - antigravity: 10 files; claude: 4 files, now the full import closure of `RequestTransformService.ts`, replacing the extracted `TransformContext.ts`;
+  - 0 blob mismatches; nested `tsconfig.json` per reference.
+- **Step 6:** the architecture gate enforces the alias law and declared dependencies on sources, tests and scripts. Its self-test injects relative, unresolvable and undeclared imports, and a real-tree mutation was caught.
+- **Step 7:** `bun run verify`: typecheck, unit+component+arch (342 tests, 100%: 1545/1162/347/1276), build and docs lint PASS; e2e and merged INCOMPLETE (no e2e tier yet).
+- **Step 8:** AGENTS.md §2, README (workspaces table, import law), `docs/architecture.drawio` (P3 state, both new workspaces, import law), both PROVENANCE.md files, session record.
+
+## 7. Rollback
 
 Each of steps 1 and 9 is a single commit on top of a pushed base, so rollback is `git revert <sha>` (append-only; no history rewrite).

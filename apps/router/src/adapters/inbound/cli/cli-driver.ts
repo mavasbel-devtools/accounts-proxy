@@ -4,7 +4,7 @@ import { RouterError } from "@inference-router/core/domain/errors.ts";
 import { isProviderId, type ProviderId } from "@inference-router/core/domain/models.ts";
 import type { AccountAdminPort, LoginPort, UsagePort } from "@inference-router/core/ports/inbound/accounts.ts";
 import type { ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
-import { Driver } from "../driver.ts";
+import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 
 export type Writer = (text: string) => void;
 export type CliPorts = { readonly login: LoginPort; readonly accounts: AccountAdminPort; readonly usage: UsagePort; readonly models: ListModelsPort };

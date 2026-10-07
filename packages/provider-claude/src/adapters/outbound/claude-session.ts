@@ -6,8 +6,8 @@ import { activeAccount, replaceAccount } from "@inference-router/core/domain/acc
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { fromAccount, isExpired, toAccount, type ClaudeTokens } from "../../domain/credential.ts";
-import { ClaudeSessionPort, type ClaudeOAuthPort } from "../../ports/outbound/claude.ts";
+import { fromAccount, isExpired, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
+import { ClaudeSessionPort, type ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 const PROVIDER = "claude-subscription";
 export const REFRESH_LOCK = "claude-subscription-refresh";

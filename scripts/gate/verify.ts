@@ -3,7 +3,7 @@
 // reported explicitly and never counted as a pass.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { repositoryRoot } from "./instrument.ts";
+import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 
 const PASS = 0;
 const INCOMPLETE = 3;

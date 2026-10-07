@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, upsertAccount, type AccountCredential } from "../../../../packages/core/src/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "../../../../packages/core/src/domain/errors.ts";
-import type { ProviderId } from "../../../../packages/core/src/domain/models.ts";
-import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "../../../../packages/core/src/ports/outbound/oauth.ts";
-import { ProviderPort } from "../../../../packages/core/src/ports/outbound/provider.ts";
-import { BrowserLauncherPort, HashPort } from "../../../../packages/core/src/ports/outbound/system.ts";
-import { UsageReporterPort } from "../../../../packages/core/src/ports/outbound/usage.ts";
-import { MemoryCredentialStore, MemoryLogger, SequenceRandom } from "../../../../tests/support/fakes.ts";
-import { AccountAdminService, UsageService } from "../../src/application/account-services.ts";
-import { ListModelsService } from "../../src/application/list-models-service.ts";
-import { LoginService } from "../../src/application/login-service.ts";
+import { EMPTY_POOL, upsertAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@inference-router/core/domain/errors.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
+import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
+import { BrowserLauncherPort, HashPort } from "@inference-router/core/ports/outbound/system.ts";
+import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
+import { MemoryCredentialStore, MemoryLogger, SequenceRandom } from "@inference-router/test-support/fakes.ts";
+import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
+import { ListModelsService } from "@inference-router/router/application/list-models-service.ts";
+import { LoginService } from "@inference-router/router/application/login-service.ts";
 
 class FakeClient extends OAuthClientPort {
   readonly callbackPath = "/cb";

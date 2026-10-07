@@ -1,5 +1,8 @@
 // One-shot P1 scaffold: writes each workspace package's package.json and its tests/{unit,component,live,e2e}
 // skeleton. Idempotent: an existing package.json is left untouched, so it is safe to re-run.
+// Only the layered workspaces are listed. tests/support (@inference-router/test-support) and scripts
+// (@inference-router/scripts) are hand-maintained workspaces with no layers and no test tiers; a workspace whose
+// tests import the shared fakes declares "@inference-router/test-support": "workspace:*" in devDependencies.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 

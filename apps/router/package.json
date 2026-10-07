@@ -18,5 +18,8 @@
     "@inference-router/dialect-anthropic": "workspace:*",
     "@inference-router/dialect-openai": "workspace:*",
     "@inference-router/dialect-gemini": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
   }
 }

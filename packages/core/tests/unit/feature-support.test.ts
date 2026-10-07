@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { CanonicalRequest } from "../../src/domain/canonical/request.ts";
-import { UnsupportedFeatureError } from "../../src/domain/errors.ts";
-import { DROPPABLE, drop, featuresOf, negotiate, type Feature } from "../../src/domain/services/feature-support.ts";
+import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
+import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import { DROPPABLE, drop, featuresOf, negotiate, type Feature } from "@inference-router/core/domain/services/feature-support.ts";
 
 const base: CanonicalRequest = {
   model: { provider: "antigravity", model: "gemini-3-pro" },

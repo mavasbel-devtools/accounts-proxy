@@ -1,5 +1,5 @@
-import type { AccountPool } from "../../domain/accounts.ts";
-import type { ProviderId } from "../../domain/models.ts";
+import type { AccountPool } from "@inference-router/core/domain/accounts.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 /** The router's own per-provider account pools (never Claude Code's or the plugins' files). */
 export abstract class CredentialStorePort {

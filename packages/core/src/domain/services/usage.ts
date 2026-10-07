@@ -1,4 +1,4 @@
-import type { Usage } from "../canonical/events.ts";
+import type { Usage } from "@inference-router/core/domain/canonical/events.ts";
 
 export const ZERO_USAGE: Usage = { inputTokens: 0, outputTokens: 0 };
 

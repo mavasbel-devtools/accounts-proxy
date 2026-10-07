@@ -3,7 +3,7 @@
 import { afterAll } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { registerInstrumentation } from "./instrument.ts";
+import { registerInstrumentation } from "@inference-router/scripts/gate/instrument.ts";
 
 registerInstrumentation("istanbul-unit-coverage");
 

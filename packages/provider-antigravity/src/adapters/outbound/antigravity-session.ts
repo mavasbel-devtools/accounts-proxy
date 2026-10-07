@@ -8,8 +8,8 @@ import { activeAccount, replaceAccount, type AccountCredential } from "@inferenc
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { fromCredential, isExpired, rotated, toCredential, type AntigravityAccount } from "../../domain/account.ts";
-import { AntigravitySessionPort, type ActiveAccount, type AntigravityOAuthPort } from "../../ports/outbound/antigravity.ts";
+import { fromCredential, isExpired, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
+import { AntigravitySessionPort, type ActiveAccount, type AntigravityOAuthPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 const PROVIDER = "antigravity";
 export const REFRESH_LOCK = "antigravity-refresh";

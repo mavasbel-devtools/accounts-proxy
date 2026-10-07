@@ -3,7 +3,7 @@
 // The daemon must therefore terminate through a normal exit path (never a hard kill) for coverage to count.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { registerInstrumentation } from "./instrument.ts";
+import { registerInstrumentation } from "@inference-router/scripts/gate/instrument.ts";
 
 registerInstrumentation("istanbul-e2e-coverage");
 

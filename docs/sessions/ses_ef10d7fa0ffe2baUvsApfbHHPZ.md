@@ -34,6 +34,11 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
   1276 ln; 340 tests). Then alias-imports plan docs/plans/2026-10-07-00-31-alias-imports-plan.md (approved: A /
   scripts yes / byte-identical references); step-0 probes all passed (see plan §2).
 
+- 2026-10-07 alias imports executed (plan 2026-10-07-00-31, evidence docs/reference/2026-10-07-00-47-alias-imports-
+  evidence.md): every own import is `@inference-router/<ws>/<subpath>.ts`; new workspaces test-support and scripts;
+  vendored references byte-identical with nested tsconfig; arch gate enforces alias law + declared workspace deps.
+  Bun 1.4.2 isolated linker: a workspace resolves another only if declared (`workspace:*`).
+
 ## Progress map
 | Phase | State |
 |---|---|

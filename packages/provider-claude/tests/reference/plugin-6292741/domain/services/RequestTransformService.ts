@@ -1,5 +1,5 @@
-import type { TransformContext } from './TransformContext.ts'
-import { envelopeFor, type CatalogModelEntry } from './ModelEnvelope.ts'
+import type { TransformContext } from '@claude/domain/ports/outbound/index.ts'
+import { envelopeFor, type CatalogModelEntry } from '@claude/domain/services/ModelEnvelope.ts'
 
 /** One content block on the Anthropic wire. */
 export interface WireBlock {

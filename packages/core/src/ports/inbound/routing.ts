@@ -1,9 +1,9 @@
 // Inbound (driving) ports implemented by the router's application services and called by the HTTP adapter.
-import type { CanonicalEvent } from "../../domain/canonical/events.ts";
-import type { CanonicalRequest, TranslationPolicy } from "../../domain/canonical/request.ts";
-import type { Dialect, ModelInfo, ProviderId } from "../../domain/models.ts";
-import type { Feature } from "../../domain/services/feature-support.ts";
-import type { HttpResponse, RawRequest } from "../../domain/wire.ts";
+import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
+import type { CanonicalRequest, TranslationPolicy } from "@inference-router/core/domain/canonical/request.ts";
+import type { Dialect, ModelInfo, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
+import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 
 export type ChatStream = {
   /** Features removed under the lossy policy (reported to the client as x-router-dropped). */

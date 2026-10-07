@@ -6,10 +6,10 @@ import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
 import type { ClockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "../../domain/catalog.ts";
-import { ANTHROPIC_VERSION_HEADER, API_BASE, CATALOG } from "../../domain/constants.ts";
-import { STATIC_CATALOG, type CatalogModelEntry } from "../../domain/model-envelope.ts";
-import { ClaudeCatalogPort, type ClaudeSessionPort } from "../../ports/outbound/claude.ts";
+import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
+import { ANTHROPIC_VERSION_HEADER, API_BASE, CATALOG } from "@inference-router/provider-claude/domain/constants.ts";
+import { STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import { ClaudeCatalogPort, type ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 export const CATALOG_KEY = "claude-subscription/model-catalog";
 

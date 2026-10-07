@@ -2,11 +2,11 @@
 // composition wires the implementations.
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
-import type { AntigravityAccount, AuthTokens } from "../../domain/account.ts";
-import type { ModelDescriptor } from "../../domain/catalog.ts";
-import type { ChatChunk, ChatRequest, StreamEnvelope } from "../../domain/generate.ts";
-import type { UsageView } from "../../domain/quota.ts";
-import type { GenerateParams } from "../../domain/upstream.ts";
+import type { AntigravityAccount, AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
+import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { UsageView } from "@inference-router/provider-antigravity/domain/quota.ts";
+import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
 
 /** The cloudcode-pa `/v1internal:*` surface (every call carries the captured user agent, wire law 1). */
 export abstract class AntigravityApiPort {

@@ -5,11 +5,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import type { HttpRequest } from "../../../../packages/core/src/domain/wire.ts";
-import { BrowserLauncherPort } from "../../../../packages/core/src/ports/outbound/system.ts";
-import { ScriptedTransport, type ScriptedResponse } from "../../../../tests/support/fakes.ts";
-import { makeTemporary, removeTemporary } from "../../../../tests/support/temporary.ts";
-import { buildCli, defaultHome, runCli, type ContainerOptions } from "../../src/composition/container.ts";
+import type { HttpRequest } from "@inference-router/core/domain/wire.ts";
+import { BrowserLauncherPort } from "@inference-router/core/ports/outbound/system.ts";
+import { ScriptedTransport, type ScriptedResponse } from "@inference-router/test-support/fakes.ts";
+import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
+import { buildCli, defaultHome, runCli, type ContainerOptions } from "@inference-router/router/composition/container.ts";
 
 let home: string | undefined;
 afterEach(() => {
@@ -116,9 +116,9 @@ describe("process entry (main/cli.ts)", () => {
     process.stdout.write = ((chunk: string) => (printed.push(String(chunk)), true)) as typeof process.stdout.write;
     process.stderr.write = ((chunk: string) => (errors.push(String(chunk)), true)) as typeof process.stderr.write;
     try {
-      await import("../../src/main/cli.ts");
+      await import("@inference-router/router/main/cli.ts");
       expect(process.exitCode).toBe(0);
-      const { main } = await import("../../src/composition/container.ts");
+      const { main } = await import("@inference-router/router/composition/container.ts");
       expect(await main(["frobnicate"])).toBe(2);
       expect(errors.join("")).toContain("unknown command frobnicate");
     } finally {

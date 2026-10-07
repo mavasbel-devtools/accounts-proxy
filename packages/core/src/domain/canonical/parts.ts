@@ -1,6 +1,6 @@
 // Canonical content parts: the union every dialect decodes into and every provider encodes from.
-import type { JsonObject } from "../json.ts";
-import type { ProviderId } from "../models.ts";
+import type { JsonObject } from "@inference-router/core/domain/json.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type MediaSource =
   | { readonly type: "base64"; readonly mediaType: string; readonly data: string }

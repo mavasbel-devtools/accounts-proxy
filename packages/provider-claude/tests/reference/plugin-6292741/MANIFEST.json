@@ -1,0 +1,27 @@
+{
+  "commit": "62927412322eedfd5b1d8f08c4eb894f26e6c50a",
+  "alias": "@claude/",
+  "byteIdentical": true,
+  "files": [
+    {
+      "file": "domain/services/RequestTransformService.ts",
+      "blob": "f0f2b9e6660dca7e99cf66ba2f63350d0fcb7fe4",
+      "bytes": 14477
+    },
+    {
+      "file": "domain/services/ModelEnvelope.ts",
+      "blob": "ef95776e0317142bb6facdc08b0aede859c51f0d",
+      "bytes": 12673
+    },
+    {
+      "file": "domain/ports/outbound/index.ts",
+      "blob": "91a634c7eb52d3ffcf176dbb3ce05699fee8ef21",
+      "bytes": 3823
+    },
+    {
+      "file": "domain/entities/ClaudeCredential.ts",
+      "blob": "45feb039551b739da6336f68c04085c306c4651a",
+      "bytes": 1364
+    }
+  ]
+}

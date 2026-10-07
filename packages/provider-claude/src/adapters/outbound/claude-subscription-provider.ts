@@ -13,9 +13,9 @@ import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wir
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { API_BASE } from "../../domain/constants.ts";
-import { transformRequest, type WireRequestBody } from "../../domain/request-transform.ts";
-import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "../../ports/outbound/claude.ts";
+import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
+import { transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 /** Native routes (relative to the dialect prefix) → upstream path. */
 export const NATIVE_PATHS: Readonly<Record<string, string>> = {

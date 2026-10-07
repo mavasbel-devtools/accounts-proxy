@@ -1,4 +1,4 @@
-import type { Account } from '../../domain/entities/Account.ts'
+import type { Account } from '@antigravity/domain/entities/Account.ts'
 
 /**
  * Extracts usable project ids from a `loadCodeAssist` response.

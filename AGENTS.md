@@ -27,7 +27,17 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
   - main → composition
 - **External imports** (`node:*`, third-party) are allowed only in adapters, composition and main. Domain, ports and
   application are pure TypeScript.
-- **Workspace imports** always use an explicit subpath (`@inference-router/core/domain/...`). Barrel imports are forbidden.
+- **Imports are aliases, never relative.** Every import of the repository's own code is
+  `@inference-router/<workspace>/<subpath-with-.ts>`, also inside the same workspace (package self-reference) and in
+  tests and scripts. Each workspace's `exports["./*"]` maps the subpath: `packages/*` and `apps/*` → `src/`,
+  `@inference-router/test-support` → `tests/support/`, `@inference-router/scripts` → `scripts/`. Barrel imports are
+  forbidden. The only relative or foreign-alias imports are inside the vendored parity references
+  (`packages/*/tests/reference/plugin-<sha>/`): they are byte-identical to the plugin sources, and their own
+  `tsconfig.json` maps the plugin's alias (`@claude/`, `@antigravity/`).
+- **Declared workspace dependencies.** Bun 1.4.2 links a workspace only into workspaces that declare it, so a
+  workspace imports another one only if it lists it (`"workspace:*"`; test-only use goes in `devDependencies`).
+- The architecture gate enforces both rules on every `.ts` under `packages/*/{src,tests}`, `apps/*/{src,tests}`,
+  `tests/` and `scripts/`. Its self-test injects relative, unresolvable and undeclared imports.
 - **Abstractions.** Every port is an abstract class or interface. Every implementation extends or implements one.
   Constructor parameters and return types are abstractions (IoC). Concrete wiring happens only in `apps/router/src/composition`.
 

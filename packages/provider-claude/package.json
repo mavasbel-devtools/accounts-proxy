@@ -10,5 +10,8 @@
   },
   "dependencies": {
     "@inference-router/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
   }
 }

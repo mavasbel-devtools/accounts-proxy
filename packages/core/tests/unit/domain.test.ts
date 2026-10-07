@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeAccount, EMPTY_POOL, replaceAccount, upsertAccount, useAccount, type AccountCredential } from "../../src/domain/accounts.ts";
+import { activeAccount, EMPTY_POOL, replaceAccount, upsertAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import {
   ClientRequestError,
   InvalidRequestError,
@@ -13,13 +13,13 @@ import {
   UnknownModelError,
   UnsupportedFeatureError,
   UpstreamError,
-} from "../../src/domain/errors.ts";
-import { isJsonObject } from "../../src/domain/json.ts";
-import { formatModelAddress, isProviderId, PROVIDER_IDS } from "../../src/domain/models.ts";
-import { base64UrlEncode } from "../../src/domain/services/base64url.ts";
-import { resolveModelAddress } from "../../src/domain/services/model-address.ts";
-import { mergeUsage, ZERO_USAGE } from "../../src/domain/services/usage.ts";
-import { bodyOf, readAll } from "../../src/domain/wire.ts";
+} from "@inference-router/core/domain/errors.ts";
+import { isJsonObject } from "@inference-router/core/domain/json.ts";
+import { formatModelAddress, isProviderId, PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
+import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
+import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
+import { mergeUsage, ZERO_USAGE } from "@inference-router/core/domain/services/usage.ts";
+import { bodyOf, readAll } from "@inference-router/core/domain/wire.ts";
 
 describe("json", () => {
   test("isJsonObject accepts plain objects only", () => {

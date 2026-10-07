@@ -2,7 +2,7 @@
 // Fields mirror opencode-claude-auth @ 6292741 ClaudeOAuthCredential + TokenEndpointResult.
 import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
-import { EXPIRY_BUFFER_MS } from "./constants.ts";
+import { EXPIRY_BUFFER_MS } from "@inference-router/provider-claude/domain/constants.ts";
 
 export type ClaudeTokens = {
   readonly accessToken: string;

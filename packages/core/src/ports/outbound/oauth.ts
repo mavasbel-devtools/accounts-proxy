@@ -1,7 +1,7 @@
 // OAuth browser-login ports (plan D10). OAuthClientPort is implemented once per provider; the loopback
 // listener and the browser launcher are provider-independent.
-import type { AccountCredential } from "../../domain/accounts.ts";
-import type { ProviderId } from "../../domain/models.ts";
+import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type AuthorizeInput = {
   readonly redirectUri: string;

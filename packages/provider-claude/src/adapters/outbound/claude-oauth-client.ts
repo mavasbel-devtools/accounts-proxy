@@ -20,9 +20,9 @@ import {
   REFRESH_SCOPES,
   TOKEN_HEADERS,
   TOKEN_URL,
-} from "../../domain/constants.ts";
-import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens, type TokenEndpointResponse } from "../../domain/credential.ts";
-import { ClaudeOAuthPort } from "../../ports/outbound/claude.ts";
+} from "@inference-router/provider-claude/domain/constants.ts";
+import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens, type TokenEndpointResponse } from "@inference-router/provider-claude/domain/credential.ts";
+import { ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 export type ClaudeOAuthEndpoints = { readonly authorizeUrl: string; readonly tokenUrl: string };
 export const PRODUCTION_ENDPOINTS: ClaudeOAuthEndpoints = { authorizeUrl: AUTHORIZE_URL, tokenUrl: TOKEN_URL };

@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { QuotaExhaustedError, UpstreamError } from "../../../core/src/domain/errors.ts";
-import { accountId, activeProject, fromCredential, isExpired, rotated, toCredential, type AntigravityAccount } from "../../src/domain/account.ts";
-import { advertisedLimits, wireDefaultsFor, type ModelDescriptor } from "../../src/domain/catalog.ts";
-import { chunkHasContent, usageFrom } from "../../src/domain/generate.ts";
-import { onboardedProjectId } from "../../src/domain/project.ts";
-import { formatUsage } from "../../src/domain/quota.ts";
-import { defaultFamilyOf, isContinuation, isSessionId } from "../../src/domain/trajectory.ts";
-import { asResponseEnvelope, isLocationGate, isUnauthorized, outerEnvelope, retryAfterSeconds, upstreamFailure } from "../../src/domain/upstream.ts";
+import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { accountId, activeProject, fromCredential, isExpired, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
+import { advertisedLimits, wireDefaultsFor, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { chunkHasContent, usageFrom } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
+import { formatUsage } from "@inference-router/provider-antigravity/domain/quota.ts";
+import { defaultFamilyOf, isContinuation, isSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+import { asResponseEnvelope, isLocationGate, isUnauthorized, outerEnvelope, retryAfterSeconds, upstreamFailure } from "@inference-router/provider-antigravity/domain/upstream.ts";
 
 const account: AntigravityAccount = { email: "me@x", tokens: { accessToken: "a", refreshToken: "r", expiresAt: 1_000_000 }, projectIds: ["p1", "p2"], activeProjectId: "p2" };
 

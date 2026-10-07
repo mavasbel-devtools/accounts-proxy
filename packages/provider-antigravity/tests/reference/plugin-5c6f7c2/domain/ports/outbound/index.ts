@@ -1,5 +1,5 @@
-import type { AccountPoolState } from '../../../domain/entities/Account.ts'
-import type { AuthTokens } from '../../../domain/entities/Account.ts'
+import type { AccountPoolState } from '@antigravity/domain/entities/Account.ts'
+import type { AuthTokens } from '@antigravity/domain/entities/Account.ts'
 
 export interface TokenSet {
   readonly accessToken: string

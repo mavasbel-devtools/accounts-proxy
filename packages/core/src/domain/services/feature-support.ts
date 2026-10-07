@@ -2,9 +2,9 @@
 // A provider declares the features it can carry (its capability set, written only from P0-E3 measurements).
 // `negotiate` compares a request against it: strict → UnsupportedFeatureError; lossy → droppable features are
 // removed and reported, non-droppable ones still fail (dropping them would change what the request means).
-import type { CanonicalRequest, Message, TranslationPolicy } from "../canonical/request.ts";
-import type { Part } from "../canonical/parts.ts";
-import { UnsupportedFeatureError } from "../errors.ts";
+import type { CanonicalRequest, Message, TranslationPolicy } from "@inference-router/core/domain/canonical/request.ts";
+import type { Part } from "@inference-router/core/domain/canonical/parts.ts";
+import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 
 export type Feature =
   | "system"

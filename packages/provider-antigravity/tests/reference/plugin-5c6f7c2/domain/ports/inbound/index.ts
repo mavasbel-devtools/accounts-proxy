@@ -1,5 +1,5 @@
-import type { Account } from '../../../domain/entities/Account.ts'
-import type { QuotaSnapshot } from '../../../domain/entities/QuotaSnapshot.ts'
+import type { Account } from '@antigravity/domain/entities/Account.ts'
+import type { QuotaSnapshot } from '@antigravity/domain/entities/QuotaSnapshot.ts'
 
 export interface LoginResult {
   readonly account: Account

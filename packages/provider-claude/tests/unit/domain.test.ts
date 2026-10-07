@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "../../src/domain/catalog.ts";
-import { AUTHORIZE_SCOPES, REFRESH_SCOPES } from "../../src/domain/constants.ts";
-import { fromAccount, hasScope, isExpired, toAccount, tokensFromResponse, type ClaudeTokens } from "../../src/domain/credential.ts";
-import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "../../src/domain/model-envelope.ts";
-import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "../../src/domain/request-transform.ts";
+import { isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
+import { AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
+import { fromAccount, hasScope, isExpired, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
+import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "@inference-router/provider-claude/domain/request-transform.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const json = <T>(name: string): T => JSON.parse(readFileSync(join(fixtures, name), "utf8")) as T;

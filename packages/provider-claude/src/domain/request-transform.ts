@@ -12,8 +12,8 @@ import {
   CLAUDE_ENTRYPOINT,
   CLAUDE_VERSION,
   SDK_PACKAGE_VERSION,
-} from "./constants.ts";
-import { envelopeFor, type CatalogModelEntry, type ThinkingSpec } from "./model-envelope.ts";
+} from "@inference-router/provider-claude/domain/constants.ts";
+import { envelopeFor, type CatalogModelEntry, type ThinkingSpec } from "@inference-router/provider-claude/domain/model-envelope.ts";
 
 export type WireBlock = { readonly type: string; readonly [key: string]: unknown };
 export type WireMessage = {

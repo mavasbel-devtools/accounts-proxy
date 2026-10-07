@@ -2,9 +2,9 @@
 // Plan D4: a subscription provider is usable only when `enabled: true` AND `acknowledgeTermsRisk: true`; enabling it
 // without the acknowledgement is a named configuration error. No file means every provider is disabled.
 // Plan E5: the default port is 4141 (measured free, outside every Windows excluded range).
-import { isJsonObject } from "./json.ts";
-import { isProviderId, PROVIDER_IDS, type ProviderId } from "./models.ts";
-import { resolveModelAddress } from "./services/model-address.ts";
+import { isJsonObject } from "@inference-router/core/domain/json.ts";
+import { isProviderId, PROVIDER_IDS, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
 
 export class ConfigError extends Error {
   constructor(message: string) {

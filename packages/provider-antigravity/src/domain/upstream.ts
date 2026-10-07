@@ -2,7 +2,7 @@
 // Sources: opencode-antigravity-auth @ 5c6f7c2 AntigravityApiClientAdapter.ts (outer envelope, non-response law 10,
 // dual transport law 3) and StreamChatUseCase.ts (transient geo-gate law 14).
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { StreamEnvelope } from "./generate.ts";
+import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 
 const PROVIDER = "antigravity";
 

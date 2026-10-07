@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { upsertAccount, EMPTY_POOL, activeAccount } from "../../../core/src/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "../../../core/src/domain/errors.ts";
-import { readAll } from "../../../core/src/domain/wire.ts";
+import { upsertAccount, EMPTY_POOL, activeAccount } from "@inference-router/core/domain/accounts.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { readAll } from "@inference-router/core/domain/wire.ts";
 import {
   collect,
   FixedClock,
@@ -14,16 +14,16 @@ import {
   ScriptedTransport,
   SequenceRandom,
   type ScriptedResponse,
-} from "../../../../tests/support/fakes.ts";
-import { CATALOG_KEY, ClaudeCatalog } from "../../src/adapters/outbound/claude-catalog.ts";
-import { ClaudeIdentity, DEVICE_ID_KEY } from "../../src/adapters/outbound/claude-identity.ts";
-import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "../../src/adapters/outbound/claude-oauth-client.ts";
-import { ClaudeSession, REFRESH_LOCK } from "../../src/adapters/outbound/claude-session.ts";
-import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "../../src/adapters/outbound/claude-subscription-provider.ts";
-import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "../../src/domain/constants.ts";
-import { fromAccount, toAccount, type ClaudeTokens } from "../../src/domain/credential.ts";
-import { STATIC_CATALOG } from "../../src/domain/model-envelope.ts";
-import { ClaudeCatalogPort, ClaudeOAuthPort, ClaudeSessionPort } from "../../src/ports/outbound/claude.ts";
+} from "@inference-router/test-support/fakes.ts";
+import { CATALOG_KEY, ClaudeCatalog } from "@inference-router/provider-claude/adapters/outbound/claude-catalog.ts";
+import { ClaudeIdentity, DEVICE_ID_KEY } from "@inference-router/provider-claude/adapters/outbound/claude-identity.ts";
+import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-claude/adapters/outbound/claude-oauth-client.ts";
+import { ClaudeSession, REFRESH_LOCK } from "@inference-router/provider-claude/adapters/outbound/claude-session.ts";
+import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
+import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@inference-router/provider-claude/domain/constants.ts";
+import { fromAccount, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
+import { STATIC_CATALOG } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import { ClaudeCatalogPort, ClaudeOAuthPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");

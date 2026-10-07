@@ -1,4 +1,4 @@
-import type { QuotaSnapshot } from '../../domain/entities/QuotaSnapshot.ts'
+import type { QuotaSnapshot } from '@antigravity/domain/entities/QuotaSnapshot.ts'
 
 /** Maps the captured `retrieveUserQuotaSummary` response into a snapshot. */
 export function toQuotaSnapshot(raw: Record<string, unknown>, capturedAt: number): QuotaSnapshot {

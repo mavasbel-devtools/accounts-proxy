@@ -4,9 +4,9 @@
 import type { JsonObject } from "@inference-router/core/domain/json.ts";
 import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
 import type { RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import { SIGNATURE_CAP } from "../../domain/constants.ts";
-import { isSessionId, mintSessionId } from "../../domain/trajectory.ts";
-import { AntigravityStatePort } from "../../ports/outbound/antigravity.ts";
+import { SIGNATURE_CAP } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { isSessionId, mintSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+import { AntigravityStatePort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 export const SESSION_ID_KEY = "antigravity/session-id";
 export const SIGNATURES_KEY = "antigravity/thought-signatures";

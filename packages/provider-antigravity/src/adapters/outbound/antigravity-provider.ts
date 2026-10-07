@@ -8,8 +8,8 @@ import type { ModelInfo } from "@inference-router/core/domain/models.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import { advertisedLimits } from "../../domain/catalog.ts";
-import type { AntigravityCatalogPort } from "../../ports/outbound/antigravity.ts";
+import { advertisedLimits } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import type { AntigravityCatalogPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 const PENDING = "antigravity (request cells arrive in P4/P5)";
 
