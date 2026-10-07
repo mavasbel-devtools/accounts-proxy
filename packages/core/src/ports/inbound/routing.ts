@@ -1,7 +1,7 @@
 // Inbound (driving) ports implemented by the router's application services and called by the HTTP adapter.
 import type { CanonicalEvent } from "../../domain/canonical/events.ts";
 import type { CanonicalRequest, TranslationPolicy } from "../../domain/canonical/request.ts";
-import type { Dialect, ModelInfo } from "../../domain/models.ts";
+import type { Dialect, ModelInfo, ProviderId } from "../../domain/models.ts";
 import type { Feature } from "../../domain/services/feature-support.ts";
 import type { HttpResponse, RawRequest } from "../../domain/wire.ts";
 
@@ -21,7 +21,8 @@ export abstract class CountTokensPort {
 }
 
 export abstract class ListModelsPort {
-  abstract listModels(): Promise<readonly ModelInfo[]>;
+  /** Models of every enabled provider, or of one provider. */
+  abstract listModels(provider?: ProviderId): Promise<readonly ModelInfo[]>;
 }
 
 export abstract class PassthroughPort {

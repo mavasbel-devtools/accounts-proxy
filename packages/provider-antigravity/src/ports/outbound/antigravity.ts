@@ -1,6 +1,7 @@
 // Provider-internal abstractions. Every Antigravity adapter depends only on these and the core ports;
 // composition wires the implementations.
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
+import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import type { AntigravityAccount, AuthTokens } from "../../domain/account.ts";
 import type { ModelDescriptor } from "../../domain/catalog.ts";
 import type { ChatChunk, ChatRequest, StreamEnvelope } from "../../domain/generate.ts";
@@ -48,6 +49,7 @@ export abstract class AntigravityChatPort {
   abstract stream(request: ChatRequest): AsyncIterable<ChatChunk>;
 }
 
-export abstract class AntigravityQuotaPort {
-  abstract usage(): Promise<UsageView>;
+/** A usage reporter whose report also carries the structured per-group view. */
+export abstract class AntigravityQuotaPort extends UsageReporterPort {
+  abstract override usage(): Promise<UsageView>;
 }

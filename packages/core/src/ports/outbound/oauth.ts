@@ -42,6 +42,11 @@ export abstract class CallbackServerPort {
   abstract stop(): Promise<void>;
 }
 
+/** A fresh loopback listener per login (a listener serves exactly one authorization). */
+export abstract class CallbackServerFactoryPort {
+  abstract create(): CallbackServerPort;
+}
+
 /** Headless fallback: obtain the code the provider's page displays. */
 export abstract class ManualCodePort {
   abstract prompt(authorizeUrl: string): Promise<string>;

@@ -5,6 +5,8 @@ import { AntigravityQuotaPort, type AntigravityApiPort, type AntigravitySessionP
 import { withActive } from "./with-active.ts";
 
 export class AntigravityQuota extends AntigravityQuotaPort {
+  readonly provider = "antigravity";
+
   constructor(
     private readonly api: AntigravityApiPort,
     private readonly session: AntigravitySessionPort,

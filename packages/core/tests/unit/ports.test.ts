@@ -8,6 +8,9 @@ import { CallbackServerPort, ManualCodePort, OAuthClientPort } from "../../src/p
 import { ProviderPort } from "../../src/ports/outbound/provider.ts";
 import { BrowserLauncherPort, ClockPort, HashPort, LockPort, LoggerPort, RandomPort, TimerPort } from "../../src/ports/outbound/system.ts";
 import { KeyValueStorePort } from "../../src/ports/outbound/state.ts";
+import { UsageReporterPort } from "../../src/ports/outbound/usage.ts";
+import { CallbackServerFactoryPort } from "../../src/ports/outbound/oauth.ts";
+import { UsagePort } from "../../src/ports/inbound/accounts.ts";
 import { HttpTransportPort } from "../../src/ports/outbound/transport.ts";
 
 class FixedClock extends ClockPort {
@@ -39,6 +42,9 @@ describe("ports", () => {
       HttpTransportPort,
       KeyValueStorePort,
       TimerPort,
+      UsageReporterPort,
+      CallbackServerFactoryPort,
+      UsagePort,
     ];
     for (const Port of ports) {
       const Impl = class extends (Port as unknown as new () => object) {};

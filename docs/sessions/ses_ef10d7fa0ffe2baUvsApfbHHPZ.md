@@ -20,6 +20,20 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
   F7 64-hex device id (official iD()), F8 own-property model lookup; D-4 (client anthropic-beta merge) deferred to
   P0-LIVE. Unit gate 100% (577/577 st, 454/454 br, 120/120 fn, 472/472 ln). Spec/fixture bytes verified after commit.
 
+- 2026-10-07 P3b provider-antigravity (commit 7ea0f35): parity vs opencode-antigravity-auth@5c6f7c2 (catalog,
+  project, quota, trajectory, generate, captured stream); fixes G2 locked single-flight refresh, G5 proactive refresh
+  on chat, G6 429→quota_exhausted (no rotation); A1–A5 documented in PROVENANCE.md. Native Gemini cell mapping,
+  body-embedded quota and RetryInfo wait on P0-LIVE. Unit gate 100% (1125 st, 941 br, 244 fn, 921 ln; 260 tests).
+- Note: opencode-antigravity-auth AGENTS.md wire law 13 still describes "gemini → -1"; its code (and memory #932)
+  is catalog-exact. Doc drift in that repo, not touched (out of scope until P8).
+
+- 2026-10-07 P3c router app: config (strict router.yaml, D4 opt-in), LoginService (loopback browser login, PKCE
+  only where the provider uses it, --manual paste-code for Claude), account/usage/models services, file stores
+  (atomic, 0600, corrupt = error), FileLock (O_EXCL, stale break, timeout), FetchTransport, loopback listener (holds
+  the browser request until the outcome), CLI driver + composition + bin. Unit gate 100% (1545 st, 1162 br, 347 fn,
+  1276 ln; 340 tests). Then alias-imports plan docs/plans/2026-10-07-00-31-alias-imports-plan.md (approved: A /
+  scripts yes / byte-identical references); step-0 probes all passed (see plan §2).
+
 ## Progress map
 | Phase | State |
 |---|---|
@@ -27,5 +41,5 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
 | P0-E2/E3/E4 | waiting on the P0-LIVE gate (needs the user's browser logins after P3) |
 | P1 | done |
 | P2 | done |
-| P3 | provider-claude done; provider-antigravity next; then router login CLI + outbound adapters |
+| P3 | provider-claude done; provider-antigravity done; next: router app (login/account/quota CLI, file stores, lock, transport, loopback, composition) |
 | P4–P10 | not started |

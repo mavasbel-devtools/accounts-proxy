@@ -5,6 +5,9 @@
   "license": "MIT",
   "type": "module",
   "description": "The inference-router daemon and CLI (application services, HTTP/CLI adapters, composition root).",
+  "bin": {
+    "inference-router": "./src/main/cli.ts"
+  },
   "exports": {
     "./*": "./src/*"
   },

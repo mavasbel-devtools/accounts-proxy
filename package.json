@@ -20,7 +20,8 @@
     "test:live": "bun scripts/gate/run-tests.ts live",
     "lint:docs": "bun scripts/gate/lint-docs.ts",
     "verify": "bun scripts/gate/verify.ts",
-    "fetch:specs": "bun scripts/evidence/fetch-specs.ts"
+    "fetch:specs": "bun scripts/evidence/fetch-specs.ts",
+    "router": "bun apps/router/src/main/cli.ts"
   },
   "devDependencies": {
     "@babel/core": "8.0.1",
