@@ -7,6 +7,8 @@ export type HttpRequest = {
   readonly url: string;
   readonly headers: Headers;
   readonly body?: string;
+  /** Abort the request (including the body read) after this many milliseconds. */
+  readonly timeoutMs?: number;
 };
 
 export type HttpResponse = {
@@ -14,6 +16,19 @@ export type HttpResponse = {
   readonly headers: Headers;
   readonly body: AsyncIterable<Uint8Array>;
 };
+
+/** Drain a streaming body into one UTF-8 string (for small responses: token endpoints, catalogs, errors). */
+export async function readAll(body: AsyncIterable<Uint8Array>): Promise<string> {
+  const decoder = new TextDecoder();
+  let text = "";
+  for await (const chunk of body) text += decoder.decode(chunk, { stream: true });
+  return text + decoder.decode();
+}
+
+/** A one-shot body, e.g. for a locally generated response. */
+export async function* bodyOf(text: string): AsyncIterable<Uint8Array> {
+  yield new TextEncoder().encode(text);
+}
 
 /** A client request received on a native route, forwarded without canonical translation. */
 export type RawRequest = {

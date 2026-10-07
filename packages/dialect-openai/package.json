@@ -6,7 +6,7 @@
   "type": "module",
   "description": "OpenAI Chat Completions dialect codec (inbound adapters).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@inference-router/core": "workspace:*"

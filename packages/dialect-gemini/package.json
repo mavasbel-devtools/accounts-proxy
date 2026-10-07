@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Gemini generateContent dialect codec (inbound adapters).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@inference-router/core": "workspace:*"

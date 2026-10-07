@@ -19,6 +19,7 @@ import { formatModelAddress, isProviderId, PROVIDER_IDS } from "../../src/domain
 import { base64UrlEncode } from "../../src/domain/services/base64url.ts";
 import { resolveModelAddress } from "../../src/domain/services/model-address.ts";
 import { mergeUsage, ZERO_USAGE } from "../../src/domain/services/usage.ts";
+import { bodyOf, readAll } from "../../src/domain/wire.ts";
 
 describe("json", () => {
   test("isJsonObject accepts plain objects only", () => {
@@ -134,6 +135,22 @@ describe("base64url (RFC 4648 §10 test vectors, unpadded, url alphabet)", () =>
       112, 249, 195,
     ]);
     expect(base64UrlEncode(digest)).toBe("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
+  });
+});
+
+describe("wire bodies", () => {
+  test("readAll decodes UTF-8 split across chunks; bodyOf yields one chunk", async () => {
+    const bytes = new TextEncoder().encode("añ€");
+    async function* split() {
+      yield bytes.slice(0, 2);
+      yield bytes.slice(2, 4);
+      yield bytes.slice(4);
+    }
+    expect(await readAll(split())).toBe("añ€");
+    const chunks: Uint8Array[] = [];
+    for await (const c of bodyOf("añ€")) chunks.push(c);
+    expect(chunks).toHaveLength(1);
+    expect(await readAll(bodyOf("añ€"))).toBe("añ€");
   });
 });
 

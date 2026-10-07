@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Google Antigravity provider (outbound adapters).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@inference-router/core": "workspace:*"

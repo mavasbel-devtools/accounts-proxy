@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Claude subscription provider (outbound adapters).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@inference-router/core": "workspace:*"

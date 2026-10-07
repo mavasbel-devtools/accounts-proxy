@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Canonical domain model, errors and ports (stdlib only).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {}
 }

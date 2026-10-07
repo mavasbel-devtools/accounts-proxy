@@ -1,0 +1,110 @@
+{
+  "claude-fable-5": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,mid-conversation-system-2026-04-07,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,server-side-fallback-2026-07-01,fallback-credit-2026-06-01,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 64000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  },
+  "claude-haiku-4-5-20251001": {
+    "betaHeader": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "budget_tokens": 31999,
+      "type": "enabled",
+      "display": "omitted"
+    },
+    "maxTokens": 32000,
+    "outputConfig": null
+  },
+  "claude-opus-4-5-20251101": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "budget_tokens": 31999,
+      "type": "enabled",
+      "display": "omitted"
+    },
+    "maxTokens": 32000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  },
+  "claude-opus-4-6": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 64000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  },
+  "claude-opus-4-7": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 64000,
+    "outputConfig": {
+      "effort": "xhigh"
+    }
+  },
+  "claude-opus-5": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,mid-conversation-system-2026-04-07,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,fallback-credit-2026-06-01,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 64000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  },
+  "claude-sonnet-4-5": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "budget_tokens": 31999,
+      "type": "enabled",
+      "display": "omitted"
+    },
+    "maxTokens": 32000,
+    "outputConfig": null
+  },
+  "claude-sonnet-4-5-20250929": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "budget_tokens": 31999,
+      "type": "enabled",
+      "display": "omitted"
+    },
+    "maxTokens": 32000,
+    "outputConfig": null
+  },
+  "claude-sonnet-4-6": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 32000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  },
+  "claude-sonnet-5": {
+    "betaHeader": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,mid-conversation-system-2026-04-07,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,effort-2025-11-24,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+    "thinking": {
+      "type": "adaptive",
+      "display": "omitted"
+    },
+    "maxTokens": 64000,
+    "outputConfig": {
+      "effort": "high"
+    }
+  }
+}

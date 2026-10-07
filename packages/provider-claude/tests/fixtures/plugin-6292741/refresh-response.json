@@ -1,0 +1,17 @@
+{
+  "token_type": "Bearer",
+  "access_token": "sk-ant-oat01-REDACTED",
+  "expires_in": 28800,
+  "refresh_token": "sk-ant-oat01-REDACTED",
+  "scope": "user:file_upload user:inference user:mcp_servers user:profile user:sessions:claude_code",
+  "token_uuid": "05f0f488-a280-461a-aac6-9504ca06968d",
+  "refresh_token_expires_in": 1483045,
+  "organization": {
+    "uuid": "e7ac4584-ce93-4714-9ffb-0553b2897eea",
+    "name": "<account-email>'s Organization"
+  },
+  "account": {
+    "uuid": "00000000-0000-4000-8000-000000000000",
+    "email_address": "<account-email>"
+  }
+}

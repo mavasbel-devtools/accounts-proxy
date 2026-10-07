@@ -6,7 +6,7 @@
   "type": "module",
   "description": "The inference-router daemon and CLI (application services, HTTP/CLI adapters, composition root).",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*"
   },
   "dependencies": {
     "@inference-router/core": "workspace:*",

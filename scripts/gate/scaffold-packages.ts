@@ -1,6 +1,6 @@
 // One-shot P1 scaffold: writes each workspace package's package.json and its tests/{unit,component,live,e2e}
 // skeleton. Idempotent: an existing package.json is left untouched, so it is safe to re-run.
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..", "..");
@@ -34,7 +34,15 @@ for (const pkg of packages) {
     if (!existsSync(keep)) writeFileSync(keep, "");
   }
   const manifest = join(dir, "package.json");
-  if (existsSync(manifest)) continue;
+  if (existsSync(manifest)) {
+    const current = JSON.parse(readFileSync(manifest, "utf8")) as { exports?: Record<string, string> };
+    if (current.exports?.["./*"] === "./src/*.ts") {
+      current.exports = { "./*": "./src/*" };
+      writeFileSync(manifest, JSON.stringify(current, null, 2) + "\n");
+      console.log(`fixed exports of ${pkg.dir}`);
+    }
+    continue;
+  }
   writeFileSync(
     manifest,
     JSON.stringify(
@@ -45,7 +53,8 @@ for (const pkg of packages) {
         license: "MIT",
         type: "module",
         description: pkg.description,
-        exports: { "./*": "./src/*.ts" },
+        // Specifiers carry the .ts extension (`@inference-router/core/domain/wire.ts`), so the pattern must not add one.
+        exports: { "./*": "./src/*" },
         dependencies: Object.fromEntries(pkg.dependencies.map((name) => [name, "workspace:*"])),
       },
       null,
