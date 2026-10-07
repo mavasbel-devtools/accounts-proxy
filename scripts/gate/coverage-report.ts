@@ -18,6 +18,14 @@ export function loadMaps(files: readonly string[]): CoverageMap {
   return map;
 }
 
+/** Restrict a map to one workspace (`packages/<name>` or `apps/<name>`), for scoped development runs. */
+export function scopeMap(map: CoverageMap, workspace: string): CoverageMap {
+  const prefix = key(join(repositoryRoot, workspace, "src")) + "\\";
+  const unix = prefix.replaceAll("\\", "/");
+  map.filter((file) => key(file).startsWith(prefix) || key(file).startsWith(unix));
+  return map;
+}
+
 function sourceFiles(): string[] {
   const found: string[] = [];
   const walk = (dir: string): void => {
@@ -43,12 +51,16 @@ export function hasRuntimeCode(source: string): boolean {
 
 const key = (path: string): string => resolve(path).toLowerCase();
 
-export function missingRuntimeSources(map: CoverageMap): string[] {
+export function missingRuntimeSources(map: CoverageMap, workspace?: string): string[] {
   const covered = new Set(map.files().map(key));
-  return sourceFiles().filter((file) => !covered.has(key(file)) && hasRuntimeCode(readFileSync(file, "utf8")));
+  const scope = workspace === undefined ? undefined : key(join(repositoryRoot, workspace, "src"));
+  return sourceFiles().filter(
+    (file) =>
+      (scope === undefined || key(file).startsWith(scope)) && !covered.has(key(file)) && hasRuntimeCode(readFileSync(file, "utf8")),
+  );
 }
 
-export function report(map: CoverageMap, outputDirectory: string, label: string): string[] {
+export function report(map: CoverageMap, outputDirectory: string, label: string, workspace?: string): string[] {
   mkdirSync(outputDirectory, { recursive: true });
   writeFileSync(join(outputDirectory, "coverage-final.json"), JSON.stringify(map.toJSON()));
   const context = createContext({ dir: outputDirectory, coverageMap: map });
@@ -59,6 +71,6 @@ export function report(map: CoverageMap, outputDirectory: string, label: string)
   for (const metric of METRICS) {
     if (summary[metric].pct !== 100) failures.push(`${label}: ${metric} ${summary[metric].covered}/${summary[metric].total} (${summary[metric].pct}%)`);
   }
-  for (const file of missingRuntimeSources(map)) failures.push(`${label}: never loaded by any test: ${file}`);
+  for (const file of missingRuntimeSources(map, workspace)) failures.push(`${label}: never loaded by any test: ${file}`);
   return failures;
 }

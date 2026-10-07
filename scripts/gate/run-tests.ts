@@ -3,10 +3,11 @@
 //   coverage — the same set under istanbul instrumentation, then the 100% + completeness gate
 //   e2e      — every workspace's tests/e2e (daemons inherit INFERENCE_ROUTER_E2E_COVERAGE_DIR), then the gate
 //   live     — every workspace's tests/live with INFERENCE_ROUTER_LIVE=1 (real accounts; never part of verify)
+// Options: --workspace <packages/x|apps/x> scopes unit/coverage to one workspace (development aid, not the gate).
 // Exit codes: 0 pass, 1 fail, 3 incomplete (the tier has no test files yet — reported, never treated as a pass).
 import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { loadMaps, report } from "./coverage-report.ts";
+import { loadMaps, report, scopeMap } from "./coverage-report.ts";
 import { repositoryRoot } from "./instrument.ts";
 
 export const INCOMPLETE = 3;
@@ -46,14 +47,19 @@ function gate(files: string[], outputDirectory: string, label: string): number {
   return failures.length === 0 ? 0 : 1;
 }
 
-async function main(mode: string | undefined): Promise<number> {
+async function main(mode: string | undefined, workspace: string | undefined): Promise<number> {
   const coverageRoot = join(repositoryRoot, "coverage");
-  if (mode === "unit") return bunTest(tierDirectories(["unit", "component"], true), {});
+  const scoped = (tiers: string[]) =>
+    workspace === undefined
+      ? tierDirectories(tiers, true)
+      : tiers.map((t) => join(repositoryRoot, workspace, "tests", t)).filter(containsTests);
+  if (mode === "unit") return bunTest(scoped(["unit", "component"]), {});
   if (mode === "coverage") {
-    const raw = join(coverageRoot, "unit", "raw.json");
-    rmSync(join(coverageRoot, "unit"), { recursive: true, force: true });
-    const dirs = tierDirectories(["unit", "component"], true);
-    const code = await bunTest(["--preload", join(import.meta.dir, "unit-coverage-preload.ts"), ...dirs], {
+    // A --workspace run is a development aid scoped to one workspace's sources; only the unscoped run is the gate.
+    const outDir = workspace === undefined ? join(coverageRoot, "unit") : join(coverageRoot, "scoped", workspace.replaceAll("/", "-"));
+    const raw = join(outDir, "raw.json");
+    rmSync(outDir, { recursive: true, force: true });
+    const code = await bunTest(["--preload", join(import.meta.dir, "unit-coverage-preload.ts"), ...scoped(["unit", "component"])], {
       INFERENCE_ROUTER_UNIT_COVERAGE_FILE: raw,
     });
     if (code !== 0) return code;
@@ -61,7 +67,11 @@ async function main(mode: string | undefined): Promise<number> {
       console.error("COVERAGE GATE FAIL — unit raw coverage file was not written");
       return 1;
     }
-    return gate([raw], join(coverageRoot, "unit"), "unit");
+    if (workspace === undefined) return gate([raw], outDir, "unit");
+    const failures = report(scopeMap(loadMaps([raw]), workspace), outDir, `unit[${workspace}]`, workspace);
+    for (const failure of failures) console.error(`COVERAGE GATE FAIL — ${failure}`);
+    if (failures.length === 0) console.log(`unit[${workspace}]: scoped coverage PASS (100%, complete)`);
+    return failures.length === 0 ? 0 : 1;
   }
   if (mode === "e2e") {
     const dirs = tierDirectories(["e2e"], false);
@@ -92,4 +102,7 @@ async function main(mode: string | undefined): Promise<number> {
   return 2;
 }
 
-if (import.meta.main) process.exit(await main(process.argv[2]));
+if (import.meta.main) {
+  const at = process.argv.indexOf("--workspace");
+  process.exit(await main(process.argv[2], at > 0 ? process.argv[at + 1] : undefined));
+}
