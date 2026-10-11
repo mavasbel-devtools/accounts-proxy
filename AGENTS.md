@@ -5,7 +5,7 @@ Research: [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/
 
 ## 1. What this is
 A local daemon on `127.0.0.1` that exposes the Anthropic Messages, OpenAI Chat Completions and Gemini `generateContent`
-dialects. It routes each request to one of two subscription providers: `claude-subscription` (Anthropic Messages upstream)
+dialects. It routes each request to one of two subscription providers: `claude` (Anthropic Messages upstream)
 and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-key providers (user decision 2026-10-06).
 
 ## 2. Architecture law (enforced by `tests/arch/architecture.test.ts`; part of `verify`)

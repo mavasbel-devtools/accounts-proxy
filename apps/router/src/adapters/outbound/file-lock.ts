@@ -6,6 +6,7 @@ import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { LockPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { ClockPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
+import { PRIVATE_DIRECTORY_MODE, PRIVATE_FILE_MODE } from "@inference-router/router/adapters/outbound/file-stores.ts";
 
 export class LockTimeoutError extends Error {
   constructor(readonly path: string, timeoutMs: number) {
@@ -45,11 +46,11 @@ export class FileLock extends LockPort {
 
   private async holdFile<T>(name: string, work: () => Promise<T>): Promise<T> {
     const path = join(this.directory, "locks", `${name}.lock`);
-    await this.fs.mkdir(join(this.directory, "locks"), { recursive: true });
+    await this.fs.mkdir(join(this.directory, "locks"), { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
     const deadline = this.clock.now() + this.options.timeoutMs;
     for (;;) {
       try {
-        const handle = await this.fs.open(path, "wx");
+        const handle = await this.fs.open(path, "wx", PRIVATE_FILE_MODE);
         await handle.writeFile(`${process.pid} ${this.clock.now()}\n`);
         await handle.close();
         break;

@@ -1,7 +1,7 @@
 // Provider and model identity shared by every layer.
 
-export type ProviderId = "claude-subscription" | "antigravity";
-export const PROVIDER_IDS: readonly ProviderId[] = ["claude-subscription", "antigravity"];
+export type ProviderId = "claude" | "antigravity";
+export const PROVIDER_IDS: readonly ProviderId[] = ["claude", "antigravity"];
 
 export type Dialect = "anthropic" | "openai" | "gemini";
 

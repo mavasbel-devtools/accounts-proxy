@@ -4,6 +4,7 @@ Date: 2026-10-05 20:07 · Status: RESEARCH (no plan locked, no code written)
 Scope: `AIML/tools/opencode-antigravity-auth` (HEAD 5c6f7c2), `opencode-claude-auth` (HEAD 6292741),
 `opencode-cheaper-inference-auth` (HEAD f2c5e23). All three were read in full (src/, AGENTS.md, package.json, test/).
 Every code claim below carries `file:line` from that read. Anything not verified is labelled **UNVERIFIED**.
+Note 2026-10-10: since the Linux migration the plugin repos are `/home/mavasbel/Dev/repos/opencode/<repo>`; the commits cited here are present there.
 
 ---
 

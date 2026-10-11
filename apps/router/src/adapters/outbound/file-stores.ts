@@ -3,7 +3,8 @@
 //   state/<key>.json           small provider state (device/session ids, catalog cache, thought signatures)
 // Writes are atomic (temp file in the same directory + rename). A UTF-8 BOM is tolerated on read (lesson of the
 // source plugin's 2026-08-28 BOM incident). A corrupt file is an error, never silently treated as empty — an empty
-// pool written back would destroy the user's accounts.
+// pool written back would destroy the user's accounts. Directories the router creates are 0700 (owner only), like
+// ~/.ssh: they hold credentials. `mode` applies only to directories mkdir creates; an existing one is left as it is.
 import { randomBytes } from "node:crypto";
 import * as nodeFs from "node:fs/promises";
 import { readFile } from "node:fs/promises";
@@ -13,6 +14,9 @@ import { isJsonObject, type JsonValue } from "@inference-router/core/domain/json
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
+
+export const PRIVATE_DIRECTORY_MODE = 0o700;
+export const PRIVATE_FILE_MODE = 0o600;
 
 export class StoreCorruptError extends Error {
   constructor(readonly path: string, detail: string) {
@@ -40,7 +44,7 @@ async function readJson(path: string): Promise<unknown> {
 export type AtomicWriteFs = Pick<typeof nodeFs, "mkdir" | "writeFile" | "rename" | "unlink">;
 
 export async function writeJsonAtomic(path: string, value: unknown, mode: number, fs: AtomicWriteFs = nodeFs): Promise<void> {
-  await fs.mkdir(dirname(path), { recursive: true });
+  await fs.mkdir(dirname(path), { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
   const temp = `${path}.${randomBytes(6).toString("hex")}.tmp`;
   try {
     await fs.writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", mode });
@@ -76,7 +80,7 @@ export class FileCredentialStore extends CredentialStorePort {
   }
 
   save(provider: ProviderId, pool: AccountPool): Promise<void> {
-    return writeJsonAtomic(this.path(provider), pool, 0o600);
+    return writeJsonAtomic(this.path(provider), pool, PRIVATE_FILE_MODE);
   }
 }
 
@@ -97,6 +101,6 @@ export class FileKeyValueStore extends KeyValueStorePort {
   }
 
   write(key: string, value: JsonValue): Promise<void> {
-    return writeJsonAtomic(this.path(key), value, 0o600);
+    return writeJsonAtomic(this.path(key), value, PRIVATE_FILE_MODE);
   }
 }

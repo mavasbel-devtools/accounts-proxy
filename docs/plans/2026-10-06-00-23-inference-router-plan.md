@@ -1,6 +1,18 @@
 # PLAN — `inference-router`: local multi-dialect LLM router built from the mavasbel auth plugins
 
-Date: 2026-10-06 00:23 · Status: **LOCKED v3 — APPROVED 2026-10-06 ("Confirmed. Could we proceed?") — IN EXECUTION**
+Date: 2026-10-06 00:23 · Status: **LOCKED v3.1 — APPROVED 2026-10-06 ("Confirmed. Could we proceed?") — IN EXECUTION**
+
+## Changes v3 → v3.1 (user, 2026-10-10)
+- **Provider id `claude-subscription` → `claude`.** No alias is kept. `antigravity` is unchanged. Commands are `inference-router login claude` / `login antigravity`; the config key is `claude:`; model addresses are `claude/<model-id>`; files are `accounts-claude.json` and `state/claude/...`. The module `claude-subscription-provider.ts` and the class `ClaudeSubscriptionProvider` keep their names: they describe the credential source, not the id.
+- **Machine migration Windows → Linux.** Validation evidence: [docs/reference/2026-10-10-18-45-linux-migration-validation.md](../reference/2026-10-10-18-45-linux-migration-validation.md).
+
+| Item | Before (Windows) | Now (Linux, measured 2026-10-10) |
+|---|---|---|
+| Repo | `C:\Users\Marco\Dev\AIML\inference-router` | `/home/mavasbel/Dev/repos/inference-router` |
+| Plugin repos | `…\Dev\AIML\tools\opencode-{claude,antigravity}-auth` | `/home/mavasbel/Dev/repos/opencode/opencode-{claude,antigravity}-auth` (pinned commits `6292741`, `5c6f7c2` present) |
+| Data directory | `~/.local/share/inference-router/` | same path under `/home/mavasbel` |
+| Scratch directory | `%TEMP%\opencode` | `/tmp/opencode` |
+| Pre-repo docs (`AIML/tools/docs/…`: v1 plan, first session record) | present | **not present on this machine**; the repo's own `docs/` holds the plan, research and session record |
 
 ## Changes v2 → v3 (user, 2026-10-06)
 - **C1 confirmed:** no API-key providers at all (Cheaper excluded); OpenAI dialect has only translated cells.
@@ -16,9 +28,9 @@ Research basis: `docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md`
 | v1 item | User answer | Effect in v2 |
 |---|---|---|
 | D1–D9 | "Ok" | Accepted as written, with the edits below. |
-| §5.2 subscription providers | "turned on" | `claude-subscription` and `antigravity` are both **in scope and enabled** in this machine's config. The code default stays disabled, gated by `acknowledgeTermsRisk: true`. |
+| §5.2 subscription providers | "turned on" | `claude` and `antigravity` are both **in scope and enabled** in this machine's config. The code default stays disabled, gated by `acknowledgeTermsRisk: true`. |
 | §5.2 API-key providers | "no API keys" | **No API-key provider in scope.** Removed: `AnthropicApiKeyProvider`, `provider-openai-compat`, the `cheaper` instance, and the `catalog` package, whose only consumer was the key-provider path. The matrix shrinks from 3×3 to 3×2. Cheaper Inference is also an API-key provider, so it is excluded under this reading. **Confirm item C1.** |
-| §5.3 name and location | `inference-router` in `AIML/inference-router` | Repo `C:\Users\Marco\Dev\AIML\inference-router`, package scope `@inference-router/*`, CLI `inference-router`, private GitHub repo `mavasbel/inference-router`, data directory `~/.local/share/inference-router/`, live flag `INFERENCE_ROUTER_LIVE=1`. The path was measured ABSENT on 2026-10-06 00:23. |
+| §5.3 name and location | `inference-router` in `AIML/inference-router` | Repo `C:\Users\Marco\Dev\AIML\inference-router`, package scope `@inference-router/*`, CLI `inference-router`, private GitHub repo `mavasbel/inference-router`, data directory `~/.local/share/inference-router/`, live flag `INFERENCE_ROUTER_LIVE=1`. The path was measured ABSENT on 2026-10-06 00:23. Since 2026-10-10 the repo is `/home/mavasbel/Dev/repos/inference-router` (v3.1). |
 
 ---
 
@@ -26,14 +38,14 @@ Research basis: `docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md`
 
 | # | Decision | Content |
 |---|---|---|
-| D1 | Reuse strategy | **R1, phased.** A new Bun-workspace monorepo at `AIML/inference-router`, with provider packages extracted from `opencode-claude-auth` @ `6292741` and `opencode-antigravity-auth` @ `5c6f7c2`. The shipped plugins stay **untouched** until the router is validated. Switching them to the packages is P8, behind its own approval gate. |
+| D1 | Reuse strategy | **R1, phased.** A new Bun-workspace monorepo (`/home/mavasbel/Dev/repos/inference-router` since v3.1), with provider packages extracted from `opencode-claude-auth` @ `6292741` and `opencode-antigravity-auth` @ `5c6f7c2`. The shipped plugins stay **untouched** until the router is validated. Switching them to the packages is P8, behind its own approval gate. |
 | D2 | Inbound dialects | **Anthropic Messages:** `POST /anthropic/v1/messages`, `POST /anthropic/v1/messages/count_tokens`, `GET /anthropic/v1/models`. **OpenAI Chat Completions:** `POST /openai/v1/chat/completions`, `GET /openai/v1/models`. **Gemini:** `POST /gemini/v1beta/models/{model}:generateContent`, `POST /gemini/v1beta/models/{model}:streamGenerateContent` (`?alt=sse`), `POST /gemini/v1beta/models/{model}:countTokens`, `GET /gemini/v1beta/models`. Also `GET /health`. The OpenAI Responses API is deferred (P10). |
 | D3 | Translation scope | All 6 cells (3 dialects × 2 providers). The 2 native cells are built first (P4), then the 4 translated cells (P5). Every mapping rule is written only from P0 specs and captures. **Strict by default:** an input feature the target cannot carry returns HTTP 400 `unsupported_feature`, naming the feature. **Lossy only on opt-in** through the request header `x-router-lossy: 1`; the response then carries `x-router-dropped: <comma-separated features>`. |
 | D4 | Subscription providers | Both are enabled in this machine's `config/router.yaml` with `acknowledgeTermsRisk: true` (the user accepted the ToS risk on 2026-10-06; the verbatim terms are in research §3). The code default is disabled: a provider without the flag fails to start with a named error. On 429 / `RESOURCE_EXHAUSTED` / quota, the router **passes the error back** in the client's dialect with `retry-after`. It **never** switches account automatically. The account is chosen manually with `inference-router account use <id>`. |
 | D5 | Credentials | The router keeps its **own** stores under `~/.local/share/inference-router/` and runs its own logins. It does not share `~/.claude/.credentials.json`, `antigravity-pool.json`, or opencode `auth.json` by default. Whether a shared mode is safe is decided only from the P0-E4 measurement. |
 | D6 | Local security | Binds `127.0.0.1` only. Every route except `GET /health` needs the router token: 32 random bytes, base64url, file `~/.local/share/inference-router/token`, printed by `inference-router token`, compared in constant time (`crypto.timingSafeEqual`). Accepted carriers, so stock SDKs work unchanged: `authorization: Bearer <t>` (OpenAI), `x-api-key: <t>` (Anthropic), `x-goog-api-key: <t>` or `?key=<t>` (Gemini). A missing or wrong token returns 401 in the requesting dialect's error shape. The port is fixed in config; the default value is chosen by P0-E5. |
 | D7 | HTTP server | `node:http`, the same server both existing relays use, so their tested request and stream code ports over without a rewrite. |
-| D8 | Model addressing | `<provider>/<model>`, e.g. `claude-subscription/claude-opus-4-8` or `antigravity/<wire-id>`. Optional bare-name aliases go in `config/router.yaml`. A bare name with no alias returns 404 `unknown_model`. On Gemini routes the `{model}` path segment carries the same id, URL-encoded. |
+| D8 | Model addressing | `<provider>/<model>`, e.g. `claude/claude-opus-4-8` or `antigravity/<wire-id>`. Optional bare-name aliases go in `config/router.yaml`. A bare name with no alias returns 404 `unknown_model`. On Gemini routes the `{model}` path segment carries the same id, URL-encoded. |
 | D9 | Repo hosting | Local git from the first commit. The private GitHub repo `mavasbel/inference-router` is created and pushed at the end of P1. |
 
 ### 0.1 Wire laws carried over verbatim (they must not regress)
@@ -50,7 +62,7 @@ Research basis: `docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md`
 
 ## 1. Provider × dialect matrix (v2)
 
-| Inbound dialect \ Provider | `claude-subscription` (Anthropic Messages upstream) | `antigravity` (Gemini envelope upstream; serves Gemini, Claude and gpt-oss models) |
+| Inbound dialect \ Provider | `claude` (Anthropic Messages upstream) | `antigravity` (Gemini envelope upstream; serves Gemini, Claude and gpt-oss models) |
 |---|---|---|
 | **Anthropic Messages** | **NATIVE** — passthrough through the claude envelope and guards; true SSE streaming (P4) | TRANSLATED (P5) |
 | **OpenAI Chat Completions** | TRANSLATED (P5) | TRANSLATED (P5) — the logic exists in the plugin relay (`OpenAICompatRelayAdapter.ts`) and is ported, not rewritten |
@@ -59,7 +71,7 @@ Research basis: `docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md`
 ## 2. Architecture (AGENTS.md §4: hexagonal, split inbound/outbound, SOLID, IoC, DI)
 
 ```
-AIML/inference-router/                  (Bun workspace)
+inference-router/                       (Bun workspace)
   packages/
     core/                               @inference-router/core — domain + ports, stdlib only
       src/domain/canonical/             CanonicalRequest, CanonicalMessage, Part (text | image |
@@ -146,11 +158,11 @@ AIML/inference-router/                  (Bun workspace)
   - Antigravity with a Gemini model and with a Claude-via-Antigravity model: the same three scenarios.
 - **E3 Fidelity matrix.** Measure each provider's acceptance of each canonical feature: images, documents, tool_choice modes, parallel tool calls, thinking/thought signatures, stop sequences, temperature/top_p/top_k, system placement, and cache_control. The result is `docs/reference/<ts>-fidelity-matrix.md`, the only source for the FeatureSupport tables.
 - **E4 Refresh-token rotation.** On the router's own fresh logins only, refresh once, then test whether the old refresh token still works, for both Claude and Google OAuth. This decides D5's shared mode.
-- **E5 Default port.** Choose it by `netstat` on this machine.
+- **E5 Default port.** Choose it by `netstat` on this machine. (4141, measured on Windows 2026-10-06; re-measured free on Linux 2026-10-10 with `ss -ltn`.)
 - **Exit:** all specs and captures are filed, and the matrix has no UNVERIFIED cell for the 2 native cells.
 
 ### P1 — Scaffold
-- Create `AIML/inference-router` and `git init`.
+- Create the repo directory and `git init` (done 2026-10-06 on Windows; moved to Linux 2026-10-10, see v3.1).
 - Set up the workspace, package and app skeletons, tsconfig project references, pins, the Babel/istanbul coverage scripts, the AST arch test, `removeTemporary`, and `verify`.
 - Write AGENTS.md (laws, including §0.1), README, `docs/architecture.drawio` plus mermaid diagrams, and `config/router.yaml`.
 - Copy this plan and the research into the repo's `docs/`.
@@ -169,11 +181,11 @@ AIML/inference-router/                  (Bun workspace)
   5. Antigravity: proactive refresh on the chat path (`StreamChatUseCase.ts:85`).
   6. Antigravity: map 429/`RESOURCE_EXHAUSTED` → `QuotaExhausted` with `retry-after`, and never rotate automatically (D4).
 - **Parity test.** For the same fixture input, the package's outbound request (method, URL, headers, body) equals the plugin's outbound request after masking random ids. A mismatch is a defect, not a tolerance, except for the intentional fixes 1–6, each listed explicitly in the test.
-- **CLI logins:** `inference-router login antigravity` (Google loopback) and `inference-router login claude` (PKCE paste-code). Both write only to the router's own stores (D5).
+- **CLI logins:** `inference-router login antigravity` (Google loopback) and `inference-router login claude` (PKCE with the browser loopback proven in P0-E6; paste-code only with `--manual`). Both write only to the router's own stores (D5).
 
 ### P4 — Daemon and the 2 native cells
 - HttpServerAdapter, AuthGuard (D6), route table (D2), model addressing (D8), `/health`, graceful stop on SIGINT/SIGTERM.
-- Cells: Anthropic → `claude-subscription` (passthrough, truly streamed); Gemini → `antigravity` (near-native).
+- Cells: Anthropic → `claude` (passthrough, truly streamed); Gemini → `antigravity` (near-native).
 - Models endpoints in all 3 dialects, from each provider's own catalog.
 - Component tests, plus e2e with the official SDKs against the daemon.
 
@@ -207,7 +219,7 @@ AIML/inference-router/                  (Bun workspace)
 - API-key providers (Anthropic key, OpenAI-compatible/Cheaper, Gemini key), with the `catalog` reconciliation package.
 
 ## 5. Rollback and safety
-- Until P8, nothing is modified outside `AIML/inference-router` and `AIML/tools/docs`. The global OpenCode config, the plugin repos and the deployed plugin files are untouched (memory #931).
+- Until P8, nothing is modified outside the repo (`/home/mavasbel/Dev/repos/inference-router`), the router's data directory and the scratch directory `/tmp/opencode`. The global OpenCode config, the plugin repos and the deployed plugin files are untouched (memory #931).
 - Router credentials live only in `~/.local/share/inference-router/`. Rollback means deleting that directory and the repo.
 - Live calls run only in P0-E2/E3/E4 and P6, with minimal prompts.
 - P0-E4 can invalidate a refresh token, so it runs only on the router's own fresh login, never on Claude Code's or the plugins' credentials.

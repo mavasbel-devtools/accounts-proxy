@@ -80,7 +80,7 @@ describe("ClaudeOAuthClient", () => {
   test("success redirect without user:inference goes to the console page; unreadable account too", () => {
     const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock);
     expect(client.successRedirect(toAccount({ accessToken: "a", expiresAt: 1, scopes: "org:create_api_key user:profile" }))).toBe(CONSOLE_SUCCESS_URL);
-    expect(client.successRedirect({ provider: "claude-subscription", id: "x", label: "x", data: {} })).toBe(CONSOLE_SUCCESS_URL);
+    expect(client.successRedirect({ provider: "claude", id: "x", label: "x", data: {} })).toBe(CONSOLE_SUCCESS_URL);
   });
 
   test("refresh body equals the captured refresh request (stored scopes verbatim), and default scopes when none stored", async () => {
@@ -116,7 +116,7 @@ describe("ClaudeOAuthClient", () => {
 });
 
 class StubOAuth extends ClaudeOAuthPort {
-  readonly provider = "claude-subscription";
+  readonly provider = "claude";
   readonly callbackPath = "/callback";
   readonly usesPkce = true;
   readonly manualRedirectUri = undefined;
@@ -143,7 +143,7 @@ describe("ClaudeSession", () => {
   const tokens = (expiresAt: number, extra: Partial<ClaudeTokens> = {}): ClaudeTokens => ({ accessToken: `at-${expiresAt}`, refreshToken: "SECRET-rt", expiresAt, scopes: "s", email: "me@x", ...extra });
   const setup = (stored: ClaudeTokens | undefined, refresh = (t: ClaudeTokens) => Promise.resolve({ ...t, accessToken: "SECRET-rotated", expiresAt: 10_000_000 })) => {
     const store = new MemoryCredentialStore();
-    if (stored) store.pools.set("claude-subscription", upsertAccount(EMPTY_POOL, toAccount(stored)));
+    if (stored) store.pools.set("claude", upsertAccount(EMPTY_POOL, toAccount(stored)));
     const oauth = new StubOAuth(refresh);
     const lock = new RecordingLock();
     const logger = new MemoryLogger();
@@ -162,10 +162,10 @@ describe("ClaudeSession", () => {
     const { session, store, lock, logger } = setup(tokens(1_000_000 + 60_000));
     expect((await session.freshTokens()).accessToken).toBe("SECRET-rotated");
     expect(lock.acquired).toEqual([REFRESH_LOCK]);
-    const saved = activeAccount(await store.load("claude-subscription"))!;
+    const saved = activeAccount(await store.load("claude"))!;
     expect(saved.id).toBe("me@x");
     expect(fromAccount(saved)?.accessToken).toBe("SECRET-rotated");
-    expect(logger.lines).toEqual(["INFO claude-subscription: access token rotated for account me@x"]);
+    expect(logger.lines).toEqual(["INFO claude: access token rotated for account me@x"]);
     expect(logger.lines.join("\n")).not.toContain("SECRET");
   });
 
@@ -185,7 +185,7 @@ describe("ClaudeSession", () => {
 
   test("a refresh completed by another process while waiting for the lock is reused", async () => {
     const { session, store, oauth, lock } = setup(tokens(0));
-    lock.onAcquire = () => store.save("claude-subscription", upsertAccount(EMPTY_POOL, toAccount(tokens(9_000_000, { accessToken: "other-process" }))));
+    lock.onAcquire = () => store.save("claude", upsertAccount(EMPTY_POOL, toAccount(tokens(9_000_000, { accessToken: "other-process" }))));
     expect((await session.freshTokens()).accessToken).toBe("other-process");
     expect(oauth.calls).toBe(0);
   });
@@ -193,7 +193,7 @@ describe("ClaudeSession", () => {
   test("a failed refresh propagates and the next call retries", async () => {
     let fail = true;
     const { session, oauth } = setup(tokens(0), async (t) => {
-      if (fail) throw new ProviderAuthRequiredError("claude-subscription", "rejected");
+      if (fail) throw new ProviderAuthRequiredError("claude", "rejected");
       return { ...t, accessToken: "SECRET-rotated", expiresAt: 10_000_000 };
     });
     await expect(session.freshTokens()).rejects.toBeInstanceOf(ProviderAuthRequiredError);
@@ -205,7 +205,7 @@ describe("ClaudeSession", () => {
   test("no account / unreadable account", async () => {
     await expect(setup(undefined).session.freshTokens()).rejects.toThrow("no active account");
     const { session, store } = setup(undefined);
-    store.pools.set("claude-subscription", upsertAccount(EMPTY_POOL, { provider: "claude-subscription", id: "bad", label: "bad", data: { x: 1 } }));
+    store.pools.set("claude", upsertAccount(EMPTY_POOL, { provider: "claude", id: "bad", label: "bad", data: { x: 1 } }));
     await expect(session.freshTokens()).rejects.toThrow("stored credential of bad is unreadable");
   });
 });
@@ -300,8 +300,8 @@ describe("ClaudeCatalog", () => {
     const { catalog, logger } = make(() => ok({ data: [{ id: "live" }] }), kv);
     expect((await catalog.entries()).map((e) => e.id)).toEqual(["live"]);
     expect(logger.lines).toEqual([
-      "WARN claude-subscription: catalog cache unreadable: Error: EACCES",
-      "WARN claude-subscription: catalog cache write failed: Error: ENOSPC",
+      "WARN claude: catalog cache unreadable: Error: EACCES",
+      "WARN claude: catalog cache write failed: Error: ENOSPC",
     ]);
   });
 
@@ -315,7 +315,7 @@ describe("ClaudeCatalog", () => {
   test("a non-Error rejection is still logged", async () => {
     const { catalog, logger } = make(() => Promise.reject("boom"));
     expect(await catalog.entries()).toBe(STATIC_CATALOG);
-    expect(logger.lines[0]).toBe("WARN claude-subscription: live catalog unavailable (boom)");
+    expect(logger.lines[0]).toBe("WARN claude: live catalog unavailable (boom)");
   });
 });
 
@@ -338,7 +338,7 @@ describe("ClaudeSubscriptionProvider", () => {
 
   test("identity and capabilities", async () => {
     const { provider } = make(ok({}));
-    expect(provider.id).toBe("claude-subscription");
+    expect(provider.id).toBe("claude");
     expect(provider.nativeDialect).toBe("anthropic");
     expect(provider.capabilities().size).toBe(0);
   });
@@ -346,7 +346,7 @@ describe("ClaudeSubscriptionProvider", () => {
   test("models come from the catalog with limits", async () => {
     const { provider } = make(ok({}));
     const models = await provider.models();
-    expect(models[0]).toEqual({ address: { provider: "claude-subscription", model: "claude-opus-5" }, displayName: "Claude Opus 5", contextWindow: 1_000_000, maxOutputTokens: 128_000 });
+    expect(models[0]).toEqual({ address: { provider: "claude", model: "claude-opus-5" }, displayName: "Claude Opus 5", contextWindow: 1_000_000, maxOutputTokens: 128_000 });
   });
 
   test("models without limits omit them", async () => {
@@ -356,12 +356,12 @@ describe("ClaudeSubscriptionProvider", () => {
       }
     }
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger());
-    expect(await provider.models()).toEqual([{ address: { provider: "claude-subscription", model: "x" }, displayName: "X" }]);
+    expect(await provider.models()).toEqual([{ address: { provider: "claude", model: "x" }, displayName: "X" }]);
   });
 
   test("translated cells are not available before P5", async () => {
     const { provider } = make(ok({}));
-    const request = { model: { provider: "claude-subscription" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
+    const request = { model: { provider: "claude" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
     await expect(provider.countTokens(request)).rejects.toBeInstanceOf(UnsupportedFeatureError);
     await expect((async () => {
       for await (const _ of provider.stream(request)) void _;
@@ -383,7 +383,7 @@ describe("ClaudeSubscriptionProvider", () => {
   test("native passthrough: transformed upstream request; SSE streamed back byte-identical; message id tracked", async () => {
     const parts = [sse.slice(0, 37), sse.slice(37, 700), sse.slice(700)];
     const { provider, transport, identity, logger } = make({ status: 200, headers: { "Content-Type": "text/event-stream; charset=utf-8", "request-id": "req_1", "x-internal": "no" }, body: parts });
-    const response = await provider.passthrough("claude-opus-4-8", raw({ model: "claude-subscription/claude-opus-4-8", messages: [{ role: "user", content: "hi" }] }));
+    const response = await provider.passthrough("claude-opus-4-8", raw({ model: "claude/claude-opus-4-8", messages: [{ role: "user", content: "hi" }] }));
     expect(response.status).toBe(200);
     expect(response.headers).toEqual({ "content-type": "text/event-stream; charset=utf-8", "request-id": "req_1" });
     expect((await collect(response.body)).join("")).toBe(sse);
@@ -415,8 +415,8 @@ describe("ClaudeSubscriptionProvider", () => {
     expect((await iterator.next()).done).toBe(false);
     expect((await iterator.next()).done).toBe(true);
     expect(logger.lines.slice(-2)).toEqual([
-      "INFO claude-subscription: stream end model=claude-opus-4-8 stop_reason=refusal",
-      "WARN claude-subscription: upstream refusal (model=claude-opus-4-8)",
+      "INFO claude: stream end model=claude-opus-4-8 stop_reason=refusal",
+      "WARN claude: upstream refusal (model=claude-opus-4-8)",
     ]);
   });
 

@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { ClockPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
+import { PRIVATE_DIRECTORY_MODE, PRIVATE_FILE_MODE } from "@inference-router/router/adapters/outbound/file-stores.ts";
 
 export class SystemClock extends ClockPort {
   now(): number {
@@ -55,8 +56,8 @@ export class FileLogger extends LoggerPort {
 
   private write(level: string, message: string): void {
     try {
-      mkdirSync(dirname(this.path), { recursive: true });
-      appendFileSync(this.path, `${new Date(this.clock.now()).toISOString()} ${level} ${message}\n`);
+      mkdirSync(dirname(this.path), { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
+      appendFileSync(this.path, `${new Date(this.clock.now()).toISOString()} ${level} ${message}\n`, { mode: PRIVATE_FILE_MODE });
     } catch {
       // logging is best-effort by contract
     }

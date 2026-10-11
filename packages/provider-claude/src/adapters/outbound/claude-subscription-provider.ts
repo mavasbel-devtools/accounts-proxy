@@ -1,4 +1,4 @@
-// claude-subscription provider. Native cell (Anthropic Messages): the client body passes through the captured
+// claude provider. Native cell (Anthropic Messages): the client body passes through the captured
 // claude envelope + never-prefill guard (domain/request-transform.ts) and the upstream response is STREAMED back
 // chunk by chunk — fix F1 for the source relay, which awaited res.text() before answering
 // (AnthropicApiClientAdapter.ts:45). Translated cells (OpenAI/Gemini → Claude) arrive in P5.
@@ -34,7 +34,7 @@ export function forwardedResponseHeaders(headers: Readonly<Record<string, string
 }
 
 export class ClaudeSubscriptionProvider extends ProviderPort {
-  readonly id = "claude-subscription";
+  readonly id = "claude";
   readonly nativeDialect = "anthropic";
 
   constructor(

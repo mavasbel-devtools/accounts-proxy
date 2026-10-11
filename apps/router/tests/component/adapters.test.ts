@@ -40,7 +40,20 @@ describe("file stores", () => {
     expect(await store.load("antigravity")).toEqual({ accounts: pool.accounts });
   });
 
-  test.each([["{oops"], ["[]"], ['{"accounts":{}}'], ['{"accounts":[{"provider":"claude-subscription","id":"x","label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}']])(
+  test("directories the stores, the lock and the logger create are 0700; lock and log files are 0600", async () => {
+    const root = join(temp(), "data");
+    await new FileCredentialStore(root).save("antigravity", EMPTY_POOL);
+    await new FileKeyValueStore(root).write("claude/device-id", "ab");
+    await new FileLock(root, new SystemClock(), new SystemTimer()).withLock("x", async () => {
+      if (process.platform !== "win32") expect(statSync(join(root, "locks", "x.lock")).mode & 0o777).toBe(0o600);
+    });
+    new FileLogger(join(root, "logs", "router.log"), new FixedClock(0)).info("i");
+    if (process.platform === "win32") return;
+    for (const d of [root, join(root, "state"), join(root, "state", "claude"), join(root, "locks"), join(root, "logs")]) expect(statSync(d).mode & 0o777).toBe(0o700);
+    expect(statSync(join(root, "logs", "router.log")).mode & 0o777).toBe(0o600);
+  });
+
+  test.each([["{oops"], ["[]"], ['{"accounts":{}}'], ['{"accounts":[{"provider":"claude","id":"x","label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}']])(
     "a corrupt pool %p is an error, never an empty pool",
     async (content) => {
       const store = new FileCredentialStore(temp());
@@ -57,9 +70,9 @@ describe("file stores", () => {
 
   test("key-value store: nested keys, missing → undefined, invalid keys refused", async () => {
     const kv = new FileKeyValueStore(temp());
-    expect(await kv.read("claude-subscription/device-id")).toBeUndefined();
-    await kv.write("claude-subscription/device-id", "ab");
-    expect(await kv.read("claude-subscription/device-id")).toBe("ab");
+    expect(await kv.read("claude/device-id")).toBeUndefined();
+    await kv.write("claude/device-id", "ab");
+    expect(await kv.read("claude/device-id")).toBe("ab");
     expect(kv.path("a/b")).toBe(join(dir!, "state", "a", "b.json"));
     for (const bad of ["../x", "A", "a//b", "", "a/"]) expect(() => kv.path(bad)).toThrow("invalid state key");
   });

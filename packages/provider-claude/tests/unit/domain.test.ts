@@ -54,7 +54,7 @@ describe("credential", () => {
   test("toAccount/fromAccount round trip and id selection", () => {
     const full: ClaudeTokens = { accessToken: "a", refreshToken: "r", expiresAt: 9, scopes: "s", accountUuid: "u", organizationUuid: "o", email: "me@x" };
     const account = toAccount(full);
-    expect(account).toMatchObject({ provider: "claude-subscription", id: "me@x", label: "me@x" });
+    expect(account).toMatchObject({ provider: "claude", id: "me@x", label: "me@x" });
     expect(fromAccount(account)).toEqual(full);
     expect(toAccount({ accessToken: "a", expiresAt: 9, scopes: "s", accountUuid: "u" }).id).toBe("u");
     const bare = toAccount({ accessToken: "a", expiresAt: 9, scopes: "s" });
@@ -62,7 +62,7 @@ describe("credential", () => {
     expect(fromAccount(bare)).toEqual({ accessToken: "a", expiresAt: 9, scopes: "s" });
   });
   test.each([[{}], [{ accessToken: "a", expiresAt: "9", scopes: "s" }], [{ accessToken: "a", expiresAt: 9 }]])("fromAccount rejects data %p", (data) => {
-    expect(fromAccount({ provider: "claude-subscription", id: "x", label: "x", data })).toBeUndefined();
+    expect(fromAccount({ provider: "claude", id: "x", label: "x", data })).toBeUndefined();
   });
 });
 

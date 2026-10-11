@@ -27,7 +27,7 @@ const rich: CanonicalRequest = {
     {
       role: "assistant",
       parts: [
-        { kind: "thinking", text: "hmm", signature: "sig-claude", origin: "claude-subscription" },
+        { kind: "thinking", text: "hmm", signature: "sig-claude", origin: "claude" },
         { kind: "thinking", text: "own", signature: "sig-own", origin: "antigravity" },
         { kind: "tool_call", id: "c1", name: "shot", input: {} },
       ],

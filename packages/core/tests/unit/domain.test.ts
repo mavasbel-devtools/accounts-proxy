@@ -32,7 +32,7 @@ describe("json", () => {
 
 describe("models", () => {
   test("provider ids", () => {
-    expect(PROVIDER_IDS).toEqual(["claude-subscription", "antigravity"]);
+    expect(PROVIDER_IDS).toEqual(["claude", "antigravity"]);
     expect(isProviderId("antigravity")).toBe(true);
     expect(isProviderId("cheaper")).toBe(false);
   });
@@ -42,12 +42,12 @@ describe("models", () => {
 });
 
 describe("resolveModelAddress", () => {
-  const aliases = { opus: "claude-subscription/claude-opus-4-8", broken: "nope", bad: "cheaper/x" };
+  const aliases = { opus: "claude/claude-opus-4-8", broken: "nope", bad: "cheaper/x" };
   test("splits on the first slash and keeps further slashes in the model", () => {
     expect(resolveModelAddress("antigravity/a/b", {})).toEqual({ provider: "antigravity", model: "a/b" });
   });
   test("resolves an alias", () => {
-    expect(resolveModelAddress("opus", aliases)).toEqual({ provider: "claude-subscription", model: "claude-opus-4-8" });
+    expect(resolveModelAddress("opus", aliases)).toEqual({ provider: "claude", model: "claude-opus-4-8" });
   });
   test.each([["gpt-4o"], ["broken"], ["bad"], ["cheaper/x"], ["/model"], ["antigravity/"], ["antigravity/   "], ["toString"]])(
     "rejects %p",
@@ -66,9 +66,9 @@ describe("errors", () => {
       [new UnknownModelError("x"), "unknown_model", 404, ClientRequestError],
       [new UnknownAccountError("antigravity", "a@b"), "unknown_account", 404, ClientRequestError],
       [new ProviderAuthRequiredError("antigravity", "no account"), "provider_auth_required", 401, ProviderError],
-      [new ProviderDisabledError("claude-subscription"), "provider_disabled", 503, ProviderError],
+      [new ProviderDisabledError("claude"), "provider_disabled", 503, ProviderError],
       [new QuotaExhaustedError("antigravity", "5h window", 30), "quota_exhausted", 429, ProviderError],
-      [new UpstreamError("claude-subscription", 529, "overloaded", 5), "upstream_error", 529, ProviderError],
+      [new UpstreamError("claude", 529, "overloaded", 5), "upstream_error", 529, ProviderError],
     ];
     for (const [error, code, status, family] of cases) {
       expect(error).toBeInstanceOf(RouterError);

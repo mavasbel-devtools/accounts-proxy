@@ -1,7 +1,7 @@
 # Session ses_ef10d7fa0ffe2baUvsApfbHHPZ — inference-router
 
-Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses_ef10d7fa0ffe2baUvsApfbHHPZ.md`
-(entries up to 2026-10-06 00:23).
+Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses_ef10d7fa0ffe2baUvsApfbHHPZ.md`
+(entries up to 2026-10-06 00:23) on the Windows machine; it is not present on the Linux machine (2026-10-10).
 
 ## Timeline
 - 2026-10-05 20:07 Research: [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](../research/2026-10-05-20-07-llm-router-from-auth-plugins.md)
@@ -39,6 +39,16 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
   vendored references byte-identical with nested tsconfig; arch gate enforces alias law + declared workspace deps.
   Bun 1.4.2 isolated linker: a workspace resolves another only if declared (`workspace:*`).
 
+- 2026-10-07 01:23 next = P0-LIVE (amendment A1, before P4). router.yaml installed in ~/.local/share/inference-router
+  (both providers on). Plan docs/plans/2026-10-07-01-23-p0-live-gate-plan.md awaiting approval; blocked on the user's
+  two browser logins.
+
+- 2026-10-10 18:45 Moved to Linux: repo `/home/mavasbel/Dev/repos/inference-router`, plugins
+  `/home/mavasbel/Dev/repos/opencode/opencode-{claude,antigravity}-auth`. Validated (docs/reference/2026-10-10-18-45-
+  linux-migration-validation.md): clean `bun install`, gate identical to Windows. Provider id `claude-subscription` →
+  `claude` (plan v3.1); created dirs 0700, lock/log files 0600. router.yaml recreated on Linux. Next: decisions in
+  docs/plans/2026-10-10-18-45-continuation-plan.md (P0-LIVE approval + logins; amendment A2 = P4 first; P4 start).
+
 ## Progress map
 | Phase | State |
 |---|---|
@@ -46,5 +56,6 @@ Canonical session record. An earlier copy lives at `AIML/tools/docs/sessions/ses
 | P0-E2/E3/E4 | waiting on the P0-LIVE gate (needs the user's browser logins after P3) |
 | P1 | done |
 | P2 | done |
-| P3 | provider-claude done; provider-antigravity done; next: router app (login/account/quota CLI, file stores, lock, transport, loopback, composition) |
-| P4–P10 | not started |
+| P3 | done (providers, router CLI, alias imports) |
+| Linux migration + rename to `claude` | done 2026-10-10 |
+| P4–P10 | not started (P4 proposed ahead of P0-LIVE: amendment A2) |

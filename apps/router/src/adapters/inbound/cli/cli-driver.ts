@@ -18,7 +18,7 @@ export const USAGE = `usage: inference-router <command>
   quota <provider>                                    remaining provider quota
   models [<provider>]                                 live model catalog
   help
-providers: claude-subscription, antigravity`;
+providers: claude, antigravity`;
 
 class UsageError extends Error {}
 

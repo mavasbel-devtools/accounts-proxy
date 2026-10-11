@@ -15,11 +15,11 @@ describe("parseRouterConfig", () => {
   test("the example configuration enables both providers", () => {
     const config = parseRouterConfig({
       port: 4141,
-      providers: { "claude-subscription": { enabled: true, acknowledgeTermsRisk: true }, antigravity: { enabled: true, acknowledgeTermsRisk: true } },
-      aliases: { opus: "claude-subscription/claude-opus-4-8" },
+      providers: { claude: { enabled: true, acknowledgeTermsRisk: true }, antigravity: { enabled: true, acknowledgeTermsRisk: true } },
+      aliases: { opus: "claude/claude-opus-4-8" },
     });
-    expect(enabledProviders(config)).toEqual(["claude-subscription", "antigravity"]);
-    expect(config.aliases).toEqual({ opus: "claude-subscription/claude-opus-4-8" });
+    expect(enabledProviders(config)).toEqual(["claude", "antigravity"]);
+    expect(config.aliases).toEqual({ opus: "claude/claude-opus-4-8" });
   });
 
   test("acknowledged but disabled stays disabled", () => {
@@ -71,10 +71,10 @@ describe("oauth flow", () => {
   });
 
   test("manual code: code, code#state, state checked, empty refused", () => {
-    expect(codeFromManualInput("claude-subscription", "  abc  ", "s")).toBe("abc");
-    expect(codeFromManualInput("claude-subscription", "a#b#s", "s")).toBe("a#b");
-    expect(() => codeFromManualInput("claude-subscription", "abc#zzz", "s")).toThrow("authorization state mismatch");
-    expect(() => codeFromManualInput("claude-subscription", "  ", "s")).toThrow("no authorization code entered");
-    expect(() => codeFromManualInput("claude-subscription", "#s", "s")).toThrow("no authorization code entered");
+    expect(codeFromManualInput("claude", "  abc  ", "s")).toBe("abc");
+    expect(codeFromManualInput("claude", "a#b#s", "s")).toBe("a#b");
+    expect(() => codeFromManualInput("claude", "abc#zzz", "s")).toThrow("authorization state mismatch");
+    expect(() => codeFromManualInput("claude", "  ", "s")).toThrow("no authorization code entered");
+    expect(() => codeFromManualInput("claude", "#s", "s")).toThrow("no authorization code entered");
   });
 });

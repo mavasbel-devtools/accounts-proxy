@@ -6,7 +6,7 @@ import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/st
 import type { RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import { ClaudeIdentityPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
-export const DEVICE_ID_KEY = "claude-subscription/device-id";
+export const DEVICE_ID_KEY = "claude/device-id";
 const DEVICE_ID = /^[0-9a-f]{64}$/;
 
 export class ClaudeIdentity extends ClaudeIdentityPort {

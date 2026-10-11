@@ -112,11 +112,11 @@ function setup(client: FakeClient, query: (state: string) => CallbackQuery = (st
 
 describe("LoginService", () => {
   test("loopback login with PKCE: announce, open browser, validate state, exchange, store, redirect", async () => {
-    const client = new FakeClient("claude-subscription", true, "https://manual/cb");
+    const client = new FakeClient("claude", true, "https://manual/cb");
     const s = setup(client);
-    const run = s.service.login("claude-subscription", { ...s.options, onAuthorizeUrl: (u) => (s.capture(), s.urls.push(u)) });
+    const run = s.service.login("claude", { ...s.options, onAuthorizeUrl: (u) => (s.capture(), s.urls.push(u)) });
     const summary = await run;
-    expect(summary).toEqual({ provider: "claude-subscription", id: "me@x", label: "Me", active: true });
+    expect(summary).toEqual({ provider: "claude", id: "me@x", label: "Me", active: true });
     const auth = client.authorizations[0]!;
     expect(auth.redirectUri).toBe("http://localhost:5555/cb");
     expect(auth.state).toBe("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8");
@@ -127,8 +127,8 @@ describe("LoginService", () => {
     expect(s.factory.last!.started).toBe("/cb");
     expect(s.factory.last!.finished).toEqual([{ redirect: "https://done.example/" }]);
     expect(s.factory.last!.stopped).toBe(true);
-    expect((await s.store.load("claude-subscription")).activeId).toBe("me@x");
-    expect(s.logger.lines).toEqual(["INFO claude-subscription: signed in account me@x"]);
+    expect((await s.store.load("claude")).activeId).toBe("me@x");
+    expect(s.logger.lines).toEqual(["INFO claude: signed in account me@x"]);
   });
 
   test("no PKCE for clients that do not use it; a browser failure is only warned", async () => {
@@ -163,23 +163,23 @@ describe("LoginService", () => {
   });
 
   test("manual (paste-code) login uses the provider's manual redirect and PKCE", async () => {
-    const client = new FakeClient("claude-subscription", true, "https://manual/cb");
+    const client = new FakeClient("claude", true, "https://manual/cb");
     const s = setup(client);
-    await s.service.login("claude-subscription", { ...s.options, manual: true });
+    await s.service.login("claude", { ...s.options, manual: true });
     expect(client.exchanges[0]).toMatchObject({ code: "pasted", redirectUri: "https://manual/cb" });
     expect(client.exchanges[0]!.codeVerifier).toBeDefined();
     expect(s.factory.last).toBeUndefined();
     expect(s.urls).toHaveLength(1);
-    const noPkce = new FakeClient("claude-subscription", false, "https://manual/cb");
+    const noPkce = new FakeClient("claude", false, "https://manual/cb");
     const t = setup(noPkce);
-    await t.service.login("claude-subscription", { ...t.options, manual: true });
+    await t.service.login("claude", { ...t.options, manual: true });
     expect(noPkce.exchanges[0]!.codeVerifier).toBeUndefined();
   });
 
   test("manual login is refused for providers without a paste-code page; disabled providers are refused", async () => {
     const s = setup(new FakeClient("antigravity", false, undefined));
     await expect(s.service.login("antigravity", { ...s.options, manual: true })).rejects.toBeInstanceOf(InvalidRequestError);
-    await expect(s.service.login("claude-subscription", s.options)).rejects.toBeInstanceOf(ProviderDisabledError);
+    await expect(s.service.login("claude", s.options)).rejects.toBeInstanceOf(ProviderDisabledError);
   });
 });
 
@@ -197,7 +197,7 @@ describe("AccountAdminService and UsageService", () => {
     expect(await admin.use("antigravity", "a")).toEqual({ provider: "antigravity", id: "a", label: "Alpha", active: true });
     expect((await store.load("antigravity")).activeId).toBe("a");
     await expect(admin.use("antigravity", "zz")).rejects.toBeInstanceOf(UnknownAccountError);
-    expect(await admin.list("claude-subscription")).toEqual([]);
+    expect(await admin.list("claude")).toEqual([]);
   });
 
   test("usage: disabled, enabled without a reporter, and reported", async () => {
@@ -207,9 +207,9 @@ describe("AccountAdminService and UsageService", () => {
         return { capturedAt: 1, text: "Antigravity usage:" };
       }
     }
-    const usage = new UsageService(["claude-subscription", "antigravity"], [new Reporter()]);
+    const usage = new UsageService(["claude", "antigravity"], [new Reporter()]);
     expect(await usage.usage("antigravity")).toEqual({ capturedAt: 1, text: "Antigravity usage:" });
-    await expect(usage.usage("claude-subscription")).rejects.toBeInstanceOf(InvalidRequestError);
+    await expect(usage.usage("claude")).rejects.toBeInstanceOf(InvalidRequestError);
     await expect(new UsageService([], []).usage("antigravity")).rejects.toBeInstanceOf(ProviderDisabledError);
   });
 });
@@ -235,8 +235,8 @@ describe("ListModelsService", () => {
     }
   }
   test("all enabled providers, one provider, or disabled", async () => {
-    const service = new ListModelsService([new Provider("claude-subscription"), new Provider("antigravity")]);
-    expect((await service.listModels()).map((m) => m.address.model)).toEqual(["claude-subscription-m", "antigravity-m"]);
+    const service = new ListModelsService([new Provider("claude"), new Provider("antigravity")]);
+    expect((await service.listModels()).map((m) => m.address.model)).toEqual(["claude-m", "antigravity-m"]);
     expect((await service.listModels("antigravity")).map((m) => m.address.model)).toEqual(["antigravity-m"]);
     await expect(new ListModelsService([]).listModels("antigravity")).rejects.toBeInstanceOf(ProviderDisabledError);
   });

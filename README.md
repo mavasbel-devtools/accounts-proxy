@@ -3,7 +3,7 @@
 A local LLM router. It exposes **Anthropic Messages**, **OpenAI Chat Completions** and **Gemini generateContent**
 endpoints on `127.0.0.1`, so any stock SDK or tool can call the subscription models directly. It routes each call to:
 
-- **`claude-subscription`**: Claude Pro/Max OAuth, sent upstream as Anthropic Messages.
+- **`claude`**: Claude Pro/Max OAuth, sent upstream as Anthropic Messages.
 - **`antigravity`**: Google Antigravity OAuth, sent upstream through the Cloud Code Assist envelope. It serves Gemini,
   Claude and gpt-oss models.
 
@@ -34,7 +34,7 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 
 | Command | What it does |
 |---|---|
-| `login <provider> [--manual] [--timeout-seconds N]` | Browser sign-in. A loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback; only `claude-subscription` has one. |
+| `login <provider> [--manual] [--timeout-seconds N]` | Browser sign-in. A loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback; only `claude` has one. |
 | `account list <provider>` | stored accounts; `*` marks the active one |
 | `account use <provider> <account-id>` | choose the active account (the router never switches accounts by itself) |
 | `quota <provider>` | remaining quota as reported by the provider (`antigravity`) |
@@ -44,7 +44,7 @@ Exit codes: 0 success, 1 the command failed, 2 usage error.
 
 ## Planned dialect × provider matrix
 
-| Inbound dialect \ Provider | claude-subscription | antigravity |
+| Inbound dialect \ Provider | claude | antigravity |
 |---|---|---|
 | Anthropic Messages | native passthrough | translated |
 | OpenAI Chat Completions | translated | translated |
@@ -74,7 +74,7 @@ flowchart LR
     P[ports]
   end
   subgraph providers[packages/provider-*  outbound adapters]
-    PC[claude-subscription]
+    PC[claude]
     PA[antigravity]
   end
   A --> H

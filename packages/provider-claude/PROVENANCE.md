@@ -3,7 +3,7 @@
 **Sources:**
 - **Base:** `opencode-claude-auth` @ `62927412322eedfd5b1d8f08c4eb894f26e6c50a`. Its `src/` working tree was clean at extraction time, 2026-10-06/07.
 - **Parity reference:** `tests/reference/plugin-6292741/` holds `RequestTransformService.ts`, `ModelEnvelope.ts`, `ports/outbound/index.ts` and `entities/ClaudeCredential.ts` (the reference transform's full import closure) under their source paths. It was exported with `scripts/evidence/vendor-reference.ts` and is **byte-identical** to the source: each file's `git hash-object --no-filters` equals its source blob (listed in `MANIFEST.json`). The plugin's own `@claude/` alias is resolved by the reference's `tsconfig.json` (`"@claude/*": ["./*"]`).
-- **Official binary:** Claude Code 2.1.280 (`C:\Users\Marco\.local\bin\claude.exe`), sha256 `0e4195524b73eb77efbdf3e2b36de5322a29f0ca575dfd2d9b4f946b1d425469`, read with `scripts/evidence/scan-binary.ts`.
+- **Official binary:** Claude Code 2.1.280 (`C:\Users\Marco\.local\bin\claude.exe` on the Windows machine used until 2026-10-07; it is not on the Linux machine, whose `claude` is 2.1.29), sha256 `0e4195524b73eb77efbdf3e2b36de5322a29f0ca575dfd2d9b4f946b1d425469`, read with `scripts/evidence/scan-binary.ts`.
 
 ## File mapping
 

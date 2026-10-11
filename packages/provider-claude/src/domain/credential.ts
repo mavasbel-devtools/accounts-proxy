@@ -69,7 +69,7 @@ export function toAccount(tokens: ClaudeTokens): AccountCredential {
   if (tokens.accountUuid !== undefined) data.accountUuid = tokens.accountUuid;
   if (tokens.organizationUuid !== undefined) data.organizationUuid = tokens.organizationUuid;
   if (tokens.email !== undefined) data.email = tokens.email;
-  return { provider: "claude-subscription", id, label: id, data };
+  return { provider: "claude", id, label: id, data };
 }
 
 /** Read tokens back from a stored account; undefined when the stored shape is not a Claude credential. */

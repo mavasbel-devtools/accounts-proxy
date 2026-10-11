@@ -5,7 +5,9 @@ an automatic loopback redirect. Paste-code is allowed only as the headless fallb
 
 ## 1. Claude (subscription OAuth): loopback IS supported. Evidence from the official binary
 
-**Source:** the official Claude Code executable installed on this machine.
+**Source:** the official Claude Code executable installed on this machine (the Windows machine used until 2026-10-07).
+
+> Note 2026-10-10 (Linux migration): this binary is not on the Linux machine. The Linux `claude` is an older 2.1.29 (`~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.29`), so the values below remain sourced from the hashed 2.1.280 Windows binary. P0-LIVE measures them again during the router's first real login.
 
 | Item | Value |
 |---|---|

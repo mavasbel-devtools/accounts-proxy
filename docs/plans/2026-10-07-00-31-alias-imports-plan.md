@@ -18,7 +18,7 @@ Sources already use workspace-name imports across workspaces: 122 `@inference-ro
 
 ## 2. Resolution probe
 
-Scratch workspace: `%TEMP%\opencode\alias-probe`, Bun 1.4.2, the repository's TypeScript 5.9.3, and the repository's `tsconfig` options.
+Scratch workspace: `%TEMP%\opencode\alias-probe` (Windows, before the 2026-10-10 Linux migration), Bun 1.4.2, the repository's TypeScript 5.9.3, and the repository's `tsconfig` options.
 
 | Question | Result |
 |---|---|

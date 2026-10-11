@@ -9,8 +9,8 @@ import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/por
 import { fromAccount, isExpired, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { ClaudeSessionPort, type ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
-const PROVIDER = "claude-subscription";
-export const REFRESH_LOCK = "claude-subscription-refresh";
+const PROVIDER = "claude";
+export const REFRESH_LOCK = "claude-refresh";
 
 export class ClaudeSession extends ClaudeSessionPort {
   private inflight: Promise<ClaudeTokens> | undefined;

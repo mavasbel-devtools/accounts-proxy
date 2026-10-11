@@ -11,7 +11,7 @@ import { ANTHROPIC_VERSION_HEADER, API_BASE, CATALOG } from "@inference-router/p
 import { STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 import { ClaudeCatalogPort, type ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
-export const CATALOG_KEY = "claude-subscription/model-catalog";
+export const CATALOG_KEY = "claude/model-catalog";
 
 export class ClaudeCatalog extends ClaudeCatalogPort {
   private memory: CatalogSnapshot | undefined;
@@ -36,11 +36,11 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
       const snapshot: CatalogSnapshot = { version: 2, fetchedAt: this.clock.now(), models };
       this.memory = snapshot;
       await this.store.write(CATALOG_KEY, snapshot as unknown as JsonValue).catch((error: unknown) => {
-        this.logger.warn(`claude-subscription: catalog cache write failed: ${String(error)}`);
+        this.logger.warn(`claude: catalog cache write failed: ${String(error)}`);
       });
       return models;
     } catch (error) {
-      this.logger.warn(`claude-subscription: live catalog unavailable (${error instanceof Error ? error.message : String(error)})`);
+      this.logger.warn(`claude: live catalog unavailable (${error instanceof Error ? error.message : String(error)})`);
       return cached?.models ?? STATIC_CATALOG;
     }
   }
@@ -50,7 +50,7 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
       const value = await this.store.read(CATALOG_KEY);
       return isSnapshot(value) ? value : undefined;
     } catch (error) {
-      this.logger.warn(`claude-subscription: catalog cache unreadable: ${String(error)}`);
+      this.logger.warn(`claude: catalog cache unreadable: ${String(error)}`);
       return undefined;
     }
   }

@@ -28,7 +28,7 @@ export type ClaudeOAuthEndpoints = { readonly authorizeUrl: string; readonly tok
 export const PRODUCTION_ENDPOINTS: ClaudeOAuthEndpoints = { authorizeUrl: AUTHORIZE_URL, tokenUrl: TOKEN_URL };
 
 export class ClaudeOAuthClient extends ClaudeOAuthPort {
-  readonly provider = "claude-subscription";
+  readonly provider = "claude";
   readonly callbackPath = LOOPBACK_CALLBACK_PATH;
   readonly usesPkce = true;
   readonly manualRedirectUri = MANUAL_REDIRECT_URI;

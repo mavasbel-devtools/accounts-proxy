@@ -49,7 +49,7 @@ function options(extra: Partial<ContainerOptions> = {}) {
   return { opts, out, err, transport, browser };
 }
 
-const BOTH = "providers:\n  claude-subscription: {enabled: true, acknowledgeTermsRisk: true}\n  antigravity: {enabled: true, acknowledgeTermsRisk: true}\n";
+const BOTH = "providers:\n  claude: {enabled: true, acknowledgeTermsRisk: true}\n  antigravity: {enabled: true, acknowledgeTermsRisk: true}\n";
 
 describe("composition root", () => {
   test("no router.yaml: every provider disabled, default port", async () => {

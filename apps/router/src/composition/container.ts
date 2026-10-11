@@ -65,7 +65,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   const clients: OAuthClientPort[] = [];
   const providers: ProviderPort[] = [];
   const reporters: UsageReporterPort[] = [];
-  if (enabled.includes("claude-subscription")) {
+  if (enabled.includes("claude")) {
     const oauth = new ClaudeOAuthClient(transport, clock);
     const session = new ClaudeSession(store, oauth, lock, clock, logger);
     const catalog = new ClaudeCatalog(transport, session, state, clock, logger);

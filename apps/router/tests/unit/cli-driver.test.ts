@@ -61,16 +61,16 @@ describe("CliDriver", () => {
   test("login: browser by default with the default timeout; --manual and --timeout-seconds", async () => {
     const c = cli();
     expect(await c.run("login", "antigravity")).toBe(0);
-    expect(await c.run("login", "claude-subscription", "--manual", "--timeout-seconds", "60")).toBe(0);
+    expect(await c.run("login", "claude", "--manual", "--timeout-seconds", "60")).toBe(0);
     expect(c.ports.login.calls).toEqual([
       ["antigravity", { manual: false, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
-      ["claude-subscription", { manual: true, timeoutMs: 60_000 }],
+      ["claude", { manual: true, timeoutMs: 60_000 }],
     ]);
     expect(c.out).toEqual([
       "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
       "signed in to antigravity as Me (active account)\n",
       "Open:\nhttps://auth.example/\n",
-      "signed in to claude-subscription as Me (active account)\n",
+      "signed in to claude as Me (active account)\n",
     ]);
   });
 
