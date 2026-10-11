@@ -58,6 +58,11 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   Q6 (Claude thinking cannot be disabled through the envelope) and Q7 (Windows fingerprints), awaiting decision.
   `.cortexkit/` (Magic Context local state) added to .gitignore.
 
+- 2026-10-11 User approved Q6/Q7. P4 built (core, Claude F4/F9, Antigravity runner + native cell, dialect codecs,
+  route table, node:http server, CLI serve/token/status, seams); unit+component 100% (486 tests), merged 100%;
+  e2e 21 tests pass but e2e-alone coverage 73%/55% → risk R1 report docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md,
+  awaiting the user's decision.
+
 ## Progress map
 | Phase | State |
 |---|---|
@@ -68,4 +73,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P2 | done |
 | P3 | done (providers, router CLI, alias imports) |
 | Linux migration + rename to `claude` | done 2026-10-10 |
-| P4–P10 | not started (P4 proposed ahead of P0-LIVE: amendment A2) |
+| P4 | built; e2e-alone coverage gate failing (R1, decision pending) |
+| P5–P10 | not started |

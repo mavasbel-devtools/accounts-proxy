@@ -157,3 +157,25 @@ Source: [P0-LIVE findings](../reference/2026-10-10-23-17-p0-live-findings.md) (L
 |---|---|---|
 | Q6 | Claude thinking. Today a request **without** `thinking` gets Claude Code's default (enabled, budget 31,999), so a small `max_tokens` returns an empty answer (L1), and a request **with** `thinking: disabled` fails 400 because the envelope always adds `context_management` clear-thinking (L2), which also makes forced `tool_choice` and non-default sampling impossible (L3). | **Honour the client.** `thinking` absent stays absent and `disabled` stays `disabled`, and in both cases the clear-thinking `context_management` edit is left out; an explicit `enabled`/`adaptive` keeps today's envelope. **Probed live 2026-10-11** ([Q6 probe](../reference/2026-10-10-23-20-q6-thinking-probe.md)): `disabled` without the edit → 200 "OK"; absent without the edit → 200 "OK"; `disabled` + `tool_choice: any` + `temperature: 0` → 200 with a forced `get_time` call. |
 | Q7 | Fingerprints say Windows while the router runs on Linux (L5). Both upstreams accept them. | **Keep them verbatim.** They are the only captured values (the Linux machine has Claude Code 2.1.29, not the captured 2.1.280, and no Antigravity IDE capture). Changing them would be guessing. Revisit only with a real Linux capture. |
+
+## 8. Execution record (2026-10-11)
+
+Steps 1–7 are built; commits `3a1d131` (steps 1–5) and the e2e/docs commit after it.
+
+| Step | Result |
+|---|---|
+| 1 Core | `RawRequest` query/lossy/signal, `HttpRequest` idle timeout + signal, new errors, `ModelCatalog` with source and native dialect, Google error envelope (`docs/reference/specs/google-rpc-code.proto` fetched), constant-time equality, inbound ports Access/Health/DaemonStatus/DialectCodec/ErrorReporter |
+| 2 Claude | F4 beta merge + `anthropic-version` check; F9 (Q6) thinking honoured, parity tests normalized and the difference asserted |
+| 3 Antigravity | shared `AntigravityRunner` (chat moved onto it, its tests unchanged), `AntigravityNative`, the Gemini validator/mapper with B1/Q2/Q3, framing, `generateContent` merge (Q4), `countTokens` 400 |
+| 4 Router | route table and token carriers, node:http server (32 MB limit, backpressure, abort, drain), CLI `serve`/`token`/`status`, explicit fetch idle timeout (504 on timeout) |
+| 5 Composition | loopback-only upstream seams |
+| 6 e2e | 21 tests (CLI, daemon with the three SDKs, bundle); measured e2e-alone coverage 73.16% statements / 54.64% branches — risk R1, [report](../reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) |
+| 7 Docs | README (daemon how-to, routes, headers, notes), AGENTS (laws, seams, e2e, pins), diagram, this record |
+
+Deviations, each stated in the code or docs where it applies:
+- e2e runs the source entry under the coverage preload; the bundle (plan §3) is smoke-tested separately because a bundle cannot carry per-source instrumentation.
+- The router token is stored as `token.json` (`{"token": …}`) instead of a raw `token` file, reusing the atomic BOM-tolerant JSON store.
+- Gemini `baseModelId` is the routable `<provider>/<model>` (Q5 said the wire id); the spec says to pass it to the generation request, and only the routable id works there.
+- The constant-time comparison is a pure-TypeScript XOR over SHA-256 digests (same contract as `crypto.timingSafeEqual`), so the application layer has no runtime import.
+- Bun 1.4.2's `closeAllConnections` leaves a connection with an unfinished response open (measured); stop destroys the tracked sockets after the grace period instead.
+- Bun fetch's `timeout` (idle) fired after ~8 s for a 1 s setting in a probe; the router's 10-minute value is far above that granularity.

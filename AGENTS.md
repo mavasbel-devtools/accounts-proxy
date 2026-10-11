@@ -52,6 +52,8 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 | Antigravity trajectory labels, requestId format, step counter | `TrajectoryStateService.ts:76-204` |
 | Antigravity `thoughtSignature` capture/replay; unsigned Gemini calls dropped with their results | `RequestTransformService.ts:186-277` |
 | Claude identity envelope (billing block, identity block, `metadata.user_id`, `context_management`, betas) | `RequestTransformService.ts:187-298`, `ModelEnvelope.ts:49-190` |
+| Claude thinking is the client's: absent stays absent, `disabled` stays disabled, and the clear-thinking `context_management` edit is sent only with thinking on (deviation F9, user decision Q6) | [P0-LIVE L1–L3](docs/reference/2026-10-10-23-17-p0-live-findings.md), [Q6 probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md) |
+| Antigravity Gemini cell: `functionResponse` parts move to model-role contents (law 7); only `AUTO`/`VALIDATED` function-calling modes | plugin wire law 7; P0-LIVE L6 |
 
 ## 4. Behaviour laws
 - **Evidence only.** Every translation rule cites a spec in `docs/reference/specs/` or a capture in
@@ -65,7 +67,9 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 - **Own credentials.** The router's credentials live only in `~/.local/share/inference-router/`. The router never
   writes Claude Code's or the plugins' credential files.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
-  Every route except `/health` requires the router token, compared in constant time.
+  Every route except `/health` requires the router token (`<data>/token.json`, 0600), compared in constant time.
+- **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH}` repoint a
+  provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>` origin; any other value is fatal.
 - **Opt-in providers.** A subscription provider starts only with `acknowledgeTermsRisk: true` in config.
 
 ## 5. Tests and gate
@@ -73,8 +77,13 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 - **Coverage** is measured with Babel + istanbul (`scripts/gate/`). It must be exactly 100% lines, statements, functions
   and branches for unit+component, for e2e, and merged. It must also be **complete**: every source file with runtime
   code must be loaded by some test.
-- **E2E coverage** comes from daemon processes started with `--preload scripts/gate/e2e-coverage-preload.ts`. A daemon
-  must exit through a normal exit path, never a hard kill, or its coverage is lost.
+- **E2E coverage** comes from router processes (the source entry `apps/router/src/main/cli.ts`) started with
+  `--preload scripts/gate/e2e-coverage-preload.ts` (`tests/support/e2e/router-process.ts`). A daemon must exit through
+  a normal exit path (SIGTERM is handled), never a hard kill, or its coverage is lost. Upstreams are the replay server
+  `tests/support/e2e/upstreams.ts`, answering only from committed captures; browser logins use the fake `xdg-open`.
+  The built bundle is run separately (`apps/router/tests/e2e/bundle.test.ts`); it cannot carry coverage.
+  Measured state: e2e alone is below 100% ([risk R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)), so the
+  e2e gate fails until the user decides how R1 is resolved.
 - **Recursive deletes** in tests go only through `tests/support/temporary.ts#removeTemporary`, which refuses anything
   outside `os.tmpdir()`.
 - **`bun run verify`** runs typecheck → unit+component+arch coverage gate → build → e2e gate → merged gate → docs lint.
@@ -87,6 +96,7 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 - @babel/core 8.0.1, @babel/plugin-transform-typescript 8.0.1, babel-plugin-istanbul 8.0.0
 - istanbul-lib-coverage 3.2.2, istanbul-lib-report 3.0.1, istanbul-reports 3.2.0
 - @types/istanbul-lib-coverage 2.0.6, @types/istanbul-lib-report 3.0.3, @types/istanbul-reports 3.0.4
+- e2e clients (devDependencies of `apps/router`): @anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0
 
 ## 7. Docs
 - Files under `docs/{plans,research,issues,reference,temp}` are named `YYYY-MM-DD-HH-MM-<name>.md`, using the system clock.

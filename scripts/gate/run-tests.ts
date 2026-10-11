@@ -11,6 +11,7 @@ import { loadMaps, report, scopeMap } from "@inference-router/scripts/gate/cover
 import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 
 export const INCOMPLETE = 3;
+export const E2E_TEST_TIMEOUT_MS = 60_000;
 
 function containsTests(dir: string): boolean {
   if (!existsSync(dir)) return false;
@@ -83,7 +84,8 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
     }
     const rawDir = join(coverageRoot, "e2e", "raw");
     rmSync(join(coverageRoot, "e2e"), { recursive: true, force: true });
-    const code = await bunTest(dirs, { INFERENCE_ROUTER_E2E_COVERAGE_DIR: rawDir });
+    // E2E tests spawn real processes (logins, daemons): a per-test budget of 60 s instead of bun's 5 s default.
+    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), ...dirs], { INFERENCE_ROUTER_E2E_COVERAGE_DIR: rawDir });
     if (code !== 0) return code;
     const files = existsSync(rawDir) ? readdirSync(rawDir).map((f) => join(rawDir, f)) : [];
     if (files.length === 0) {
