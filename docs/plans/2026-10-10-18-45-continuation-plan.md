@@ -1,6 +1,6 @@
 # Plan: continuation after the Linux migration (2026-10-10)
 
-Status: **steps 0–1 executed; steps 2–4 proposed, awaiting approval**. Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1).
+Status: **steps 0–1 executed; decisions 1–3 approved 2026-10-10 ("Could we proceed?")**: P0-LIVE approved (waiting on the logins), amendment A2 approved, P4 detailed in [2026-10-10-19-00-p4-daemon-native-cells-plan.md](2026-10-10-19-00-p4-daemon-native-cells-plan.md). Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1).
 
 ## 1. Where the project stands (measured 2026-10-10)
 

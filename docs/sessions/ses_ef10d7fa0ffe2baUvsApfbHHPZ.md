@@ -49,6 +49,10 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   `claude` (plan v3.1); created dirs 0700, lock/log files 0600. router.yaml recreated on Linux. Next: decisions in
   docs/plans/2026-10-10-18-45-continuation-plan.md (P0-LIVE approval + logins; amendment A2 = P4 first; P4 start).
 
+- 2026-10-10 19:00 User approved the continuation decisions (P0-LIVE, A2, start P4). Detailed P4 plan written:
+  docs/plans/2026-10-10-19-00-p4-daemon-native-cells-plan.md, awaiting approval of Q1–Q5. Findings: Claude F4
+  (client anthropic-beta) not implemented; Antigravity has no countTokens endpoint; e2e-alone 100% law is risk R1.
+
 ## Progress map
 | Phase | State |
 |---|---|
