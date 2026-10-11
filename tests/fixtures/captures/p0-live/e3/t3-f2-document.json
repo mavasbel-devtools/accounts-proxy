@@ -1,0 +1,87 @@
+{
+  "id": "t3-f2-document",
+  "target": "t3",
+  "scenario": "f2-document",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695582490/1e6d60d2-e117-49a8-bb7f-bc420f0dfd43/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "application/pdf",
+                      "data": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA1NiA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDcyIDcwMCBUZCAoVGhlIGNvZGUgd29yZCBpcyBQRUxJQ0FOLikgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzNDcgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTcKJSVFT0YK"
+                    }
+                  },
+                  {
+                    "text": "What is the code word in the document? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M403",
+              "trajectory_id": "1e6d60d2-e117-49a8-bb7f-bc420f0dfd43",
+              "used_claude": "true",
+              "used_claude_conservative": "true",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "claude-sonnet-5-5-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:13:03 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=982",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 1048.9,
+        "doneAtMs": 1092.3,
+        "chunks": [
+          {
+            "atMs": 1049,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 1613,\"candidatesTokenCount\": 7,\"totalTokenCount\": 1620},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfusqqdwNCTRHhrFLyJfm\"},\"traceId\": \"f6448977e9042b48\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1049.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"PELICAN\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 1613,\"candidatesTokenCount\": 7,\"totalTokenCount\": 1620},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfusqqdwNCTRHhrFLyJfm\"},\"traceId\": \"f6448977e9042b48\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 1613,\"candidatesTokenCount\": 7,\"totalTokenCount\": 1620},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfusqqdwNCTRHhrFLyJfm\"},\"traceId\": \"f6448977e9042b48\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

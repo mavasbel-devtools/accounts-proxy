@@ -1,0 +1,117 @@
+{
+  "id": "t1-f1-image",
+  "target": "t1",
+  "scenario": "f1-image",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T05:00:51.654Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "d3bec622-59cf-49a0-bc92-7dd7126f457d",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 256,
+          "stream": true,
+          "thinking": {
+            "type": "disabled"
+          },
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "image",
+                  "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What single colour fills this image? One word."
+                }
+              ]
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=573280ff-435e-4119-923a-93eaba636abb;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": null
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b4db8b94ebd6a-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Sun, 11 Oct 2026 05:00:52 GMT",
+          "request-id": "req_011CfuruySk9LRUcpPawYAov",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-bada9e5e440b54af355e5460aeedd4fc-9376e9d67dfe8b9b-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none",
+          "x-should-retry": "false"
+        },
+        "headersAtMs": 403.4,
+        "doneAtMs": 403.9,
+        "chunks": [
+          {
+            "atMs": 403.9,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"`clear_thinking_20251015` strategy requires `thinking` to be enabled or adaptive\"},\"request_id\":\"req_011CfuruySk9LRUcpPawYAov\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "id": "t2-f3d-tool-choice-tool",
+  "target": "t2",
+  "scenario": "f3d-tool-choice-tool",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695533345/f481f711-28d7-4486-8b22-2eddb5151119/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Say hello."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "get_time",
+                    "description": "Current local time in an IANA timezone.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "timezone": {
+                          "type": "STRING"
+                        }
+                      },
+                      "required": [
+                        "timezone"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "ANY",
+                "allowedFunctionNames": [
+                  "get_time"
+                ]
+              }
+            },
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "f481f711-28d7-4486-8b22-2eddb5151119",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:12:14 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1235",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 1301.1,
+        "doneAtMs": 1341.6,
+        "chunks": [
+          {
+            "atMs": 1301.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"Hello! How can I help you today?\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 50,\"candidatesTokenCount\": 9,\"totalTokenCount\": 72,\"thoughtsTokenCount\": 13},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"rRrLaq-oH5yS_uMPzNG2yQE\"},\"traceId\": \"3a43a1df6f8756ed\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1304.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EqEBCp4BAWkUfRNtIs65PyApOIzTHkgO3w1raMY20iw7hUEsHKyMX6VX0EpniuC8tqckrWZ3KArwY2XtH7G4Rm17+S/Vc+pPQVx5SnkkLfOKHGHs0tekZtdnaYM5CY/WjoeaCXAXuNEjFbtc70AF5qHF6Tw2i5dtHQuk5a+i5mQ//Xv+iDmS0jXij6UE/JSMV0dvuqGoY1eDwL2fWS28fakJvFI=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 50,\"candidatesTokenCount\": 9,\"totalTokenCount\": 72,\"thoughtsTokenCount\": 13},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"rRrLaq-oH5yS_uMPzNG2yQE\"},\"traceId\": \"3a43a1df6f8756ed\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

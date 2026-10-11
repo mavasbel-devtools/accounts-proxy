@@ -1,0 +1,83 @@
+{
+  "id": "t2-f7b-top-p",
+  "target": "t2",
+  "scenario": "f7b-top-p",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695556175/2b75231d-7e26-4473-9bdd-9e426c3cdd17/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "10f3c242-7fee-4678-ad0c-850d8f8af81b",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "2b75231d-7e26-4473-9bdd-9e426c3cdd17",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "topP": 0.5
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:12:39 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=3193",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 3258.8,
+        "doneAtMs": 3298.1,
+        "chunks": [
+          {
+            "atMs": 3258.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 109,\"thoughtsTokenCount\": 100},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"xBrLatfGFN7d_uMP45e24Qo\"},\"traceId\": \"b904c168964b9dae\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 3261.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"Ev8DCvwDAWkUfRO0BydTF68XBmiNL3zI1XHhEDeecEi3skjkMysFju19ub6M/paKVawfWljnI+0R6CberdXSfpyAik1wFNu68dEeEmp/3w6Gll5Df32C3ehOTYa7E1TzeAEwGC5YrN+wgcLl1yevPmpQ6xh8PK9Q6ENFpuwzFnnPfnDwHI93T8ol+XFNXjLEabz1bk3VDLrFX19LMWD7pvwhS6u3l2LlNkfAmvKejwsLHxXZBBiKJ0EpNYZZuh1VYGY8UiIcrq3Lnhr6GoGR/xgbEtEO9AV46q2144mLr2QQdK0igoDj5JTz3nYiKW2keYdb0STwDYQ30BviFkulBaswkCSrvE0QUypRU4UPtplUh/eaY4sma6mnK0YiZr/pVvlS849/m19g4nu6PCFuW5LAIGf4uHf0xZWhYsJyU6bJLz45d68adjhGTy6pTsPuaIAqLz3a/oH8Vj7SRmgMcIM+mDs+s5A688pWvEZ7ZB0n7Y7qDujfRbd20FzvOjhHHFyi/YzQCxD4MxPvVp0UV57aN2buNcplBeERNdZL0VO94iMibJJUwu9Kkp7kAnPuKNKr86yOT8tQrylmGav6n0j2r43FjRSuU3Wuu6NZGLPor5ekE6D+IopXIT6sO8g6k2dScS4hPiGv2M3eecMbkaOWvzO0F8vmfPyidxjwSmRjsw==\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 109,\"thoughtsTokenCount\": 100},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"xBrLatfGFN7d_uMP45e24Qo\"},\"traceId\": \"b904c168964b9dae\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

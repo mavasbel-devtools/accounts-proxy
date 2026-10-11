@@ -1,0 +1,377 @@
+{
+  "id": "t1-f5-thinking-replay",
+  "target": "t1",
+  "scenario": "f5-thinking-replay",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "8aa32348-f201-4f03-8d2b-2addaa513725",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use a tool if one is available."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=14850594-6296-4a01-bca9-ff711112c7e1;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfusiKexRUtctBkTo64Dz"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.25",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.24",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5d271876051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 05:11:25 GMT",
+          "request-id": "req_011CfusiZm27RUCDqXVBopA2",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-a5709ab1ee793190499c3212c61d671f-7ebf50f15c564e06-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1067.9,
+        "doneAtMs": 1791.4,
+        "chunks": [
+          {
+            "atMs": 1068,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfusiZxvN8SwfP7oZ7jzx\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":770,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":5,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":null}       }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}  }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"The user is asking what\",\"estimated_tokens\":null} }\n\n"
+          },
+          {
+            "atMs": 1249.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" time it is in Tokyo and\",\"estimated_tokens\":null}          }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" mentions\",\"estimated_tokens\":null}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" I\",\"estimated_tokens\":null}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" should use a tool if available\",\"estimated_tokens\":null}             }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\". I have\",\"estimated_tokens\":null}               }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" access\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" to a `\",\"estimated_tokens\":null}  }\n\n"
+          },
+          {
+            "atMs": 1254,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"get_time` function that\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1276.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" takes\",\"estimated_tokens\":null}         }\n\n"
+          },
+          {
+            "atMs": 1302.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" a timezone parameter.\",\"estimated_tokens\":null}               }\n\n"
+          },
+          {
+            "atMs": 1324.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" Tokyo\",\"estimated_tokens\":null}           }\n\n"
+          },
+          {
+            "atMs": 1349.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" is in the\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1447.4,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" \\\"\",\"estimated_tokens\":null}           }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"Asia/Tokyo\\\" timezone.\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" Let me call\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1451.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" this function to get the current\",\"estimated_tokens\":null}    }\n\n"
+          },
+          {
+            "atMs": 1476.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" time in\",\"estimated_tokens\":null}               }\n\n"
+          },
+          {
+            "atMs": 1502.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" Tokyo.\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1766.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"ErkECtABCBIYAipA4ZnwebNzn8NioAsmUD6vW5fHlWVtrTh/18rxau4i73OAGERQtYhhhwSnGJGgBtNQB3hEIzmSHcb5AuURlOwq2zIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAH9tKzWBrABAhIMEBail0LVMgmnUbztGgz6/3UHcqqpw//I2GIiMI600KzkLf7QQd9IhM3RkAYHIqgXx2/0By/LAOuQ3vCckc+sAm4wkTKnl1BlIFpVUCqVAq0E/1dOG55ZuD3JXKIqyLQcarhXQt9W8+0Th01VyizLfYGNh1dQujUnFqRvUjvw/olO2JZagnEgu/itw+K+BnohTd5A0zlXnSXVVmPWtLjcqaKGjRiF3TebkmJH8sRXvogGGiZMzIVkLQbtvHix/wLUi74r5BoGawXAE+0rYyGFHFsLVtJ5Hg5LD//6OYQIJDZTo89e9fU7B0zHKMpRU9LwilssJJ+5dyL18FEIYN+oYKgFivPNgFu5vSZImipNUAdI+CDMzyp1dgNYuG8dhSZmfmIOcudRgpFdc65CTbfbsvE58GUTnatB3fSmrj53Q0cz68U6XRbG/oe5CUtlJPssGvO3NMRlv9x34Nio4PEy8YYdUZ8YAQ==\"}             }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0  }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01CcYGPkpATwvRJRuoqvz5NE\",\"name\":\"get_time\",\"input\":{},\"caller\":{\"type\":\"direct\"}}              }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}     }\n\n"
+          },
+          {
+            "atMs": 1786.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"timez\"}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"one\\\": \\\"\"}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"Asia/To\"}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"kyo\\\"}\"}         }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1       }\n\n"
+          },
+          {
+            "atMs": 1791.3,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":770,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":124,\"output_tokens_details\":{\"thinking_tokens\":66},\"iterations\":[{\"input_tokens\":770,\"output_tokens\":124,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}             }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"    }\n\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "ab3d7d4a-c3d9-4dd1-9f1d-45adbe6c0b41",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use a tool if one is available."
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "thinking",
+                  "thinking": "The user is asking what time it is in Tokyo and mentions I should use a tool if available. I have access to a `get_time` function that takes a timezone parameter. Tokyo is in the \"Asia/Tokyo\" timezone. Let me call this function to get the current time in Tokyo.",
+                  "signature": "ErkECtABCBIYAipA4ZnwebNzn8NioAsmUD6vW5fHlWVtrTh/18rxau4i73OAGERQtYhhhwSnGJGgBtNQB3hEIzmSHcb5AuURlOwq2zIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAH9tKzWBrABAhIMEBail0LVMgmnUbztGgz6/3UHcqqpw//I2GIiMI600KzkLf7QQd9IhM3RkAYHIqgXx2/0By/LAOuQ3vCckc+sAm4wkTKnl1BlIFpVUCqVAq0E/1dOG55ZuD3JXKIqyLQcarhXQt9W8+0Th01VyizLfYGNh1dQujUnFqRvUjvw/olO2JZagnEgu/itw+K+BnohTd5A0zlXnSXVVmPWtLjcqaKGjRiF3TebkmJH8sRXvogGGiZMzIVkLQbtvHix/wLUi74r5BoGawXAE+0rYyGFHFsLVtJ5Hg5LD//6OYQIJDZTo89e9fU7B0zHKMpRU9LwilssJJ+5dyL18FEIYN+oYKgFivPNgFu5vSZImipNUAdI+CDMzyp1dgNYuG8dhSZmfmIOcudRgpFdc65CTbfbsvE58GUTnatB3fSmrj53Q0cz68U6XRbG/oe5CUtlJPssGvO3NMRlv9x34Nio4PEy8YYdUZ8YAQ=="
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01CcYGPkpATwvRJRuoqvz5NE",
+                  "name": "get_time",
+                  "input": {
+                    "timezone": "Asia/Tokyo"
+                  },
+                  "caller": {
+                    "type": "direct"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "toolu_01CcYGPkpATwvRJRuoqvz5NE",
+                  "content": "13:00"
+                }
+              ]
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=25f1fd65-4ed6-46b9-9275-6116a23b7ed5;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfusiZxvN8SwfP7oZ7jzx"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.25",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.24",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5d3ecb67051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 05:11:28 GMT",
+          "request-id": "req_011Cfusiqx6jQKLDBgL3SQ7M",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-70fa1a6a59085f20bb435093fb85e631-bcd88696c553afd0-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1045.5,
+        "doneAtMs": 1392,
+        "chunks": [
+          {
+            "atMs": 1045.6,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfusirAFwsU8M9bETJ5h6\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":916,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":2,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":null}               }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}           }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"The function\",\"estimated_tokens\":null}     }\n\n"
+          },
+          {
+            "atMs": 1211.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" returned 13:00,\",\"estimated_tokens\":null}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" which is 1:00\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" PM in Tokyo.\",\"estimated_tokens\":null}      }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" I\",\"estimated_tokens\":null}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" should provide\",\"estimated_tokens\":null}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" this information\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 1218.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" to the user in\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 1245,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" a clear way.\",\"estimated_tokens\":null}       }\n\n"
+          },
+          {
+            "atMs": 1296.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"EqkDCtABCBIYAipA+Aga1lSZdOF2k17cMd9r6V/xZYp/LodI9/yidoFfVw8RQl48nw/oU+LTb3Lfwq/7tkLvuJaCQnGF5dKWKFtL3jIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAGBtazWBrABAhIM4Hxl4aFCINNc0t/BGgy8jRycSOa/EkpuhoEiMCWn6zeXMkVg2rjoyepkFcKfqIf3eKdFtCrjiQTqB/U4WnIdOWp1SVASiFCjs8xa3SqFAaqHtLOzbWIQ22oLsMNLRIhds7rnU4x6UnEVKNwGapDhX2yihGg4L8tsuFlu9LWnsmOHEi2vl9eKNcAHlDZ1tayDZdMnuUn90lkepBhlF3C+iFD6vKjCVoUO61NZFmVAWK+8J6QT5vbq+uEylisAy1VqDE/PqqgB1YlXMshquC9WVNciNeUYAQ==\"}          }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0         }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"} }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"The current time in Tokyo is\"}             }\n\n"
+          },
+          {
+            "atMs": 1321.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\" **\"}              }\n\n"
+          },
+          {
+            "atMs": 1345.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"13:00** (1\"}             }\n\n"
+          },
+          {
+            "atMs": 1370.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\":00 PM).\"}  }\n\n"
+          },
+          {
+            "atMs": 1384.9,
+            "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1            }\n\n"
+          },
+          {
+            "atMs": 1392,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":916,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":61,\"output_tokens_details\":{\"thinking_tokens\":37},\"iterations\":[{\"input_tokens\":916,\"output_tokens\":61,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}    }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"              }\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

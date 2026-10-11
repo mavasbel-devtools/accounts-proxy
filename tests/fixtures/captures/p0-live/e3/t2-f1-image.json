@@ -1,0 +1,83 @@
+{
+  "id": "t2-f1-image",
+  "target": "t2",
+  "scenario": "f1-image",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:15:20.328Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/de407976-73fe-4beb-b7d5-d6849889c03c/1791695727672/b27c65d6-1df4-40b9-80b2-e4ff1e872b1d/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                    }
+                  },
+                  {
+                    "text": "What single colour fills this image? One word."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "b27c65d6-1df4-40b9-80b2-e4ff1e872b1d",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:15:29 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1891",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2067.6,
+        "doneAtMs": 2067.8,
+        "chunks": [
+          {
+            "atMs": 2067.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"Red\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 1100,\"candidatesTokenCount\": 1,\"totalTokenCount\": 1143,\"thoughtsTokenCount\": 42},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"bxvLara6Nsjg_uMPp72C-Aw\"},\"traceId\": \"97f8a62250014375\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EqICCp8CAWkUfRMjzoyH06xBQj88lH6USl+rtonYKirGA1bDmhxYuRqV+NJt6Ld6VmpW5DJq+cWY6gBZcWyz64O4vl7UsjETubUFelfgcySAfF1G8H/bKEBG05a3dFa3h6bE6is6nero+tleROxhiC0Z0lQ6d7OLYHaFJ1SERHBmoZ3j4GCODlyGfRWmQ2sq3AEx2BpPO2R0z5q6anCr0ZnHYotGYOAmAs2UVAc+u06JY4FRocnEQfBdS1ojvnKyrpnIp5ofVWb4aH3ONm8nMt9lqasufFkXE02xWEWITfmphqXX5SgcsWRw3Te65R4xjabGJJO329vOWtfe/CSTdOSxg0S7CFyvW67lotHD0KZNcrOgcHxZ97wnk4I8aaX5WzUj4V0=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 1100,\"candidatesTokenCount\": 1,\"totalTokenCount\": 1143,\"thoughtsTokenCount\": 42},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"bxvLara6Nsjg_uMPp72C-Aw\"},\"traceId\": \"97f8a62250014375\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

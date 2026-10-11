@@ -1,0 +1,126 @@
+{
+  "id": "t2-f4-parallel-tools",
+  "target": "t2",
+  "scenario": "f4-parallel-tools",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695536689/3be8b2c1-ea66-40cb-84df-684833fcb1ac/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "In a single turn, call get_time for Asia/Tokyo AND get_weather for Paris (two tool calls at once)."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "get_time",
+                    "description": "Current local time in an IANA timezone.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "timezone": {
+                          "type": "STRING"
+                        }
+                      },
+                      "required": [
+                        "timezone"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "get_weather",
+                    "description": "Current weather for a city.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "city": {
+                          "type": "STRING"
+                        }
+                      },
+                      "required": [
+                        "city"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "VALIDATED"
+              }
+            },
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "3be8b2c1-ea66-40cb-84df-684833fcb1ac",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:12:18 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1574",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 1658.8,
+        "doneAtMs": 1708.2,
+        "chunks": [
+          {
+            "atMs": 1658.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EuoCCucCAWkUfRNQC1ve9q2aXtis7QX0iXhPN/Q/u4W1Id1MiI6tH93UCoop/9XdcoJsQiYVYPEd66h2TYEHvz8jWihiVazll/GsEr3fK85m+80S2/nFBImblPs6wwTkhaKFYqijOsL3h/7EdZZgVe44XE23tYvD8RyAGXWUFe3nIhSciRPO/u2sjdcqkRCjIkpE5ssNc2Bjdscorrrpxuw91kT6ofLy7q5t08BAKrGevTqOv0U7uzvZoqF37n4bcusG3v6ehCeQVVcFnh5Bhy1qnmExpc5EHxMjFTa+Dx9Kk8OYN/duiTZrzSVzugXFXPNzHAZrdx3mddKWs3ZLNFS187hDIihSVMKPJ4b8QAXf6vGNdCVebqwj2lIIgHvYWmx55aLbsUsCBIinvrF9V0FL4KZZeMekLwiQ2XMTty0eh+g+l6+nYnulHzG2IY6fi2VZ+WAqwvwaNMZJov6Ghb6x+imnjWs2aUjnNcY=\",\"functionCall\": {\"name\": \"get_time\",\"args\": {\"timezone\": \"Asia/Tokyo\"},\"id\": \"call_586252\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 116,\"candidatesTokenCount\": 18,\"totalTokenCount\": 190,\"thoughtsTokenCount\": 56},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"sBrLaqivM-2M_PUPz_vKgQ0\"},\"traceId\": \"d5d747af9ee80245\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1672.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"functionCall\": {\"name\": \"get_weather\",\"args\": {\"city\": \"Paris\"},\"id\": \"call_586253\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 116,\"candidatesTokenCount\": 34,\"totalTokenCount\": 206,\"thoughtsTokenCount\": 56},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"sBrLaqivM-2M_PUPz_vKgQ0\"},\"traceId\": \"d5d747af9ee80245\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1677.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 116,\"candidatesTokenCount\": 34,\"totalTokenCount\": 206,\"thoughtsTokenCount\": 56},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"sBrLaqivM-2M_PUPz_vKgQ0\"},\"traceId\": \"d5d747af9ee80245\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

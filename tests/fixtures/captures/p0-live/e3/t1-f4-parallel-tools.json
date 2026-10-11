@@ -1,0 +1,197 @@
+{
+  "id": "t1-f4-parallel-tools",
+  "target": "t1",
+  "scenario": "f4-parallel-tools",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "8cc6642a-0ecb-43bb-8388-8ee9153f2345",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            },
+            {
+              "name": "get_weather",
+              "description": "Current weather for a city.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ]
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "In a single turn, call get_time for Asia/Tokyo AND get_weather for Paris (two tool calls at once)."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=94310206-742e-4879-84ba-fb81a8383864;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfushwfNLMqFjYsu7ARYF"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.25",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.24",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5d12387e051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 05:11:21 GMT",
+          "request-id": "req_011CfusiKTYDSXBuqmWD1wHB",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-2b8ef749928f63f3477256478be2d470-1b569d31cb465db6-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 519.5,
+        "doneAtMs": 1336.5,
+        "chunks": [
+          {
+            "atMs": 519.6,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfusiKexRUtctBkTo64Dz\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":834,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":3,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":null}     }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}           }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"The user is\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 697.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" asking me to make two independent\",\"estimated_tokens\":null}            }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" function calls in\",\"estimated_tokens\":null}          }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" a single turn:\\n1\",\"estimated_tokens\":null}             }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\". get_time for Asia\",\"estimated_tokens\":null}  }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"/Tokyo timezone\",\"estimated_tokens\":null}               }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n2. get_weather\",\"estimated_tokens\":null} }\n\n"
+          },
+          {
+            "atMs": 702,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" for Paris city\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 726.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n\\nSince these two\",\"estimated_tokens\":null}            }\n\n"
+          },
+          {
+            "atMs": 750.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" calls are independent (\",\"estimated_tokens\":null}     }\n\n"
+          },
+          {
+            "atMs": 774.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"neither\",\"estimated_tokens\":null}             }\n\n"
+          },
+          {
+            "atMs": 799.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" depends on the result\",\"estimated_tokens\":null}       }\n\n"
+          },
+          {
+            "atMs": 825.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" of the other), I should\",\"estimated_tokens\":null}           }\n\n"
+          },
+          {
+            "atMs": 911,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" make both calls in the same\",\"estimated_tokens\":null}         }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" function_calls block.\",\"estimated_tokens\":null}    }\n\n"
+          },
+          {
+            "atMs": 1056.4,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"EtQECtABCBIYAipAWHh/5bHyGqDegoEZDvgDbYa8kquJIvSN+XCYJi5NPX6mBxY/P4+pcKv4E6Z69ELpB8HB/YJZVRco3cXavZnTejIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAH5tKzWBrABAhIMpQ2KPRlkU7ZDHyeSGgxe+cVQrsDXGPty/jsiMEAqX8CxRGQIUepU9IcCelkBFxNQj/ooAHNCp9xEjofZhGtGmJ/UDscGgbUe82uCLCqwAtZZw4MxX2H/0JZ5crduKH7JQFk9yYP/8TbTXXNlKWB4AmvX+jzdc84X7g+OqCc9Ip6KOO6Ztj14r2+Pv8TBIQ2mU/qWTybX9Dho74LJBOzWRMGfeeQ8se/4Slt3HrBkKhUyX3uNtAs2LVbkl2OEdU88AeLJFwfDnsf/LE+fbLufZmlhg3D0O3OZvcHB/VhTyVIUOalK8LqtILt8o2ITxqvWBZV9D47EyfMRCyZ8EzqgFrj4ctS/VZBO4cK2CaDDfNj4YUF4EAtQxXbatbdoUTPMBJh0L6wrYYIvhrAs/jPlUbIjkBuTMdL1pSyN2veOfWaVXOqoonz2WX+OtsKYRuAbFz6Qj6UsiuGQXMLCcv7nfpv3nL49RsS/r+QWtbcc3111skh6sFKNKNzjK7//wFkYAQ==\"}  }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0           }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01SvWwwqgcXoKVaeQiW8x5rj\",\"name\":\"get_time\",\"input\":{},\"caller\":{\"type\":\"direct\"}}     }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}               }\n\n"
+          },
+          {
+            "atMs": 1202.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"timez\"}   }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"one\\\": \\\"\"}        }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"Asia/To\"}      }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"kyo\\\"}\"} }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1   }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_011MDdwk9Dhj8GfzhpZSCy5h\",\"name\":\"get_weather\",\"input\":{},\"caller\":{\"type\":\"direct\"}}       }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}         }\n\n"
+          },
+          {
+            "atMs": 1331.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"city\\\"\"}              }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\": \\\"Pari\"}          }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"s\\\"}\"}           }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":2           }\n\n"
+          },
+          {
+            "atMs": 1336.4,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":834,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":165,\"output_tokens_details\":{\"thinking_tokens\":71},\"iterations\":[{\"input_tokens\":834,\"output_tokens\":165,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}       }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"        }\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

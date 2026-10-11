@@ -21,7 +21,9 @@ function containsTests(dir: string): boolean {
 }
 
 export function tierDirectories(tiers: readonly string[], includeRoot: boolean): string[] {
-  const dirs = includeRoot ? [join(repositoryRoot, "tests", "arch"), join(repositoryRoot, "tests", "support")] : [];
+  // Root tiers: the architecture gate, the shared test support and the scripts' own unit tests (tooling: run, not
+  // coverage-gated — only packages/*/src and apps/*/src are product sources).
+  const dirs = includeRoot ? [join(repositoryRoot, "tests", "arch"), join(repositoryRoot, "tests", "support"), join(repositoryRoot, "scripts", "tests", "unit")] : [];
   for (const group of ["packages", "apps"]) {
     const base = join(repositoryRoot, group);
     if (!existsSync(base)) continue;

@@ -1,0 +1,9 @@
+{
+  "id": "t3-s3-thinking",
+  "target": "t3",
+  "scenario": "s3-thinking",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-11T04:56:14.236Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": []
+}

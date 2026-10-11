@@ -1,0 +1,77 @@
+{
+  "id": "t2-s1-plain",
+  "target": "t2",
+  "scenario": "s1-plain",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T04:56:14.236Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/6dd6eaa3-11e5-4fe1-9875-807ac1df8cd7/1791694594314/8fcb1579-4548-402f-aca8-ec25b73aa59f/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "8fcb1579-4548-402f-aca8-ec25b73aa59f",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65536
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 04:56:37 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=2797",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2982.2,
+        "doneAtMs": 2982.6,
+        "chunks": [
+          {
+            "atMs": 2982.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 90,\"thoughtsTokenCount\": 81},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"AxfLata2EeKsz7IP0um4sA4\"},\"traceId\": \"ddd588d6c13cc682\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EtwDCtkDAWkUfROihZUb6qBLhJtY9EIeT/eJ968mrm9mgxm3oFhuwPiBQBIL8IUoi8mYoumknO3WlST5wjY2q9qWyjaNo6neowZSpKxmVpFB28rf27M89t7IGWKznS0lThZyXclWfhq8jbh4PxXH2dXQX0wEzl0B3YRn78mPBkwZIDf9/NBVHcvWLtOzEDIsEqT3t/mg3Fx0VfiFM14aEuQq2J6KC4bCzE8iAxMnIvuAxlA6kRS9U5N9mm74nKQAvRKSnI6JZWstJ0RZevMRHwEXB/91Q3diHMRtGad7QKxOhaH8ZO1m94YXEJY0M0uxSrzzf6YnwzcZ2ywMnCbpwBltJe2tUQ7MEtFbTubuwSB72nP/ncLHySmU1Vrw1Lfpj23m12ntA4vLgPiz/ObgbyWFZd9tVts6HP7vyiMLkZqv31n4pIcpmkMpL0TmlgNVemC05/l3C2B/DjbR1s2k3ItMHXguyVly/PAEdL8WfoIaxiI5rVQ9XnSSN/Qcl4k5MwLIcLTujIahyGItTnX+yR15ZkExPR8RdL1WDzkD3pxrbEknaLumu/Wlyl/l2S8pihevvyORMSD4+F3pQXHjeZ5nJKWNPAzpv7Uxbh4CoZMunoq/9fylrA/nChl7M9Q=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 90,\"thoughtsTokenCount\": 81},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"AxfLata2EeKsz7IP0um4sA4\"},\"traceId\": \"ddd588d6c13cc682\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "id": "t2-s3-thinking",
+  "target": "t2",
+  "scenario": "s3-thinking",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T04:56:14.236Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/6dd6eaa3-11e5-4fe1-9875-807ac1df8cd7/1791694614353/6b47b4f9-ecd7-4d12-ba07-122d3b2aebb9/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Is 391 a prime number? Think it through, then answer yes or no."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "6b47b4f9-ecd7-4d12-ba07-122d3b2aebb9",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65536,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": 1000
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 04:56:58 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=4182",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 4192.3,
+        "doneAtMs": 5779.3,
+        "chunks": [
+          {
+            "atMs": 4192.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Testing if 391 is prime involves checking divisibility by primes up to its square root, approximately 19.77. Divisibility by 2, 3, and 5 is quickly ruled out.\\nChecking divisibility by 7 shows that 391 isn't divisible by 7. Need to verify divisibility by 11, 13, 17, and 19.\\n\\n\\n\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"totalTokenCount\": 324,\"thoughtsTokenCount\": 304},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 4450,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"To determine\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 2,\"totalTokenCount\": 372,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 4656.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" if 391 is a prime number, we check for divisibility by prime numbers up to $\\\\sqrt{391}\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 29,\"totalTokenCount\": 399,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 4865.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" \\\\approx 19.77$ (primes to check: 2, 3, 5, 7\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 54,\"totalTokenCount\": 424,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 4934.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \", 11, 13, 17, 19):\\n\\n* It is not divisible by\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 78,\"totalTokenCount\": 448,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5267.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" 2, 3, or 5 based on basic divisibility rules.\\n* $391 \\\\div \"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 103,\"totalTokenCount\": 473,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"7 = 55.85...$ (not divisible)\\n* $391 \\\\div 11 =\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 129,\"totalTokenCount\": 499,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5471.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" 35.54...$ (not divisible)\\n* $391 \\\\div 13 = 30.0\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 158,\"totalTokenCount\": 528,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5678.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"7...$ (not divisible)\\n* $391 \\\\div 17 = 23$ ($\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 182,\"totalTokenCount\": 552,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5696.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"17 \\\\times 23 = 391$)\\n\\nSince 391 is divisible by 17 and\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 208,\"totalTokenCount\": 578,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5732.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" 23, it is not prime.\\n\\n**No**\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 221,\"totalTokenCount\": 591,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 5735.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EuUHCuIHAWkUfRM4bT9IDTUUmzxgqAXQ+gqKemG9Lq4YPMCHBsixm7iuw5lY+n01BrcJk+TMYjh2vPnmW4NdrQrgRFcoA0OT0gGSexiOrPsgDQV46XuQCaLPwH4pufVY2r96HA1Q7mLGbMtweG8p18CgXoS+iLqC8RyLvRXFSqXYe/2BAzNhBVNEYibV8QEAg+Qrxms5dD8I6v7zWMOX/vchIjkPFCFjNjZHn01Jud7ou6wE6AwV1BF40gjO1nLMSXBVE40TOIX/8rrR7x3/f9L9/mvmihVBh0bKI2ANFkDfqY+42oDprPPKL0yFQbMq9YGbM25lHFG9y8AnuK28KirCkt+ZepDxcpC+tj5ml/uEtaPxNcWtZMoLyxBEaA5gXUVusq2+HODMNunm+yuecf/vFSaOQ+CCG13uFvSxTwXj5QdVfPhE1Q/7WFi9pWUruD9UL8cLhEIqOd8NKxqt6+d0RodgCrpZPIxURNJRsbH27KnO3CJezMNq4Q+2Gz3LULjRgh8BnPV8Wau8SPYNgUnkeXA36TPabm1y93p4q669vPihhvA9HHDLxS1aOEwmVrR1EpE23OrOxnwbDlHqrwtkEcFHOnAs/NVSuGzgl4vbt5J54MQluhEK5rQfOv1fIN1iAwcybS6IhNWtioq0maum6YOJVACpGoYyUd8a9A2EYL33O4aSvY1OPe4bfjdfZ8Nvj/IPR+ybS1d9hY5SOA5d7NdHIHUoZ78BgaEbhkClGLS9HvL2QW8VwUSMScCw1rdbjamys4b2odxSJWadUPXmDUbg4R4K2WGmTik7ifBFGauydqe73NsIBvYnOo03iHEGdkCmaii+FmqgRDzcB1rJuKCfD3W8hAK24mOgacMrNRllXBVTc5UdzrNLb+KlB/WsTAZTYTkoDI6VMFsXvr7k31po087aVqGxos5mLhRGCVGV0zuJ2kmznG/DjTBkg+qX7pGh4xl6PUCP2lauxY1Ykwck1fr1YMCt/yUwPCXxGxO3I9NYvVqxyLF+qqZjRUuN9lz7KW1AEKxtw2nSP03NQYGkoWlDbjLZYomtoEMlXvfhM+p3npdHJKt5vJoqWCg+js3UPVW6FwFdSxNDhGpai0vKkcPL0vqYq3giBvJxX0Sw0FjgCtiXij3v1B59vyLJReHEF72n1OHOTTUTZYlKE/rvMEzAmSNaDf/wAPOjXvPwnTvBpZv/wlp1JIh49QqQn3ysfreCT8TQcoQc+gYGk8VAPnjqGnRK0GBW47Dm5503EXPkQ+JnTKJrIdH7IuCjI33jkIHHd/D8dEdNaAH7cGPZdivLUkRag2EMMyBfkFTuRf852g==\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 20,\"candidatesTokenCount\": 221,\"totalTokenCount\": 591,\"thoughtsTokenCount\": 350},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"FhfLatr4IrrQz7IPzcWJwQ0\"},\"traceId\": \"771fa8599e4f7c8c\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

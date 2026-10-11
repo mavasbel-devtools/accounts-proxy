@@ -1,0 +1,394 @@
+[
+  {
+    "target": "t1",
+    "probe": "f1-image",
+    "feature": "image input",
+    "verdict": "ACCEPTED",
+    "evidence": "answer=\"Red\""
+  },
+  {
+    "target": "t1",
+    "probe": "f2-document",
+    "feature": "document (PDF) input",
+    "verdict": "ACCEPTED",
+    "evidence": "answer=\"PELICAN\""
+  },
+  {
+    "target": "t1",
+    "probe": "f3a-tool-choice-auto",
+    "feature": "tool_choice auto",
+    "verdict": "ACCEPTED",
+    "evidence": "stop=tool_use calls=get_time text=\"\""
+  },
+  {
+    "target": "t1",
+    "probe": "f3b-tool-choice-any",
+    "feature": "tool_choice any",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Thinking may not be enabled when tool_choice forces tool use.\"},\"request_id\":\"req_011Cfushn2RwPT4TxhjYZhwG\"}"
+  },
+  {
+    "target": "t1",
+    "probe": "f3c-tool-choice-none",
+    "feature": "tool_choice none",
+    "verdict": "ACCEPTED",
+    "evidence": "stop=end_turn calls=none text=\"\""
+  },
+  {
+    "target": "t1",
+    "probe": "f3d-tool-choice-tool",
+    "feature": "tool_choice tool",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Thinking may not be enabled when tool_choice forces tool use.\"},\"request_id\":\"req_011CfusiA6ESbSvN7gQ7p3uN\"}"
+  },
+  {
+    "target": "t1",
+    "probe": "f4-parallel-tools",
+    "feature": "parallel tool calls",
+    "verdict": "ACCEPTED",
+    "evidence": "calls in one turn=get_time,get_weather"
+  },
+  {
+    "target": "t1",
+    "probe": "f5-thinking-replay",
+    "feature": "thinking + signature replay",
+    "verdict": "ACCEPTED",
+    "evidence": "turn1 blocks=thinking,tool_use signature=true; replay HTTP 200 stop=end_turn"
+  },
+  {
+    "target": "t1",
+    "probe": "f6-stop-sequences",
+    "feature": "stop sequences",
+    "verdict": "ACCEPTED",
+    "evidence": "stop=stop_sequence stop_sequence=5 text=\"\""
+  },
+  {
+    "target": "t1",
+    "probe": "f7a-temperature",
+    "feature": "temperature",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"`temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://platform.claude.com/docs/en/build-with-claude/extended-thinking\"},\"request_id\":\"req_011CfusjJDQv48DEKF113B1P\"}"
+  },
+  {
+    "target": "t1",
+    "probe": "f7b-top-p",
+    "feature": "top_p",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"`top_p` must be greater than or equal to 0.95 or unset when thinking is enabled. Please consult our documentation at https://platform.claude.com/docs/en/build-with-claude/extended-thinking\"},\"request_id\":\"req_011CfusjTXkSzJGkKcYaxotC"
+  },
+  {
+    "target": "t1",
+    "probe": "f7c-top-k",
+    "feature": "top_k",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"`top_k` must be unset when thinking is enabled. Please consult our documentation at https://platform.claude.com/docs/en/build-with-claude/extended-thinking\"},\"request_id\":\"req_011CfusjcwXx39s1heDWUm8B\"}"
+  },
+  {
+    "target": "t1",
+    "probe": "f8-system",
+    "feature": "system prompt",
+    "verdict": "ACCEPTED",
+    "evidence": "answer=\"Bleu.\""
+  },
+  {
+    "target": "t1",
+    "probe": "f9-cache-control",
+    "feature": "cache_control ephemeral",
+    "verdict": "ACCEPTED",
+    "evidence": "call1 input=46 cache_creation=5736; call2 cache_read=5736"
+  },
+  {
+    "target": "t2",
+    "probe": "f1-image",
+    "feature": "image input",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"Red\""
+  },
+  {
+    "target": "t2",
+    "probe": "f2-document",
+    "feature": "document (PDF) input",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"PELICAN\""
+  },
+  {
+    "target": "t2",
+    "probe": "f3a-tool-choice-auto",
+    "feature": "functionCallingConfig {\"mode\":\"AUTO\"}",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP calls=get_time text=\"\""
+  },
+  {
+    "target": "t2",
+    "probe": "f3b-tool-choice-any",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\"}",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP calls=none text=\"Hello! How can I help you today?\""
+  },
+  {
+    "target": "t2",
+    "probe": "f3c-tool-choice-none",
+    "feature": "functionCallingConfig {\"mode\":\"NONE\"}",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP calls=get_time text=\"\""
+  },
+  {
+    "target": "t2",
+    "probe": "f3d-tool-choice-tool",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\",\"allowedFunctionNames\":[\"get_time\"]}",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP calls=none text=\"Hello! How can I help you today?\""
+  },
+  {
+    "target": "t2",
+    "probe": "f4-parallel-tools",
+    "feature": "parallel tool calls",
+    "verdict": "ACCEPTED",
+    "evidence": "calls in one turn=get_time,get_weather"
+  },
+  {
+    "target": "t2",
+    "probe": "f5-thinking-replay",
+    "feature": "thinking + signature replay",
+    "verdict": "IGNORED",
+    "evidence": "thinkingConfig={\"includeThoughts\":true,\"thinkingBudget\":1000} turn1 thoughtChars=0 thoughtsTokenCount=undefined signedCall=true; replay finish=STOP"
+  },
+  {
+    "target": "t2",
+    "probe": "f6-stop-sequences",
+    "feature": "stopSequences",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP text=\"1 2 3 4 \""
+  },
+  {
+    "target": "t2",
+    "probe": "f7a-temperature",
+    "feature": "temperature",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t2",
+    "probe": "f7b-top-p",
+    "feature": "topP",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t2",
+    "probe": "f7c-top-k",
+    "feature": "topK",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t2",
+    "probe": "f8-system",
+    "feature": "systemInstruction",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"Bleu\""
+  },
+  {
+    "target": "t2",
+    "probe": "f9-implicit-cache",
+    "feature": "prompt cache (implicit; no request field)",
+    "verdict": "ACCEPTED",
+    "evidence": "call1 prompt=5623; call2 cachedContentTokenCount=3584"
+  },
+  {
+    "target": "t3",
+    "probe": "f1-image",
+    "feature": "image input",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"Red\""
+  },
+  {
+    "target": "t3",
+    "probe": "f2-document",
+    "feature": "document (PDF) input",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"PELICAN\""
+  },
+  {
+    "target": "t3",
+    "probe": "f3a-tool-choice-auto",
+    "feature": "functionCallingConfig {\"mode\":\"AUTO\"}",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP calls=get_time text=\"\""
+  },
+  {
+    "target": "t3",
+    "probe": "f3b-tool-choice-any",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\"}",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {   \"error\": {     \"code\": 400,     \"message\": \"{\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"tool_choice: type \\\\\\\"tool\\\\\\\" and \\\\\\\"any\\\\\\\" are not supported for this model.\\\"},\\\"request_id\\\":\\\"req_vrtx_011CfusrJKoS1UaxeEm9Y4QP\\\"}\",     \"status\": \"INVALID_ARGUMENT\""
+  },
+  {
+    "target": "t3",
+    "probe": "f3c-tool-choice-none",
+    "feature": "functionCallingConfig {\"mode\":\"NONE\"}",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP calls=none text=\"\""
+  },
+  {
+    "target": "t3",
+    "probe": "f3d-tool-choice-tool",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\",\"allowedFunctionNames\":[\"get_time\"]}",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {   \"error\": {     \"code\": 400,     \"message\": \"{\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"invalid_request_error\\\",\\\"message\\\":\\\"tool_choice: type \\\\\\\"tool\\\\\\\" and \\\\\\\"any\\\\\\\" are not supported for this model.\\\"},\\\"request_id\\\":\\\"req_vrtx_011Cfusrh7WJDfgxYvbRdzto\\\"}\",     \"status\": \"INVALID_ARGUMENT\""
+  },
+  {
+    "target": "t3",
+    "probe": "f4-parallel-tools",
+    "feature": "parallel tool calls",
+    "verdict": "ACCEPTED",
+    "evidence": "calls in one turn=get_time,get_weather"
+  },
+  {
+    "target": "t3",
+    "probe": "f5-thinking-replay",
+    "feature": "thinking + signature replay",
+    "verdict": "IGNORED",
+    "evidence": "thinkingConfig={\"includeThoughts\":true} turn1 thoughtChars=0 thoughtsTokenCount=undefined signedCall=false; replay finish=STOP"
+  },
+  {
+    "target": "t3",
+    "probe": "f6-stop-sequences",
+    "feature": "stopSequences",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP text=\"1 2 3 4 \""
+  },
+  {
+    "target": "t3",
+    "probe": "f7a-temperature",
+    "feature": "temperature",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t3",
+    "probe": "f7b-top-p",
+    "feature": "topP",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t3",
+    "probe": "f7c-top-k",
+    "feature": "topK",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t3",
+    "probe": "f8-system",
+    "feature": "systemInstruction",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"Bleu.\""
+  },
+  {
+    "target": "t3",
+    "probe": "f9-implicit-cache",
+    "feature": "prompt cache (implicit; no request field)",
+    "verdict": "IGNORED",
+    "evidence": "call1 prompt=7941; call2 cachedContentTokenCount=0"
+  },
+  {
+    "target": "t4",
+    "probe": "f1-image",
+    "feature": "image input",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP answer=\"I’m sorry—I don’t have the ability to view images. If you can describe the picture (e.g., the dominant hue, any noticeable tones, or the context), I’ll do my best to identify the single color you’re looking for.\""
+  },
+  {
+    "target": "t4",
+    "probe": "f2-document",
+    "feature": "document (PDF) input",
+    "verdict": "REJECTED",
+    "evidence": "HTTP 400: {   \"error\": {     \"code\": 400,     \"message\": \"Request contains an invalid argument.\",     \"status\": \"INVALID_ARGUMENT\"   } } "
+  },
+  {
+    "target": "t4",
+    "probe": "f3a-tool-choice-auto",
+    "feature": "functionCallingConfig {\"mode\":\"AUTO\"}",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP calls=get_time text=\"\""
+  },
+  {
+    "target": "t4",
+    "probe": "f3b-tool-choice-any",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\"}",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP calls=none text=\"Hello! 👋 How can I assist you today?\""
+  },
+  {
+    "target": "t4",
+    "probe": "f3c-tool-choice-none",
+    "feature": "functionCallingConfig {\"mode\":\"NONE\"}",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP calls=none text=\"I don’t have live‑access to a clock, so I can’t give you the exact current time \""
+  },
+  {
+    "target": "t4",
+    "probe": "f3d-tool-choice-tool",
+    "feature": "functionCallingConfig {\"mode\":\"ANY\",\"allowedFunctionNames\":[\"get_time\"]}",
+    "verdict": "IGNORED",
+    "evidence": "finish=STOP calls=none text=\"Hello! 👋 How can I assist you today?\""
+  },
+  {
+    "target": "t4",
+    "probe": "f4-parallel-tools",
+    "feature": "parallel tool calls",
+    "verdict": "IGNORED",
+    "evidence": "calls in one turn=get_time"
+  },
+  {
+    "target": "t4",
+    "probe": "f5-thinking-replay",
+    "feature": "thinking + signature replay",
+    "verdict": "ACCEPTED",
+    "evidence": "thinkingConfig={\"includeThoughts\":true,\"thinkingBudget\":8192} turn1 thoughtChars=71 thoughtsTokenCount=undefined signedCall=false; replay finish=STOP"
+  },
+  {
+    "target": "t4",
+    "probe": "f6-stop-sequences",
+    "feature": "stopSequences",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP text=\"1 2 3 4\""
+  },
+  {
+    "target": "t4",
+    "probe": "f7a-temperature",
+    "feature": "temperature",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t4",
+    "probe": "f7b-top-p",
+    "feature": "topP",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t4",
+    "probe": "f7c-top-k",
+    "feature": "topK",
+    "verdict": "ACCEPTED",
+    "evidence": "HTTP 200 (sampling effect not observable in one draw; acceptance only) finish=STOP text=\"OK\""
+  },
+  {
+    "target": "t4",
+    "probe": "f8-system",
+    "feature": "systemInstruction",
+    "verdict": "ACCEPTED",
+    "evidence": "finish=STOP answer=\"bleu\""
+  },
+  {
+    "target": "t4",
+    "probe": "f9-implicit-cache",
+    "feature": "prompt cache (implicit; no request field)",
+    "verdict": "IGNORED",
+    "evidence": "call1 prompt=5137; call2 cachedContentTokenCount=0"
+  }
+]

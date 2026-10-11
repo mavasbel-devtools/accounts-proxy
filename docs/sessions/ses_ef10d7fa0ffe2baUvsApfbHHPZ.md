@@ -53,11 +53,17 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   docs/plans/2026-10-10-19-00-p4-daemon-native-cells-plan.md, awaiting approval of Q1–Q5. Findings: Claude F4
   (client anthropic-beta) not implemented; Antigravity has no countTokens endpoint; e2e-alone 100% law is risk R1.
 
+- 2026-10-11 User signed in both providers and approved: live tests before P4, P4 Q1–Q5 as recommended. Ran
+  `models`/`quota` checks, E2 (11 exchanges) and E3 (56 cells, 4 runs). Findings L1–L15; P4 plan amendment B adds
+  Q6 (Claude thinking cannot be disabled through the envelope) and Q7 (Windows fingerprints), awaiting decision.
+  `.cortexkit/` (Magic Context local state) added to .gitignore.
+
 ## Progress map
 | Phase | State |
 |---|---|
 | P0-E1/E5/E6 | done |
-| P0-E2/E3/E4 | waiting on the P0-LIVE gate (needs the user's browser logins after P3) |
+| P0-E2/E3 | done 2026-10-11 (docs/reference/2026-10-10-23-17-p0-live-findings.md) |
+| P0-E4 | after P4 (can cost one re-login) |
 | P1 | done |
 | P2 | done |
 | P3 | done (providers, router CLI, alias imports) |

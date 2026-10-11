@@ -1,0 +1,179 @@
+{
+  "id": "t4-f1-image",
+  "target": "t4",
+  "scenario": "f1-image",
+  "model": "gpt-oss-120b-medium",
+  "capturedAt": "2026-10-11T05:15:20.328Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/de407976-73fe-4beb-b7d5-d6849889c03c/1791695742203/52253c05-e2da-4fa7-bd71-8293adf0552e/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC"
+                    }
+                  },
+                  {
+                    "text": "What single colour fills this image? One word."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_OPENAI_GPT_OSS_120B_MEDIUM",
+              "trajectory_id": "52253c05-e2da-4fa7-bd71-8293adf0552e",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gpt-oss-120b-medium",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:15:42 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=675",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 850.9,
+        "doneAtMs": 1198.8,
+        "chunks": [
+          {
+            "atMs": 851,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\"}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"The user\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" asks: \\\"What\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" single colour fills this\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" image? One word\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \".\\\" They likely have\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" an image attached\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"?\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" But no\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" image\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" provided\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" in\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:42Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 860.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" text\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \". Maybe\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 868,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" they expect\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 874.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" description\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 878.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"?\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 890,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" As ChatGPT cannot\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 907.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" see images.\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 935.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" Need\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" to respond that\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" I cannot see images\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \". Ask to\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 938.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" describe\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 942.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \".\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 957.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"I\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 975.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"’m sorry—I\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" don\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"’t have the ability\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1008.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" to view images\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \". If you can\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" describe the picture\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1008.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" (\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1024.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"e\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \".g., the\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1074.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" dominant hue\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1075.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \", any\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1080.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" noticeable\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1089,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" tones\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1107,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \", or\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1142.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" the context),\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" I’ll\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" do\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" my best to identify\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" the single\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1158,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" color\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" you\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1160.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"’re looking for.\"}]}}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1169.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\"},\"finishReason\": \"STOP\"}],\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1169.3,
+            "text": "data: {\"response\": {\"usageMetadata\": {\"promptTokenCount\": 77,\"candidatesTokenCount\": 114,\"totalTokenCount\": 191,\"cachedContentTokenCount\": 64},\"modelVersion\": \"gpt-oss-120b-medium\",\"createTime\": \"2026-10-11T05:15:43Z\",\"responseId\": \"914ba1fd-be18-4bbf-bfa9-19de279e1582\"},\"traceId\": \"7f7c5ebea1d27fb3\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

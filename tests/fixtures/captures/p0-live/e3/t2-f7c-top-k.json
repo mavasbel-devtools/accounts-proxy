@@ -1,0 +1,83 @@
+{
+  "id": "t2-f7c-top-k",
+  "target": "t2",
+  "scenario": "f7c-top-k",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695561474/2b75231d-7e26-4473-9bdd-9e426c3cdd17/8",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "d3f7d2ba-7ab5-470a-9eed-fbecb0d8d9f2",
+              "last_step_index": "7",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "2b75231d-7e26-4473-9bdd-9e426c3cdd17",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "topK": 5
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:12:43 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1659",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 1726.3,
+        "doneAtMs": 1764.6,
+        "chunks": [
+          {
+            "atMs": 1726.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 76,\"thoughtsTokenCount\": 67},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"yRrLaqadJ8yY_uMP2cziyAE\"},\"traceId\": \"ec07a8c9924ccb8a\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1728.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EqoDCqcDAWkUfRO+lyKC5KyXLcOICCYSKVa2fWiyhL0ixqMXojFRu+iAyOWy1/xmUbIrps6pX0Nej5pBVGMG5jL3kbj/mAVUls4ktzb1J/ONwtbzC6oYgmlRhd506WRVYC1bmuMkwnPzz/bYFJoH5k6EZH2cIkNS+mN+9HaDtRf0Ay4r2Cvr32FeBgIhD1GAQIvBPMDMqKg7L7SU+AbPy0C64hTiKg0t/NH4+WGBxJS+tXq9U3ecW1+TnBIYtJOizIwluN2QWIZwPc4mkS3YRpEN7f0aIaDr2BVRFZ6JeqZs14rJgHRzKueEJC9vzxFZg27ECBvjKihDN32uRb0KFKTLfoR2S6ftbvf/0iSpdbtbBhUaJkA3pGRXzm/QPBnKmvjPYqyarrOQqnX4bs74+x0HMywag/iHv2DQcWNiEXhPi8db4Mv02cSJQDE4pO5cCjOvdtKxdLyoQaPka7lrOk6EJbfgUcy+hvbvVVhZn50cf9pQkB4c2isnn8F4/zinoxfLUBeUlvxRXkVpH/QsptNCPl8/gOC6c35VoO25WjgO2NtsvAY9PEOZeSVE\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 76,\"thoughtsTokenCount\": 67},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"yRrLaqadJ8yY_uMP2cziyAE\"},\"traceId\": \"ec07a8c9924ccb8a\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

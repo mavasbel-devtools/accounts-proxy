@@ -1,0 +1,111 @@
+{
+  "id": "t3-f3a-tool-choice-auto",
+  "target": "t3",
+  "scenario": "f3a-tool-choice-auto",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695585586/fdd8a520-4ced-4c63-8d86-94ec0e49fd8d/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What time is it in Tokyo? Use a tool if one is available."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "get_time",
+                    "description": "Current local time in an IANA timezone.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "timezone": {
+                          "type": "STRING"
+                        }
+                      },
+                      "required": [
+                        "timezone"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "AUTO"
+              }
+            },
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M403",
+              "trajectory_id": "fdd8a520-4ced-4c63-8d86-94ec0e49fd8d",
+              "used_claude": "true",
+              "used_claude_conservative": "true",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "claude-sonnet-5-5-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:13:06 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=791",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 858,
+        "doneAtMs": 1075.6,
+        "chunks": [
+          {
+            "atMs": 858.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 393,\"candidatesTokenCount\": 16,\"totalTokenCount\": 409},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011Cfusr56p7g3DgrW2ErwwS\"},\"traceId\": \"1f36f365ec4df2d4\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1026.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"functionCall\": {\"name\": \"get_time\",\"args\": {\"timezone\": \"Asia/Tokyo\"},\"id\": \"toolu_vrtx_01Syrdseivni22FtFbeGh1BR\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 393,\"candidatesTokenCount\": 16,\"totalTokenCount\": 409},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011Cfusr56p7g3DgrW2ErwwS\"},\"traceId\": \"1f36f365ec4df2d4\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1027.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 393,\"candidatesTokenCount\": 57,\"totalTokenCount\": 450},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011Cfusr56p7g3DgrW2ErwwS\"},\"traceId\": \"1f36f365ec4df2d4\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

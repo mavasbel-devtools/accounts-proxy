@@ -1,0 +1,402 @@
+{
+  "id": "t1-f9-cache-control",
+  "target": "t1",
+  "scenario": "f9-cache-control",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "a15367f3-ac7f-4dbb-ab73-7f1e15732ed4",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=dea9fa7a-7bae-4000-a4af-2b1c5f773a21;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            },
+            {
+              "type": "text",
+              "text": "Clause 1: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 2: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 3: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 4: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 5: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 6: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 7: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 8: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 9: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 10: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 11: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 12: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 13: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 14: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 15: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 16: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 17: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 18: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 19: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 20: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 21: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 22: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 23: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 24: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 25: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 26: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 27: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 28: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 29: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 30: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 31: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 32: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 33: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 34: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 35: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 36: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 37: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 38: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 39: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 40: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 41: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 42: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 43: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 44: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 45: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 46: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 47: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 48: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 49: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 50: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 51: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 52: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 53: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 54: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 55: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 56: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 57: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 58: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 59: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 60: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 61: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 62: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 63: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 64: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 65: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 66: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 67: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 68: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 69: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 70: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 71: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 72: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 73: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 74: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 75: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 76: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 77: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 78: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 79: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 80: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 81: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 82: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 83: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 84: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 85: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 86: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 87: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 88: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 89: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 90: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 91: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 92: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 93: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 94: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 95: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 96: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 97: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 98: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 99: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 100: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 101: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 102: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 103: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 104: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 105: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 106: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 107: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 108: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 109: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 110: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 111: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 112: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 113: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 114: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 115: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 116: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 117: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 118: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 119: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 120: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 121: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 122: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 123: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 124: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 125: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 126: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 127: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 128: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 129: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 130: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 131: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 132: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 133: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 134: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 135: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 136: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 137: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 138: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 139: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 140: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 141: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 142: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 143: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 144: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 145: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 146: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 147: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 148: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 149: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 150: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 151: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 152: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 153: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 154: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 155: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 156: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 157: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 158: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 159: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 160: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 161: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 162: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 163: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 164: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 165: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 166: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 167: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 168: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 169: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 170: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 171: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 172: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 173: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 174: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 175: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 176: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 177: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 178: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 179: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 180: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 181: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 182: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 183: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 184: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 185: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 186: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 187: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 188: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 189: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 190: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 191: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 192: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 193: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 194: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 195: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 196: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 197: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 198: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 199: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 200: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 201: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 202: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 203: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 204: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 205: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 206: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 207: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 208: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 209: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 210: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 211: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 212: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 213: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 214: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 215: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 216: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 217: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 218: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 219: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 220: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "How many years are entries kept? Number only."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfusjnVGd1JTbGpNZ1xWe"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.25",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.24",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5dae9d1a051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 05:11:46 GMT",
+          "request-id": "req_011CfuskAP98y6We4KFRB68F",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-c20d5308322562af791f05cd1559b4b0-2bb6ae9104e347c8-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1122.3,
+        "doneAtMs": 1761.6,
+        "chunks": [
+          {
+            "atMs": 1122.4,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfuskAbYGzqpP4ewBdsVt\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":46,\"cache_creation_input_tokens\":5736,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":5736,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":5,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":{\"cache_miss_reason\":{\"type\":\"system_changed\",\"cache_missed_input_tokens\":0}},\"context_management\":null}   }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"} }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"The user is asking how\",\"estimated_tokens\":null}               }\n\n"
+          },
+          {
+            "atMs": 1210.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" many years entries are kept according\",\"estimated_tokens\":null}          }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" to the document provided\",\"estimated_tokens\":null}               }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\". Let me look at the\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1218,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" cla\",\"estimated_tokens\":null}            }\n\n"
+          },
+          {
+            "atMs": 1242.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"uses.\",\"estimated_tokens\":null}               }\n\n"
+          },
+          {
+            "atMs": 1262.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n\\nAll\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1284.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" \",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1311,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"220 clauses state\",\"estimated_tokens\":null}    }\n\n"
+          },
+          {
+            "atMs": 1335.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\":\",\"estimated_tokens\":null}  }\n\n"
+          },
+          {
+            "atMs": 1361,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" \\\"the archive keeps every led\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1387.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"ger entry for seven years and\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1414.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" indexes it by account, date\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 1440.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" and amount.\\\"\\n\\nSo the\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1466.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" answer is 7 years\",\"estimated_tokens\":null}    }\n\n"
+          },
+          {
+            "atMs": 1490.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\".\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 1514.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n\\nThe\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1540.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" user asks\",\"estimated_tokens\":null}  }\n\n"
+          },
+          {
+            "atMs": 1563.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" for \\\"Number only.\\\"\",\"estimated_tokens\":null}         }\n\n"
+          },
+          {
+            "atMs": 1611.4,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n\\nSo\",\"estimated_tokens\":null}           }\n\n"
+          },
+          {
+            "atMs": 1636.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" I should\",\"estimated_tokens\":null}           }\n\n"
+          },
+          {
+            "atMs": 1659.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" respond\",\"estimated_tokens\":null}}\n\n"
+          },
+          {
+            "atMs": 1684.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" with just:\",\"estimated_tokens\":null} }\n\n"
+          },
+          {
+            "atMs": 1710.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" 7\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 1737.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"EoAFCtABCBIYAipAx2ZRWlzGbF5VB4YK6GRIowe0Xdqt2YYhauXORc0Ioe2mlIddaGrMPFCSd5yrVEBYX0hg7anOzOsul2uJuWeBIzIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAGTtazWBrABAhIMZQC1lQpM9l/BZ7toGgxOmFCZPbhTR95F3hIiMI360FLsH9q5HDBfVAHzLDAlEH54zkygGSjiQoDNkrTSpaCyk45i9F44VnnFTYc9DircApL39q6P35Dhh3TUOLiV5HH8XjD9RexOejklXLlgmVuCmAfPhxSDOBXdvUtamO2Mqnz3Lm97StibGpetKyE4qGsuhf1V4iV75wPL3iGHz6/TCTjBU5b5MY4CA1QfOs6TSt6Ett94iG2FX3Kh0i6jPRDNVSsVutMgLwKK+OACHajivlKHcVJ1rXiTG4dF8PbH0sVW/WTo/dcVg/i3AkcGgE1BVsw053H9HhO3jp+AtTbVyqMB8iYVG3y/bnUPlHw29w1FOfrcoPazo24hyJ0Q8pXSCT4TUlhGxKEObTkfie3UWGXUn5J9nEDeRNKmeKZz4AoLLuH6gSnBszfsyt36F9q0kteiAtIQ0F0RaC08UXE/iesGYF3qQb1EH4S01SuPTdcllTGlaIQ+bq1XTtwwLuna3UJhiSyT2aQP6Xo84o1npWhv4FANyntulT4SWtk2wMOsSSFrU/8/WjF0rxgB\"}   }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0             }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}        }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"7\"}      }\n\n"
+          },
+          {
+            "atMs": 1757.3,
+            "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1               }\n\n"
+          },
+          {
+            "atMs": 1761.5,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":46,\"cache_creation_input_tokens\":5736,\"cache_read_input_tokens\":0,\"output_tokens\":95,\"output_tokens_details\":{\"thinking_tokens\":89},\"iterations\":[{\"input_tokens\":46,\"output_tokens\":95,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":5736,\"cache_creation\":{\"ephemeral_5m_input_tokens\":5736,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}      }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"   }\n\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "0500a8a5-a22c-494f-b204-bc3cd121c0da",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=f081c1c9-f1e6-41d7-85f6-7d65ee1c6a5f;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            },
+            {
+              "type": "text",
+              "text": "Clause 1: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 2: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 3: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 4: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 5: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 6: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 7: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 8: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 9: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 10: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 11: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 12: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 13: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 14: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 15: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 16: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 17: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 18: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 19: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 20: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 21: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 22: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 23: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 24: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 25: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 26: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 27: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 28: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 29: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 30: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 31: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 32: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 33: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 34: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 35: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 36: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 37: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 38: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 39: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 40: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 41: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 42: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 43: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 44: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 45: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 46: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 47: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 48: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 49: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 50: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 51: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 52: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 53: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 54: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 55: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 56: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 57: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 58: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 59: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 60: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 61: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 62: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 63: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 64: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 65: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 66: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 67: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 68: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 69: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 70: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 71: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 72: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 73: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 74: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 75: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 76: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 77: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 78: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 79: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 80: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 81: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 82: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 83: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 84: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 85: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 86: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 87: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 88: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 89: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 90: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 91: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 92: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 93: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 94: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 95: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 96: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 97: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 98: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 99: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 100: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 101: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 102: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 103: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 104: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 105: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 106: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 107: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 108: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 109: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 110: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 111: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 112: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 113: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 114: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 115: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 116: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 117: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 118: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 119: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 120: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 121: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 122: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 123: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 124: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 125: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 126: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 127: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 128: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 129: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 130: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 131: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 132: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 133: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 134: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 135: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 136: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 137: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 138: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 139: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 140: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 141: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 142: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 143: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 144: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 145: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 146: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 147: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 148: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 149: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 150: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 151: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 152: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 153: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 154: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 155: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 156: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 157: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 158: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 159: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 160: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 161: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 162: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 163: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 164: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 165: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 166: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 167: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 168: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 169: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 170: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 171: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 172: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 173: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 174: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 175: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 176: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 177: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 178: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 179: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 180: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 181: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 182: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 183: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 184: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 185: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 186: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 187: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 188: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 189: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 190: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 191: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 192: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 193: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 194: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 195: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 196: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 197: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 198: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 199: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 200: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 201: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 202: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 203: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 204: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 205: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 206: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 207: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 208: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 209: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 210: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 211: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 212: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 213: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 214: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 215: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 216: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 217: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 218: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 219: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.\nClause 220: the archive keeps every ledger entry for seven years and indexes it by account, date and amount.",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "How many years are entries kept? Number only."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfuskAbYGzqpP4ewBdsVt"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.25",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.24",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5dc61891051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 05:11:49 GMT",
+          "request-id": "req_011CfuskSUmzi86w1YaCg4xR",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-1a8c2696effbc757f770d67d2a4e0366-2b66aaeccb238c66-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 610.6,
+        "doneAtMs": 1265.5,
+        "chunks": [
+          {
+            "atMs": 610.7,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfuskShvGqGBWPoD7n9Sy\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":46,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":5736,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":5,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":null}          }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}               }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"The user is asking how\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 844.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" many years entries are kept according\",\"estimated_tokens\":null}   }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" to the cla\",\"estimated_tokens\":null}               }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"uses provided\",\"estimated_tokens\":null}            }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\". Looking\",\"estimated_tokens\":null}     }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" at the text\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\", every\",\"estimated_tokens\":null}      }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" single\",\"estimated_tokens\":null}     }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" clause\",\"estimated_tokens\":null}       }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" (\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"1\",\"estimated_tokens\":null}           }\n\n"
+          },
+          {
+            "atMs": 862.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"-220) states\",\"estimated_tokens\":null}      }\n\n"
+          },
+          {
+            "atMs": 884.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" the\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 972.9,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" exact\",\"estimated_tokens\":null}    }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" same thing\",\"estimated_tokens\":null}            }\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\": \\\"the archive keeps every\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 989.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" ledger entry for seven years\",\"estimated_tokens\":null}            }\n\n"
+          },
+          {
+            "atMs": 1018.3,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" and indexes it by account,\",\"estimated_tokens\":null}            }\n\n"
+          },
+          {
+            "atMs": 1044.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" date and amount.\\\"\\n\\nSo\",\"estimated_tokens\":null}              }\n\n"
+          },
+          {
+            "atMs": 1071.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" the answer is simply:\",\"estimated_tokens\":null} }\n\n"
+          },
+          {
+            "atMs": 1096.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" 7\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 1122.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\\n\\nThe user asked\",\"estimated_tokens\":null}     }\n\n"
+          },
+          {
+            "atMs": 1146.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" for \\\"Number\",\"estimated_tokens\":null}             }\n\n"
+          },
+          {
+            "atMs": 1171.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" only\\\" so\",\"estimated_tokens\":null}   }\n\n"
+          },
+          {
+            "atMs": 1198,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" I should just provide\",\"estimated_tokens\":null}          }\n\n"
+          },
+          {
+            "atMs": 1223.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" the number.\",\"estimated_tokens\":null}         }\n\n"
+          },
+          {
+            "atMs": 1250.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"Ep0FCtABCBIYAipAbIRwPoXNq4kNUX4C3Pa/lCvBKzQcZSWhbzNVPc0Swn/4FLwZgWJhlhvPgvtRr1qFFQnRzg6JhQcjC5W0GdrwRzIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAGWtazWBrABAhIMJoAYKTLtwaEF+42oGgyVv22DuaQZgYlpRJsiMLmKKQNQjvRHwQr2III00UbxElxaw3NoLGCNh0yig2ZI1mSRtgF9uAhAQeRQf3Dy9ir5At2+sl1sSyqDLdfxvLJaOHSIJC1ZKKqKU0ybqQoNQ/oBswNfFEdcPEtvoT1la9GDuBVXuL/MEnJ/LwbGTI4IzFrjYKZvNtQiFFfo3GEHl0pUJdx10yTw/WeOptPDevX8nBtHTjmFy3/Qb4mrURdGXhJicR/7kT56wdMj0m7ilLgmuaXJ2cpNFn6fHoJ8vIjXLxHEeAsEJQlSHcnbI5mePAVjylT+N97PQlsoTpbz3q+nvh1gdeZDoyN54YbZ2rcJBRzh42dyAAvyCq/NyPJOtjQwxvjRHrL+erwQx+JzK1eUxX5X3/HkUEel7gkq148SvrYzj/agF3TCn3qeRLHU1Qcq9QobVRbzRF+akSBSCZ0LpRACYbX6pgXrAYgloJEtaED+z1O3zxvL6qRQK3jleJkSC1D9tCeN68YgXnqiXsl3K22G+zfPROpaWTHlTMxdLK+hReyZD8JOS+/9daEXNPwmbhbufKLnZGZr7WC4dHuiCJAzHbvgE4xbGAE=\"}            }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0             }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"7\"}         }\n\n"
+          },
+          {
+            "atMs": 1259.8,
+            "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1        }\n\n"
+          },
+          {
+            "atMs": 1265.5,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":46,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":5736,\"output_tokens\":95,\"output_tokens_details\":{\"thinking_tokens\":88},\"iterations\":[{\"input_tokens\":46,\"output_tokens\":95,\"cache_read_input_tokens\":5736,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}         }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"               }\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 # Plan: P4 — daemon and the two native cells
 
-Status: **proposed, awaiting approval**. Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1) · Continuation: [2026-10-10-18-45-continuation-plan.md](2026-10-10-18-45-continuation-plan.md) (amendment A2: P4 before P0-LIVE, approved 2026-10-10).
+Status: **Q1–Q5 approved 2026-10-11 ("proceed as per your recommendations")**; amendment B (below, from the P0-LIVE
+evidence) adds Q6–Q7, awaiting decision. Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1) · Continuation: [2026-10-10-18-45-continuation-plan.md](2026-10-10-18-45-continuation-plan.md) (amendment A2: P4 before P0-LIVE, approved 2026-10-10).
 
 Everything below was read from the code at `2ef50ec`, from the specs in `docs/reference/specs/`, from the Antigravity plugin's `docs/research/antigravity-protocol/SPEC.md` (@ `5c6f7c2`), and from the SDK documentation pulled on 2026-10-10 (Context7 and the npm registry). Each section names its source.
 
@@ -137,3 +138,22 @@ AGENTS §5 requires e2e **alone** to reach 100% of every source file, including 
 | Q3 | Wire-law drops on the Gemini cell (law 6 unsigned calls, law 8 empty contents, law 12 trailing model turns): applied always, because they are upstream constraints that must never regress (AGENTS §3), **and** reported in `x-router-dropped` even without the lossy header? | **Yes.** The laws stay; reporting them means nothing is removed silently. |
 | Q4 | `:generateContent` (non-streamed) on Antigravity, which only streams: build one response by concatenating consecutive text parts with the same `thought` flag, keeping `functionCall` parts and their `thoughtSignature` in order, the last `finishReason` and the last `usageMetadata`? | **Yes**, with the rule written as a pure function, tested against the plugin's stream captures, and re-checked against a real non-streamed comparison in P0-LIVE. |
 | Q5 | Antigravity models have no creation date or version (SPEC §4 catalog fields). Anthropic `created_at` / OpenAI `created` are required fields, and Gemini `version`/`baseModelId` too. | **Use a neutral marker, never an invented date:** Anthropic `created_at: "1970-01-01T00:00:00Z"`, OpenAI `created: 0`, Gemini `baseModelId` = the wire id and `version: "antigravity"`. These are clearly not real dates; the README documents them. The alternative is to omit the fields, which breaks strict SDK parsers. |
+
+## 7. Amendment B: changes from the P0-LIVE evidence (2026-10-11)
+
+Source: [P0-LIVE findings](../reference/2026-10-10-23-17-p0-live-findings.md) (L1–L15), [E3 matrix](../reference/2026-10-10-23-17-fidelity-matrix.md).
+
+| Change | Finding | Effect on this plan |
+|---|---|---|
+| B1 | L6 | §2.3 request mapping: `toolConfig.functionCallingConfig.mode` other than `AUTO`/`VALIDATED`, and `allowedFunctionNames`, → 400 `unsupported_feature` (upstream ignores or rejects them). Lossy drops them and reports it. |
+| B2 | L10 | §2.1 Gemini error shape: taken from the E3 captures (`{"error":{"code","message","status"}}`), not from the plugin. |
+| B3 | L12 | §2.1 / step 1: `HttpRequest` gains an explicit idle timeout; `FetchTransport` passes Bun's `timeout` (idle) and the abort signal; an upstream timeout becomes 504 in the dialect's shape. |
+| B4 | L13 | §2.4 README: the Antigravity list is the upstream catalog minus wire-law-9 ids; it can include IDE helper models such as `tab_*`. |
+| B5 | L4 | README: Claude stop sequences also match inside thinking. |
+| B6 | L1–L3 | Decision Q6 below. |
+| B7 | L5 | Decision Q7 below. |
+
+| # | Question | Recommendation |
+|---|---|---|
+| Q6 | Claude thinking. Today a request **without** `thinking` gets Claude Code's default (enabled, budget 31,999), so a small `max_tokens` returns an empty answer (L1), and a request **with** `thinking: disabled` fails 400 because the envelope always adds `context_management` clear-thinking (L2), which also makes forced `tool_choice` and non-default sampling impossible (L3). | **Honour the client.** Omitted `thinking` and `disabled` both send `{"type":"disabled"}` and leave out the clear-thinking `context_management` edit; an explicit `enabled`/`adaptive` keeps today's envelope. Before building it, one live probe proves the upstream accepts `thinking: disabled` without `context_management` (1 request, recorded as a capture); if the probe fails, this falls back to: keep the envelope and return 400 `unsupported_feature: thinking.disabled` with a clear message, and document L1/L3. |
+| Q7 | Fingerprints say Windows while the router runs on Linux (L5). Both upstreams accept them. | **Keep them verbatim.** They are the only captured values (the Linux machine has Claude Code 2.1.29, not the captured 2.1.280, and no Antigravity IDE capture). Changing them would be guessing. Revisit only with a real Linux capture. |

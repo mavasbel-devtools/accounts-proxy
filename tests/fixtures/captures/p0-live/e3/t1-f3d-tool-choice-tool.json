@@ -1,0 +1,126 @@
+{
+  "id": "t1-f3d-tool-choice-tool",
+  "target": "t1",
+  "scenario": "f3d-tool-choice-tool",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "e43273cf-dc0b-4d8a-b4ff-3f649e0a1b0c",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 2048,
+          "stream": true,
+          "thinking": {
+            "type": "enabled",
+            "budget_tokens": 1024
+          },
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ],
+          "tool_choice": {
+            "type": "tool",
+            "name": "get_time"
+          },
+          "messages": [
+            {
+              "role": "user",
+              "content": "Say hello."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=4b1617bf-bc82-4c40-b1c0-cb8eb0f36e32;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": "msg_011CfushwfNLMqFjYsu7ARYF"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b5d048d0e051b-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Sun, 11 Oct 2026 05:11:18 GMT",
+          "request-id": "req_011CfusiA6ESbSvN7gQ7p3uN",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-23c7ec362cb1f85e3bae71af20467bc6-95e9a18936cf1c0c-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none",
+          "x-should-retry": "false"
+        },
+        "headersAtMs": 186.6,
+        "doneAtMs": 186.7,
+        "chunks": [
+          {
+            "atMs": 186.7,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Thinking may not be enabled when tool_choice forces tool use.\"},\"request_id\":\"req_011CfusiA6ESbSvN7gQ7p3uN\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "id": "t2-f6-stop-sequences",
+  "target": "t2",
+  "scenario": "f6-stop-sequences",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695547412/16d6877a-8244-4050-8f55-78eb99299eb4/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Count from 1 to 10, separated by single spaces, nothing else."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "16d6877a-8244-4050-8f55-78eb99299eb4",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "stopSequences": [
+                "5"
+              ]
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:12:29 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=2229",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2297.7,
+        "doneAtMs": 2343.3,
+        "chunks": [
+          {
+            "atMs": 2297.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"1 2 3 4 \"}]}}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\": 8,\"totalTokenCount\": 164,\"thoughtsTokenCount\": 138},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"uxrLapaCJv-o_uMP1rjw6A0\"},\"traceId\": \"8f96f42fd8be5ee1\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2300.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EvUECvIEAWkUfROYq9Q0igWuz/bDK7g0y7PU6kGclUwiTT9LhCx6+Vwaz5GN5WW6iHPZ5zKliNevzrCZ2+Q0nn2AoAUd3e/zqVLiVKKJai/v3hx9UhYhSuTqxuqrwSbjdHpqsHgDiNpcdIp0YO741vL9T82Bd+wJVJH0UvyUkWCFhOU9KkWO1NflvPbK2NeH/chzBa8phrtv258dMdF3niJqJgHZkl8FXuR0kSj+M7+B/Et0Vp64J+PcN1DQEbELSwY9vwnyMCk7fMxKr44rTSMLa9qcaf9PJKKd+o/BSVuM2oqYDRoOUQY0JDrpZ/iBnqLgPri8RI5HiLCQR9Rcmw8rOC/0f1F5+BAfLZbc94FMZSpiNzMPWDmrmW8gFifFRZKs5d3tZLEhPR9d59+d/Y4eOwIOGoc4BLHFKpeP52p/Mr9lMTRdTLnXI8qE6VpOvKbfFOmkmjihIewkPusLz4xl6DQjivdpfr+kbH+fcxlEAeuDFPON1W21xcpILrsQlugySrBxYXdFpwOiu1tm/ctUmf1jMSStQjBfsUpC/OdQX0//SyRMo1zopS3UcLoZZrjXdONbgjAniz9d4NUlxh5gCaepUCI/+yXzGBqxaNPtAVuY2yeXyt7d7XH7G+/dF2qpQUt0prtAhDjoFWJdVeAT1bM4h8Da2dhvXMnS7girVHoi7ud5nW/SeVvjVMjIYQfBZmKDBU3dXBke/vrPPFUQ3DgN5ebeefVxBiySqiKiHq9MTcSVMwaGT7PT/TJNMSu2WpcLIc8m9qWEQcklu6UMXj/2I3GhFNcB3j5C0YWIZzKbl6Suddye0Hf0gQAwcecvte6jPE0=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\": 8,\"totalTokenCount\": 164,\"thoughtsTokenCount\": 138},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"uxrLapaCJv-o_uMP1rjw6A0\"},\"traceId\": \"8f96f42fd8be5ee1\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

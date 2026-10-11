@@ -1,0 +1,79 @@
+{
+  "id": "t3-f7b-top-p",
+  "target": "t3",
+  "scenario": "f7b-top-p",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-11T05:11:01.213Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/d2d62b04-a00f-447b-b5c3-75e4e8c82e32/1791695611206/153aa4c5-aa48-4bd5-b208-ea5e56e222c6/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "8ec25e02-dd2c-44d0-8eec-acb4879d976b",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M403",
+              "trajectory_id": "153aa4c5-aa48-4bd5-b208-ea5e56e222c6",
+              "used_claude": "true",
+              "used_claude_conservative": "true",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "topP": 0.5
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "claude-sonnet-5-5-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:13:31 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=598",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 670.3,
+        "doneAtMs": 706.6,
+        "chunks": [
+          {
+            "atMs": 670.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\": 4,\"totalTokenCount\": 22},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfussxQo68xhjF1B11ax1\"},\"traceId\": \"7d64868e55995e4c\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\": 4,\"totalTokenCount\": 22},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfussxQo68xhjF1B11ax1\"},\"traceId\": \"7d64868e55995e4c\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\": 4,\"totalTokenCount\": 22},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfussxQo68xhjF1B11ax1\"},\"traceId\": \"7d64868e55995e4c\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

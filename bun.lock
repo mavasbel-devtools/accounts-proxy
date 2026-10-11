@@ -84,6 +84,15 @@
     "scripts": {
       "name": "@inference-router/scripts",
       "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+        "@inference-router/provider-antigravity": "workspace:*",
+        "@inference-router/provider-claude": "workspace:*",
+        "@inference-router/router": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
     },
     "tests/support": {
       "name": "@inference-router/test-support",

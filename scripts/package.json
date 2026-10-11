@@ -7,5 +7,14 @@
   "description": "Release-gate and evidence scripts (run from the repository root).",
   "exports": {
     "./*": "./*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*",
+    "@inference-router/provider-antigravity": "workspace:*",
+    "@inference-router/provider-claude": "workspace:*",
+    "@inference-router/router": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
   }
 }

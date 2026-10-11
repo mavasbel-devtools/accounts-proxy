@@ -1,0 +1,122 @@
+{
+  "id": "t1-s1-plain",
+  "target": "t1",
+  "scenario": "s1-plain",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-11T04:56:14.236Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "c62f1406-dc99-4fc6-8aa3-7b179851a973",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 32,
+          "stream": true,
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=10b31252-4927-4928-a425-495948e2e9e7;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "thinking": {
+            "type": "enabled",
+            "display": "omitted",
+            "budget_tokens": 31999
+          },
+          "context_management": {
+            "edits": [
+              {
+                "type": "clear_thinking_20251015",
+                "keep": "all"
+              }
+            ]
+          },
+          "diagnostics": {
+            "previous_message_id": null
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"<REDACTED:claude_session_id>\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791711600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.22",
+          "anthropic-ratelimit-unified-7d-reset": "1791774000",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.23",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "out_of_credits",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1791711600",
+          "anthropic-ratelimit-unified-status": "allowed",
+          "anthropic-workspace-id": "wrkspc_01KYfbK7sako3MBFGyh4JcR2",
+          "cache-control": "no-cache",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a48b46f15ab9a634-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Sun, 11 Oct 2026 04:56:14 GMT",
+          "request-id": "req_011CfurZWLXQMFebRKDXtQLH",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-c364ee477ca6ad953da1c5ceb3a0e00b-62074b25d05d7aea-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 628.2,
+        "doneAtMs": 834.5,
+        "chunks": [
+          {
+            "atMs": 629,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CfurZWukCNndfyS67nFkD\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":60,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":6,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":null}     }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}         }\n\n"
+          },
+          {
+            "atMs": 834.2,
+            "text": "event: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"\",\"estimated_tokens\":null}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"ErgDCtABCBIYAipAd2WQ3v3P0gnfE8LRIuYh8EJn2gzNDbv7PtxL2kgm/DVyxwkwkdRXCQav3gug3EY/P2/vEfJY/Lg58gMHupjUkzIZY2xhdWRlLWhhaWt1LTQtNS0yMDI1MTAwMTgAQgh0aGlua2luZ1okZTYwZjhiNmQtN2I0OS00OGFiLWEyYzItNmIxNDNjOTVjNGU2chAe2HDc6hXCbgXNUeUb8D0diAEBmgEbChljbGF1ZGUtaGFpa3UtNC01LTIwMjUxMDAxqAHurazWBrABAhIMKwfjl3yW5AUyX2TkGgx1fC7BM/9y4kOGOMQiMKznxYwzbt0tSh3MkgwHRGcwwAnPy8sTpvPIsXH66nqE5NqNjT3bu22KCLHMp5iK5iqUAZkrkAtXXJgBGZYwvTwRpU/4kcwJ1+On/qSxG5yRL2I0pdDphEjLCDAvN+pNHixvVqVQ1U8rQjJ9dDzWHhsbdzdaCn2eYG3vFWn8PSLRt+gqXSZKGtcqGbVI5AmALatPTi0Nw4dtkwu4GH7ClnWsczaW/CCR2xw4AKkIby1gM82EMmBpvaXaYSsXgsSIVR1qGNCGmwYYAQ==\"}          }\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0  }\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"max_tokens\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":60,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":32,\"output_tokens_details\":{\"thinking_tokens\":30},\"iterations\":[{\"input_tokens\":60,\"output_tokens\":32,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}         }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"        }\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "id": "t2-f8-system",
+  "target": "t2",
+  "scenario": "f8-system",
+  "model": "gemini-3.6-flash-low",
+  "capturedAt": "2026-10-11T05:15:20.328Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/de407976-73fe-4beb-b7d5-d6849889c03c/1791695731746/32d53ba4-93f9-4b03-b1f2-5b67b5612335/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What colour is a clear daytime sky? One word."
+                  }
+                ]
+              }
+            ],
+            "systemInstruction": {
+              "role": "user",
+              "parts": [
+                {
+                  "text": "Always answer in French, whatever language the user writes in."
+                }
+              ]
+            },
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M73",
+              "trajectory_id": "32d53ba4-93f9-4b03-b1f2-5b67b5612335",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.6-flash-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 11 Oct 2026 05:15:34 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=2267",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2602,
+        "doneAtMs": 2602.1,
+        "chunks": [
+          {
+            "atMs": 2602,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"Bleu\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 25,\"candidatesTokenCount\": 2,\"totalTokenCount\": 153,\"thoughtsTokenCount\": 126},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"cxvLaujnOtuA_PUP-tvEuQE\"},\"traceId\": \"309e19ef6edb5b0a\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EoMFCoAFAWkUfRN2Y0Gsv42jBMYozENm/dL+sT4pq81rwU6ocijU9ZujVosdGYpU4lMrdtm2y1NQ5pC7t9PRCzJzNYtq3M6hVG13gXvR6ZWbp09R3ehLJ6icTSkZaNHugadOZMvqkJ+UDONCMYmANiMAw8Sp1ALBMDRADXVE1gu/GINoIEn1cnBu45zxhUfBr8oNrGIYSki1IcwXjlHOOFd/5JnZT1GezAUAfJuCd3gcOP+QQLfwSOIjLM/Aw61qXn+UnguXd81bzxRsmtjCKn9pez+ycXeqGjq/uNyQdaaZpa3h/dqazs1sGBV8A8uXxgY8oSRFxgd5PcAfrhJ4ufx1TwUo21lLvl1vjwXhGrHBVz05b1PHfzVhBvOguP/GnaF9sm+fKmUnzBCWcWbb5SdqSoijNwt1/mt8Xew32G+21hTudW9jFcAVjtVdLNHHzE/TDyrmt7IuatgYWwpOgoM+TchXWBixv+wNftZ/EYfObUK+++OaaLu0X1bzj3kHW7sKduiQIrf/DlyCA2Ufb3+iVbBae/E/t4YC7i+n5XL3RQsIzk+6E1zZTYM8zpJpdXBnR28wwe3gpVLEbOrNKqGw3EVqxwaKUVLMxhpT9c/KXNATCqT95vpSXDXIW8+A50LQHlIuG4LMeCxMSJM5Qbh5AqSutUuANduL8okvBpfuDxLqRI7OAmK9tnf5F68mAZiAa8LT7Dguf28qV9ONF18iAc6OFFFwyexPB6t6vGoK60NJfWGoWMCIsrrxWFrHA6f2k3xctjQzSeXIW+j0K4NV96CLF2DdTKElVlKHApBai6l2hs4qGb2+XXbp693XExfe6J/0h0WVVVXjpKdGGt5G1v4xKA==\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 25,\"candidatesTokenCount\": 2,\"totalTokenCount\": 153,\"thoughtsTokenCount\": 126},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"cxvLaujnOtuA_PUP-tvEuQE\"},\"traceId\": \"309e19ef6edb5b0a\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

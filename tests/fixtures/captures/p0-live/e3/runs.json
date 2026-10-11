@@ -1,0 +1,42 @@
+[
+  {
+    "startedAt": "2026-10-11T05:00:51.654Z",
+    "only": [],
+    "probes": 42,
+    "stopped": "aborted in the 42nd probe (t3-f9-implicit-cache) by an unhandled `TimeoutError: The operation timed out.`; no request on that path sets a timeout, and Bun 1.4.2 fetch has a documented 5-minute default socket idle timeout (bun-types globals.d.ts:2113-2134), the most likely source (not proven). The 41 completed cells were superseded by run 3; its 14 T1 captures (all with thinking disabled) are kept in first-run-thinking-disabled/. Quota not recorded (the script then wrote its report only at the end).",
+    "quotaBefore": "not recorded",
+    "quotaAfter": "not recorded"
+  },
+  {
+    "startedAt": "2026-10-11T05:10:24Z",
+    "only": [
+      "t3:f9-implicit-cache"
+    ],
+    "probes": 1,
+    "quotaBefore": "not kept (its report was deleted before run 3; runs.json did not exist yet)",
+    "quotaAfter": "not kept"
+  },
+  {
+    "startedAt": "2026-10-11T05:11:01.213Z",
+    "only": [],
+    "probes": 56,
+    "quotaBefore": "Antigravity usage:\n- Gemini Models (Gemini Flash, Gemini Pro)\n    Weekly limit: 100% remaining, resets 2026-10-17T17:43:49Z\n    5-hour limit: 99% remaining, resets 2026-10-11T09:56:34Z\n- Claude and GPT models (Claude Opus, Claude Sonnet, GPT-OSS)\n    Weekly limit: 40% remaining, resets 2026-10-11T06:09:10Z\n    5-hour limit: 98% remaining, resets 2026-10-11T09:57:02Z",
+    "quotaAfter": "Antigravity usage:\n- Gemini Models (Gemini Flash, Gemini Pro)\n    Weekly limit: 100% remaining, resets 2026-10-17T17:43:49Z\n    5-hour limit: 99% remaining, resets 2026-10-11T09:56:34Z\n- Claude and GPT models (Claude Opus, Claude Sonnet, GPT-OSS)\n    Weekly limit: 39% remaining, resets 2026-10-11T06:09:10Z\n    5-hour limit: 96% remaining, resets 2026-10-11T09:57:02Z"
+  },
+  {
+    "startedAt": "2026-10-11T05:15:20.328Z",
+    "only": [
+      "t1:f1-image",
+      "t2:f1-image",
+      "t3:f1-image",
+      "t4:f1-image",
+      "t1:f8-system",
+      "t2:f8-system",
+      "t3:f8-system",
+      "t4:f8-system"
+    ],
+    "probes": 8,
+    "quotaBefore": "Antigravity usage:\n- Gemini Models (Gemini Flash, Gemini Pro)\n    Weekly limit: 100% remaining, resets 2026-10-17T17:43:49Z\n    5-hour limit: 99% remaining, resets 2026-10-11T09:56:34Z\n- Claude and GPT models (Claude Opus, Claude Sonnet, GPT-OSS)\n    Weekly limit: 39% remaining, resets 2026-10-11T06:09:10Z\n    5-hour limit: 96% remaining, resets 2026-10-11T09:57:02Z",
+    "quotaAfter": "Antigravity usage:\n- Gemini Models (Gemini Flash, Gemini Pro)\n    Weekly limit: 100% remaining, resets 2026-10-17T17:43:49Z\n    5-hour limit: 99% remaining, resets 2026-10-11T09:56:34Z\n- Claude and GPT models (Claude Opus, Claude Sonnet, GPT-OSS)\n    Weekly limit: 39% remaining, resets 2026-10-11T06:09:10Z\n    5-hour limit: 96% remaining, resets 2026-10-11T09:57:02Z"
+  }
+]
