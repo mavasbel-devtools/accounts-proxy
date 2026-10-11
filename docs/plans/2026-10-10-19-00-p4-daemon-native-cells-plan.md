@@ -170,6 +170,7 @@ Steps 1–7 are built; commits `3a1d131` (steps 1–5) and the e2e/docs commit a
 | 4 Router | route table and token carriers, node:http server (32 MB limit, backpressure, abort, drain), CLI `serve`/`token`/`status`, explicit fetch idle timeout (504 on timeout) |
 | 5 Composition | loopback-only upstream seams |
 | 6 e2e | 21 tests (CLI, daemon with the three SDKs, bundle); measured e2e-alone coverage 73.16% statements / 54.64% branches — risk R1, [report](../reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) |
+| live | the real daemon on the router's own accounts answered every P4 route (Anthropic messages plain and streamed — Q6 live: no thinking, "OK"; Gemini generateContent and SSE; the three model lists, 46 models): [smoke](../reference/2026-10-11-11-47-p4-live-daemon-smoke.md) |
 | 7 Docs | README (daemon how-to, routes, headers, notes), AGENTS (laws, seams, e2e, pins), diagram, this record |
 
 Deviations, each stated in the code or docs where it applies:
