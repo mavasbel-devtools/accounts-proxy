@@ -98,5 +98,15 @@
     "bytes": 382104,
     "sha256": "964aee4f0bd84fba535360df0a9f3ad3b0ca265b408b0f04ccc13daeb2df2671",
     "fetchedAt": "2026-10-06T06:29:58.993Z"
+  },
+  {
+    "file": "google-rpc-code.proto",
+    "url": "https://raw.githubusercontent.com/googleapis/googleapis/master/google/rpc/code.proto",
+    "status": 200,
+    "contentType": "text/plain; charset=utf-8",
+    "bytes": 7138,
+    "sha256": "83a63185b83cf7332196fc5ead0ec91b93ac207fbe91b3d5bc3d72f461b0bb31",
+    "commit": "ebd1d23ac613b177828dad42ad8dfb13ba498279",
+    "fetchedAt": "2026-10-11T17:11:40.215Z"
   }
 ]

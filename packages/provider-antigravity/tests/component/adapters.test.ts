@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { activeAccount, EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, QuotaExhaustedError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import type { RawRequest } from "@inference-router/core/domain/wire.ts";
 import { TimerPort } from "@inference-router/core/ports/outbound/system.ts";
 import {
   FixedClock,
@@ -17,6 +18,8 @@ import {
 import { AntigravityApiClient } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
 import { AntigravityCatalog } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
 import { AntigravityChat } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-chat.ts";
+import { AntigravityNative, unwrapEnvelope } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-native.ts";
+import { AntigravityRunner } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-runner.ts";
 import { AntigravityProvider } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-provider.ts";
 import { AntigravityQuota } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-quota.ts";
 import { AntigravitySession, REFRESH_LOCK } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-session.ts";
@@ -25,7 +28,9 @@ import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provi
 import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
 import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
 import { CLIENT_ID, CLIENT_SECRET, SCOPES, SUCCESS_REDIRECT, USER_AGENT } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { prepareGeminiRequest } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
 import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravitySessionPort, AntigravityStatePort, type ActiveAccount } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
@@ -96,6 +101,10 @@ describe("AntigravityApiClient", () => {
     expect(sent.url).toBe("http://up/v1internal:streamGenerateContent?alt=sse");
     expect(sent.headers).toEqual({ ...callHeaders, "accept-encoding": "gzip" });
     expect(JSON.parse(sent.body!)).toEqual({ project: "proj-1", requestId: "agent/s/1/t/3", request: { contents: [] }, model: "gemini-x", userAgent: "antigravity", requestType: "agent" });
+    expect(sent.signal).toBeUndefined();
+    const controller = new AbortController();
+    await drain(client.streamGenerate(params, tokens, controller.signal));
+    expect(transport.requests[1]!.signal).toBe(controller.signal);
   });
 
   test("stream: [DONE] and empty data skipped, malformed events dropped with a warning, non-response payload throws", async () => {
@@ -153,7 +162,9 @@ class ScriptedApi extends AntigravityApiPort {
     this.calls.push("retrieveUserQuotaSummary");
     return this.quota();
   }
-  streamGenerate(p: GenerateParams, t: AuthTokens) {
+  signals: (AbortSignal | undefined)[] = [];
+  streamGenerate(p: GenerateParams, t: AuthTokens, signal?: AbortSignal) {
+    this.signals.push(signal);
     this.streams.push(p);
     return this.stream(p, t, this.streams.length);
   }
@@ -425,7 +436,8 @@ describe("AntigravityChat", () => {
     api.stream = stream;
     const timer = new InstantTimer();
     const logger = new MemoryLogger();
-    return { api, timer, logger, session, state, chat: new AntigravityChat(api, session, state, new SequenceRandom(), new FixedClock(77), timer, logger) };
+    const runner = new AntigravityRunner(api, session, state, new SequenceRandom(), new FixedClock(77), timer, logger);
+    return { api, timer, logger, session, state, chat: new AntigravityChat(runner, state, logger) };
   };
   async function* from(envelopes: StreamEnvelope[]) {
     for (const e of envelopes) yield e;
@@ -502,26 +514,202 @@ describe("AntigravityChat", () => {
   });
 });
 
-class FixedCatalog extends AntigravityCatalogPort {
+class SampleCatalog extends AntigravityCatalogPort {
   async descriptors() {
-    const { toModelDescriptors } = await import("@inference-router/provider-antigravity/domain/catalog.ts");
     return toModelDescriptors(JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>);
   }
-  async descriptor() {
-    return undefined;
+  async descriptor(wireId: string) {
+    return (await this.descriptors()).find((d) => d.wireId === wireId);
   }
 }
 
+describe("AntigravityNative", () => {
+  test("unwraps envelopes, caches and persists signed calls, forwards the signal; persist failures are only warned", async () => {
+    const api = new ScriptedApi();
+    const signed: StreamEnvelope = { response: { candidates: [{ content: { parts: [{ functionCall: { id: "c9", name: "ls" }, thoughtSignature: "SIG-9" }] } }] } };
+    api.stream = async function* () {
+      yield signed;
+      yield { candidates: [] } as unknown as StreamEnvelope;
+    };
+    const state = new MemoryState();
+    state.fail = true;
+    const logger = new MemoryLogger();
+    const native = new AntigravityNative(new AntigravityRunner(api, new FixedSession(), state, new SequenceRandom(), new FixedClock(77), new InstantTimer(), logger), state, logger);
+    expect(await native.signatures()).toEqual({ known: "SIG-K" });
+    const model = (await new SampleCatalog().descriptor("gemini-3.6-flash-low"))!;
+    const prepared = prepareGeminiRequest({ contents: [{ parts: [{ text: "hi" }] }] }, model, { lossy: false, signatures: {} });
+    const controller = new AbortController();
+    const out = await drain(native.generate({ model, prepared, signal: controller.signal }));
+    expect(out).toEqual([signed.response as unknown as Record<string, unknown>, { candidates: [] }]);
+    expect(await native.signatures()).toEqual({ known: "SIG-K", c9: "SIG-9" });
+    expect(api.signals).toEqual([controller.signal]);
+    const body = api.streams[0]!.body as Record<string, unknown>;
+    expect(Object.keys(body)).toEqual(["contents", "labels", "generationConfig", "sessionId"]);
+    expect(body["sessionId"]).toBe("-42");
+    await drain(native.generate({ model, prepared }));
+    expect(api.signals[1]).toBeUndefined();
+    await Bun.sleep(1);
+    expect(logger.lines.some((l) => l.includes("signature persist failed (Error: disk full)"))).toBe(true);
+    expect(unwrapEnvelope({ response: { responseId: "r" } })).toEqual({ responseId: "r" });
+  });
+});
+
 describe("AntigravityProvider", () => {
-  test("models with advertised limits (80k clamp; omitted when output is unknown); request cells pending", async () => {
-    const provider = new AntigravityProvider(new FixedCatalog());
+  const capture = (): StreamEnvelope[] =>
+    text("stream-generate.sample.sse")
+      .split("\n")
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => JSON.parse(l.slice(5)) as StreamEnvelope);
+  const make = (stream: ScriptedApi["stream"] = async function* () { yield* capture(); }) => {
+    const api = new ScriptedApi();
+    api.stream = stream;
+    const state = new MemoryState();
+    const logger = new MemoryLogger();
+    const runner = new AntigravityRunner(api, new FixedSession(), state, new SequenceRandom(), new FixedClock(77), new InstantTimer(), logger);
+    const provider = new AntigravityProvider(new SampleCatalog(), new AntigravityNative(runner, state, logger), logger);
+    return { api, state, logger, provider };
+  };
+  const raw = (method: string, body: unknown, query: Record<string, string> = {}, lossy = false): RawRequest => ({
+    path: `/v1beta/models/antigravity/gemini-3.6-flash-low:${method}`,
+    query,
+    headers: {},
+    body: typeof body === "string" ? body : JSON.stringify(body),
+    lossy,
+  });
+  const hello = { contents: [{ role: "user", parts: [{ text: "hi" }] }] };
+  const decode = async (body: AsyncIterable<Uint8Array>) => (await drain(body)).map((c) => new TextDecoder().decode(c));
+
+  test("identity, models (live, advertised limits, 80k clamp; limits omitted when output is unknown), translated cells pending", async () => {
+    const { provider } = make();
     expect([provider.id, provider.nativeDialect, provider.capabilities().size]).toEqual(["antigravity", "gemini", 0]);
-    const models = await provider.models();
-    expect(models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });
-    expect(models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)" });
+    const catalog = await provider.models();
+    expect([catalog.provider, catalog.source]).toEqual(["antigravity", "live"]);
+    expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });
+    expect(catalog.models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)" });
     const canonical = { model: { provider: "antigravity" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
     await expect(provider.countTokens(canonical)).rejects.toBeInstanceOf(UnsupportedFeatureError);
     await expect(drain(provider.stream(canonical))).rejects.toBeInstanceOf(UnsupportedFeatureError);
-    await expect(provider.passthrough("m", { path: "/", headers: {}, body: "" })).rejects.toBeInstanceOf(UnsupportedFeatureError);
+  });
+
+  test("route, method, model and body checks happen before any upstream call", async () => {
+    const { provider, api } = make();
+    await expect(provider.passthrough("gemini-3.6-flash-low", { ...raw("x", hello), path: "/v1beta/models/m:embedContent" })).rejects.toBeInstanceOf(InvalidRequestError);
+    const count = await provider.passthrough("gemini-3.6-flash-low", raw("countTokens", hello)).catch((e: unknown) => e);
+    expect((count as UnsupportedFeatureError).features).toEqual(["countTokens"]);
+    await expect(provider.passthrough("nope", raw("generateContent", hello))).rejects.toBeInstanceOf(UnknownModelError);
+    await expect(provider.passthrough("gemini-3.6-flash-low", raw("generateContent", "{bad"))).rejects.toThrow("not valid JSON");
+    await expect(provider.passthrough("gemini-3.6-flash-low", raw("generateContent", { ...hello, safetySettings: [] }))).rejects.toBeInstanceOf(UnsupportedFeatureError);
+    expect(api.streams).toHaveLength(0);
+  });
+
+  test("streamGenerateContent?alt=sse: one data frame per upstream response, CRLF-delimited, streamed", async () => {
+    const { provider, api, logger } = make();
+    const response = await provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello, { alt: "sse" }));
+    expect(response.status).toBe(200);
+    expect(response.headers).toEqual({ "content-type": "text/event-stream" });
+    const frames = await decode(response.body);
+    expect(frames).toEqual(capture().map((e) => `data: ${JSON.stringify(e.response)}\r\n\r\n`));
+    const body = api.streams[0]!.body as Record<string, unknown>;
+    expect(body["generationConfig"]).toEqual({ maxOutputTokens: 65536, thinkingConfig: { includeThoughts: true, thinkingBudget: 1000 } });
+    expect(logger.lines.some((l) => l.includes("streamGenerateContent model=gemini-3.6-flash-low (sse)"))).toBe(true);
+  });
+
+  test("streamGenerateContent without alt: a JSON array written incrementally", async () => {
+    const { provider } = make();
+    const response = await provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello));
+    expect(response.headers["content-type"]).toBe("application/json");
+    const chunks = await decode(response.body);
+    expect(chunks.length).toBe(4);
+    expect(chunks[0]!.startsWith("[{")).toBe(true);
+    expect(chunks[1]!.startsWith(",\r\n{")).toBe(true);
+    expect(chunks[3]).toBe("]");
+    expect(JSON.parse(chunks.join(""))).toEqual(capture().map((e) => e.response));
+  });
+
+  test("generateContent: the stream merged into one response (decision Q4)", async () => {
+    const { provider, logger } = make();
+    const response = await provider.passthrough("gemini-3.6-flash-low", raw("generateContent", hello));
+    expect(response.headers).toEqual({ "content-type": "application/json" });
+    const merged = JSON.parse((await decode(response.body)).join("")) as { candidates: { content: { parts: unknown[] }; finishReason: string }[]; responseId: string };
+    expect(merged.candidates[0]!.content.parts).toEqual([{ text: "Hello, world!", thoughtSignature: "c2FtcGxlLXNpZ25hdHVyZQ==" }]);
+    expect(merged.candidates[0]!.finishReason).toBe("STOP");
+    expect(merged.responseId).toBe("resp-1");
+    expect(logger.lines.some((l) => l.includes("3 upstream responses merged"))).toBe(true);
+  });
+
+  test("an empty upstream stream is a 502 upstream error, never an empty 200", async () => {
+    for (const method of ["generateContent", "streamGenerateContent"]) {
+      const { provider } = make(async function* () {});
+      const error = await provider.passthrough("gemini-3.6-flash-low", raw(method, hello)).catch((e: unknown) => e);
+      expect((error as UpstreamError).httpStatus).toBe(502);
+    }
+  });
+
+  test("an error before the first response is thrown (rendered by the HTTP adapter)", async () => {
+    const { provider } = make(async function* () {
+      throw new UpstreamError("antigravity", 400, '{"error":{"code":400,"message":"bad","status":"INVALID_ARGUMENT"}}');
+    });
+    await expect(provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello, { alt: "sse" }))).rejects.toBeInstanceOf(UpstreamError);
+  });
+
+  test("an error after the first byte closes the stream with a Google error element (SSE and JSON array)", async () => {
+    const failing = (error: unknown) =>
+      async function* () {
+        yield capture()[0]!;
+        throw error;
+      };
+    const sse = make(failing(new UpstreamError("antigravity", 503, '{"error":{"code":503,"message":"no capacity","status":"UNAVAILABLE"}}')));
+    const frames = await decode((await sse.provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello, { alt: "sse" }))).body);
+    expect(frames.at(-1)).toBe('data: {"error":{"code":503,"message":"no capacity","status":"UNAVAILABLE"}}\r\n\r\n');
+    expect(sse.logger.lines.some((l) => l.startsWith("WARN antigravity: stream failed after the first byte"))).toBe(true);
+
+    const json = make(failing("not an Error"));
+    const body = (await decode((await json.provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello))).body)).join("");
+    expect(JSON.parse(body)[1]).toEqual({ error: { code: 500, message: "internal router error (details are in the router log)", status: "INTERNAL" } });
+    expect(json.logger.lines.some((l) => l.endsWith("not an Error"))).toBe(true);
+  });
+
+  test("a client that stops reading ends the upstream stream", async () => {
+    let finished = false;
+    const { provider } = make(async function* () {
+      try {
+        yield* capture();
+      } finally {
+        finished = true;
+      }
+    });
+    const response = await provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello, { alt: "sse" }));
+    const iterator = response.body[Symbol.asyncIterator]();
+    await iterator.next();
+    await iterator.return?.();
+    expect(finished).toBe(true);
+  });
+
+  test("lossy drops are reported in x-router-dropped; the client signal reaches the upstream call", async () => {
+    const { provider, api } = make();
+    const controller = new AbortController();
+    const response = await provider.passthrough("gemini-3.6-flash-low", { ...raw("generateContent", { ...hello, safetySettings: [] }, {}, true), signal: controller.signal });
+    expect(response.headers["x-router-dropped"]).toBe("safetySettings");
+    expect(api.signals[0]).toBe(controller.signal);
+  });
+
+  test("law 6 end to end: a signature seen in a response signs the replayed call of the next request", async () => {
+    const call: StreamEnvelope = { response: { candidates: [{ content: { role: "model", parts: [{ functionCall: { id: "call_1", name: "get_time", args: {} }, thoughtSignature: "SIG-LIVE" }] }, finishReason: "STOP" }] } };
+    const { provider, api } = make(async function* () {
+      yield call;
+    });
+    await decode((await provider.passthrough("gemini-3.6-flash-low", raw("generateContent", hello))).body);
+    const replay = {
+      contents: [
+        ...hello.contents,
+        { role: "model", parts: [{ functionCall: { id: "call_1", name: "get_time", args: {} } }] },
+        { role: "user", parts: [{ functionResponse: { id: "call_1", name: "get_time", response: { output: "13:00" } } }] },
+      ],
+    };
+    const response = await provider.passthrough("gemini-3.6-flash-low", raw("generateContent", replay));
+    expect(response.headers["x-router-dropped"]).toBeUndefined();
+    const contents = (api.streams[1]!.body as { contents: { role: string; parts: Record<string, unknown>[] }[] }).contents;
+    expect(contents[1]!.parts[0]!["thoughtSignature"]).toBe("SIG-LIVE");
+    expect(contents[2]!.role).toBe("model");
   });
 });

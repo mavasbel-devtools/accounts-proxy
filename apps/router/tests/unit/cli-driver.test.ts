@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { ModelInfo, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
+import { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
-import { ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
-import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, USAGE } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
+import { DaemonStatusPort, type DaemonStatus } from "@inference-router/core/ports/inbound/daemon.ts";
+import { HealthPort, ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, SHUTDOWN_GRACE_MS, USAGE } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
 import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
+import { Server, ShutdownSignal, type Listening } from "@inference-router/router/adapters/inbound/server.ts";
 
 class Login extends LoginPort {
   calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl">][] = [];
@@ -32,21 +35,70 @@ class Usage extends UsagePort {
 }
 class Models extends ListModelsPort {
   seen: (ProviderId | undefined)[] = [];
-  async listModels(provider?: ProviderId): Promise<readonly ModelInfo[]> {
+  async listModels(provider?: ProviderId): Promise<readonly ModelCatalog[]> {
     this.seen.push(provider);
     return [
-      { address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80000, maxOutputTokens: 65536 },
-      { address: { provider: "antigravity", model: "c" }, displayName: "C" },
+      {
+        provider: "antigravity",
+        nativeDialect: "gemini",
+        source: "live",
+        models: [
+          { address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80000, maxOutputTokens: 65536 },
+          { address: { provider: "antigravity", model: "c" }, displayName: "C" },
+        ],
+      },
+      { provider: "claude", nativeDialect: "anthropic", source: "static", models: [] },
+      { provider: "claude", nativeDialect: "anthropic", source: "cache", models: [] },
     ];
+  }
+}
+class Access extends AccessPort {
+  calls = 0;
+  async token() {
+    this.calls += 1;
+    return "TOKEN";
+  }
+  async authorize() {
+    return false;
+  }
+}
+class Health extends HealthPort {
+  constructor(public providers: ProviderId[] = ["claude", "antigravity"]) {
+    super();
+  }
+  enabledProviders() {
+    return this.providers;
+  }
+}
+class Status extends DaemonStatusPort {
+  next: DaemonStatus = { running: true, url: "http://127.0.0.1:4141", providers: ["claude"] };
+  async status() {
+    return this.next;
+  }
+}
+class FakeServer extends Server {
+  events: string[] = [];
+  async start(): Promise<Listening> {
+    this.events.push("start");
+    return { host: "127.0.0.1", port: 4141 };
+  }
+  async stop(graceMs: number) {
+    this.events.push(`stop ${graceMs}`);
+  }
+}
+class FakeSignal extends ShutdownSignal {
+  async wait() {
+    return "SIGTERM";
   }
 }
 
 function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
-  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models() };
-  const driver = new CliDriver(ports, (t) => out.push(t), (t) => err.push(t));
-  return { driver, ports, out, err, run: (...argv: string[]) => driver.run(argv) };
+  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), access: new Access(), health: new Health(), status: new Status() };
+  const daemon = { server: new FakeServer(), shutdown: new FakeSignal() };
+  const driver = new CliDriver(ports, daemon, (t) => out.push(t), (t) => err.push(t));
+  return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
 }
 
 describe("CliDriver", () => {
@@ -87,6 +139,9 @@ describe("CliDriver", () => {
     [["quota"], "missing or extra arguments"],
     [["quota", "antigravity", "x"], "missing or extra arguments"],
     [["models", "a", "b"], "models takes at most one provider"],
+    [["serve", "x"], "serve takes no arguments"],
+    [["token", "x"], "token takes no arguments"],
+    [["status", "x"], "status takes no arguments"],
     [["frobnicate"], "unknown command frobnicate"],
   ])("usage error %p → exit 2", async (argv, message) => {
     const c = cli();
@@ -114,7 +169,46 @@ describe("CliDriver", () => {
     expect(await c.run("models")).toBe(0);
     expect(await c.run("models", "antigravity")).toBe(0);
     expect(c.ports.models.seen).toEqual([undefined, "antigravity"]);
-    expect(c.out.slice(0, 3)).toEqual(["Antigravity usage:\n", "antigravity/g  G  context 80000 / output 65536\n", "antigravity/c  C\n"]);
+    expect(c.out.slice(0, 6)).toEqual([
+      "Antigravity usage:\n",
+      "# antigravity: 2 models (live catalog)\n",
+      "antigravity/g  G  context 80000 / output 65536\n",
+      "antigravity/c  C\n",
+      "# claude: 0 models (built-in list: the live catalog was unavailable)\n",
+      "# claude: 0 models (stored copy of the live catalog)\n",
+    ]);
+  });
+
+  test("serve: token first, listen, wait for the shutdown signal, stop with the grace period", async () => {
+    const c = cli();
+    expect(await c.run("serve")).toBe(0);
+    expect(c.ports.access.calls).toBe(1);
+    expect(c.daemon.server.events).toEqual(["start", `stop ${SHUTDOWN_GRACE_MS}`]);
+    expect(c.out).toEqual([
+      "inference-router listening on http://127.0.0.1:4141 (providers: claude, antigravity)\n",
+      "clients authenticate with the router token: inference-router token\n",
+      "SIGTERM: stopping (in-flight responses get 10 s)\n",
+      "stopped\n",
+    ]);
+    c.ports.health.providers = [];
+    await c.run("serve");
+    expect(c.out[4]).toBe("inference-router listening on http://127.0.0.1:4141 (providers: none)\n");
+  });
+
+  test("token prints the router token; status reports running (exit 0) or not (exit 1)", async () => {
+    const c = cli();
+    expect(await c.run("token")).toBe(0);
+    expect(await c.run("status")).toBe(0);
+    c.ports.status.next = { running: true, url: "http://127.0.0.1:4141", providers: [] };
+    expect(await c.run("status")).toBe(0);
+    c.ports.status.next = { running: false, url: "http://127.0.0.1:4141", reason: "connection refused" };
+    expect(await c.run("status")).toBe(1);
+    expect(c.out).toEqual([
+      "TOKEN\n",
+      "running at http://127.0.0.1:4141 (providers: claude)\n",
+      "running at http://127.0.0.1:4141 (providers: none)\n",
+      "not running at http://127.0.0.1:4141 (connection refused)\n",
+    ]);
   });
 
   test("a failing command → exit 1 with the message; non-Error throwables too", async () => {

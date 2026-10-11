@@ -5,13 +5,14 @@ import { PassThrough } from "node:stream";
 import { EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
 import { ConfigError } from "@inference-router/core/domain/config.ts";
 import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
+import { UpstreamTimeoutError } from "@inference-router/core/domain/errors.ts";
+import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { FixedClock } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
 import { browserCommand, SystemBrowserLauncher, type Spawner } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
-import { FetchTransport } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { FetchTransport, type FetchInit } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
 import { DEFAULT_LOCK_OPTIONS, FileLock, LockTimeoutError } from "@inference-router/router/adapters/outbound/file-lock.ts";
-import { FileCredentialStore, FileKeyValueStore, StoreCorruptError, writeJsonAtomic } from "@inference-router/router/adapters/outbound/file-stores.ts";
+import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore, StoreCorruptError, writeJsonAtomic } from "@inference-router/router/adapters/outbound/file-stores.ts";
 import { CallbackTimeoutError, LoopbackCallbackServer, LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
 import { TerminalManualCode } from "@inference-router/router/adapters/outbound/terminal-manual-code.ts";
@@ -86,6 +87,22 @@ describe("file stores", () => {
     const fs = await import("node:fs/promises");
     const failing = { ...fs, writeFile: (() => Promise.reject(new Error("disk full"))) as unknown as typeof fs.writeFile, unlink: (() => Promise.reject(new Error("ENOENT"))) as unknown as typeof fs.unlink };
     await expect(writeJsonAtomic(join(root, "x.json"), {}, 0o600, failing)).rejects.toThrow("disk full");
+  });
+});
+
+describe("FileRouterTokenStore", () => {
+  test("missing → undefined; written 0600 as JSON; read back; corrupt values are errors", async () => {
+    const store = new FileRouterTokenStore(temp());
+    expect(await store.read()).toBeUndefined();
+    await store.write("tok-123");
+    expect(store.path()).toBe(join(dir!, "token.json"));
+    expect(JSON.parse(readFileSync(store.path(), "utf8"))).toEqual({ token: "tok-123" });
+    if (process.platform !== "win32") expect(statSync(store.path()).mode & 0o777).toBe(0o600);
+    expect(await store.read()).toBe("tok-123");
+    for (const bad of ["[]", '{"token":""}', '{"token":7}']) {
+      writeFileSync(store.path(), bad);
+      await expect(store.read()).rejects.toBeInstanceOf(StoreCorruptError);
+    }
   });
 });
 
@@ -204,10 +221,60 @@ describe("FetchTransport", () => {
       expect(new TextDecoder().decode((await it.next()).value)).toBe("|second");
       const empty = await transport.send({ method: "GET", url: `http://127.0.0.1:${server.port}/empty`, headers: {} });
       expect(await readAll(empty.body)).toBe("");
-      await expect(transport.send({ method: "GET", url: `http://127.0.0.1:${server.port}/slow`, headers: {}, timeoutMs: 50 })).rejects.toBeDefined();
+      const late = await transport.send({ method: "GET", url: `http://127.0.0.1:${server.port}/slow`, headers: {}, timeoutMs: 50 }).catch((e: unknown) => e);
+      expect(late).toBeInstanceOf(UpstreamTimeoutError);
+      expect((late as UpstreamTimeoutError).message).toBe(`upstream 127.0.0.1:${server.port} sent nothing for 50 ms`);
+      const controller = new AbortController();
+      const pending = transport.send({ method: "GET", url: `http://127.0.0.1:${server.port}/slow`, headers: {}, signal: controller.signal, timeoutMs: 5_000 });
+      controller.abort();
+      const aborted = await pending.catch((e: unknown) => e);
+      expect((aborted as Error).name).toBe("AbortError");
     } finally {
       server.stop(true);
     }
+  });
+
+  const timeoutError = () => Object.assign(new Error("The operation timed out."), { name: "TimeoutError" });
+
+  test("the idle timeout is always explicit; a client signal alone is passed as is", async () => {
+    const inits: FetchInit[] = [];
+    const transport = new FetchTransport(async (_url, init) => {
+      inits.push(init);
+      return new Response("ok");
+    });
+    await transport.send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {} });
+    const controller = new AbortController();
+    await transport.send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {}, idleTimeoutMs: 1234, signal: controller.signal });
+    expect(inits.map((i) => i.timeout)).toEqual([UPSTREAM_IDLE_TIMEOUT_MS, 1234]);
+    expect(inits[0]!.signal).toBeUndefined();
+    expect(inits[1]!.signal).toBe(controller.signal);
+  });
+
+  test("an idle timeout before or during the body is UpstreamTimeoutError (504); other failures propagate unchanged", async () => {
+    const before = new FetchTransport(async () => Promise.reject(timeoutError()));
+    const early = await before.send({ method: "GET", url: "http://api.example:8443/x", headers: {}, idleTimeoutMs: 600_000 }).catch((e: unknown) => e);
+    expect(early).toBeInstanceOf(UpstreamTimeoutError);
+    expect((early as UpstreamTimeoutError).httpStatus).toBe(504);
+    expect((early as UpstreamTimeoutError).message).toBe("upstream api.example:8443 sent nothing for 600000 ms");
+
+    const failing = (error: unknown) =>
+      new FetchTransport(
+        async () =>
+          new Response(
+            new ReadableStream({
+              start(c) {
+                c.enqueue(new TextEncoder().encode("partial"));
+                c.error(error);
+              },
+            }),
+          ),
+      );
+    const midStream = await failing(timeoutError()).send({ method: "GET", url: "http://h/x", headers: {} });
+    await expect(readAll(midStream.body)).rejects.toBeInstanceOf(UpstreamTimeoutError);
+    const reset = await failing(new Error("ECONNRESET")).send({ method: "GET", url: "http://h/x", headers: {} });
+    await expect(readAll(reset.body)).rejects.toThrow("ECONNRESET");
+    await expect(new FetchTransport(async () => Promise.reject(new Error("refused"))).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toThrow("refused");
+    await expect(new FetchTransport(async () => Promise.reject("not an error")).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toBe("not an error");
   });
 });
 

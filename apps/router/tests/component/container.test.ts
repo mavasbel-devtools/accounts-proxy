@@ -3,13 +3,15 @@
 // approves: it calls the loopback redirect with the code and the state from the authorization URL.
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import type { HttpRequest } from "@inference-router/core/domain/wire.ts";
 import { BrowserLauncherPort } from "@inference-router/core/ports/outbound/system.ts";
 import { ScriptedTransport, type ScriptedResponse } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
-import { buildCli, defaultHome, runCli, type ContainerOptions } from "@inference-router/router/composition/container.ts";
+import { ShutdownSignal } from "@inference-router/router/adapters/inbound/server.ts";
+import { buildCli, defaultHome, runCli, seamsFrom, type ContainerOptions } from "@inference-router/router/composition/container.ts";
 
 let home: string | undefined;
 afterEach(() => {
@@ -130,5 +132,117 @@ describe("process entry (main/cli.ts)", () => {
       else process.env["INFERENCE_ROUTER_HOME"] = saved.env;
     }
     expect(printed.join("")).toContain("usage: inference-router <command>");
+  });
+});
+
+class ManualSignal extends ShutdownSignal {
+  private fire!: (name: string) => void;
+  private readonly fired = new Promise<string>((resolve) => (this.fire = resolve));
+  wait() {
+    return this.fired;
+  }
+  trigger(name: string) {
+    this.fire(name);
+  }
+}
+
+async function freePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", () => resolve()));
+  const port = (probe.address() as { port: number }).port;
+  await new Promise<void>((resolve) => probe.close(() => resolve()));
+  return port;
+}
+
+/** Replays the Google OAuth + cloudcode-pa endpoints the seams point at (paths of the production URLs). */
+function replayGoogle() {
+  return Bun.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    fetch(req) {
+      const path = new URL(req.url).pathname;
+      const reply = (body: unknown) => Response.json(body);
+      if (path === "/token") return reply({ access_token: "at", refresh_token: "rt", expires_in: 3599 });
+      const op = path.split("v1internal:")[1];
+      if (op === "fetchUserInfo") return reply({ userSettings: { email: "me@x" } });
+      if (op === "loadCodeAssist") return reply({ cloudaicompanionProject: "proj-1" });
+      if (op === "fetchAvailableModels") return new Response(fixture("fetch-available-models.sample.json"));
+      if (op === "streamGenerateContent") return new Response(fixture("stream-generate.sample.sse"), { headers: { "content-type": "text/event-stream" } });
+      return new Response(path, { status: 404 });
+    },
+  });
+}
+
+describe("daemon wiring (serve, token, status) over the upstream seams", () => {
+  test("login, serve, authenticated native Gemini stream, model lists with their source, status, SIGTERM drain", async () => {
+    const upstream = replayGoogle();
+    try {
+      const origin = `http://127.0.0.1:${upstream.port}`;
+      const seams = { antigravityApi: origin, googleOAuth: origin, claudeApi: origin, claudeOAuth: origin };
+      const shutdown = new ManualSignal();
+      const { opts, out, err } = options({ seams, shutdown, transport: undefined as never });
+      const { transport: _scripted, ...real } = opts;
+      const port = await freePort();
+      writeFileSync(join(home!, "router.yaml"), `port: ${port}\n${BOTH}`);
+      expect(await runCli(["login", "antigravity", "--timeout-seconds", "10"], real)).toBe(0);
+      expect(await runCli(["status"], real)).toBe(1);
+      expect(out.at(-1)).toMatch(new RegExp(`^not running at http://127\\.0\\.0\\.1:${port} \\(`));
+
+      const serving = runCli(["serve"], real);
+      for (let i = 0; i < 200 && !out.some((l) => l.startsWith("inference-router listening")); i++) await Bun.sleep(10);
+      expect(out).toContain(`inference-router listening on http://127.0.0.1:${port} (providers: claude, antigravity)\n`);
+      expect(await runCli(["token"], real)).toBe(0);
+      const token = out.at(-1)!.trim();
+      expect(JSON.parse(readFileSync(join(home!, "token.json"), "utf8"))).toEqual({ token });
+
+      const base = `http://127.0.0.1:${port}`;
+      expect(await (await fetch(`${base}/health`)).json()).toEqual({ status: "ok", providers: ["claude", "antigravity"] });
+      expect((await fetch(`${base}/gemini/v1beta/models`)).status).toBe(401);
+      const stream = await fetch(`${base}/gemini/v1beta/models/antigravity%2Fgemini-3.6-flash-low:streamGenerateContent?alt=sse`, {
+        method: "POST",
+        headers: { "x-goog-api-key": token, "content-type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "hi" }] }] }),
+      });
+      expect(stream.headers.get("content-type")).toBe("text/event-stream");
+      expect((await stream.text()).split("\r\n\r\n").filter((f) => f.startsWith("data: "))).toHaveLength(3);
+      const listed = await fetch(`${base}/anthropic/v1/models`, { headers: { "x-api-key": token } });
+      expect(listed.headers.get("x-router-models-source")).toBe("claude=static,antigravity=live");
+
+      expect(await runCli(["status"], real)).toBe(0);
+      expect(out.at(-1)).toBe(`running at ${base} (providers: claude, antigravity)\n`);
+      shutdown.trigger("SIGTERM");
+      expect(await serving).toBe(0);
+      expect(out.slice(-2)).toEqual(["SIGTERM: stopping (in-flight responses get 10 s)\n", "stopped\n"]);
+      expect(err).toEqual([]);
+    } finally {
+      upstream.stop(true);
+    }
+  });
+
+  test("seams accept only http://127.0.0.1:<port> origins", () => {
+    expect(seamsFrom({})).toEqual({});
+    expect(seamsFrom({ INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:5001", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:5002/" })).toEqual({
+      claudeApi: "http://127.0.0.1:5001",
+      googleOAuth: "http://127.0.0.1:5002",
+    });
+    for (const value of ["https://127.0.0.1:1", "http://localhost:1", "http://127.0.0.1:1/v1", "http://127.0.0.1:1/?x=1", "not a url", "http://api.anthropic.com"]) {
+      expect(() => seamsFrom({ INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: value })).toThrow("INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API must be an http://127.0.0.1:<port> origin");
+    }
+  });
+
+  test("main refuses a seam that is not loopback before building anything", async () => {
+    const saved = { ewrite: process.stderr.write, env: process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"] };
+    const errors: string[] = [];
+    process.stderr.write = ((chunk: string) => (errors.push(String(chunk)), true)) as typeof process.stderr.write;
+    process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"] = "https://claude.com";
+    try {
+      const { main } = await import("@inference-router/router/composition/container.ts");
+      expect(await main(["help"])).toBe(1);
+      expect(errors.join("")).toBe('error: INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH must be an http://127.0.0.1:<port> origin (hermetic tests only), got "https://claude.com"\n');
+    } finally {
+      process.stderr.write = saved.ewrite;
+      if (saved.env === undefined) delete process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"];
+      else process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"] = saved.env;
+    }
   });
 });

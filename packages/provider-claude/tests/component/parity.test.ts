@@ -1,6 +1,8 @@
 // P3 parity gate: for the same input, the router's outbound Claude request (url, headers, body bytes) must equal
 // the reference implementation's (opencode-claude-auth @ 6292741, tests/reference/plugin-6292741). Any difference
-// is a defect, except the deliberate fixes listed (and asserted) at the bottom of this file.
+// is a defect, except the deliberate fixes listed (and asserted) at the bottom of this file. F9 (Q6) changes every
+// request whose thinking is absent or disabled, so `both` applies exactly that change to the reference output before
+// the byte comparison; the F9 tests below assert the reference really differs there.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -52,10 +54,27 @@ const futureEntry: CatalogModelEntry = {
 };
 const lookup = (id: string) => (id === futureEntry.id ? futureEntry : undefined);
 
-function both(body: WireRequestBody, path = "/v1/messages", previousMessageId: string | null = null, apiBase = "https://api.anthropic.com") {
+/** F9 (user decision Q6): the reference body without the default thinking (when absent) and the clear-thinking edit. */
+function withF9(referenceBody: string, client: WireRequestBody): string {
+  const t = client.thinking;
+  const absent = t === undefined;
+  const disabled = t !== null && typeof t === "object" && (t as { type?: unknown }).type === "disabled";
+  if (!absent && !disabled) return referenceBody;
+  const parsed = JSON.parse(referenceBody) as Record<string, unknown>;
+  if (absent) delete parsed["thinking"];
+  delete parsed["context_management"];
+  return JSON.stringify(parsed);
+}
+
+function reference(body: WireRequestBody, path: string, previousMessageId: string | null, apiBase: string) {
   let n = 0;
-  const reference = new RequestTransformService({ uuid: () => `uuid-${++n}`, sha256Base64Url: () => "unused" }, apiBase, lookup);
-  const expected = reference.transform({ headers: {}, body: body as never, path }, { ...BASE, previousMessageId });
+  const service = new RequestTransformService({ uuid: () => `uuid-${++n}`, sha256Base64Url: () => "unused" }, apiBase, lookup);
+  return service.transform({ headers: {}, body: body as never, path }, { ...BASE, previousMessageId });
+}
+
+function both(body: WireRequestBody, path = "/v1/messages", previousMessageId: string | null = null, apiBase = "https://api.anthropic.com") {
+  const source = reference(body, path, previousMessageId, apiBase);
+  const expected = { ...source, body: withF9(source.body, body) };
   const ctx: TransformContext = { ...BASE, previousMessageId, ccPromptId: "uuid-1", clientRequestId: "uuid-2" };
   const actual = transformRequest({ body, path }, ctx, lookup, apiBase);
   return { expected, actual };
@@ -168,5 +187,31 @@ describe("deliberate differences (each one asserted, nothing else may differ)", 
     expect(thinkingOf(expected.body)).toEqual({ type: "enabled", budget_tokens: 2048 });
     expect(thinkingOf(actual.body)).toEqual({ type: "enabled", budget_tokens: 2048.5 });
     expect(withoutThinking(actual.body)).toEqual(withoutThinking(expected.body));
+  });
+
+  test("F9: absent thinking — the reference adds the captured default thinking and the clear-thinking edit; the router adds neither", () => {
+    const body: WireRequestBody = { model: "claude-haiku-4-5-20251001", messages: user };
+    const source = JSON.parse(reference(body, "/v1/messages", null, "https://api.anthropic.com").body) as Record<string, unknown>;
+    expect(source["thinking"]).toEqual({ type: "enabled", display: "omitted", budget_tokens: 31999 });
+    expect(source["context_management"]).toEqual({ edits: [{ type: "clear_thinking_20251015", keep: "all" }] });
+    const actual = JSON.parse(both(body).actual.body) as Record<string, unknown>;
+    expect("thinking" in actual).toBe(false);
+    expect("context_management" in actual).toBe(false);
+  });
+
+  test("F9: disabled thinking — kept, without the clear-thinking edit (the upstream 400s on that pair)", () => {
+    const body: WireRequestBody = { model: "claude-opus-4-8", thinking: { type: "disabled" }, messages: user };
+    const source = JSON.parse(reference(body, "/v1/messages", null, "https://api.anthropic.com").body) as Record<string, unknown>;
+    expect(source["context_management"]).toBeDefined();
+    const actual = JSON.parse(both(body).actual.body) as Record<string, unknown>;
+    expect(actual["thinking"]).toEqual({ type: "disabled" });
+    expect("context_management" in actual).toBe(false);
+  });
+
+  test("F9: enabled or adaptive thinking keeps the captured clear-thinking edit", () => {
+    for (const thinking of [{ type: "enabled", budget_tokens: 2048 }, { type: "adaptive" }, { type: "weird" }]) {
+      const actual = JSON.parse(both({ model: "claude-opus-4-8", thinking, messages: user }).actual.body) as Record<string, unknown>;
+      expect(actual["context_management"]).toEqual({ edits: [{ type: "clear_thinking_20251015", keep: "all" }] });
+    }
   });
 });

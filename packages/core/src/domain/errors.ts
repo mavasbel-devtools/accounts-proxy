@@ -7,12 +7,16 @@
 //   │   ├── UnsupportedFeatureError   400 unsupported_feature
 //   │   ├── UnauthorizedError         401 unauthorized
 //   │   ├── UnknownModelError         404 unknown_model
-//   │   └── UnknownAccountError       404 unknown_account
-//   └── ProviderError             — the provider side cannot serve it
-//       ├── ProviderAuthRequiredError 401 provider_auth_required
-//       ├── ProviderDisabledError     503 provider_disabled
-//       ├── QuotaExhaustedError       429 quota_exhausted
-//       └── UpstreamError             <upstream status> upstream_error
+//   │   ├── UnknownAccountError       404 unknown_account
+//   │   ├── RouteNotFoundError        404 not_found
+//   │   └── PayloadTooLargeError      413 payload_too_large
+//   ├── ProviderError             — the provider side cannot serve it
+//   │   ├── ProviderAuthRequiredError 401 provider_auth_required
+//   │   ├── ProviderDisabledError     503 provider_disabled
+//   │   ├── QuotaExhaustedError       429 quota_exhausted
+//   │   ├── UpstreamTimeoutError      504 upstream_timeout
+//   │   └── UpstreamError             <upstream status> upstream_error
+//   └── InternalError             500 internal_error (a defect; the message is logged, the client sees a fixed text)
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type RouterErrorCode =
@@ -21,10 +25,14 @@ export type RouterErrorCode =
   | "unauthorized"
   | "unknown_model"
   | "unknown_account"
+  | "not_found"
+  | "payload_too_large"
   | "provider_auth_required"
   | "provider_disabled"
   | "quota_exhausted"
-  | "upstream_error";
+  | "upstream_timeout"
+  | "upstream_error"
+  | "internal_error";
 
 export abstract class RouterError extends Error {
   abstract readonly code: RouterErrorCode;
@@ -84,6 +92,44 @@ export class UnknownAccountError extends ClientRequestError {
     readonly accountId: string,
   ) {
     super(`no ${provider} account ${JSON.stringify(accountId)}`);
+  }
+}
+
+export class RouteNotFoundError extends ClientRequestError {
+  readonly code = "not_found";
+  readonly httpStatus = 404;
+  constructor(
+    readonly method: string,
+    readonly path: string,
+  ) {
+    super(`no route ${method} ${path}`);
+  }
+}
+
+export class PayloadTooLargeError extends ClientRequestError {
+  readonly code = "payload_too_large";
+  readonly httpStatus = 413;
+  constructor(readonly limitBytes: number) {
+    super(`request body exceeds ${limitBytes} bytes`);
+  }
+}
+
+export class UpstreamTimeoutError extends ProviderError {
+  readonly code = "upstream_timeout";
+  readonly httpStatus = 504;
+  constructor(
+    readonly host: string,
+    readonly idleMs: number,
+  ) {
+    super(`upstream ${host} sent nothing for ${idleMs} ms`);
+  }
+}
+
+export class InternalError extends RouterError {
+  readonly code = "internal_error";
+  readonly httpStatus = 500;
+  constructor() {
+    super("internal router error (details are in the router log)");
   }
 }
 

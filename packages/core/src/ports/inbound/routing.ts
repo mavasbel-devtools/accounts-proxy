@@ -1,7 +1,7 @@
 // Inbound (driving) ports implemented by the router's application services and called by the HTTP adapter.
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest, TranslationPolicy } from "@inference-router/core/domain/canonical/request.ts";
-import type { Dialect, ModelInfo, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { Dialect, ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 
@@ -21,12 +21,18 @@ export abstract class CountTokensPort {
 }
 
 export abstract class ListModelsPort {
-  /** Models of every enabled provider, or of one provider. */
-  abstract listModels(provider?: ProviderId): Promise<readonly ModelInfo[]>;
+  /** One catalog per enabled provider (configuration order), or the catalog of one provider. */
+  abstract listModels(provider?: ProviderId): Promise<readonly ModelCatalog[]>;
 }
 
 export abstract class PassthroughPort {
-  /** True when `model` resolves to a provider whose native dialect is `dialect`. */
-  abstract isNative(dialect: Dialect, model: string): boolean;
+  /**
+   * Resolves `model` (`<provider>/<model>` or an alias) and forwards the client's own request to that provider's
+   * native cell. A provider whose native dialect is not `dialect` is a translated cell: unsupported_feature (P5).
+   */
   abstract forward(dialect: Dialect, model: string, request: RawRequest): Promise<HttpResponse>;
+}
+
+export abstract class HealthPort {
+  abstract enabledProviders(): readonly ProviderId[];
 }

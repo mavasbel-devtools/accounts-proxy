@@ -224,7 +224,7 @@ describe("ListModelsService", () => {
       return new Set<never>();
     }
     async models() {
-      return [{ address: { provider: this.id, model: `${this.id}-m` }, displayName: "M" }];
+      return { provider: this.id, nativeDialect: "anthropic" as const, source: "live" as const, models: [{ address: { provider: this.id, model: `${this.id}-m` }, displayName: "M" }] };
     }
     async *stream() {}
     async countTokens() {
@@ -236,8 +236,8 @@ describe("ListModelsService", () => {
   }
   test("all enabled providers, one provider, or disabled", async () => {
     const service = new ListModelsService([new Provider("claude"), new Provider("antigravity")]);
-    expect((await service.listModels()).map((m) => m.address.model)).toEqual(["claude-m", "antigravity-m"]);
-    expect((await service.listModels("antigravity")).map((m) => m.address.model)).toEqual(["antigravity-m"]);
+    expect((await service.listModels()).map((c) => c.models[0]!.address.model)).toEqual(["claude-m", "antigravity-m"]);
+    expect((await service.listModels("antigravity")).map((c) => c.provider)).toEqual(["antigravity"]);
     await expect(new ListModelsService([]).listModels("antigravity")).rejects.toBeInstanceOf(ProviderDisabledError);
   });
 });

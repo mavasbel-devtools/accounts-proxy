@@ -86,7 +86,7 @@ export function quotaSignal(status: number | undefined, text: string): boolean {
 export type ClaudeResult = { readonly status: number; readonly text: string; readonly events: Array<Record<string, unknown>> };
 
 export async function claudeMessages(live: Live, model: string, body: Record<string, unknown>): Promise<ClaudeResult> {
-  const response = await live.claude.provider.passthrough(model, { path: "/v1/messages", headers: {}, body: JSON.stringify(body) });
+  const response = await live.claude.provider.passthrough(model, { path: "/v1/messages", query: {}, headers: {}, body: JSON.stringify(body), lossy: false });
   const text = await readAll(response.body);
   const events: Array<Record<string, unknown>> = [];
   if ((response.headers["content-type"] ?? "").includes("text/event-stream")) {

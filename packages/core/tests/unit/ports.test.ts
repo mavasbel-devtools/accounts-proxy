@@ -12,6 +12,13 @@ import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.t
 import { CallbackServerFactoryPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import { UsagePort } from "@inference-router/core/ports/inbound/accounts.ts";
 import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
+import { DaemonStatusPort } from "@inference-router/core/ports/inbound/daemon.ts";
+import { ErrorReporterPort } from "@inference-router/core/ports/inbound/diagnostics.ts";
+import { DialectCodecPort } from "@inference-router/core/ports/inbound/dialect.ts";
+import { HealthPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { ConfigSourcePort } from "@inference-router/core/ports/outbound/config.ts";
+import { RouterTokenStorePort } from "@inference-router/core/ports/outbound/router-token.ts";
 
 class FixedClock extends ClockPort {
   now(): number {
@@ -45,6 +52,13 @@ describe("ports", () => {
       UsageReporterPort,
       CallbackServerFactoryPort,
       UsagePort,
+      AccessPort,
+      DialectCodecPort,
+      DaemonStatusPort,
+      ErrorReporterPort,
+      HealthPort,
+      ConfigSourcePort,
+      RouterTokenStorePort,
     ];
     for (const Port of ports) {
       const Impl = class extends (Port as unknown as new () => object) {};

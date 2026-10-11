@@ -1,6 +1,7 @@
 // The router's own durable stores under its data directory (plan D5: never Claude Code's or the plugins' files).
 //   accounts-<provider>.json   AccountPool per provider (credentials; written 0600)
 //   state/<key>.json           small provider state (device/session ids, catalog cache, thought signatures)
+//   token.json                 the router token clients present (written 0600)
 // Writes are atomic (temp file in the same directory + rename). A UTF-8 BOM is tolerated on read (lesson of the
 // source plugin's 2026-08-28 BOM incident). A corrupt file is an error, never silently treated as empty — an empty
 // pool written back would destroy the user's accounts. Directories the router creates are 0700 (owner only), like
@@ -13,6 +14,7 @@ import { EMPTY_POOL, type AccountCredential, type AccountPool } from "@inference
 import { isJsonObject, type JsonValue } from "@inference-router/core/domain/json.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
+import { RouterTokenStorePort } from "@inference-router/core/ports/outbound/router-token.ts";
 import { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
 
 export const PRIVATE_DIRECTORY_MODE = 0o700;
@@ -102,5 +104,27 @@ export class FileKeyValueStore extends KeyValueStorePort {
 
   write(key: string, value: JsonValue): Promise<void> {
     return writeJsonAtomic(this.path(key), value, PRIVATE_FILE_MODE);
+  }
+}
+
+/** The router token, `<data>/token.json` = `{"token": "<base64url>"}`, written 0600. */
+export class FileRouterTokenStore extends RouterTokenStorePort {
+  constructor(private readonly directory: string) {
+    super();
+  }
+
+  path(): string {
+    return join(this.directory, "token.json");
+  }
+
+  async read(): Promise<string | undefined> {
+    const value = await readJson(this.path());
+    if (value === undefined) return undefined;
+    if (!isJsonObject(value) || typeof value.token !== "string" || value.token.length === 0) throw new StoreCorruptError(this.path(), 'expected { "token": "<router token>" }');
+    return value.token;
+  }
+
+  write(token: string): Promise<void> {
+    return writeJsonAtomic(this.path(), { token }, PRIVATE_FILE_MODE);
   }
 }

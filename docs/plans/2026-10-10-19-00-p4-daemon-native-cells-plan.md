@@ -1,7 +1,7 @@
 # Plan: P4 — daemon and the two native cells
 
-Status: **Q1–Q5 approved 2026-10-11 ("proceed as per your recommendations")**; amendment B (below, from the P0-LIVE
-evidence) adds Q6–Q7, awaiting decision. Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1) · Continuation: [2026-10-10-18-45-continuation-plan.md](2026-10-10-18-45-continuation-plan.md) (amendment A2: P4 before P0-LIVE, approved 2026-10-10).
+Status: **approved, in execution**. Q1–Q5 approved 2026-10-11 ("proceed as per your recommendations"); amendment B
+(below, from the P0-LIVE evidence) Q6–Q7 approved 2026-10-11 ("proceed as per your recommendation with both"). Parent plan: [2026-10-06-00-23-inference-router-plan.md](2026-10-06-00-23-inference-router-plan.md) (v3.1) · Continuation: [2026-10-10-18-45-continuation-plan.md](2026-10-10-18-45-continuation-plan.md) (amendment A2: P4 before P0-LIVE, approved 2026-10-10).
 
 Everything below was read from the code at `2ef50ec`, from the specs in `docs/reference/specs/`, from the Antigravity plugin's `docs/research/antigravity-protocol/SPEC.md` (@ `5c6f7c2`), and from the SDK documentation pulled on 2026-10-10 (Context7 and the npm registry). Each section names its source.
 

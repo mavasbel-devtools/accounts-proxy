@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { upsertAccount, EMPTY_POOL, activeAccount } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
+import { readAll, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import {
   collect,
   FixedClock,
@@ -23,6 +23,7 @@ import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "@inference
 import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@inference-router/provider-claude/domain/constants.ts";
 import { fromAccount, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { STATIC_CATALOG } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import { capturedBetaHeader } from "@inference-router/provider-claude/domain/request-transform.ts";
 import { ClaudeCatalogPort, ClaudeOAuthPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
@@ -312,6 +313,23 @@ describe("ClaudeCatalog", () => {
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=100");
   });
 
+  test("listing reports where the list came from: live (and memoized), disk cache, stale cache, static", async () => {
+    const live = make(() => ok({ data: [{ id: "live" }] }));
+    expect((await live.catalog.listing()).source).toBe("live");
+    expect((await live.catalog.listing()).source).toBe("live");
+    expect(live.transport.requests).toHaveLength(1);
+
+    const kv = new MemoryKeyValueStore();
+    kv.values.set(CATALOG_KEY, { version: 2, fetchedAt: 100_000_000 - 1000, models: [{ id: "cached", displayName: "C", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] });
+    expect((await make(() => ok({}), kv).catalog.listing()).source).toBe("cache");
+
+    const stale = new MemoryKeyValueStore();
+    stale.values.set(CATALOG_KEY, { version: 2, fetchedAt: 0, models: [{ id: "stale", displayName: "S", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] });
+    expect(await make(() => ({ status: 503, body: "down" }), stale).catalog.listing()).toMatchObject({ source: "cache", entries: [{ id: "stale" }] });
+
+    expect(await make(() => ({ status: 503, body: "down" })).catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
+  });
+
   test("a non-Error rejection is still logged", async () => {
     const { catalog, logger } = make(() => Promise.reject("boom"));
     expect(await catalog.entries()).toBe(STATIC_CATALOG);
@@ -320,8 +338,8 @@ describe("ClaudeCatalog", () => {
 });
 
 class FixedCatalog extends ClaudeCatalogPort {
-  async entries() {
-    return STATIC_CATALOG;
+  async listing() {
+    return { source: "static" as const, entries: STATIC_CATALOG };
   }
 }
 
@@ -334,7 +352,13 @@ describe("ClaudeSubscriptionProvider", () => {
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new FixedCatalog(), identity, transport, new SequenceRandom(), logger, "http://up");
     return { transport, identity, logger, provider };
   };
-  const raw = (body: unknown, path = "/v1/messages") => ({ path, headers: {}, body: typeof body === "string" ? body : JSON.stringify(body) });
+  const raw = (body: unknown, path = "/v1/messages", headers: Record<string, string> = {}, lossy = false): RawRequest => ({
+    path,
+    query: {},
+    headers,
+    body: typeof body === "string" ? body : JSON.stringify(body),
+    lossy,
+  });
 
   test("identity and capabilities", async () => {
     const { provider } = make(ok({}));
@@ -345,18 +369,26 @@ describe("ClaudeSubscriptionProvider", () => {
 
   test("models come from the catalog with limits", async () => {
     const { provider } = make(ok({}));
-    const models = await provider.models();
-    expect(models[0]).toEqual({ address: { provider: "claude", model: "claude-opus-5" }, displayName: "Claude Opus 5", contextWindow: 1_000_000, maxOutputTokens: 128_000 });
+    const catalog = await provider.models();
+    expect(catalog.provider).toBe("claude");
+    expect(catalog.source).toBe("static");
+    expect(catalog.models[0]).toEqual({
+      address: { provider: "claude", model: "claude-opus-5" },
+      displayName: "Claude Opus 5",
+      contextWindow: 1_000_000,
+      maxOutputTokens: 128_000,
+      createdAt: "2026-07-24T00:00:00Z",
+    });
   });
 
   test("models without limits omit them", async () => {
     class Bare extends ClaudeCatalogPort {
-      async entries() {
-        return [{ id: "x", displayName: "X", createdAt: "", maxInputTokens: 0, maxTokens: 0 }];
+      async listing() {
+        return { source: "live" as const, entries: [{ id: "x", displayName: "X", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] };
       }
     }
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger());
-    expect(await provider.models()).toEqual([{ address: { provider: "claude", model: "x" }, displayName: "X" }]);
+    expect(await provider.models()).toEqual({ provider: "claude", nativeDialect: "anthropic", source: "live", models: [{ address: { provider: "claude", model: "x" }, displayName: "X" }] });
   });
 
   test("translated cells are not available before P5", async () => {
@@ -457,5 +489,58 @@ describe("ClaudeSubscriptionProvider", () => {
     const { provider } = make({ status: 200, body: "plain" });
     const response = await provider.passthrough("m", raw({ messages: [] }));
     expect(await readAll(response.body)).toBe("plain");
+  });
+
+  const sentBetas = (transport: ScriptedTransport) => transport.requests[0]!.headers["anthropic-beta"];
+  const captured = capturedBetaHeader("claude-opus-4-8", (id) => STATIC_CATALOG.find((e) => e.id === id));
+
+  test("F4: no client anthropic-beta sends the captured set unchanged", async () => {
+    const { provider, transport } = make(ok({}));
+    const response = await provider.passthrough("claude-opus-4-8", raw({ messages: [] }));
+    expect(sentBetas(transport)).toBe(captured);
+    expect(response.headers["x-router-dropped"]).toBeUndefined();
+  });
+
+  test("F4: known client betas go first (client order, deduplicated), then the rest of the captured set", async () => {
+    const { provider, transport } = make(ok({}));
+    const names = captured.split(",");
+    const [a, b] = [names[2]!, names[0]!];
+    await provider.passthrough("claude-opus-4-8", raw({ messages: [] }, "/v1/messages", { "anthropic-beta": ` ${a}, ${b},${a},` }));
+    expect(sentBetas(transport)!.split(",")).toEqual([a, b, ...names.filter((n) => n !== a && n !== b)]);
+  });
+
+  test("F4: an unproven beta is unsupported_feature; lossy drops it and reports it", async () => {
+    const strict = make(ok({}));
+    const request = raw({ messages: [] }, "/v1/messages", { "anthropic-beta": "files-api-2025-04-14,oauth-2025-04-20" });
+    const error = await strict.provider.passthrough("claude-opus-4-8", request).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(UnsupportedFeatureError);
+    expect((error as UnsupportedFeatureError).features).toEqual(["anthropic-beta:files-api-2025-04-14"]);
+    expect(strict.transport.requests).toHaveLength(0);
+
+    const lossy = make(ok({}));
+    const response = await lossy.provider.passthrough("claude-opus-4-8", { ...request, lossy: true });
+    expect(sentBetas(lossy.transport)!.includes("files-api")).toBe(false);
+    expect(sentBetas(lossy.transport)!.startsWith("oauth-2025-04-20")).toBe(true);
+    expect(response.headers["x-router-dropped"]).toBe("anthropic-beta:files-api-2025-04-14");
+  });
+
+  test("anthropic-version: the captured value passes; any other is unsupported_feature, or dropped with lossy", async () => {
+    const same = make(ok({}));
+    await same.provider.passthrough("m", raw({ messages: [] }, "/v1/messages", { "anthropic-version": "2023-06-01" }));
+    expect(same.transport.requests[0]!.headers["anthropic-version"]).toBe("2023-06-01");
+
+    const other = make(ok({}));
+    const request = raw({ messages: [] }, "/v1/messages", { "anthropic-version": "2099-01-01", "anthropic-beta": "nope-1" });
+    await expect(other.provider.passthrough("m", request)).rejects.toBeInstanceOf(UnsupportedFeatureError);
+    const response = await other.provider.passthrough("m", { ...request, lossy: true });
+    expect(other.transport.requests[0]!.headers["anthropic-version"]).toBe("2023-06-01");
+    expect(response.headers["x-router-dropped"]).toBe("anthropic-version:2099-01-01,anthropic-beta:nope-1");
+  });
+
+  test("the client's abort signal is handed to the transport", async () => {
+    const { provider, transport } = make(ok({}));
+    const controller = new AbortController();
+    await provider.passthrough("m", { ...raw({ messages: [] }), signal: controller.signal });
+    expect(transport.requests[0]!.signal).toBe(controller.signal);
   });
 });

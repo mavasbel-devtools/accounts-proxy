@@ -80,7 +80,7 @@ export type GenerateBody = {
   sessionId?: string;
 };
 
-const SCHEMA_KEYS = new Set(["type", "format", "description", "nullable", "enum", "items", "properties", "required", "propertyOrdering"]);
+export const SCHEMA_KEYS: ReadonlySet<string> = new Set(["type", "format", "description", "nullable", "enum", "items", "properties", "required", "propertyOrdering"]);
 
 export function sanitizeSchema(node: unknown): Record<string, unknown> {
   if (Array.isArray(node)) return node.map(sanitizeSchema) as unknown as Record<string, unknown>;
@@ -119,7 +119,7 @@ function hasContent(m: ChatMessage): boolean {
   return m.text.trim().length > 0;
 }
 
-const isGeminiFamily = (wireId: string): boolean => wireId.toLowerCase().startsWith("gemini");
+export const isGeminiFamily = (wireId: string): boolean => wireId.toLowerCase().startsWith("gemini");
 
 function buildGenerationConfig(req: ChatRequest): Record<string, unknown> | undefined {
   const cfg: Record<string, unknown> = {};

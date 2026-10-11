@@ -1,7 +1,8 @@
 // P0-E1: fetch the official wire specifications into docs/reference/specs/ with provenance
 // (URL, HTTP status, byte size, SHA-256, fetch time; GitHub-hosted specs also record the commit SHA).
+// `--only=<file>[,<file>]` fetches just those files and keeps every other manifest entry (and file) unchanged.
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const out = join(import.meta.dir, "..", "..", "docs", "reference", "specs");
@@ -25,7 +26,16 @@ const sources: Source[] = [
   { file: "gemini-tokens.md", url: "https://ai.google.dev/api/tokens.md.txt" },
   { file: "gemini-troubleshooting.md", url: "https://ai.google.dev/gemini-api/docs/troubleshooting.md.txt" },
   { file: "gemini-v1beta-discovery.json", url: "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta" },
+  {
+    file: "google-rpc-code.proto",
+    url: "https://raw.githubusercontent.com/googleapis/googleapis/master/google/rpc/code.proto",
+    commitOf: { repo: "googleapis/googleapis", branch: "master", path: "google/rpc/code.proto" },
+  },
 ];
+
+const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "").slice("--only=".length).split(",").filter((f) => f.length > 0);
+const manifestPath = join(out, "manifest.json");
+const previous: Record<string, unknown>[] = only.length > 0 && existsSync(manifestPath) ? (JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>[]) : [];
 
 // The content SHA-256 is the authoritative identity of every fetched file. The commit lookup is
 // supplementary: when GitHub's API cannot resolve the branch it is recorded as unresolved, never guessed.
@@ -39,6 +49,11 @@ async function commitSha(ref: NonNullable<Source["commitOf"]>): Promise<string> 
 
 const manifest: Record<string, unknown>[] = [];
 for (const source of sources) {
+  if (only.length > 0 && !only.includes(source.file)) {
+    const kept = previous.find((m) => m["file"] === source.file);
+    if (kept !== undefined) manifest.push(kept);
+    continue;
+  }
   const res = await fetch(source.url);
   const body = await res.text();
   if (res.status !== 200) throw new Error(`${source.file}: HTTP ${res.status} ${source.url}`);
@@ -54,5 +69,5 @@ for (const source of sources) {
     fetchedAt: new Date().toISOString(),
   });
 }
-writeFileSync(join(out, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 for (const m of manifest) console.log(`${m.file}\t${m.bytes}\t${String(m.sha256).slice(0, 12)}\t${m.commit ?? ""}`);

@@ -1,20 +1,22 @@
 // claude provider. Native cell (Anthropic Messages): the client body passes through the captured
 // claude envelope + never-prefill guard (domain/request-transform.ts) and the upstream response is STREAMED back
 // chunk by chunk — fix F1 for the source relay, which awaited res.text() before answering
-// (AnthropicApiClientAdapter.ts:45). Translated cells (OpenAI/Gemini → Claude) arrive in P5.
+// (AnthropicApiClientAdapter.ts:45). F4: the client's anthropic-beta is honoured within the model's captured set and a
+// client anthropic-version must be the captured one. A client disconnect aborts the upstream exchange (signal).
+// Translated cells (OpenAI/Gemini → Claude) arrive in P5.
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import type { ModelInfo } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
-import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
+import { DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
-import { transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import { ANTHROPIC_VERSION_HEADER, API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
+import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 /** Native routes (relative to the dialect prefix) → upstream path. */
@@ -54,13 +56,20 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
     return new Set<Feature>();
   }
 
-  async models(): Promise<readonly ModelInfo[]> {
-    return (await this.catalog.entries()).map((e) => ({
-      address: { provider: this.id, model: e.id },
-      displayName: e.displayName,
-      ...(e.maxInputTokens > 0 ? { contextWindow: e.maxInputTokens } : {}),
-      ...(e.maxTokens > 0 ? { maxOutputTokens: e.maxTokens } : {}),
-    }));
+  async models(): Promise<ModelCatalog> {
+    const { source, entries } = await this.catalog.listing();
+    return {
+      provider: this.id,
+      nativeDialect: this.nativeDialect,
+      source,
+      models: entries.map((e) => ({
+        address: { provider: this.id, model: e.id },
+        displayName: e.displayName,
+        ...(e.maxInputTokens > 0 ? { contextWindow: e.maxInputTokens } : {}),
+        ...(e.maxTokens > 0 ? { maxOutputTokens: e.maxTokens } : {}),
+        ...(e.createdAt !== "" ? { createdAt: e.createdAt } : {}),
+      })),
+    };
   }
 
   async *stream(_request: CanonicalRequest): AsyncIterable<CanonicalEvent> {
@@ -84,11 +93,21 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
       throw new InvalidRequestError("request body must be an object with a messages array");
     }
     const body = { ...parsed, model } as unknown as WireRequestBody;
+    const dropped: string[] = [];
+    const version = request.headers["anthropic-version"];
+    if (version !== undefined && version !== ANTHROPIC_VERSION_HEADER) {
+      const feature = `anthropic-version:${version}`;
+      if (!request.lossy) throw new UnsupportedFeatureError([feature], `${this.id} (the captured client speaks anthropic-version ${ANTHROPIC_VERSION_HEADER})`);
+      dropped.push(feature);
+    }
 
     const tokens = await this.session.freshTokens();
     const entries = await this.catalog.entries();
+    const lookup = (id: string) => entries.find((e) => e.id === id);
+    const betas = mergeBetaHeader(request.headers["anthropic-beta"], capturedBetaHeader(model, lookup), request.lossy);
+    dropped.push(...betas.dropped);
     const upstream = transformRequest(
-      { body, path },
+      { body, path, betaHeader: betas.header },
       {
         accessToken: tokens.accessToken,
         accountUuid: tokens.accountUuid ?? "",
@@ -98,11 +117,18 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
         ccPromptId: this.random.uuid(),
         clientRequestId: this.random.uuid(),
       },
-      (id) => entries.find((e) => e.id === id),
+      lookup,
       this.apiBase,
     );
-    const response = await this.transport.send({ method: "POST", url: upstream.url, headers: upstream.headers, body: upstream.body });
+    const response = await this.transport.send({
+      method: "POST",
+      url: upstream.url,
+      headers: upstream.headers,
+      body: upstream.body,
+      ...(request.signal !== undefined ? { signal: request.signal } : {}),
+    });
     const headers = forwardedResponseHeaders(response.headers);
+    if (dropped.length > 0) headers[DROPPED_HEADER] = dropped.join(",");
     this.logger.info(`${this.id}: ${path} model=${model} -> HTTP ${response.status}`);
     const sse = (headers["content-type"] ?? "").includes("text/event-stream");
     return { status: response.status, headers, body: sse ? this.observe(response.body, model) : response.body };

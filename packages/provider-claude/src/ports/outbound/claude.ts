@@ -1,5 +1,6 @@
 // Provider-internal abstractions. ClaudeSubscriptionProvider depends only on these; the adapters in
 // adapters/outbound implement them and composition wires them.
+import type { ModelsSource } from "@inference-router/core/domain/models.ts";
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
@@ -23,7 +24,13 @@ export abstract class ClaudeIdentityPort {
   abstract setPreviousMessageId(id: string): void;
 }
 
+export type CatalogListing = { readonly source: ModelsSource; readonly entries: readonly CatalogModelEntry[] };
+
 export abstract class ClaudeCatalogPort {
-  /** Live catalog (24 h cache), else stale cache, else the static minimum. Never empty. */
-  abstract entries(): Promise<readonly CatalogModelEntry[]>;
+  /** Live catalog (24 h cache), else stale cache, else the static minimum, with where it came from. Never empty. */
+  abstract listing(): Promise<CatalogListing>;
+
+  async entries(): Promise<readonly CatalogModelEntry[]> {
+    return (await this.listing()).entries;
+  }
 }

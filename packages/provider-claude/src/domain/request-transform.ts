@@ -4,6 +4,12 @@
 //   F3  sanitizeThinking passes an explicit numeric budget_tokens through unchanged — no Math.max(1024, …) clamp
 //       and no Math.floor — as the source's own AGENTS.md §8 requires ("do not silently clamp user configuration").
 //   F8  model lookups use own-property checks, so ids such as "toString" fall back instead of hitting Object.prototype.
+//   F9  the client's thinking choice is honoured (user decision Q6, 2026-10-11): an absent `thinking` stays absent
+//       (no captured default), and when the result is not thinking (absent or `disabled`) the captured
+//       `context_management` clear-thinking edit is left out — with it the upstream answers 400 "clear_thinking_20251015
+//       strategy requires thinking to be enabled or adaptive" (P0-LIVE L2; Q6 probe: without it → 200).
+//   F4  the client's `anthropic-beta` is honoured within this model's captured beta set (mergeBetaHeader).
+import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import {
   ANTHROPIC_IDENTITY,
   ANTHROPIC_VERSION_HEADER,
@@ -153,27 +159,57 @@ function systemBlocks(system: WireRequestBody["system"], ccPromptId: string): re
 export function envelope(body: WireRequestBody, messages: readonly WireMessage[], ctx: TransformContext, lookup?: CatalogLookup): Record<string, unknown> {
   const env = envelopeFor(body.model, lookup?.(body.model ?? ""));
   const outputConfig = sanitizeOutputConfig(body.output_config, env.outputConfig);
+  const thinking = body.thinking === undefined ? undefined : sanitizeThinking(body.thinking, env.thinking);
+  const thinkingOn = thinking !== undefined && thinking.type !== "disabled";
   return {
     ...body,
     messages,
     system: systemBlocks(body.system, ctx.ccPromptId),
     ...(body.max_tokens === undefined ? { max_tokens: env.maxTokens } : {}),
-    thinking: sanitizeThinking(body.thinking, env.thinking),
-    context_management: { edits: [{ type: "clear_thinking_20251015", keep: "all" }] },
+    ...(thinking !== undefined ? { thinking } : {}),
+    ...(thinkingOn ? { context_management: { edits: [{ type: "clear_thinking_20251015", keep: "all" }] } } : {}),
     ...(outputConfig ? { output_config: outputConfig } : {}),
     diagnostics: { previous_message_id: ctx.previousMessageId },
     metadata: { user_id: JSON.stringify({ device_id: ctx.deviceId, account_uuid: ctx.accountUuid, session_id: ctx.sessionId }) },
   };
 }
 
+export type BetaMerge = { readonly header: string; readonly dropped: readonly string[] };
+
+const betaNames = (header: string): string[] =>
+  header
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+
+/**
+ * F4: the client's `anthropic-beta` (a comma list, anthropic-messages.md) merged with this model's captured beta set.
+ * Only names in that captured set are proven against subscription traffic, so any other name is unsupported_feature
+ * (with `lossy`: dropped and reported). Order: the client's known names first, then the remaining captured names.
+ */
+export function mergeBetaHeader(client: string | undefined, captured: string, lossy: boolean): BetaMerge {
+  if (client === undefined) return { header: captured, dropped: [] };
+  const known = betaNames(captured);
+  const requested = [...new Set(betaNames(client))];
+  const unknown = requested.filter((name) => !known.includes(name)).map((name) => `anthropic-beta:${name}`);
+  if (unknown.length > 0 && !lossy) throw new UnsupportedFeatureError(unknown, "claude (only this model's captured anthropic-beta set is proven)");
+  const kept = requested.filter((name) => known.includes(name));
+  return { header: [...kept, ...known.filter((name) => !kept.includes(name))].join(","), dropped: unknown };
+}
+
+/** The captured beta set of a model (the request envelope's `anthropic-beta`). */
+export function capturedBetaHeader(model: string | undefined, lookup?: CatalogLookup): string {
+  return envelopeFor(model, lookup?.(model ?? "")).betaHeader;
+}
+
 /** Captured-claude request header set; authorization carries the router's fresh OAuth token. */
-export function upstreamHeaders(ctx: TransformContext, model: string | undefined, lookup?: CatalogLookup): Record<string, string> {
+export function upstreamHeaders(ctx: TransformContext, model: string | undefined, lookup?: CatalogLookup, betaHeader?: string): Record<string, string> {
   return {
     authorization: `Bearer ${ctx.accessToken}`,
     "content-type": "application/json",
     accept: "text/event-stream",
     "anthropic-version": ANTHROPIC_VERSION_HEADER,
-    "anthropic-beta": envelopeFor(model, lookup?.(model ?? "")).betaHeader,
+    "anthropic-beta": betaHeader ?? capturedBetaHeader(model, lookup),
     "anthropic-dangerous-direct-browser-access": "true",
     "x-app": "cli",
     "x-cc-session-id": ctx.sessionId,
@@ -191,14 +227,14 @@ export function upstreamHeaders(ctx: TransformContext, model: string | undefined
 }
 
 export function transformRequest(
-  input: { readonly body: WireRequestBody; readonly path: string },
+  input: { readonly body: WireRequestBody; readonly path: string; readonly betaHeader?: string },
   ctx: TransformContext,
   lookup?: CatalogLookup,
   apiBase: string = API_BASE,
 ): UpstreamRequest {
   const messages = guardAndNormalize(input.body.messages);
   return {
-    headers: upstreamHeaders(ctx, input.body.model, lookup),
+    headers: upstreamHeaders(ctx, input.body.model, lookup, input.betaHeader),
     url: apiUrl(input.path, apiBase),
     body: JSON.stringify(envelope(input.body, messages, ctx, lookup)),
   };

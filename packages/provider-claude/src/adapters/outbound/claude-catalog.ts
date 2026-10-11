@@ -9,7 +9,7 @@ import type { HttpTransportPort } from "@inference-router/core/ports/outbound/tr
 import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
 import { ANTHROPIC_VERSION_HEADER, API_BASE, CATALOG } from "@inference-router/provider-claude/domain/constants.ts";
 import { STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
-import { ClaudeCatalogPort, type ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { ClaudeCatalogPort, type CatalogListing, type ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
 export const CATALOG_KEY = "claude/model-catalog";
 
@@ -27,9 +27,11 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
     super();
   }
 
-  async entries(): Promise<readonly CatalogModelEntry[]> {
+  /** `live` when fetched by this call (memoized for the TTL), `cache` from the stored copy, `static` the minimum. */
+  async listing(): Promise<CatalogListing> {
+    const fromMemory = this.memory !== undefined;
     const cached = this.memory ?? (await this.loadCache());
-    if (cached !== undefined && this.clock.now() - cached.fetchedAt < CATALOG.ttlMs) return cached.models;
+    if (cached !== undefined && this.clock.now() - cached.fetchedAt < CATALOG.ttlMs) return { source: fromMemory ? "live" : "cache", entries: cached.models };
     try {
       const models = await this.fetchLive();
       if (models.length === 0) throw new Error("live catalog is empty");
@@ -38,10 +40,10 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
       await this.store.write(CATALOG_KEY, snapshot as unknown as JsonValue).catch((error: unknown) => {
         this.logger.warn(`claude: catalog cache write failed: ${String(error)}`);
       });
-      return models;
+      return { source: "live", entries: models };
     } catch (error) {
       this.logger.warn(`claude: live catalog unavailable (${error instanceof Error ? error.message : String(error)})`);
-      return cached?.models ?? STATIC_CATALOG;
+      return cached !== undefined ? { source: "cache", entries: cached.models } : { source: "static", entries: STATIC_CATALOG };
     }
   }
 

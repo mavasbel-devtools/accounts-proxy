@@ -4,8 +4,10 @@ import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts"
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import type { AntigravityAccount, AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
 import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { ChatChunk, ChatMessage, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { GeminiResponse, PreparedGemini } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { UsageView } from "@inference-router/provider-antigravity/domain/quota.ts";
+import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
 
 /** The cloudcode-pa `/v1internal:*` surface (every call carries the captured user agent, wire law 1). */
@@ -15,7 +17,7 @@ export abstract class AntigravityApiPort {
   abstract fetchUserInfo(tokens: AuthTokens): Promise<{ readonly email?: string }>;
   abstract fetchAvailableModels(tokens: AuthTokens): Promise<Record<string, unknown>>;
   abstract retrieveUserQuotaSummary(tokens: AuthTokens): Promise<Record<string, unknown>>;
-  abstract streamGenerate(params: GenerateParams, tokens: AuthTokens): AsyncIterable<StreamEnvelope>;
+  abstract streamGenerate(params: GenerateParams, tokens: AuthTokens, signal?: AbortSignal): AsyncIterable<StreamEnvelope>;
 }
 
 export abstract class AntigravityOAuthPort extends OAuthClientPort {
@@ -43,6 +45,36 @@ export abstract class AntigravityCatalogPort {
   abstract descriptors(): Promise<readonly ModelDescriptor[]>;
   /** Memoized lookup; fetches the catalog when the memo is empty or lacks the id. */
   abstract descriptor(wireId: string): Promise<ModelDescriptor | undefined>;
+}
+
+export type RunInput<T> = {
+  readonly modelWireId: string;
+  readonly modelEnum: string;
+  /** The conversation as the trajectory sees it. */
+  readonly turns: readonly ChatMessage[];
+  /** The inner request for the trajectory snapshot (labels, requestId, sessionId) of this logical request. */
+  readonly build: (snapshot: TrajectorySnapshot) => Readonly<Record<string, unknown>>;
+  /** Maps each upstream envelope; `undefined` is neither yielded nor counted as output (retry safety). */
+  readonly map: (envelope: StreamEnvelope) => T | undefined;
+  readonly signal?: AbortSignal;
+};
+
+/**
+ * One logical generation through cloudcode-pa: the trajectory snapshot once, proactive refresh, one 401 rotation and
+ * the transient geo-gate retries (law 14) — both only before anything was yielded — and the step counter after a
+ * completed stream. Shared by the chat cell and the native Gemini cell.
+ */
+export abstract class AntigravityRunnerPort {
+  abstract run<T>(input: RunInput<T>): AsyncIterable<T>;
+}
+
+export type NativeInput = { readonly model: ModelDescriptor; readonly prepared: PreparedGemini; readonly signal?: AbortSignal };
+
+/** The near-native Gemini cell: public GenerateContentResponse objects, thought signatures cached (law 6). */
+export abstract class AntigravityNativePort {
+  /** The cached thoughtSignature per function-call id. */
+  abstract signatures(): Promise<Readonly<Record<string, string>>>;
+  abstract generate(input: NativeInput): AsyncIterable<GeminiResponse>;
 }
 
 export abstract class AntigravityChatPort {
