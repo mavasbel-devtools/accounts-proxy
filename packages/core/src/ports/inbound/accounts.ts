@@ -15,6 +15,8 @@ export type LoginOptions = {
   /** Headless fallback: paste the code shown by the provider instead of the loopback redirect. */
   readonly manual: boolean;
   readonly timeoutMs: number;
+  /** Register a new account instead of re-authorizing the active one (`--new`; see AuthorizeInput.fresh). */
+  readonly fresh: boolean;
   /** Receives the authorization URL before the browser is opened (so the user can open it by hand). */
   readonly onAuthorizeUrl: (url: string) => void;
 };

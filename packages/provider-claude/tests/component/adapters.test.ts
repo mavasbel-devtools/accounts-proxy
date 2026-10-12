@@ -36,9 +36,9 @@ const ok = (body: unknown): ScriptedResponse => ({ status: 200, headers: { "cont
 describe("ClaudeOAuthClient", () => {
   const clock = new FixedClock(1_000);
 
-  test("authorize URL: official parameter order; matches the captured authorize except redirect/state/challenge/scope", () => {
+  test("authorize URL: official parameter order; matches the captured authorize except redirect/state/challenge/scope", async () => {
     const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock, PRODUCTION_ENDPOINTS);
-    const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5555/callback", state: "st", codeChallenge: "ch" }));
+    const url = new URL(await client.authorizeUrl({ redirectUri: "http://localhost:5555/callback", state: "st", codeChallenge: "ch", nonce: "n", fresh: false }));
     expect(`${url.origin}${url.pathname}`).toBe("https://claude.com/cai/oauth/authorize");
     expect([...url.searchParams.keys()]).toEqual(["code", "client_id", "response_type", "redirect_uri", "scope", "code_challenge", "code_challenge_method", "state"]);
     const captured = json<Record<string, string>>("authorize-params.json");
@@ -54,7 +54,7 @@ describe("ClaudeOAuthClient", () => {
   test("exchange posts the official body with captured headers and returns an account", async () => {
     const transport = new ScriptedTransport(() => ok(json("refresh-response.json")));
     const client = new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS);
-    const account = await client.exchange({ code: "c0de", state: "st", redirectUri: "http://localhost:5555/callback", codeVerifier: "ver" });
+    const account = await client.exchange({ code: "c0de", state: "st", redirectUri: "http://localhost:5555/callback", codeVerifier: "ver", nonce: "n", callback: {} });
     const sent = transport.requests[0]!;
     expect(sent.url).toBe(PRODUCTION_ENDPOINTS.tokenUrl);
     expect(sent.headers).toEqual(TOKEN_HEADERS);
@@ -120,7 +120,7 @@ class StubOAuth extends ClaudeOAuthPort {
   constructor(private readonly result: (tokens: ClaudeTokens) => Promise<ClaudeTokens>) {
     super();
   }
-  authorizeUrl(): string {
+  async authorizeUrl(): Promise<string> {
     return "";
   }
   async exchange(): Promise<never> {

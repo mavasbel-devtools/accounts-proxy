@@ -284,10 +284,19 @@ describe("RouteHandler", () => {
     expect(passthrough.calls).toHaveLength(0);
   });
 
+  test("OpenAI Responses: model from the body, dialect-relative path", async () => {
+    const { handler, passthrough } = make();
+    await handler.handle(request("POST", "/openai/v1/responses", { readBody: async () => '{"model":"openai/gpt-6.1-sol","input":"hi"}' }));
+    const [[dialect, model, raw]] = passthrough.calls as [[Dialect, string, RawRequest]];
+    expect([dialect, model, raw.path, raw.body]).toEqual(["openai", "openai/gpt-6.1-sol", "/v1/responses", '{"model":"openai/gpt-6.1-sol","input":"hi"}']);
+    const missing = await json(await handler.handle(request("POST", "/openai/v1/responses", { readBody: async () => '{"input":"hi"}' })));
+    expect([missing.status, (missing.body as { error: { message: string } }).error.message]).toEqual([400, "request body needs a string model (<provider>/<model> or an alias)"]);
+  });
+
   test("OpenAI chat completions is a translated cell: 400 unsupported_feature in the OpenAI shape", async () => {
     const { handler } = make();
     const result = await json(await handler.handle(request("POST", "/openai/v1/chat/completions")));
-    expect(result).toEqual({ status: 400, body: { error: { message: "openai dialect (both OpenAI cells are translated: P5) cannot carry: chat_completions", type: "unsupported_feature", param: null, code: "unsupported_feature" } } });
+    expect(result).toEqual({ status: 400, body: { error: { message: "openai dialect (Chat Completions cells are translated: P5) cannot carry: chat_completions", type: "unsupported_feature", param: null, code: "unsupported_feature" } } });
   });
 
   test("Gemini model routes: decoded model, dialect-relative path; a malformed segment is a Gemini 400", async () => {

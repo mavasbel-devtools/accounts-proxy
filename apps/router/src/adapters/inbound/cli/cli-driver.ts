@@ -28,7 +28,9 @@ export const SHUTDOWN_GRACE_MS = 10_000;
 export const DEFAULT_LOGIN_TIMEOUT_S = 300;
 
 export const USAGE = `usage: inference-router <command>
-  login <provider> [--manual] [--timeout-seconds N]   browser sign-in (default timeout ${DEFAULT_LOGIN_TIMEOUT_S} s)
+  login <provider> [--manual] [--new] [--timeout-seconds N]
+                                                      browser sign-in (default timeout ${DEFAULT_LOGIN_TIMEOUT_S} s); openai:
+                                                      --new registers another ChatGPT account
   account list <provider>                             accounts stored by the router
   account use <provider> <account-id>                 choose the active account
   quota <provider>                                    remaining provider quota
@@ -37,7 +39,7 @@ export const USAGE = `usage: inference-router <command>
   token                                               print the router token clients send (created on first use)
   status                                              check whether the daemon answers on the configured port
   help
-providers: claude, antigravity`;
+providers: claude, antigravity, openai`;
 
 class UsageError extends Error {}
 
@@ -136,10 +138,12 @@ export class CliDriver extends Driver {
   private async login(args: string[]): Promise<void> {
     const id = provider(args.shift(), true);
     let manual = false;
+    let fresh = false;
     let timeoutS = DEFAULT_LOGIN_TIMEOUT_S;
     while (args.length > 0) {
       const flag = args.shift();
       if (flag === "--manual") manual = true;
+      else if (flag === "--new") fresh = true;
       else if (flag === "--timeout-seconds") {
         const value = Number(args.shift());
         if (!Number.isInteger(value) || value < 1) throw new UsageError("--timeout-seconds needs a positive integer");
@@ -148,6 +152,7 @@ export class CliDriver extends Driver {
     }
     const account = await this.ports.login.login(id, {
       manual,
+      fresh,
       timeoutMs: timeoutS * 1000,
       onAuthorizeUrl: (url) => this.out(`${manual ? "Open" : "Opening your browser. If it does not open, visit"}:\n${url}\n`),
     });

@@ -1,0 +1,28 @@
+{
+  "commit": "35ef229454",
+  "alias": "@opencode/",
+  "prefix": "packages/core/src/",
+  "byteIdentical": true,
+  "files": [
+    {
+      "file": "plugin/provider/chatgpt.ts",
+      "blob": "6f1219240f91ff8c46c828d00ce6a4363a496b58",
+      "bytes": 22629
+    },
+    {
+      "file": "session/to-session-error.ts",
+      "blob": "d8eb0f683afaf6cfdc086964d144da5abdf62ae5",
+      "bytes": 5548
+    },
+    {
+      "file": "oauth/page.ts",
+      "blob": "accead6216616e1b1b57141a4a1b3fa95119c8ab",
+      "bytes": 12975
+    },
+    {
+      "file": "session/affinity.ts",
+      "blob": "5c76a9114526765dd84ae4cdd191c100e99ab7b1",
+      "bytes": 486
+    }
+  ]
+}

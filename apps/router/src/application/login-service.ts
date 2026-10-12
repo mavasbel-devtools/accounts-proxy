@@ -7,13 +7,13 @@ import { InvalidRequestError, ProviderDisabledError } from "@inference-router/co
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "@inference-router/core/domain/services/oauth-flow.ts";
+import { codeFromCallback, codeFromManualInput } from "@inference-router/core/domain/services/oauth-flow.ts";
 import { LoginPort, type AccountSummary, type LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { CallbackServerFactoryPort, ManualCodePort, OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { BrowserLauncherPort, HashPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 
-type Pkce = { readonly verifier: string; readonly challenge: string };
+type Attempt = { readonly state: string; readonly nonce: string; readonly verifier: string; readonly challenge: string; readonly fresh: boolean };
 
 export class LoginService extends LoginPort {
   constructor(
@@ -33,49 +33,56 @@ export class LoginService extends LoginPort {
     const client = this.clients.find((c) => c.provider === provider);
     // Composition wires a client for every ENABLED provider only (plan D4).
     if (client === undefined) throw new ProviderDisabledError(provider);
-    const state = base64UrlEncode(this.random.bytes(32));
-    const pkce = this.pkce();
-    const account = options.manual ? await this.manualLogin(client, state, pkce, options) : await this.loopbackLogin(client, state, pkce, options);
+    const attempt = this.attempt(options.fresh);
+    const account = options.manual ? await this.manualLogin(client, attempt, options) : await this.loopbackLogin(client, attempt, options);
     await this.store.update(provider, (pool) => upsertAccount(pool, account));
     this.logger.info(`${provider}: signed in account ${account.id}`);
     return { provider, id: account.id, label: account.label, active: true };
   }
 
-  /** One PKCE pair per login; each client sends it only if its official client does (Claude yes, Google no). */
-  private pkce(): Pkce {
+  /**
+   * Fresh state, OIDC nonce and PKCE pair per login; each client sends only what its official client does (PKCE: Claude
+   * and OpenAI, not Google; the nonce: OpenAI).
+   */
+  private attempt(fresh: boolean): Attempt {
+    const state = base64UrlEncode(this.random.bytes(32));
+    const nonce = base64UrlEncode(this.random.bytes(32));
     const verifier = base64UrlEncode(this.random.bytes(32));
-    return { verifier, challenge: base64UrlEncode(this.hash.sha256(verifier)) };
+    return { state, nonce, verifier, challenge: base64UrlEncode(this.hash.sha256(verifier)), fresh };
   }
 
-  private async loopbackLogin(client: OAuthClientPort, state: string, pkce: Pkce, options: LoginOptions): Promise<AccountCredential> {
+  private async loopbackLogin(client: OAuthClientPort, attempt: Attempt, options: LoginOptions): Promise<AccountCredential> {
     const server = this.servers.create();
-    const redirectUri = loopbackRedirectUri(await server.start(client.callbackPath), client.callbackPath);
+    const redirectUri = client.redirectUri(await server.start(client.callbackPath));
+    const { state, nonce } = attempt;
     try {
-      const url = client.authorizeUrl({ redirectUri, state, codeChallenge: pkce.challenge });
+      const url = await client.authorizeUrl({ redirectUri, state, nonce, codeChallenge: attempt.challenge, fresh: attempt.fresh });
       options.onAuthorizeUrl(url);
       await this.browser.open(url).catch((error: unknown) => this.logger.warn(`${client.provider}: could not open the browser (${String(error)}); open the URL by hand`));
       const query = await server.waitForCallback(options.timeoutMs);
       let account: AccountCredential;
       try {
         const code = codeFromCallback(client.provider, query, state);
-        account = await client.exchange({ code, state, redirectUri, codeVerifier: pkce.verifier });
+        account = await client.exchange({ code, state, redirectUri, codeVerifier: attempt.verifier, nonce, callback: query });
       } catch (error) {
         await server.finish({ status: 400, text: `Sign-in failed: ${errorMessage(error)}. Close this tab and retry.` });
         throw error;
       }
-      await server.finish({ redirect: client.successRedirect(account) });
+      const redirect = client.successRedirect(account);
+      await server.finish(redirect !== undefined ? { redirect } : { status: 200, text: `Signed in to ${client.provider} as ${account.label}. You can close this tab.` });
       return account;
     } finally {
       await server.stop();
     }
   }
 
-  private async manualLogin(client: OAuthClientPort, state: string, pkce: Pkce, options: LoginOptions): Promise<AccountCredential> {
+  private async manualLogin(client: OAuthClientPort, attempt: Attempt, options: LoginOptions): Promise<AccountCredential> {
     const redirectUri = client.manualRedirectUri;
     if (redirectUri === undefined) throw new InvalidRequestError(`${client.provider} has no paste-code login; use the browser login`);
-    const url = client.authorizeUrl({ redirectUri, state, codeChallenge: pkce.challenge });
+    const { state, nonce } = attempt;
+    const url = await client.authorizeUrl({ redirectUri, state, nonce, codeChallenge: attempt.challenge, fresh: attempt.fresh });
     options.onAuthorizeUrl(url);
     const code = codeFromManualInput(client.provider, await this.manual.prompt(url), state);
-    return client.exchange({ code, state, redirectUri, codeVerifier: pkce.verifier });
+    return client.exchange({ code, state, redirectUri, codeVerifier: attempt.verifier, nonce, callback: {} });
   }
 }

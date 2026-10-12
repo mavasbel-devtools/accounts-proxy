@@ -55,6 +55,96 @@
     "fetchedAt": "2026-10-06T06:29:58.085Z"
   },
   {
+    "file": "openai-siwc-overview.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 7361,
+    "sha256": "7c916a3136973625481fe21673c2f342e97fe5a70153bc71e068d5b11be83ebd",
+    "fetchedAt": "2026-10-12T05:06:48.930Z"
+  },
+  {
+    "file": "openai-siwc-sign-in.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/sign-in.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 16335,
+    "sha256": "94e9158385ba3048ad3454785940c97c92d9d2dcf8dfda66b0f4418643d146a5",
+    "fetchedAt": "2026-10-12T05:06:49.006Z"
+  },
+  {
+    "file": "openai-siwc-accounts-and-sessions.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 6393,
+    "sha256": "ab3eb6b64956e7ca22edbe4eb70f67ab2245cf9aea197902b16c639a6cf8dfc1",
+    "fetchedAt": "2026-10-12T05:06:49.079Z"
+  },
+  {
+    "file": "openai-siwc-models-and-inference.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 3973,
+    "sha256": "4cd568e57168de134717e5ed611d15d3505b88d30d6a45bd234b2a0a1ea96370",
+    "fetchedAt": "2026-10-12T05:06:49.162Z"
+  },
+  {
+    "file": "openai-siwc-codex-app-server.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/codex-app-server.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 3118,
+    "sha256": "eeee9ebe330f236ee2c70b6026c17337af56cd328c8acb3540bc194f86072d7d",
+    "fetchedAt": "2026-10-12T05:06:49.277Z"
+  },
+  {
+    "file": "openai-siwc-self-hosted-vms.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 1317,
+    "sha256": "c4d541d0127073b8c7a0fa140bfe28742ea68b5569f4af56172932eb41ebd999",
+    "fetchedAt": "2026-10-12T05:06:49.396Z"
+  },
+  {
+    "file": "openai-siwc-token-reference.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/token-reference.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 4240,
+    "sha256": "d48d4bee9f15062bf4cde08fe33fd32aab2a8df1a304dde70969eb528e07d0a1",
+    "fetchedAt": "2026-10-12T05:06:49.523Z"
+  },
+  {
+    "file": "openai-siwc-errors-and-recovery.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 7919,
+    "sha256": "0b7f6d6a7a07ba4d81967858ca9f64264e2be017dfaed1e25297969a57a2c005",
+    "fetchedAt": "2026-10-12T05:06:49.624Z"
+  },
+  {
+    "file": "openai-siwc-preview-limitations.md",
+    "url": "https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 2866,
+    "sha256": "051ee06d537d746de9a5f1aa5019a44400fd9856b27ec37b4a9c9fec5874fa0c",
+    "fetchedAt": "2026-10-12T05:06:49.717Z"
+  },
+  {
+    "file": "openai-siwc-ui-ux-guidelines.md",
+    "url": "https://developers.openai.com/siwc/ui-ux-guidelines.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 5765,
+    "sha256": "e22fc24b8ec25290f3830430c64a2914da432df6e9eb6a84cba03b457466f63f",
+    "fetchedAt": "2026-10-12T05:06:49.805Z"
+  },
+  {
     "file": "gemini-generate-content.md",
     "url": "https://ai.google.dev/api/generate-content.md.txt",
     "status": 200,

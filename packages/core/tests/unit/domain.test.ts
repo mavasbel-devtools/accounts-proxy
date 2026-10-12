@@ -21,7 +21,7 @@ import {
 } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import { formatModelAddress, isProviderId, PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
-import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
+import { base64UrlDecode, base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
 import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
 import { mergeUsage, ZERO_USAGE } from "@inference-router/core/domain/services/usage.ts";
 import { bodyOf, readAll } from "@inference-router/core/domain/wire.ts";
@@ -37,7 +37,7 @@ describe("json", () => {
 
 describe("models", () => {
   test("provider ids", () => {
-    expect(PROVIDER_IDS).toEqual(["claude", "antigravity"]);
+    expect(PROVIDER_IDS).toEqual(["claude", "antigravity", "openai"]);
     expect(isProviderId("antigravity")).toBe(true);
     expect(isProviderId("cheaper")).toBe(false);
   });
@@ -154,6 +154,15 @@ describe("base64url (RFC 4648 §10 test vectors, unpadded, url alphabet)", () =>
     ["foobar", "Zm9vYmFy"],
   ])("%p -> %p", (input, output) => {
     expect(enc(input)).toBe(output);
+    expect(new TextDecoder().decode(base64UrlDecode(output))).toBe(input);
+  });
+  test("decoding accepts padding and rejects foreign characters and impossible lengths", () => {
+    expect(new TextDecoder().decode(base64UrlDecode("Zm9vYg=="))).toBe("foob");
+    expect(base64UrlDecode("-_-_")).toEqual(new Uint8Array([0xfb, 0xff, 0xbf]));
+    expect(base64UrlDecode("Zm+v")).toBeUndefined();
+    expect(base64UrlDecode("Zm9vY")).toBeUndefined();
+    const bytes = Uint8Array.from({ length: 300 }, (_, i) => (i * 37) % 256);
+    expect(base64UrlDecode(base64UrlEncode(bytes))).toEqual(bytes);
   });
   test("uses - and _ instead of + and /", () => {
     expect(base64UrlEncode(new Uint8Array([0xfb, 0xff, 0xbf]))).toBe("-_-_");

@@ -3,7 +3,8 @@
 // Each dialect prefix answers its own error shape; a path outside every prefix gets a plain JSON 404.
 //
 //   /anthropic  POST /v1/* (model from the body; claude serves /v1/messages and /v1/messages/count_tokens), GET /v1/models
-//   /openai     GET /v1/models; POST /v1/chat/completions → unsupported_feature (both OpenAI cells are P5)
+//   /openai     GET /v1/models; POST /v1/responses (model from the body; native to openai, plan v4 P4.5);
+//               POST /v1/chat/completions → unsupported_feature (every Chat Completions cell is translated: P5)
 //   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (model URL-encoded or raw, up to the last ':')
 import { asRouterError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
@@ -79,10 +80,14 @@ export class RouteHandler extends HttpHandler {
     // Every Anthropic POST under /v1/ goes to the model's provider, which serves its native paths and rejects others.
     if (method === "POST" && codec.dialect === "anthropic" && path.startsWith("/v1/")) {
       const body = await request.readBody();
-      return this.forward(codec, anthropicModel(body), request, path, body);
+      return this.forward(codec, bodyModel(body), request, path, body);
+    }
+    if (method === "POST" && codec.dialect === "openai" && path === "/v1/responses") {
+      const body = await request.readBody();
+      return this.forward(codec, bodyModel(body), request, path, body);
     }
     if (method === "POST" && codec.dialect === "openai" && path === "/v1/chat/completions") {
-      throw new UnsupportedFeatureError(["chat_completions"], "openai dialect (both OpenAI cells are translated: P5)");
+      throw new UnsupportedFeatureError(["chat_completions"], "openai dialect (Chat Completions cells are translated: P5)");
     }
     const gemini = codec.dialect === "gemini" && method === "POST" ? geminiModelRoute(path) : undefined;
     if (gemini !== undefined) return this.forward(codec, gemini.model, request, path, await request.readBody());
@@ -102,8 +107,8 @@ export class RouteHandler extends HttpHandler {
   }
 }
 
-/** The Anthropic body's `model` (required by the Messages and Count Tokens APIs, anthropic-messages.md). */
-function anthropicModel(body: string): string {
+/** The body's `model` (required by the Anthropic Messages / Count Tokens APIs and the OpenAI Responses API). */
+function bodyModel(body: string): string {
   const parsed = parseJsonBody(body);
   if (!isJsonObject(parsed) || typeof parsed.model !== "string") throw new InvalidRequestError("request body needs a string model (<provider>/<model> or an alias)");
   return parsed.model;

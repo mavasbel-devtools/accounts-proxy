@@ -40,7 +40,7 @@ export class ClaudeOAuthClient extends ClaudeOAuthPort {
     super();
   }
 
-  authorizeUrl(input: AuthorizeInput): string {
+  async authorizeUrl(input: AuthorizeInput): Promise<string> {
     const q = new URLSearchParams();
     q.append("code", "true");
     q.append("client_id", CLIENT_ID);

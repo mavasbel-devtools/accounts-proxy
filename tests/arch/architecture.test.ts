@@ -211,6 +211,7 @@ describe("architecture law", () => {
       "@inference-router/dialect-openai",
       "@inference-router/provider-antigravity",
       "@inference-router/provider-claude",
+      "@inference-router/provider-openai",
       "@inference-router/router",
       "@inference-router/scripts",
       "@inference-router/test-support",

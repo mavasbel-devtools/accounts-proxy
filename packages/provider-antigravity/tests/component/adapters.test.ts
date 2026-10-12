@@ -179,9 +179,9 @@ describe("GoogleOAuthClient", () => {
     return { transport, api, logger, client: new GoogleOAuthClient(transport, api, new FixedClock(1_000), new SequenceRandom(), logger, { authorizeUrl: "http://auth", tokenUrl: "http://token" }) };
   };
 
-  test("authorize URL parameters in the source order; loopback metadata", () => {
+  test("authorize URL parameters in the source order; loopback metadata", async () => {
     const { client } = make(() => json({}));
-    const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5/oauth-callback", state: "st", codeChallenge: "ignored" }));
+    const url = new URL(await client.authorizeUrl({ redirectUri: "http://localhost:5/oauth-callback", state: "st", codeChallenge: "ignored", nonce: "n", fresh: false }));
     expect([...url.searchParams.entries()]).toEqual([
       ["access_type", "offline"],
       ["scope", SCOPES.join(" ")],
@@ -194,12 +194,12 @@ describe("GoogleOAuthClient", () => {
     expect([client.callbackPath, client.manualRedirectUri, client.successRedirect()]).toEqual(["/oauth-callback", undefined, SUCCESS_REDIRECT]);
     expect(PRODUCTION_ENDPOINTS).toEqual({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", tokenUrl: "https://oauth2.googleapis.com/token" });
     const production = new GoogleOAuthClient(new ScriptedTransport(() => json({})), new ScriptedApi(), new FixedClock(), new SequenceRandom(), new MemoryLogger(), PRODUCTION_ENDPOINTS);
-    expect(production.authorizeUrl({ redirectUri: "r", state: "s", codeChallenge: "ignored" }).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
+    expect((await production.authorizeUrl({ redirectUri: "r", state: "s", codeChallenge: "ignored", nonce: "n", fresh: false })).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
   });
 
   test("exchange: form body, bootstrap (userinfo → loadCodeAssist), account id = e-mail", async () => {
     const { client, transport, api } = make(() => json({ access_token: "a1", refresh_token: "r1", expires_in: 3599 }));
-    const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback", codeVerifier: "ignored" });
+    const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback", codeVerifier: "ignored", nonce: "n", callback: {} });
     expect(transport.requests[0]!.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
     expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "authorization_code", code: "c", client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: "http://localhost:5/oauth-callback" });
     expect(api.calls).toEqual(["fetchUserInfo", "loadCodeAssist"]);
@@ -212,14 +212,14 @@ describe("GoogleOAuthClient", () => {
     api.userInfo = () => Promise.reject(new Error("u"));
     api.codeAssist = () => Promise.reject(new Error("l"));
     const { client, logger } = make(() => json({ access_token: "a1", expires_in: "60" }), api);
-    const account = fromCredential(await client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored" }))!;
+    const account = fromCredential(await client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored", nonce: "n", callback: {} }))!;
     expect(account).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 61_000 }, projectIds: ["onboarded"], activeProjectId: "onboarded" });
     expect(logger.lines).toEqual(["WARN antigravity: fetchUserInfo failed (Error: u)", "WARN antigravity: loadCodeAssist failed (Error: l)"]);
     const empty = new ScriptedApi();
     empty.userInfo = async () => ({});
     empty.codeAssist = async () => ({});
     empty.onboard = async () => ({});
-    const none = fromCredential(await make(() => json({ access_token: "a1" }), empty).client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored" }))!;
+    const none = fromCredential(await make(() => json({ access_token: "a1" }), empty).client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored", nonce: "n", callback: {} }))!;
     expect(none).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 1_000 + 3_600_000 }, projectIds: [] });
   });
 
@@ -251,7 +251,7 @@ class StubOAuth extends AntigravityOAuthPort {
   constructor(private readonly result: (t: AuthTokens) => Promise<AuthTokens> = async () => ({ accessToken: "SECRET-new", expiresAt: 9_000_000_000_000 })) {
     super();
   }
-  authorizeUrl() {
+  async authorizeUrl() {
     return "";
   }
   async exchange(): Promise<never> {

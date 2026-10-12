@@ -3,7 +3,7 @@
 // Only the layered workspaces are listed. tests/support (@inference-router/test-support) and scripts
 // (@inference-router/scripts) are hand-maintained workspaces with no layers and no test tiers; a workspace whose
 // tests import the shared fakes declares "@inference-router/test-support": "workspace:*" in devDependencies.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..", "..");
@@ -11,6 +11,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
   { dir: "packages/core", name: "@inference-router/core", description: "Canonical domain model, errors and ports (stdlib only).", dependencies: [] },
   { dir: "packages/provider-claude", name: "@inference-router/provider-claude", description: "Claude subscription provider (outbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/provider-antigravity", name: "@inference-router/provider-antigravity", description: "Google Antigravity provider (outbound adapters).", dependencies: ["@inference-router/core"] },
+  { dir: "packages/provider-openai", name: "@inference-router/provider-openai", description: "OpenAI provider: Sign in with ChatGPT plan usage (outbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/dialect-anthropic", name: "@inference-router/dialect-anthropic", description: "Anthropic Messages dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/dialect-openai", name: "@inference-router/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/dialect-gemini", name: "@inference-router/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
@@ -22,6 +23,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
       "@inference-router/core",
       "@inference-router/provider-claude",
       "@inference-router/provider-antigravity",
+      "@inference-router/provider-openai",
       "@inference-router/dialect-anthropic",
       "@inference-router/dialect-openai",
       "@inference-router/dialect-gemini",
@@ -33,8 +35,9 @@ for (const pkg of packages) {
   const dir = join(root, pkg.dir);
   for (const tier of ["unit", "component", "live", "e2e"]) {
     mkdirSync(join(dir, "tests", tier), { recursive: true });
+    // A tier directory holds a .gitkeep only while it has nothing else (git does not track empty directories).
     const keep = join(dir, "tests", tier, ".gitkeep");
-    if (!existsSync(keep)) writeFileSync(keep, "");
+    if (!existsSync(keep) && readdirSync(join(dir, "tests", tier)).length === 0) writeFileSync(keep, "");
   }
   const manifest = join(dir, "package.json");
   if (existsSync(manifest)) {

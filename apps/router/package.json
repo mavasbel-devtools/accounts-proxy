@@ -15,6 +15,7 @@
     "@inference-router/core": "workspace:*",
     "@inference-router/provider-claude": "workspace:*",
     "@inference-router/provider-antigravity": "workspace:*",
+    "@inference-router/provider-openai": "workspace:*",
     "@inference-router/dialect-anthropic": "workspace:*",
     "@inference-router/dialect-openai": "workspace:*",
     "@inference-router/dialect-gemini": "workspace:*"

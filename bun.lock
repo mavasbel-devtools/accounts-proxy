@@ -31,6 +31,7 @@
         "@inference-router/dialect-openai": "workspace:*",
         "@inference-router/provider-antigravity": "workspace:*",
         "@inference-router/provider-claude": "workspace:*",
+        "@inference-router/provider-openai": "workspace:*",
       },
       "devDependencies": {
         "@anthropic-ai/sdk": "0.133.0",
@@ -84,6 +85,16 @@
         "@inference-router/test-support": "workspace:*",
       },
     },
+    "packages/provider-openai": {
+      "name": "@inference-router/provider-openai",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
+    },
     "scripts": {
       "name": "@inference-router/scripts",
       "version": "0.1.0",
@@ -91,6 +102,7 @@
         "@inference-router/core": "workspace:*",
         "@inference-router/provider-antigravity": "workspace:*",
         "@inference-router/provider-claude": "workspace:*",
+        "@inference-router/provider-openai": "workspace:*",
         "@inference-router/router": "workspace:*",
       },
       "devDependencies": {
@@ -173,6 +185,8 @@
     "@inference-router/provider-antigravity": ["@inference-router/provider-antigravity@workspace:packages/provider-antigravity"],
 
     "@inference-router/provider-claude": ["@inference-router/provider-claude@workspace:packages/provider-claude"],
+
+    "@inference-router/provider-openai": ["@inference-router/provider-openai@workspace:packages/provider-openai"],
 
     "@inference-router/router": ["@inference-router/router@workspace:apps/router"],
 

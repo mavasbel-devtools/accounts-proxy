@@ -32,7 +32,7 @@ export class GoogleOAuthClient extends AntigravityOAuthPort {
     super();
   }
 
-  authorizeUrl(input: AuthorizeInput): string {
+  async authorizeUrl(input: AuthorizeInput): Promise<string> {
     const params = new URLSearchParams({
       access_type: "offline",
       scope: SCOPES.join(" "),

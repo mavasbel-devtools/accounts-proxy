@@ -12,7 +12,7 @@ import { Server, ShutdownSignal, type Listening } from "@inference-router/router
 class Login extends LoginPort {
   calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl">][] = [];
   async login(provider: ProviderId, options: LoginOptions): Promise<AccountSummary> {
-    this.calls.push([provider, { manual: options.manual, timeoutMs: options.timeoutMs }]);
+    this.calls.push([provider, { manual: options.manual, fresh: options.fresh, timeoutMs: options.timeoutMs }]);
     options.onAuthorizeUrl("https://auth.example/");
     return { provider, id: "me@x", label: "Me", active: true };
   }
@@ -110,19 +110,23 @@ describe("CliDriver", () => {
     expect(c.out).toEqual([`${USAGE}\n`, `${USAGE}\n`]);
   });
 
-  test("login: browser by default with the default timeout; --manual and --timeout-seconds", async () => {
+  test("login: browser by default with the default timeout; --manual, --new and --timeout-seconds", async () => {
     const c = cli();
     expect(await c.run("login", "antigravity")).toBe(0);
     expect(await c.run("login", "claude", "--manual", "--timeout-seconds", "60")).toBe(0);
+    expect(await c.run("login", "openai", "--new")).toBe(0);
     expect(c.ports.login.calls).toEqual([
-      ["antigravity", { manual: false, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
-      ["claude", { manual: true, timeoutMs: 60_000 }],
+      ["antigravity", { manual: false, fresh: false, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["claude", { manual: true, fresh: false, timeoutMs: 60_000 }],
+      ["openai", { manual: false, fresh: true, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
     ]);
     expect(c.out).toEqual([
       "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
       "signed in to antigravity as Me (active account)\n",
       "Open:\nhttps://auth.example/\n",
       "signed in to claude as Me (active account)\n",
+      "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
+      "signed in to openai as Me (active account)\n",
     ]);
   });
 

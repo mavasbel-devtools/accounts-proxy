@@ -1,0 +1,17 @@
+{
+  "name": "@inference-router/provider-openai",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "OpenAI provider: Sign in with ChatGPT plan usage (outbound adapters).",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
+  }
+}

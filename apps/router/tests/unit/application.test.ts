@@ -22,7 +22,8 @@ class FakeClient extends OAuthClientPort {
   ) {
     super();
   }
-  authorizeUrl(input: AuthorizeInput): string {
+  noRedirect = false;
+  async authorizeUrl(input: AuthorizeInput): Promise<string> {
     this.authorizations.push(input);
     return `https://auth.example/?state=${input.state}`;
   }
@@ -31,8 +32,8 @@ class FakeClient extends OAuthClientPort {
     if (this.failExchange) throw new ProviderAuthRequiredError(this.provider, "token endpoint rejected the grant (HTTP 400)");
     return { provider: this.provider, id: "me@x", label: "Me", data: { t: 1 } };
   }
-  successRedirect(): string {
-    return "https://done.example/";
+  successRedirect(): string | undefined {
+    return this.noRedirect ? undefined : "https://done.example/";
   }
 }
 
@@ -102,7 +103,7 @@ function setup(client: FakeClient, query: (state: string) => CallbackQuery = (st
   const manual = new FakeManual((url) => `pasted#${new URL(url).searchParams.get("state")}`);
   const service = new LoginService([client], factory, browser, manual, store, new SequenceRandom(), new FixedHash(), logger);
   const urls: string[] = [];
-  const options = { manual: false, timeoutMs: 1000, onAuthorizeUrl: (u: string) => urls.push(u) };
+  const options = { manual: false, fresh: false, timeoutMs: 1000, onAuthorizeUrl: (u: string) => urls.push(u) };
   const capture = () => {
     state = client.authorizations.at(-1)?.state ?? "";
   };
@@ -120,7 +121,15 @@ describe("LoginService", () => {
     expect(auth.redirectUri).toBe("http://localhost:5555/cb");
     expect(auth.state).toBe("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8");
     expect(auth.codeChallenge).toBe("aChBQUVDQXdRRkJnY0lDUW9MREEwT0R4QVJFaE1VRlJZWEdCa2FHeHdkSGg4KQ");
-    expect(client.exchanges[0]).toEqual({ code: "c0de", state: auth.state, redirectUri: "http://localhost:5555/cb", codeVerifier: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8" });
+    expect([auth.nonce, auth.fresh]).toEqual(["AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8", false]);
+    expect(client.exchanges[0]).toEqual({
+      code: "c0de",
+      state: auth.state,
+      redirectUri: "http://localhost:5555/cb",
+      codeVerifier: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      nonce: auth.nonce,
+      callback: { code: "c0de", state: auth.state },
+    });
     expect(s.urls).toEqual([`https://auth.example/?state=${auth.state}`]);
     expect(s.browser.opened).toEqual(s.urls);
     expect(s.factory.last!.started).toBe("/cb");
@@ -153,11 +162,20 @@ describe("LoginService", () => {
     expect((failing.factory.last!.finished[0] as { status: number }).status).toBe(400);
   });
 
+  test("a client without a success page gets a plain success answer; --new reaches the client", async () => {
+    const client = new FakeClient("openai", undefined);
+    client.noRedirect = true;
+    const s = setup(client);
+    await s.service.login("openai", { ...s.options, fresh: true, onAuthorizeUrl: () => s.capture() });
+    expect(client.authorizations[0]!.fresh).toBe(true);
+    expect(s.factory.last!.finished).toEqual([{ status: 200, text: "Signed in to openai as Me. You can close this tab." }]);
+  });
+
   test("manual (paste-code) login uses the provider's manual redirect and PKCE", async () => {
     const client = new FakeClient("claude", "https://manual/cb");
     const s = setup(client);
     await s.service.login("claude", { ...s.options, manual: true });
-    expect(client.exchanges[0]).toMatchObject({ code: "pasted", redirectUri: "https://manual/cb" });
+    expect(client.exchanges[0]).toMatchObject({ code: "pasted", redirectUri: "https://manual/cb", callback: {} });
     expect(client.exchanges[0]!.codeVerifier).toBeDefined();
     expect(s.factory.last).toBeUndefined();
     expect(s.urls).toHaveLength(1);

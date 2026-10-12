@@ -22,7 +22,7 @@ export type RouterConfig = {
 
 export const DEFAULT_PORT = 4141;
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
-export const DEFAULT_CONFIG: RouterConfig = { port: DEFAULT_PORT, providers: { claude: OFF, antigravity: OFF }, aliases: {} };
+export const DEFAULT_CONFIG: RouterConfig = { port: DEFAULT_PORT, providers: { claude: OFF, antigravity: OFF, openai: OFF }, aliases: {} };
 
 function only(value: Record<string, unknown>, allowed: readonly string[], where: string): void {
   const unknown = Object.keys(value).filter((k) => !allowed.includes(k));
@@ -41,7 +41,7 @@ export function parseRouterConfig(raw: unknown): RouterConfig {
   only(raw, ["port", "providers", "aliases"], "the document");
   const port = raw.port ?? DEFAULT_PORT;
   if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) throw new ConfigError("port must be an integer 1-65535");
-  const providers: Record<ProviderId, ProviderSettings> = { claude: OFF, antigravity: OFF };
+  const providers: Record<ProviderId, ProviderSettings> = { claude: OFF, antigravity: OFF, openai: OFF };
   const rawProviders = raw.providers ?? {};
   if (!isJsonObject(rawProviders)) throw new ConfigError("providers must be a mapping");
   for (const [id, value] of Object.entries(rawProviders)) {

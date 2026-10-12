@@ -44,6 +44,14 @@ import { ClaudeSession } from "@inference-router/provider-claude/adapters/outbou
 import { ClaudeSubscriptionProvider } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
 import { API_BASE as CLAUDE_API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeOAuthPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { JwksIdTokenVerifier } from "@inference-router/provider-openai/adapters/outbound/jwks-id-token-verifier.ts";
+import { OpenAICatalog } from "@inference-router/provider-openai/adapters/outbound/openai-catalog.ts";
+import { OpenAIIdentity } from "@inference-router/provider-openai/adapters/outbound/openai-identity.ts";
+import { OpenAIOAuthClient } from "@inference-router/provider-openai/adapters/outbound/openai-oauth-client.ts";
+import { OpenAIProvider } from "@inference-router/provider-openai/adapters/outbound/openai-provider.ts";
+import { OpenAISession } from "@inference-router/provider-openai/adapters/outbound/openai-session.ts";
+import { API_BASE as OPENAI_API_BASE, ISSUER as OPENAI_ISSUER, JWKS_PATH as OPENAI_JWKS_PATH } from "@inference-router/provider-openai/domain/constants.ts";
+import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAIOAuthPort, OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
 import { CliDriver, type Writer } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
 import type { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 import { MAX_BODY_BYTES, NodeHttpServer } from "@inference-router/router/adapters/inbound/http/node-http-server.ts";
@@ -75,6 +83,8 @@ export type UpstreamSeams = {
   readonly claudeOAuth?: string;
   readonly antigravityApi?: string;
   readonly googleOAuth?: string;
+  readonly openaiApi?: string;
+  readonly openaiAuth?: string;
 };
 
 const SEAM_VARIABLES: Readonly<Record<keyof UpstreamSeams, string>> = {
@@ -82,6 +92,8 @@ const SEAM_VARIABLES: Readonly<Record<keyof UpstreamSeams, string>> = {
   claudeOAuth: "INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH",
   antigravityApi: "INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API",
   googleOAuth: "INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH",
+  openaiApi: "INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API",
+  openaiAuth: "INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH",
 };
 
 export class UpstreamSeamError extends Error {
@@ -229,6 +241,13 @@ export type AntigravityGraph = {
   readonly quota: AntigravityQuotaPort;
   readonly provider: ProviderPort;
 };
+export type OpenAIGraph = {
+  readonly oauth: OpenAIOAuthPort;
+  readonly session: OpenAISessionPort;
+  readonly identity: OpenAIIdentityPort;
+  readonly catalog: OpenAICatalogPort;
+  readonly provider: ProviderPort;
+};
 export type ProviderGraph = {
   readonly config: RouterConfig;
   readonly enabled: readonly ProviderId[];
@@ -240,6 +259,7 @@ export type ProviderGraph = {
   readonly transport: HttpTransportPort;
   readonly claude?: ClaudeGraph;
   readonly antigravity?: AntigravityGraph;
+  readonly openai?: OpenAIGraph;
 };
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
@@ -288,7 +308,29 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       provider: new AntigravityProvider(catalog, new AntigravityNative(runner, antigravityState, logger), logger),
     };
   }
-  return { config, enabled, clock, random, timer, logger, store, transport, ...(claude ? { claude } : {}), ...(antigravity ? { antigravity } : {}) };
+  let openai: OpenAIGraph | undefined;
+  if (enabled.includes("openai")) {
+    const apiBase = seams.openaiApi ?? OPENAI_API_BASE;
+    const authOrigin = seams.openaiAuth ?? OPENAI_ISSUER;
+    const identity = new OpenAIIdentity(state, random);
+    const oauth = new OpenAIOAuthClient(transport, store, identity, new JwksIdTokenVerifier(transport, clock, `${authOrigin}${OPENAI_JWKS_PATH}`), clock, authOrigin);
+    const session = new OpenAISession(store, oauth, lock, clock, logger);
+    const catalog = new OpenAICatalog(transport, session, state, clock, logger, apiBase);
+    openai = { oauth, session, identity, catalog, provider: new OpenAIProvider(session, catalog, identity, transport, logger, apiBase) };
+  }
+  return {
+    config,
+    enabled,
+    clock,
+    random,
+    timer,
+    logger,
+    store,
+    transport,
+    ...(claude ? { claude } : {}),
+    ...(antigravity ? { antigravity } : {}),
+    ...(openai ? { openai } : {}),
+  };
 }
 
 export async function buildCli(options: ContainerOptions): Promise<{ readonly config: RouterConfig; readonly driver: Driver }> {
@@ -296,7 +338,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   const clients: OAuthClientPort[] = [];
   const providers: ProviderPort[] = [];
   const reporters: UsageReporterPort[] = [];
-  for (const wired of [graph.claude, graph.antigravity]) {
+  for (const wired of [graph.claude, graph.antigravity, graph.openai]) {
     if (wired === undefined) continue;
     clients.push(wired.oauth);
     providers.push(wired.provider);

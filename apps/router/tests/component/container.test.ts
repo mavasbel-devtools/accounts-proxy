@@ -107,6 +107,20 @@ describe("composition root", () => {
     expect(readFileSync(join(home!, "logs", "router.log"), "utf8")).toContain("INFO antigravity: signed in account me@x");
   });
 
+  test("openai is wired when enabled, on the production hosts or on the seams; without an account its list is the built-in one", async () => {
+    for (const seams of [{}, { openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1" }]) {
+      const { opts, out, transport } = options({ seams });
+      writeFileSync(join(home!, "router.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
+      expect(await runCli(["models", "openai"], opts)).toBe(0);
+      expect(out[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)\n");
+      expect(await runCli(["account", "list", "openai"], opts)).toBe(0);
+      expect(out.at(-1)).toBe("no openai accounts; run: inference-router login openai\n");
+      expect(transport.requests).toHaveLength(0);
+      removeTemporary(home!);
+      home = undefined;
+    }
+  });
+
   test("an invalid router.yaml is reported, not thrown", async () => {
     const { opts, err } = options();
     writeFileSync(join(home!, "router.yaml"), "providers:\n  antigravity: {enabled: true}\n");
@@ -262,7 +276,7 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
 });
 
 describe("hermetic test hooks", () => {
-  const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1" };
+  const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1", openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1" };
 
   test("absent: nothing changes; present: parsed", () => {
     expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false, listenUnassigned: false });
@@ -282,7 +296,7 @@ describe("hermetic test hooks", () => {
 
   test("main wires the vanishing-stat and unassigned-listen hooks", async () => {
     home = makeTemporary("router-hooks");
-    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1", INFERENCE_ROUTER_HOME: home };
+    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1", INFERENCE_ROUTER_HOME: home };
     const saved = Object.fromEntries(Object.keys(keys).map((k) => [k, process.env[k]]));
     const write = process.stdout.write;
     Object.assign(process.env, keys);
