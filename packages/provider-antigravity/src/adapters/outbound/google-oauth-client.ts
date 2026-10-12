@@ -28,7 +28,7 @@ export class GoogleOAuthClient extends AntigravityOAuthPort {
     private readonly clock: ClockPort,
     private readonly random: RandomPort,
     private readonly logger: LoggerPort,
-    private readonly endpoints: GoogleOAuthEndpoints = PRODUCTION_ENDPOINTS,
+    private readonly endpoints: GoogleOAuthEndpoints,
   ) {
     super();
   }

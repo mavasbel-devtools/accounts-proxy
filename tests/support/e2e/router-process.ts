@@ -87,3 +87,16 @@ export async function startDaemon(home: Home, env: Record<string, string> = {}):
     },
   };
 }
+
+export type SignedInDaemon = { readonly home: Home; readonly daemon: Daemon; readonly token: string };
+
+/** A data directory signed in to both providers (browser logins through the fake xdg-open), its token, and `serve`. */
+export async function startSignedInDaemon(seams: Record<string, string>, yaml?: string): Promise<SignedInDaemon> {
+  const home = await makeHome(yaml);
+  for (const provider of ["antigravity", "claude"]) {
+    const login = await runRouter(home, ["login", provider, "--timeout-seconds", "30"], seams);
+    if (login.code !== 0) throw new Error(login.stderr);
+  }
+  const token = (await runRouter(home, ["token"], seams)).stdout.trim();
+  return { home, token, daemon: await startDaemon(home, seams) };
+}

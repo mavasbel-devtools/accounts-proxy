@@ -4,6 +4,7 @@
 // sent through the recording transport. Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/q6-thinking-probe.ts
 import { readAll } from "@inference-router/core/domain/wire.ts";
 import { transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
 import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@inference-router/scripts/evidence/live/harness.ts";
 
 const MODEL = "claude-haiku-4-5-20251001";
@@ -55,6 +56,7 @@ async function send(live: Live, variant: Variant): Promise<string> {
       clientRequestId: live.graph.random.uuid(),
     },
     (id) => entries.find((e) => e.id === id),
+    API_BASE,
   );
   const wire = variant.edit(JSON.parse(upstream.body) as Record<string, unknown>);
   const res = await live.recorder.send({ method: "POST", url: upstream.url, headers: upstream.headers, body: JSON.stringify(wire) });

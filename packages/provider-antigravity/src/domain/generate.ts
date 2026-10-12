@@ -4,6 +4,7 @@
 // Wire laws kept: 5 sanitized tools, 6 thoughtSignature on the part + unsigned Gemini replay dropped, 7 functionResponse
 // in MODEL-role contents, 8 content-free messages dropped, 12 trailing assistants stripped AFTER the unsigned drop,
 // captured request key order (contents, systemInstruction, tools, toolConfig, labels, generationConfig, sessionId).
+import { isGeminiFamily, sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
 import type { TrajectoryLabels } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 
 export type ToolSpec = { readonly name: string; readonly description?: string; readonly parameters?: Readonly<Record<string, unknown>> };
@@ -80,25 +81,6 @@ export type GenerateBody = {
   sessionId?: string;
 };
 
-export const SCHEMA_KEYS: ReadonlySet<string> = new Set(["type", "format", "description", "nullable", "enum", "items", "properties", "required", "propertyOrdering"]);
-
-export function sanitizeSchema(node: unknown): Record<string, unknown> {
-  if (Array.isArray(node)) return node.map(sanitizeSchema) as unknown as Record<string, unknown>;
-  if (node === null || typeof node !== "object") return node as Record<string, unknown>;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-    if (!SCHEMA_KEYS.has(k)) continue;
-    if (k === "properties" && v !== null && typeof v === "object" && !Array.isArray(v)) {
-      const props: Record<string, unknown> = {};
-      for (const [name, sub] of Object.entries(v as Record<string, unknown>)) props[name] = sanitizeSchema(sub);
-      out[k] = props;
-    } else {
-      out[k] = k === "type" && typeof v === "string" ? v.toUpperCase() : sanitizeSchema(v);
-    }
-  }
-  return out;
-}
-
 export function toWireTools(tools: readonly ToolSpec[]): Array<{ functionDeclarations: Array<Record<string, unknown>> }> {
   if (tools.length === 0) return [];
   return [
@@ -118,8 +100,6 @@ function hasContent(m: ChatMessage): boolean {
   if ((m.images?.length ?? 0) > 0) return true;
   return m.text.trim().length > 0;
 }
-
-export const isGeminiFamily = (wireId: string): boolean => wireId.toLowerCase().startsWith("gemini");
 
 function buildGenerationConfig(req: ChatRequest): Record<string, unknown> | undefined {
   const cfg: Record<string, unknown> = {};

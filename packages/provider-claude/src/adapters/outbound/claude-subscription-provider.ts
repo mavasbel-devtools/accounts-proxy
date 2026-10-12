@@ -15,7 +15,7 @@ import { DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-r
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { ANTHROPIC_VERSION_HEADER, API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
+import { ANTHROPIC_VERSION_HEADER } from "@inference-router/provider-claude/domain/constants.ts";
 import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
@@ -46,7 +46,7 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
     private readonly transport: HttpTransportPort,
     private readonly random: RandomPort,
     private readonly logger: LoggerPort,
-    private readonly apiBase: string = API_BASE,
+    private readonly apiBase: string,
   ) {
     super();
   }

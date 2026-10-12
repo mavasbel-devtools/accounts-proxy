@@ -18,6 +18,7 @@ import {
 import { CATALOG_KEY, ClaudeCatalog } from "@inference-router/provider-claude/adapters/outbound/claude-catalog.ts";
 import { ClaudeIdentity, DEVICE_ID_KEY } from "@inference-router/provider-claude/adapters/outbound/claude-identity.ts";
 import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-claude/adapters/outbound/claude-oauth-client.ts";
+import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
 import { ClaudeSession, REFRESH_LOCK } from "@inference-router/provider-claude/adapters/outbound/claude-session.ts";
 import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
 import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@inference-router/provider-claude/domain/constants.ts";
@@ -35,7 +36,7 @@ describe("ClaudeOAuthClient", () => {
   const clock = new FixedClock(1_000);
 
   test("authorize URL: official parameter order; matches the captured authorize except redirect/state/challenge/scope", () => {
-    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock);
+    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock, PRODUCTION_ENDPOINTS);
     const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5555/callback", state: "st", codeChallenge: "ch" }));
     expect(`${url.origin}${url.pathname}`).toBe("https://claude.com/cai/oauth/authorize");
     expect([...url.searchParams.keys()]).toEqual(["code", "client_id", "response_type", "redirect_uri", "scope", "code_challenge", "code_challenge_method", "state"]);
@@ -53,7 +54,7 @@ describe("ClaudeOAuthClient", () => {
 
   test("exchange posts the official body with captured headers and returns an account", async () => {
     const transport = new ScriptedTransport(() => ok(json("refresh-response.json")));
-    const client = new ClaudeOAuthClient(transport, clock);
+    const client = new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS);
     const account = await client.exchange({ code: "c0de", state: "st", redirectUri: "http://localhost:5555/callback", codeVerifier: "ver" });
     const sent = transport.requests[0]!;
     expect(sent.url).toBe(PRODUCTION_ENDPOINTS.tokenUrl);
@@ -74,19 +75,19 @@ describe("ClaudeOAuthClient", () => {
 
   test("exchange without a verifier is refused before any request", async () => {
     const transport = new ScriptedTransport(() => ok({}));
-    await expect(new ClaudeOAuthClient(transport, clock).exchange({ code: "c", state: "s", redirectUri: "r" })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+    await expect(new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS).exchange({ code: "c", state: "s", redirectUri: "r" })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
     expect(transport.requests).toHaveLength(0);
   });
 
   test("success redirect without user:inference goes to the console page; unreadable account too", () => {
-    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock);
+    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock, PRODUCTION_ENDPOINTS);
     expect(client.successRedirect(toAccount({ accessToken: "a", expiresAt: 1, scopes: "org:create_api_key user:profile" }))).toBe(CONSOLE_SUCCESS_URL);
     expect(client.successRedirect({ provider: "claude", id: "x", label: "x", data: {} })).toBe(CONSOLE_SUCCESS_URL);
   });
 
   test("refresh body equals the captured refresh request (stored scopes verbatim), and default scopes when none stored", async () => {
     const transport = new ScriptedTransport(() => ok({ access_token: "new", expires_in: 60 }));
-    const client = new ClaudeOAuthClient(transport, clock);
+    const client = new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS);
     const capturedScope = json<{ scope: string }>("refresh-request.json").scope;
     const fresh = await client.refresh({ accessToken: "old", refreshToken: "sk-ant-oat01-REDACTED", expiresAt: 0, scopes: capturedScope, email: "e" });
     expect(JSON.parse(transport.requests[0]!.body!)).toEqual(json("refresh-request.json"));
@@ -96,7 +97,7 @@ describe("ClaudeOAuthClient", () => {
   });
 
   test("refresh without a refresh token is an auth error", async () => {
-    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock);
+    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock, PRODUCTION_ENDPOINTS);
     await expect(client.refresh({ accessToken: "a", expiresAt: 0, scopes: "" })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
   });
 
@@ -106,12 +107,12 @@ describe("ClaudeOAuthClient", () => {
     [500, UpstreamError],
     [302, UpstreamError],
   ])("token endpoint HTTP %p -> %p", async (status, kind) => {
-    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ({ status, body: '{"error":"invalid_grant"}' })), clock);
+    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ({ status, body: '{"error":"invalid_grant"}' })), clock, PRODUCTION_ENDPOINTS);
     await expect(client.refresh({ accessToken: "a", refreshToken: "r", expiresAt: 0, scopes: "s" })).rejects.toBeInstanceOf(kind);
   });
 
   test("non-JSON 200 is an upstream error", async () => {
-    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ({ status: 200, body: "<html>" })), clock);
+    const client = new ClaudeOAuthClient(new ScriptedTransport(() => ({ status: 200, body: "<html>" })), clock, PRODUCTION_ENDPOINTS);
     await expect(client.refresh({ accessToken: "a", refreshToken: "r", expiresAt: 0, scopes: "s" })).rejects.toThrow("non-JSON");
   });
 });
@@ -306,9 +307,9 @@ describe("ClaudeCatalog", () => {
     ]);
   });
 
-  test("default api base; pages without data; entries without id are skipped", async () => {
+  test("production api base; pages without data; entries without id are skipped", async () => {
     const transport = new ScriptedTransport((_r, i) => ok(i === 0 ? { has_more: true, last_id: "c" } : { data: [{}, { id: "only" }] }));
-    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger());
+    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger(), API_BASE);
     expect((await catalog.entries()).map((e) => e.id)).toEqual(["only"]);
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=100");
   });
@@ -387,7 +388,7 @@ describe("ClaudeSubscriptionProvider", () => {
         return { source: "live" as const, entries: [{ id: "x", displayName: "X", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] };
       }
     }
-    const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger());
+    const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger(), API_BASE);
     expect(await provider.models()).toEqual({ provider: "claude", nativeDialect: "anthropic", source: "live", models: [{ address: { provider: "claude", model: "x" }, displayName: "X" }] });
   });
 
@@ -479,7 +480,7 @@ describe("ClaudeSubscriptionProvider", () => {
       }
     }
     const transport = new ScriptedTransport(() => ok({}));
-    const provider = new ClaudeSubscriptionProvider(new NoUuid(), new FixedCatalog(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), transport, new SequenceRandom(), new MemoryLogger());
+    const provider = new ClaudeSubscriptionProvider(new NoUuid(), new FixedCatalog(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), transport, new SequenceRandom(), new MemoryLogger(), API_BASE);
     await provider.passthrough("m", raw({ messages: [] }));
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/messages?beta=true");
     expect(JSON.parse(JSON.parse(transport.requests[0]!.body!).metadata.user_id).account_uuid).toBe("");

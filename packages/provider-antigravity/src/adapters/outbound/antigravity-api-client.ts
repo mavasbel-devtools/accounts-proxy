@@ -10,7 +10,7 @@ import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 import type { AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import { DAILY_HOST, IDE_METADATA, USER_AGENT, USERINFO_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { IDE_METADATA, USER_AGENT } from "@inference-router/provider-antigravity/domain/constants.ts";
 import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { asResponseEnvelope, outerEnvelope, upstreamFailure, type GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
 import { AntigravityApiPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
@@ -21,8 +21,8 @@ export class AntigravityApiClient extends AntigravityApiPort {
   constructor(
     private readonly transport: HttpTransportPort,
     private readonly logger: LoggerPort,
-    private readonly host: string = DAILY_HOST,
-    private readonly userinfoUrl: string = USERINFO_URL,
+    private readonly host: string,
+    private readonly userinfoUrl: string,
   ) {
     super();
   }

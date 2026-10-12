@@ -4,9 +4,10 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { GenerateCodec, sanitizeSchema, toWireTools, type ChatRequest, type StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { GenerateCodec, toWireTools, type ChatRequest, type StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
 import { extractProjectIds } from "@inference-router/provider-antigravity/domain/project.ts";
-import { formatUsage, lowestRemaining, parseGroupModels, toQuotaSnapshot } from "@inference-router/provider-antigravity/domain/quota.ts";
+import { formatUsage, parseGroupModels, toQuotaSnapshot } from "@inference-router/provider-antigravity/domain/quota.ts";
 import { mintSessionId, TrajectoryState } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 
 const ref = join(import.meta.dir, "..", "reference", "plugin-5c6f7c2", "domain");
@@ -69,11 +70,10 @@ describe("project and quota parity", () => {
     const ours = toQuotaSnapshot(quota, 42);
     expect(ours).toEqual(R.quota.toQuotaSnapshot(quota, 42));
     expect(formatUsage(ours)).toEqual(R.quota.formatUsage(ours));
-    expect(lowestRemaining(ours)).toBe(R.quota.lowestRemaining(ours));
     for (const d of [undefined, "", "no colon", "Models within this group: A, B ,, C"]) expect(parseGroupModels(d)).toEqual(R.quota.parseGroupModels(d));
     const odd = { groups: [{ buckets: [{ window: "weekly", remainingFraction: 0.123 }, {}] }, { description: "" }] };
     expect(formatUsage(toQuotaSnapshot(odd, 1))).toEqual(R.quota.formatUsage(R.quota.toQuotaSnapshot(odd, 1)));
-    expect(lowestRemaining(toQuotaSnapshot({}, 1))).toBe(R.quota.lowestRemaining(R.quota.toQuotaSnapshot({}, 1)));
+    expect(formatUsage(toQuotaSnapshot({}, 1))).toEqual(R.quota.formatUsage(R.quota.toQuotaSnapshot({}, 1)));
   });
 });
 

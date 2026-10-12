@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
-import { AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
+import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
 import { fromAccount, hasScope, isExpired, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "@inference-router/provider-claude/domain/request-transform.ts";
@@ -153,10 +153,10 @@ describe("request-transform edge branches", () => {
       { role: "user", content: "next" },
     ]);
   });
-  test("default api base", () => {
-    expect(apiUrl("/v1/messages")).toBe("https://api.anthropic.com/v1/messages?beta=true");
+  test("production api base", () => {
+    expect(apiUrl("/v1/messages", API_BASE)).toBe("https://api.anthropic.com/v1/messages?beta=true");
     const ctx = { accessToken: "a", accountUuid: "", deviceId: "d", sessionId: "s", previousMessageId: null, ccPromptId: "p", clientRequestId: "c" };
-    expect(transformRequest({ body: { messages: [] }, path: "/v1/messages" }, ctx).url).toBe("https://api.anthropic.com/v1/messages?beta=true");
+    expect(transformRequest({ body: { messages: [] }, path: "/v1/messages" }, ctx, undefined, API_BASE).url).toBe("https://api.anthropic.com/v1/messages?beta=true");
   });
 });
 

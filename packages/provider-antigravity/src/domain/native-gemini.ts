@@ -18,7 +18,8 @@
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { thinkingDefaultFor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { isGeminiFamily, SCHEMA_KEYS, sanitizeSchema, type ChatMessage, type ToolCall } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { ChatMessage, ToolCall } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { isGeminiFamily, SCHEMA_KEYS, sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
 import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 
 export type GeminiPart = Record<string, unknown>;

@@ -13,7 +13,6 @@ import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts
 import {
   ANTHROPIC_IDENTITY,
   ANTHROPIC_VERSION_HEADER,
-  API_BASE,
   CLAUDE_CCH,
   CLAUDE_ENTRYPOINT,
   CLAUDE_VERSION,
@@ -116,7 +115,7 @@ function dropDanglingToolResults(messages: WireMessage[], toolUseIds: ReadonlySe
   messages[messages.length - 1] = { ...last, content: blocks.filter((b) => !dangling(b)) };
 }
 
-export function apiUrl(path: string, apiBase: string = API_BASE): string {
+export function apiUrl(path: string, apiBase: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${apiBase}${p}${p.includes("?") ? "&" : "?"}beta=true`;
 }
@@ -229,8 +228,8 @@ export function upstreamHeaders(ctx: TransformContext, model: string | undefined
 export function transformRequest(
   input: { readonly body: WireRequestBody; readonly path: string; readonly betaHeader?: string },
   ctx: TransformContext,
-  lookup?: CatalogLookup,
-  apiBase: string = API_BASE,
+  lookup: CatalogLookup | undefined,
+  apiBase: string,
 ): UpstreamRequest {
   const messages = guardAndNormalize(input.body.messages);
   return {

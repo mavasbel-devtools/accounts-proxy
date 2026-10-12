@@ -51,8 +51,8 @@ export function hasRuntimeCode(source: string): boolean {
 
 const key = (path: string): string => resolve(path).toLowerCase();
 
-export function missingRuntimeSources(map: CoverageMap, workspace?: string): string[] {
-  const covered = new Set(map.files().map(key));
+export function missingRuntimeSources(map: CoverageMap, workspace?: string, exempt: ReadonlySet<string> = new Set()): string[] {
+  const covered = new Set([...map.files(), ...exempt].map(key));
   const scope = workspace === undefined ? undefined : key(join(repositoryRoot, workspace, "src"));
   return sourceFiles().filter(
     (file) =>
@@ -60,7 +60,7 @@ export function missingRuntimeSources(map: CoverageMap, workspace?: string): str
   );
 }
 
-export function report(map: CoverageMap, outputDirectory: string, label: string, workspace?: string): string[] {
+export function report(map: CoverageMap, outputDirectory: string, label: string, workspace?: string, exempt?: ReadonlySet<string>): string[] {
   mkdirSync(outputDirectory, { recursive: true });
   writeFileSync(join(outputDirectory, "coverage-final.json"), JSON.stringify(map.toJSON()));
   const context = createContext({ dir: outputDirectory, coverageMap: map });
@@ -71,6 +71,6 @@ export function report(map: CoverageMap, outputDirectory: string, label: string,
   for (const metric of METRICS) {
     if (summary[metric].pct !== 100) failures.push(`${label}: ${metric} ${summary[metric].covered}/${summary[metric].total} (${summary[metric].pct}%)`);
   }
-  for (const file of missingRuntimeSources(map, workspace)) failures.push(`${label}: never loaded by any test: ${file}`);
+  for (const file of missingRuntimeSources(map, workspace, exempt)) failures.push(`${label}: never loaded by any test: ${file}`);
   return failures;
 }

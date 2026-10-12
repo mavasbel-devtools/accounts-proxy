@@ -400,7 +400,6 @@ describe("TerminalManualCode", () => {
     expect(await answer).toBe("the-code#state");
     expect(printed).toContain("paste the code");
     expect(printed).not.toContain("https://auth.example/");
-    expect(new TerminalManualCode()).toBeInstanceOf(TerminalManualCode);
   });
 });
 

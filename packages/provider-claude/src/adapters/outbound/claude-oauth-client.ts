@@ -36,7 +36,7 @@ export class ClaudeOAuthClient extends ClaudeOAuthPort {
   constructor(
     private readonly transport: HttpTransportPort,
     private readonly clock: ClockPort,
-    private readonly endpoints: ClaudeOAuthEndpoints = PRODUCTION_ENDPOINTS,
+    private readonly endpoints: ClaudeOAuthEndpoints,
   ) {
     super();
   }

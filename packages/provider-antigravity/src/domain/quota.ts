@@ -60,8 +60,3 @@ export function formatUsage(snapshot: QuotaSnapshot): UsageView {
   }
   return { capturedAt: snapshot.capturedAt, groups, text: lines.join("\n") };
 }
-
-export function lowestRemaining(snapshot: QuotaSnapshot): number | undefined {
-  const all = snapshot.groups.flatMap((g) => g.buckets.map((b) => b.remainingFraction));
-  return all.length ? Math.min(...all) : undefined;
-}

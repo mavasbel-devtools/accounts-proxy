@@ -5,8 +5,8 @@ import { ManualCodePort } from "@inference-router/core/ports/outbound/oauth.ts";
 
 export class TerminalManualCode extends ManualCodePort {
   constructor(
-    private readonly input: Readable = process.stdin,
-    private readonly output: Writable = process.stdout,
+    private readonly input: Readable,
+    private readonly output: Writable,
   ) {
     super();
   }

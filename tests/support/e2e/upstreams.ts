@@ -50,9 +50,24 @@ export function messageFromStream(sse: string): Record<string, unknown> {
   return message;
 }
 
+/** A scripted answer for one request (receives the parsed JSON body, `{}` when it is not JSON). */
+export type Responder = (body: Record<string, unknown>, request: Recorded) => Response | Promise<Response>;
+
 export class ReplayUpstreams {
   readonly requests: Recorded[] = [];
   private server: ReturnType<typeof Bun.serve> | undefined;
+  private readonly scripted = new Map<string, Responder[]>();
+
+  /** Queues one-shot answers for a path; they are used in order before the default replay. */
+  script(path: string, ...responders: Responder[]): this {
+    this.scripted.set(path, [...(this.scripted.get(path) ?? []), ...responders]);
+    return this;
+  }
+
+  /** Drops every queued answer (between tests). */
+  reset(): void {
+    this.scripted.clear();
+  }
 
   get origin(): string {
     return `http://127.0.0.1:${this.server!.port}`;
@@ -97,6 +112,8 @@ export class ReplayUpstreams {
       }
     })();
 
+    const queued = this.scripted.get(url.pathname)?.shift();
+    if (queued !== undefined) return queued(parsed, this.requests.at(-1)!);
     switch (url.pathname) {
       case "/v1/oauth/token":
         return json(claudeFixture("refresh-response.json"));
@@ -145,4 +162,42 @@ export class ReplayUpstreams {
             : { status: 200, contentType: "text/event-stream", body: antigravityFixture("stream-generate.sample.sse") };
     return new Response(pick.body, { status: pick.status, headers: { "content-type": pick.contentType } });
   }
+}
+
+/** An SSE body from response objects, each framed as one `data:` event (the cloudcode-pa envelope shape). */
+export function envelopeStream(...responses: unknown[]): Response {
+  return new Response(responses.map((r) => `data: ${JSON.stringify({ response: r })}\n\n`).join(""), { headers: { "content-type": "text/event-stream" } });
+}
+
+/** A JSON answer with a status. */
+export function jsonResponse(value: unknown, status = 200, headers: Record<string, string> = {}): Response {
+  return new Response(typeof value === "string" ? value : JSON.stringify(value), { status, headers: { "content-type": "application/json", ...headers } });
+}
+
+/** A streamed body that sends `first`, then fails the connection (a reset after the first byte). */
+export function brokenStream(first: string, contentType = "text/event-stream"): Response {
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(first));
+        setTimeout(() => controller.error(new Error("e2e: upstream connection reset")), 20);
+      },
+    }),
+    { headers: { "content-type": contentType } },
+  );
+}
+
+/** A streamed body that sends `first` and then nothing until the client goes away. */
+export function stalledStream(first: string, onCancel: () => void): Response {
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(first));
+      },
+      cancel() {
+        onCancel();
+      },
+    }),
+    { headers: { "content-type": "text/event-stream" } },
+  );
 }

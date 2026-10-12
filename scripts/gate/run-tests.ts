@@ -8,6 +8,7 @@
 import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { loadMaps, report, scopeMap } from "@inference-router/scripts/gate/coverage-report.ts";
+import { applyDeferrals, E2E_DEFERRED } from "@inference-router/scripts/gate/e2e-deferred.ts";
 import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 
 export const INCOMPLETE = 3;
@@ -92,7 +93,13 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
       console.error("COVERAGE GATE FAIL — e2e daemons wrote no coverage files");
       return 1;
     }
-    return gate(files, join(coverageRoot, "e2e"), "e2e");
+    // R1 option B: P5-only code is deferred from the e2e-alone gate (listed, printed, stale entries fail).
+    const deferred = applyDeferrals(loadMaps(files), E2E_DEFERRED, repositoryRoot);
+    for (const note of deferred.notes) console.log(`E2E DEFERRED — ${note}`);
+    const failures = [...deferred.problems, ...report(deferred.map, join(coverageRoot, "e2e"), "e2e", undefined, deferred.exemptFiles)];
+    for (const failure of failures) console.error(`COVERAGE GATE FAIL — ${failure}`);
+    if (failures.length === 0) console.log(`e2e: coverage gate PASS (100% lines/statements/functions/branches, complete; ${deferred.notes.length} P5 deferrals)`);
+    return failures.length === 0 ? 0 : 1;
   }
   if (mode === "live") {
     const dirs = tierDirectories(["live"], false);

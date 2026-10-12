@@ -27,7 +27,7 @@ import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "@inference-rou
 import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-antigravity/adapters/outbound/google-oauth-client.ts";
 import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
 import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import { CLIENT_ID, CLIENT_SECRET, SCOPES, SUCCESS_REDIRECT, USER_AGENT } from "@inference-router/provider-antigravity/domain/constants.ts";
+import { CLIENT_ID, CLIENT_SECRET, DAILY_HOST, SCOPES, SUCCESS_REDIRECT, USER_AGENT, USERINFO_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
 import { toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { prepareGeminiRequest } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
@@ -125,9 +125,9 @@ describe("AntigravityApiClient", () => {
     await expect(drain(make(() => ({ status: 400, body: "User location is not supported" })).client.streamGenerate(params, tokens))).rejects.toBeInstanceOf(UpstreamError);
   });
 
-  test("defaults: daily host and Google userinfo", async () => {
+  test("production hosts: daily host and Google userinfo", async () => {
     const transport = new ScriptedTransport((_r, i) => (i === 0 ? json({}) : json({})));
-    const client = new AntigravityApiClient(transport, new MemoryLogger());
+    const client = new AntigravityApiClient(transport, new MemoryLogger(), DAILY_HOST, USERINFO_URL);
     await client.fetchUserInfo(tokens);
     expect(transport.requests.map((r) => r.url)).toEqual(["https://daily-cloudcode-pa.googleapis.com/v1internal:fetchUserInfo", "https://www.googleapis.com/oauth2/v2/userinfo"]);
   });
@@ -191,7 +191,7 @@ describe("GoogleOAuthClient", () => {
     ]);
     expect([client.callbackPath, client.usesPkce, client.manualRedirectUri, client.successRedirect()]).toEqual(["/oauth-callback", false, undefined, SUCCESS_REDIRECT]);
     expect(PRODUCTION_ENDPOINTS).toEqual({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", tokenUrl: "https://oauth2.googleapis.com/token" });
-    const production = new GoogleOAuthClient(new ScriptedTransport(() => json({})), new ScriptedApi(), new FixedClock(), new SequenceRandom(), new MemoryLogger());
+    const production = new GoogleOAuthClient(new ScriptedTransport(() => json({})), new ScriptedApi(), new FixedClock(), new SequenceRandom(), new MemoryLogger(), PRODUCTION_ENDPOINTS);
     expect(production.authorizeUrl({ redirectUri: "r", state: "s" }).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
   });
 
