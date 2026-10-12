@@ -7,6 +7,7 @@ import { join } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { enabledProviders, parseRouterConfig, type RouterConfig } from "@inference-router/core/domain/config.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
@@ -274,7 +275,7 @@ export async function runCli(argv: readonly string[], options: ContainerOptions)
   try {
     driver = (await buildCli(options)).driver;
   } catch (error) {
-    options.err(`error: ${error instanceof Error ? error.message : String(error)}\n`);
+    options.err(`error: ${errorMessage(error)}\n`);
     return 1;
   }
   return driver.run(argv);

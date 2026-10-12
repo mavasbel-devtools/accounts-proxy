@@ -2,6 +2,7 @@
 // dependency is added. A missing file yields undefined (= every provider disabled); a syntax error is a ConfigError.
 import { readFile } from "node:fs/promises";
 import { ConfigError } from "@inference-router/core/domain/config.ts";
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import { ConfigSourcePort } from "@inference-router/core/ports/outbound/config.ts";
 
 export type YamlParser = (text: string) => unknown;
@@ -26,7 +27,7 @@ export class YamlConfigFile extends ConfigSourcePort {
     try {
       return this.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
     } catch (error) {
-      throw new ConfigError(`YAML syntax error: ${error instanceof Error ? error.message : String(error)}`);
+      throw new ConfigError(`YAML syntax error: ${errorMessage(error)}`);
     }
   }
 }

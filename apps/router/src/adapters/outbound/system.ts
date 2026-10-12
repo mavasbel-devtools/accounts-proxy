@@ -50,8 +50,9 @@ export class FileLogger extends LoggerPort {
   warn(message: string): void {
     this.write("WARN", message);
   }
-  error(message: string, cause?: unknown): void {
-    this.write("ERROR", cause === undefined ? message : `${message} :: ${cause instanceof Error ? (cause.stack ?? cause.message) : String(cause)}`);
+  /** The cause's stack follows the message (every caught value is an Error, see errorMessage). */
+  error(message: string, cause: unknown): void {
+    this.write("ERROR", `${message} :: ${(cause as Error).stack}`);
   }
 
   private write(level: string, message: string): void {

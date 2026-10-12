@@ -29,7 +29,7 @@ export class FetchTransport extends HttpTransportPort {
         method: request.method,
         headers: request.headers,
         ...(request.body !== undefined ? { body: request.body } : {}),
-        ...(signals.length > 0 ? { signal: signals.length === 1 ? signals[0]! : AbortSignal.any(signals) } : {}),
+        signal: AbortSignal.any(signals),
         timeout: idleMs,
       });
     } catch (error) {

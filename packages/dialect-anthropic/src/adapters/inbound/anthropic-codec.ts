@@ -1,7 +1,7 @@
 // Anthropic Messages dialect: the router's own errors and the model list in Anthropic's shapes.
 //   errors  `{type:"error", error:{type, message}}`, `type` from the documented status table
-//           (docs/reference/specs/anthropic-errors.md §HTTP errors; other 4xx → invalid_request_error as documented
-//           there, other 5xx → api_error).
+//           (docs/reference/specs/anthropic-errors.md §HTTP errors); the table holds every 4xx status the router emits,
+//           so a status outside it is a 5xx → api_error.
 //   models  ListModels (anthropic-models-list.md §Returns): data[] of ModelInfo, first_id, has_more, last_id.
 //           `created_at` is required; a catalog without dates (Antigravity) gets the neutral marker
 //           1970-01-01T00:00:00Z, never an invented date (decision Q5).
@@ -26,7 +26,7 @@ const ERROR_TYPES: Readonly<Record<number, string>> = {
 export const UNDATED = "1970-01-01T00:00:00Z";
 
 export function anthropicErrorType(status: number): string {
-  return ERROR_TYPES[status] ?? (status < 500 ? "invalid_request_error" : "api_error");
+  return ERROR_TYPES[status] ?? "api_error";
 }
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;

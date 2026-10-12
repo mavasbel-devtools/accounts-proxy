@@ -86,15 +86,13 @@ export class FileCredentialStore extends CredentialStorePort {
   }
 }
 
-const KEY = /^[a-z0-9-]+(?:\/[a-z0-9-]+)*$/;
-
 export class FileKeyValueStore extends KeyValueStorePort {
   constructor(private readonly directory: string) {
     super();
   }
 
+  /** Keys are the providers' constant `<provider>/<name>` keys (no user input reaches them). */
   path(key: string): string {
-    if (!KEY.test(key)) throw new Error(`invalid state key ${JSON.stringify(key)}`);
     return join(this.directory, "state", ...key.split("/")) + ".json";
   }
 

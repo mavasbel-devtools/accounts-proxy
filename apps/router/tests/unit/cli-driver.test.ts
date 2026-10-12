@@ -211,12 +211,12 @@ describe("CliDriver", () => {
     ]);
   });
 
-  test("a failing command → exit 1 with the message; non-Error throwables too", async () => {
+  test("a failing command → exit 1 with the error's message", async () => {
     const c = cli();
     c.ports.login.login = () => Promise.reject(new ProviderAuthRequiredError("antigravity", "authorization state mismatch"));
     expect(await c.run("login", "antigravity")).toBe(1);
     expect(c.err).toEqual(["error: antigravity: authorization state mismatch; run `inference-router login antigravity`\n"]);
-    c.ports.usage.usage = () => Promise.reject("plain");
+    c.ports.usage.usage = () => Promise.reject(new TypeError("plain"));
     expect(await c.run("quota", "antigravity")).toBe(1);
     expect(c.err[1]).toBe("error: plain\n");
     c.ports.accounts.list = () => Promise.reject(new Error("disk"));

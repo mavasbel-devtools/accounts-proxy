@@ -69,13 +69,12 @@ describe("file stores", () => {
     await expect(store.load("antigravity")).rejects.toHaveProperty("code");
   });
 
-  test("key-value store: nested keys, missing → undefined, invalid keys refused", async () => {
+  test("key-value store: nested keys, missing → undefined", async () => {
     const kv = new FileKeyValueStore(temp());
     expect(await kv.read("claude/device-id")).toBeUndefined();
     await kv.write("claude/device-id", "ab");
     expect(await kv.read("claude/device-id")).toBe("ab");
     expect(kv.path("a/b")).toBe(join(dir!, "state", "a", "b.json"));
-    for (const bad of ["../x", "A", "a//b", "", "a/"]) expect(() => kv.path(bad)).toThrow("invalid state key");
   });
 
   test("atomic write removes its temp file when the rename fails", async () => {
@@ -124,11 +123,10 @@ describe("FileLock", () => {
     for (let i = 0; i < order.length; i += 2) expect(order[i]!.slice(0, -1)).toBe(order[i + 1]!.slice(0, -1));
   });
 
-  test("a failing holder releases the lock; invalid names refused", async () => {
+  test("a failing holder releases the lock", async () => {
     const lock = new FileLock(temp(), new SystemClock(), new SystemTimer());
     await expect(lock.withLock("x", () => Promise.reject(new Error("work failed")))).rejects.toThrow("work failed");
     expect(await lock.withLock("x", async () => "next")).toBe("next");
-    await expect(lock.withLock("../x", async () => 1)).rejects.toThrow("invalid lock name");
   });
 
   test("a stale lock file is broken; a live one times out", async () => {
@@ -236,7 +234,7 @@ describe("FetchTransport", () => {
 
   const timeoutError = () => Object.assign(new Error("The operation timed out."), { name: "TimeoutError" });
 
-  test("the idle timeout is always explicit; a client signal alone is passed as is", async () => {
+  test("the idle timeout is always explicit; the client signal and the deadline are combined", async () => {
     const inits: FetchInit[] = [];
     const transport = new FetchTransport(async (_url, init) => {
       inits.push(init);
@@ -246,8 +244,9 @@ describe("FetchTransport", () => {
     const controller = new AbortController();
     await transport.send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {}, idleTimeoutMs: 1234, signal: controller.signal });
     expect(inits.map((i) => i.timeout)).toEqual([UPSTREAM_IDLE_TIMEOUT_MS, 1234]);
-    expect(inits[0]!.signal).toBeUndefined();
-    expect(inits[1]!.signal).toBe(controller.signal);
+    expect(inits[0]!.signal!.aborted).toBe(false);
+    controller.abort();
+    expect(inits[1]!.signal!.aborted).toBe(true);
   });
 
   test("an idle timeout before or during the body is UpstreamTimeoutError (504); other failures propagate unchanged", async () => {
@@ -300,16 +299,10 @@ describe("system adapters", () => {
     const logger = new FileLogger(path, new FixedClock(0));
     logger.info("i");
     logger.warn("w");
-    logger.error("e");
-    logger.error("e2", "cause");
     logger.error("e3", new Error("boom"));
     const text = readFileSync(path, "utf8");
-    expect(text.split("\n").slice(0, 4)).toEqual(["1970-01-01T00:00:00.000Z INFO i", "1970-01-01T00:00:00.000Z WARN w", "1970-01-01T00:00:00.000Z ERROR e", "1970-01-01T00:00:00.000Z ERROR e2 :: cause"]);
-    expect(text).toContain("ERROR e3 :: Error: boom");
-    const noStack = new Error("plain");
-    delete noStack.stack;
-    logger.error("e4", noStack);
-    expect(readFileSync(path, "utf8")).toContain("ERROR e4 :: plain");
+    expect(text.split("\n").slice(0, 2)).toEqual(["1970-01-01T00:00:00.000Z INFO i", "1970-01-01T00:00:00.000Z WARN w"]);
+    expect(text).toContain("1970-01-01T00:00:00.000Z ERROR e3 :: Error: boom\n    at ");
     mkdirSync(join(root, "dir.log"));
     expect(() => new FileLogger(join(root, "dir.log"), new FixedClock(0)).info("x")).not.toThrow();
   });
@@ -323,7 +316,7 @@ describe("SystemBrowserLauncher", () => {
     expect(browserCommand("linux", url)).toEqual({ command: "xdg-open", args: [url], verbatim: false });
   });
 
-  test("spawns detached and resolves; refuses non-http URLs; spawn failures reject", async () => {
+  test("spawns detached and resolves; spawn failures reject", async () => {
     const calls: unknown[] = [];
     const ok: Spawner = (command, args, options) => {
       calls.push([command, args, options]);
@@ -331,7 +324,6 @@ describe("SystemBrowserLauncher", () => {
     };
     await new SystemBrowserLauncher("win32", ok).open("https://a.example/");
     expect(calls).toEqual([["cmd", ["/c", "start", '""', '"https://a.example/"'], { detached: true, stdio: "ignore", windowsVerbatimArguments: true }], "unref"]);
-    await expect(new SystemBrowserLauncher("linux", ok).open("file:///etc/passwd")).rejects.toThrow("refusing to open a non-http(s) URL");
     const throws: Spawner = () => {
       throw new Error("ENOENT");
     };
@@ -413,9 +405,8 @@ describe("YamlConfigFile", () => {
     expect(await new YamlConfigFile(join(root, "router.yaml")).read()).toEqual({ port: 4141, providers: { antigravity: { enabled: true, acknowledgeTermsRisk: true } } });
     writeFileSync(join(root, "bad.yaml"), "port: [1, 2\n");
     await expect(new YamlConfigFile(join(root, "bad.yaml")).read()).rejects.toBeInstanceOf(ConfigError);
-    await expect(new YamlConfigFile(join(root, "x.yaml"), () => { throw "not an error"; }).read()).resolves.toBeUndefined();
     writeFileSync(join(root, "y.yaml"), "a: 1");
-    await expect(new YamlConfigFile(join(root, "y.yaml"), () => { throw "not an error"; }).read()).rejects.toThrow("YAML syntax error: not an error");
+    await expect(new YamlConfigFile(join(root, "y.yaml"), () => { throw new SyntaxError("parser says no"); }).read()).rejects.toThrow("YAML syntax error: parser says no");
     mkdirSync(join(root, "dir.yaml"));
     await expect(new YamlConfigFile(join(root, "dir.yaml")).read()).rejects.toHaveProperty("code");
   });

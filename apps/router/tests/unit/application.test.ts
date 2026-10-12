@@ -18,7 +18,6 @@ class FakeClient extends OAuthClientPort {
   failExchange = false;
   constructor(
     readonly provider: ProviderId,
-    readonly usesPkce: boolean,
     readonly manualRedirectUri: string | undefined,
   ) {
     super();
@@ -112,7 +111,7 @@ function setup(client: FakeClient, query: (state: string) => CallbackQuery = (st
 
 describe("LoginService", () => {
   test("loopback login with PKCE: announce, open browser, validate state, exchange, store, redirect", async () => {
-    const client = new FakeClient("claude", true, "https://manual/cb");
+    const client = new FakeClient("claude", "https://manual/cb");
     const s = setup(client);
     const run = s.service.login("claude", { ...s.options, onAuthorizeUrl: (u) => (s.capture(), s.urls.push(u)) });
     const summary = await run;
@@ -131,18 +130,18 @@ describe("LoginService", () => {
     expect(s.logger.lines).toEqual(["INFO claude: signed in account me@x"]);
   });
 
-  test("no PKCE for clients that do not use it; a browser failure is only warned", async () => {
-    const client = new FakeClient("antigravity", false, undefined);
+  test("every client gets the PKCE pair (it sends it only if its official client does); a browser failure is only warned", async () => {
+    const client = new FakeClient("antigravity", undefined);
     const s = setup(client);
     s.browser.fail = true;
     await s.service.login("antigravity", { ...s.options, onAuthorizeUrl: () => s.capture() });
-    expect(client.authorizations[0]!.codeChallenge).toBeUndefined();
-    expect(client.exchanges[0]!.codeVerifier).toBeUndefined();
+    expect(client.authorizations[0]!.codeChallenge).toBeDefined();
+    expect(client.exchanges[0]!.codeVerifier).toBeDefined();
     expect(s.logger.lines[0]).toBe("WARN antigravity: could not open the browser (Error: no browser); open the URL by hand");
   });
 
   test("a rejected callback (state mismatch) or exchange failure answers the browser with an error and stores nothing", async () => {
-    const client = new FakeClient("antigravity", false, undefined);
+    const client = new FakeClient("antigravity", undefined);
     const bad = setup(client, () => ({ code: "c", state: "forged" }));
     await expect(bad.service.login("antigravity", bad.options)).rejects.toThrow("authorization state mismatch");
     expect(bad.factory.last!.finished).toEqual([{ status: 400, text: "Sign-in failed: antigravity: authorization state mismatch; run `inference-router login antigravity`. Close this tab and retry." }]);
@@ -154,30 +153,18 @@ describe("LoginService", () => {
     expect((failing.factory.last!.finished[0] as { status: number }).status).toBe(400);
   });
 
-  test("a non-Error failure is rendered too", async () => {
-    const client = new FakeClient("antigravity", false, undefined);
-    client.exchange = () => Promise.reject("boom");
-    const s = setup(client);
-    await expect(s.service.login("antigravity", { ...s.options, onAuthorizeUrl: () => s.capture() })).rejects.toBe("boom");
-    expect(s.factory.last!.finished).toEqual([{ status: 400, text: "Sign-in failed: boom. Close this tab and retry." }]);
-  });
-
   test("manual (paste-code) login uses the provider's manual redirect and PKCE", async () => {
-    const client = new FakeClient("claude", true, "https://manual/cb");
+    const client = new FakeClient("claude", "https://manual/cb");
     const s = setup(client);
     await s.service.login("claude", { ...s.options, manual: true });
     expect(client.exchanges[0]).toMatchObject({ code: "pasted", redirectUri: "https://manual/cb" });
     expect(client.exchanges[0]!.codeVerifier).toBeDefined();
     expect(s.factory.last).toBeUndefined();
     expect(s.urls).toHaveLength(1);
-    const noPkce = new FakeClient("claude", false, "https://manual/cb");
-    const t = setup(noPkce);
-    await t.service.login("claude", { ...t.options, manual: true });
-    expect(noPkce.exchanges[0]!.codeVerifier).toBeUndefined();
   });
 
   test("manual login is refused for providers without a paste-code page; disabled providers are refused", async () => {
-    const s = setup(new FakeClient("antigravity", false, undefined));
+    const s = setup(new FakeClient("antigravity", undefined));
     await expect(s.service.login("antigravity", { ...s.options, manual: true })).rejects.toBeInstanceOf(InvalidRequestError);
     await expect(s.service.login("claude", s.options)).rejects.toBeInstanceOf(ProviderDisabledError);
   });

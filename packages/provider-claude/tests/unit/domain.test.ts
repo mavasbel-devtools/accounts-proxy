@@ -102,15 +102,14 @@ describe("catalog parsing", () => {
 
 describe("model envelope", () => {
   test("lookup order: captured table, alias, catalog capabilities, fallback", () => {
-    expect(envelopeFor(undefined)).toBe(FALLBACK_ENVELOPE);
-    expect(envelopeFor("claude-opus-4-8")).toBe(MODEL_ENVELOPES["claude-opus-4-8"]!);
-    expect(envelopeFor("claude-haiku-4-5")).toBe(FALLBACK_ENVELOPE);
-    expect(envelopeFor("claude-unknown")).toBe(FALLBACK_ENVELOPE);
+    expect(envelopeFor("claude-opus-4-8", undefined)).toBe(MODEL_ENVELOPES["claude-opus-4-8"]!);
+    expect(envelopeFor("claude-haiku-4-5", undefined)).toBe(FALLBACK_ENVELOPE);
+    expect(envelopeFor("claude-unknown", undefined)).toBe(FALLBACK_ENVELOPE);
     expect(envelopeFor("claude-unknown", { id: "x", displayName: "x", createdAt: "", maxInputTokens: 0, maxTokens: 0 })).toBe(FALLBACK_ENVELOPE);
   });
   test("F8: prototype keys are not model ids", () => {
-    expect(envelopeFor("toString")).toBe(FALLBACK_ENVELOPE);
-    expect(envelopeFor("constructor")).toBe(FALLBACK_ENVELOPE);
+    expect(envelopeFor("toString", undefined)).toBe(FALLBACK_ENVELOPE);
+    expect(envelopeFor("constructor", undefined)).toBe(FALLBACK_ENVELOPE);
   });
   test("capabilitiesEnvelope", () => {
     const base = STATIC_CATALOG[0]!;
@@ -134,10 +133,11 @@ describe("model envelope", () => {
 });
 
 describe("request-transform edge branches", () => {
-  test("sanitizeThinking without a fallback", () => {
-    expect(sanitizeThinking(undefined)).toEqual({ type: "adaptive", display: "omitted" });
-    expect(sanitizeThinking({})).toEqual({ type: "adaptive", display: "omitted" });
-    expect(sanitizeThinking({ type: "weird" })).toEqual({ type: "adaptive", display: "omitted" });
+  test("sanitizeThinking falls back to the envelope's thinking", () => {
+    const adaptive = MODEL_ENVELOPES["claude-opus-4-8"]!.thinking;
+    expect(sanitizeThinking(undefined, adaptive)).toEqual(adaptive);
+    expect(sanitizeThinking({}, adaptive)).toEqual(adaptive);
+    expect(sanitizeThinking({ type: "weird" }, adaptive)).toEqual(adaptive);
   });
   test("non-tool_use assistant blocks and tool messages without any id", () => {
     expect(
@@ -156,7 +156,7 @@ describe("request-transform edge branches", () => {
   test("production api base", () => {
     expect(apiUrl("/v1/messages", API_BASE)).toBe("https://api.anthropic.com/v1/messages?beta=true");
     const ctx = { accessToken: "a", accountUuid: "", deviceId: "d", sessionId: "s", previousMessageId: null, ccPromptId: "p", clientRequestId: "c" };
-    expect(transformRequest({ body: { messages: [] }, path: "/v1/messages" }, ctx, undefined, API_BASE).url).toBe("https://api.anthropic.com/v1/messages?beta=true");
+    expect(transformRequest({ body: { model: "m", messages: [] }, path: "/v1/messages", betaHeader: "b" }, ctx, () => undefined, API_BASE).url).toBe("https://api.anthropic.com/v1/messages?beta=true");
   });
 });
 

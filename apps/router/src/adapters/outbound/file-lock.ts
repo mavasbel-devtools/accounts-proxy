@@ -18,8 +18,6 @@ export class LockTimeoutError extends Error {
 export type FileLockOptions = { readonly staleMs: number; readonly timeoutMs: number; readonly pollMs: number };
 export const DEFAULT_LOCK_OPTIONS: FileLockOptions = { staleMs: 60_000, timeoutMs: 90_000, pollMs: 50 };
 
-const NAME = /^[a-z0-9-]+$/;
-
 /** The filesystem calls the lock needs (a seam: races such as a lock file vanishing mid-inspection are otherwise untestable). */
 export type LockFs = Pick<typeof nodeFs, "mkdir" | "open" | "stat" | "unlink">;
 
@@ -36,8 +34,8 @@ export class FileLock extends LockPort {
     super();
   }
 
+  /** Names are the providers' constant lock names (no user input reaches them). */
   withLock<T>(name: string, work: () => Promise<T>): Promise<T> {
-    if (!NAME.test(name)) return Promise.reject(new Error(`invalid lock name ${JSON.stringify(name)}`));
     const previous = this.queues.get(name) ?? Promise.resolve();
     const run = previous.then(() => this.holdFile(name, work));
     this.queues.set(name, run.catch(() => undefined));

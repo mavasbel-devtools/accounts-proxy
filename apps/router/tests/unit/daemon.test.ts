@@ -138,9 +138,8 @@ describe("DaemonStatusService", () => {
     expect(result.running === false && result.reason).toContain(reason);
   });
 
-  test("a refused connection (Error or not) is not running, with the reason", async () => {
+  test("a refused connection is not running, with the reason", async () => {
     expect(await status(() => Promise.reject(new Error("Unable to connect"))).service.status()).toEqual({ running: false, url: "http://127.0.0.1:4141", reason: "Unable to connect" });
-    expect(await status(() => Promise.reject("odd")).service.status()).toEqual({ running: false, url: "http://127.0.0.1:4141", reason: "odd" });
   });
 });
 

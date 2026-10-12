@@ -1,6 +1,7 @@
 // Live model catalog. Contract of opencode-claude-auth @ 6292741 (AGENTS.md §9, AnthropicModelsApiAdapter,
 // RefreshModelCatalogUseCase): fresh cache (< 24 h) → live paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per
 // page, cursor last_id else final id) → on failure or empty: stale non-empty cache → static minimum. Never empty.
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import { readAll } from "@inference-router/core/domain/wire.ts";
 import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
@@ -42,7 +43,7 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
       });
       return { source: "live", entries: models };
     } catch (error) {
-      this.logger.warn(`claude: live catalog unavailable (${error instanceof Error ? error.message : String(error)})`);
+      this.logger.warn(`claude: live catalog unavailable (${errorMessage(error)})`);
       return cached !== undefined ? { source: "cache", entries: cached.models } : { source: "static", entries: STATIC_CATALOG };
     }
   }

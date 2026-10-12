@@ -72,8 +72,7 @@ const ALIASES: Readonly<Record<string, string>> = { "claude-haiku-4-5": "claude-
 const own = (table: Readonly<Record<string, ModelEnvelopeSpec>>, key: string): ModelEnvelopeSpec | undefined =>
   Object.hasOwn(table, key) ? table[key] : undefined;
 
-export function envelopeFor(model: string | undefined, entry?: CatalogModelEntry): ModelEnvelopeSpec {
-  if (!model) return FALLBACK_ENVELOPE;
+export function envelopeFor(model: string, entry: CatalogModelEntry | undefined): ModelEnvelopeSpec {
   const alias = Object.hasOwn(ALIASES, model) ? ALIASES[model]! : "";
   const spec = own(MODEL_ENVELOPES, model) ?? own(MODEL_ENVELOPES, alias);
   if (spec) return spec;

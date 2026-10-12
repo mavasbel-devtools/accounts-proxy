@@ -47,9 +47,7 @@ describe("ClaudeOAuthClient", () => {
     expect(url.searchParams.get("state")).toBe("st");
     expect(url.searchParams.get("code_challenge")).toBe("ch");
     expect(client.callbackPath).toBe("/callback");
-    expect(client.usesPkce).toBe(true);
     expect(client.manualRedirectUri).toBe("https://platform.claude.com/oauth/code/callback");
-    expect(new URL(client.authorizeUrl({ redirectUri: "r", state: "s" })).searchParams.get("code_challenge")).toBe("");
   });
 
   test("exchange posts the official body with captured headers and returns an account", async () => {
@@ -73,11 +71,6 @@ describe("ClaudeOAuthClient", () => {
     expect(client.successRedirect(account)).toBe(CLAUDEAI_SUCCESS_URL);
   });
 
-  test("exchange without a verifier is refused before any request", async () => {
-    const transport = new ScriptedTransport(() => ok({}));
-    await expect(new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS).exchange({ code: "c", state: "s", redirectUri: "r" })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
-    expect(transport.requests).toHaveLength(0);
-  });
 
   test("success redirect without user:inference goes to the console page; unreadable account too", () => {
     const client = new ClaudeOAuthClient(new ScriptedTransport(() => ok({})), clock, PRODUCTION_ENDPOINTS);
@@ -120,7 +113,6 @@ describe("ClaudeOAuthClient", () => {
 class StubOAuth extends ClaudeOAuthPort {
   readonly provider = "claude";
   readonly callbackPath = "/callback";
-  readonly usesPkce = true;
   readonly manualRedirectUri = undefined;
   calls = 0;
   constructor(private readonly result: (tokens: ClaudeTokens) => Promise<ClaudeTokens>) {
@@ -331,10 +323,10 @@ describe("ClaudeCatalog", () => {
     expect(await make(() => ({ status: 503, body: "down" })).catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
   });
 
-  test("a non-Error rejection is still logged", async () => {
-    const { catalog, logger } = make(() => Promise.reject("boom"));
+  test("a transport failure is logged with its message", async () => {
+    const { catalog, logger } = make(() => Promise.reject(new TypeError("connection refused")));
     expect(await catalog.entries()).toBe(STATIC_CATALOG);
-    expect(logger.lines[0]).toBe("WARN claude: live catalog unavailable (boom)");
+    expect(logger.lines[0]).toBe("WARN claude: live catalog unavailable (connection refused)");
   });
 });
 

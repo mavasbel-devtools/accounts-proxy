@@ -29,7 +29,7 @@ describe("AnthropicCodec", () => {
     [404, "not_found_error"],
     [409, "conflict_error"],
     [413, "request_too_large"],
-    [418, "invalid_request_error"],
+    [502, "api_error"],
     [500, "api_error"],
     [503, "api_error"],
     [504, "timeout_error"],

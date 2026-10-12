@@ -1,6 +1,7 @@
 // `status`: GET <url>/health (the one open route) with a short deadline; anything but a well-formed health answer
 // means "not running", with the reason.
 import { isProviderId, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import { readAll } from "@inference-router/core/domain/wire.ts";
 import { DaemonStatusPort, type DaemonStatus } from "@inference-router/core/ports/inbound/daemon.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
@@ -25,7 +26,7 @@ export class DaemonStatusService extends DaemonStatusPort {
       if (parsed.status !== "ok" || !Array.isArray(parsed.providers)) return { running: false, url, reason: "GET /health is not an inference-router health answer" };
       return { running: true, url, providers: parsed.providers.filter((p): p is ProviderId => typeof p === "string" && isProviderId(p)) };
     } catch (error) {
-      return { running: false, url, reason: error instanceof Error ? error.message : String(error) };
+      return { running: false, url, reason: errorMessage(error) };
     }
   }
 }

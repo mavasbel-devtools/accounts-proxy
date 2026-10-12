@@ -30,7 +30,6 @@ export const PRODUCTION_ENDPOINTS: ClaudeOAuthEndpoints = { authorizeUrl: AUTHOR
 export class ClaudeOAuthClient extends ClaudeOAuthPort {
   readonly provider = "claude";
   readonly callbackPath = LOOPBACK_CALLBACK_PATH;
-  readonly usesPkce = true;
   readonly manualRedirectUri = MANUAL_REDIRECT_URI;
 
   constructor(
@@ -48,14 +47,13 @@ export class ClaudeOAuthClient extends ClaudeOAuthPort {
     q.append("response_type", "code");
     q.append("redirect_uri", input.redirectUri);
     q.append("scope", AUTHORIZE_SCOPES.join(" "));
-    q.append("code_challenge", input.codeChallenge ?? "");
+    q.append("code_challenge", input.codeChallenge);
     q.append("code_challenge_method", "S256");
     q.append("state", input.state);
     return `${this.endpoints.authorizeUrl}?${q.toString()}`;
   }
 
   async exchange(input: ExchangeInput): Promise<AccountCredential> {
-    if (input.codeVerifier === undefined) throw new ProviderAuthRequiredError(this.provider, "PKCE code verifier missing");
     const response = await this.post({
       grant_type: "authorization_code",
       code: input.code,

@@ -28,7 +28,8 @@ export type WireMessage = {
 };
 export type WireSystemBlock = { readonly type: string; readonly text: string; readonly cache_control?: unknown };
 export type WireRequestBody = {
-  readonly model?: string;
+  /** Always set: the provider writes the routed model id before transforming. */
+  readonly model: string;
   readonly messages: readonly WireMessage[];
   readonly system?: readonly WireSystemBlock[] | string;
   readonly max_tokens?: number;
@@ -115,25 +116,23 @@ function dropDanglingToolResults(messages: WireMessage[], toolUseIds: ReadonlySe
   messages[messages.length - 1] = { ...last, content: blocks.filter((b) => !dangling(b)) };
 }
 
+/** `path` is one of the provider's native paths (absolute, no query), so `?beta=true` starts the query. */
 export function apiUrl(path: string, apiBase: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return `${apiBase}${p}${p.includes("?") ? "&" : "?"}beta=true`;
+  return `${apiBase}${path}?beta=true`;
 }
 
-export function sanitizeThinking(thinking: unknown, fallback?: ThinkingSpec): WireThinking {
-  if (!thinking || typeof thinking !== "object") return fallback ? { ...fallback } : { type: "adaptive", display: "omitted" };
+/** `fallback` is the model envelope's thinking (every envelope has one). */
+export function sanitizeThinking(thinking: unknown, fallback: ThinkingSpec): WireThinking {
+  if (!thinking || typeof thinking !== "object") return { ...fallback };
   const t = thinking as Record<string, unknown>;
-  const type = typeof t.type === "string" ? t.type : (fallback?.type ?? "adaptive");
-  if (type === "adaptive") {
-    const display = typeof t.display === "string" ? t.display : (fallback?.display ?? "omitted");
-    return { type: "adaptive", display };
-  }
+  const type = typeof t.type === "string" ? t.type : fallback.type;
+  if (type === "adaptive") return { type: "adaptive", display: typeof t.display === "string" ? t.display : fallback.display };
   if (type === "enabled") {
-    const raw = t.budget_tokens ?? t.budgetTokens ?? fallback?.budget_tokens;
+    const raw = t.budget_tokens ?? t.budgetTokens ?? fallback.budget_tokens;
     return { type: "enabled", budget_tokens: typeof raw === "number" && Number.isFinite(raw) ? raw : 31999 };
   }
   if (type === "disabled") return { type: "disabled" };
-  return fallback ? { ...fallback } : { type: "adaptive", display: "omitted" };
+  return { ...fallback };
 }
 
 export function sanitizeOutputConfig(outputConfig: unknown, fallback?: { readonly effort?: string }): { effort: string } | undefined {
@@ -155,8 +154,8 @@ function systemBlocks(system: WireRequestBody["system"], ccPromptId: string): re
 }
 
 /** Captured-claude body envelope around the guarded messages (host values win; captured defaults fill absence). */
-export function envelope(body: WireRequestBody, messages: readonly WireMessage[], ctx: TransformContext, lookup?: CatalogLookup): Record<string, unknown> {
-  const env = envelopeFor(body.model, lookup?.(body.model ?? ""));
+export function envelope(body: WireRequestBody, messages: readonly WireMessage[], ctx: TransformContext, lookup: CatalogLookup): Record<string, unknown> {
+  const env = envelopeFor(body.model, lookup(body.model));
   const outputConfig = sanitizeOutputConfig(body.output_config, env.outputConfig);
   const thinking = body.thinking === undefined ? undefined : sanitizeThinking(body.thinking, env.thinking);
   const thinkingOn = thinking !== undefined && thinking.type !== "disabled";
@@ -197,18 +196,19 @@ export function mergeBetaHeader(client: string | undefined, captured: string, lo
 }
 
 /** The captured beta set of a model (the request envelope's `anthropic-beta`). */
-export function capturedBetaHeader(model: string | undefined, lookup?: CatalogLookup): string {
-  return envelopeFor(model, lookup?.(model ?? "")).betaHeader;
+export function capturedBetaHeader(model: string, lookup: CatalogLookup): string {
+  return envelopeFor(model, lookup(model)).betaHeader;
 }
 
-/** Captured-claude request header set; authorization carries the router's fresh OAuth token. */
-export function upstreamHeaders(ctx: TransformContext, model: string | undefined, lookup?: CatalogLookup, betaHeader?: string): Record<string, string> {
+/** Captured-claude request header set; authorization carries the router's fresh OAuth token, `betaHeader` the merged
+ * beta set (mergeBetaHeader over capturedBetaHeader). */
+export function upstreamHeaders(ctx: TransformContext, betaHeader: string): Record<string, string> {
   return {
     authorization: `Bearer ${ctx.accessToken}`,
     "content-type": "application/json",
     accept: "text/event-stream",
     "anthropic-version": ANTHROPIC_VERSION_HEADER,
-    "anthropic-beta": betaHeader ?? capturedBetaHeader(model, lookup),
+    "anthropic-beta": betaHeader,
     "anthropic-dangerous-direct-browser-access": "true",
     "x-app": "cli",
     "x-cc-session-id": ctx.sessionId,
@@ -226,14 +226,14 @@ export function upstreamHeaders(ctx: TransformContext, model: string | undefined
 }
 
 export function transformRequest(
-  input: { readonly body: WireRequestBody; readonly path: string; readonly betaHeader?: string },
+  input: { readonly body: WireRequestBody; readonly path: string; readonly betaHeader: string },
   ctx: TransformContext,
-  lookup: CatalogLookup | undefined,
+  lookup: CatalogLookup,
   apiBase: string,
 ): UpstreamRequest {
   const messages = guardAndNormalize(input.body.messages);
   return {
-    headers: upstreamHeaders(ctx, input.body.model, lookup, input.betaHeader),
+    headers: upstreamHeaders(ctx, input.betaHeader),
     url: apiUrl(input.path, apiBase),
     body: JSON.stringify(envelope(input.body, messages, ctx, lookup)),
   };

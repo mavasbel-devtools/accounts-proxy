@@ -24,9 +24,9 @@ export function activeProject(account: AntigravityAccount): string | undefined {
 }
 
 /** A rotated token set keeps the previous refresh token when the server does not issue a new one (source ensureFresh). */
+/** `previous` always has a refresh token: a refresh is attempted only with one. */
 export function rotated(previous: AuthTokens, fresh: AuthTokens): AuthTokens {
-  const refreshToken = fresh.refreshToken ?? previous.refreshToken;
-  return { accessToken: fresh.accessToken, expiresAt: fresh.expiresAt, ...(refreshToken !== undefined ? { refreshToken } : {}) };
+  return { accessToken: fresh.accessToken, expiresAt: fresh.expiresAt, refreshToken: fresh.refreshToken ?? previous.refreshToken! };
 }
 
 export function toCredential(account: AntigravityAccount, id: string): AccountCredential {

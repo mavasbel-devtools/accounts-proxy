@@ -7,6 +7,7 @@ import type { CanonicalEvent } from "@inference-router/core/domain/canonical/eve
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
 import { InternalError, InvalidRequestError, RouterError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
 import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
@@ -107,7 +108,7 @@ export class AntigravityProvider extends ProviderPort {
         yield encoder.encode(frame(next.value));
       }
     } catch (error) {
-      this.logger.warn(`${this.id}: stream failed after the first byte (model=${model}): ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(`${this.id}: stream failed after the first byte (model=${model}): ${errorMessage(error)}`);
       yield encoder.encode(frame(googleErrorEnvelope(error instanceof RouterError ? error : new InternalError())));
     } finally {
       await rest.return?.();

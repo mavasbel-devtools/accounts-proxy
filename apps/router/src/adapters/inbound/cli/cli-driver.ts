@@ -1,7 +1,7 @@
 // Command-line inbound adapter: parses argv, drives the inbound ports, renders results. Exit codes: 0 success,
 // 1 the command failed (message on stderr), 2 usage error.
-import { RouterError } from "@inference-router/core/domain/errors.ts";
 import { isProviderId, type ModelsSource, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import type { AccountAdminPort, LoginPort, UsagePort } from "@inference-router/core/ports/inbound/accounts.ts";
 import type { DaemonStatusPort } from "@inference-router/core/ports/inbound/daemon.ts";
@@ -65,7 +65,7 @@ export class CliDriver extends Driver {
         this.err(`${error.message}\n${USAGE}\n`);
         return 2;
       }
-      const message = error instanceof RouterError || error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       this.err(`error: ${message}\n`);
       return 1;
     }

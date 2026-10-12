@@ -6,22 +6,22 @@ import type { ProviderId } from "@inference-router/core/domain/models.ts";
 export type AuthorizeInput = {
   readonly redirectUri: string;
   readonly state: string;
-  /** Present only when the provider uses PKCE (S256). */
-  readonly codeChallenge?: string;
+  /** RFC 7636 S256 challenge; sent only by clients whose official client uses PKCE (Claude), ignored by the others. */
+  readonly codeChallenge: string;
 };
 
 export type ExchangeInput = {
   readonly code: string;
   readonly state: string;
   readonly redirectUri: string;
-  readonly codeVerifier?: string;
+  /** The verifier of codeChallenge (same rule). */
+  readonly codeVerifier: string;
 };
 
 export abstract class OAuthClientPort {
   abstract readonly provider: ProviderId;
   /** Loopback callback path, e.g. "/callback" (Claude) or "/oauth-callback" (Google). */
   abstract readonly callbackPath: string;
-  abstract readonly usesPkce: boolean;
   /** Redirect URI of the provider's paste-code page (headless fallback), or undefined if it has none. */
   abstract readonly manualRedirectUri: string | undefined;
   abstract authorizeUrl(input: AuthorizeInput): string;

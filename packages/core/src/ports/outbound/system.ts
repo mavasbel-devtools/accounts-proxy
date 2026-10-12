@@ -21,7 +21,7 @@ export abstract class HashPort {
 export abstract class LoggerPort {
   abstract info(message: string): void;
   abstract warn(message: string): void;
-  abstract error(message: string, cause?: unknown): void;
+  abstract error(message: string, cause: unknown): void;
 }
 
 /** Mutual exclusion that holds across processes (the router daemon and a concurrent CLI command). */

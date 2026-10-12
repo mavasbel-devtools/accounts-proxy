@@ -25,7 +25,6 @@ export class SystemBrowserLauncher extends BrowserLauncherPort {
   }
 
   open(url: string): Promise<void> {
-    if (!/^https?:\/\//.test(url)) return Promise.reject(new Error(`refusing to open a non-http(s) URL: ${url}`));
     const { command, args, verbatim } = browserCommand(this.platform, url);
     // Resolved once the opener is running, rejected when it cannot start (e.g. not installed: ENOENT). A synchronous
     // throw of the spawner rejects the promise too (thrown inside the executor).

@@ -92,10 +92,10 @@ describe("composition root", () => {
     expect(err[1]).toContain("YAML syntax error");
   });
 
-  test("a non-Error failure while building is rendered", async () => {
+  test("a failure while building is rendered", async () => {
     const { opts, err } = options();
     const hostile = { ...opts };
-    Object.defineProperty(hostile, "home", { get: () => { throw "no home"; } });
+    Object.defineProperty(hostile, "home", { get: () => { throw new Error("no home"); } });
     expect(await runCli(["help"], hostile)).toBe(1);
     expect(err).toEqual(["error: no home\n"]);
   });

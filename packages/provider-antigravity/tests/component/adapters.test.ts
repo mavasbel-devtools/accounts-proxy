@@ -179,7 +179,7 @@ describe("GoogleOAuthClient", () => {
 
   test("authorize URL parameters in the source order; loopback metadata", () => {
     const { client } = make(() => json({}));
-    const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5/oauth-callback", state: "st" }));
+    const url = new URL(client.authorizeUrl({ redirectUri: "http://localhost:5/oauth-callback", state: "st", codeChallenge: "ignored" }));
     expect([...url.searchParams.entries()]).toEqual([
       ["access_type", "offline"],
       ["scope", SCOPES.join(" ")],
@@ -189,15 +189,15 @@ describe("GoogleOAuthClient", () => {
       ["client_id", CLIENT_ID],
       ["redirect_uri", "http://localhost:5/oauth-callback"],
     ]);
-    expect([client.callbackPath, client.usesPkce, client.manualRedirectUri, client.successRedirect()]).toEqual(["/oauth-callback", false, undefined, SUCCESS_REDIRECT]);
+    expect([client.callbackPath, client.manualRedirectUri, client.successRedirect()]).toEqual(["/oauth-callback", undefined, SUCCESS_REDIRECT]);
     expect(PRODUCTION_ENDPOINTS).toEqual({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth", tokenUrl: "https://oauth2.googleapis.com/token" });
     const production = new GoogleOAuthClient(new ScriptedTransport(() => json({})), new ScriptedApi(), new FixedClock(), new SequenceRandom(), new MemoryLogger(), PRODUCTION_ENDPOINTS);
-    expect(production.authorizeUrl({ redirectUri: "r", state: "s" }).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
+    expect(production.authorizeUrl({ redirectUri: "r", state: "s", codeChallenge: "ignored" }).startsWith("https://accounts.google.com/o/oauth2/v2/auth?")).toBe(true);
   });
 
   test("exchange: form body, bootstrap (userinfo → loadCodeAssist), account id = e-mail", async () => {
     const { client, transport, api } = make(() => json({ access_token: "a1", refresh_token: "r1", expires_in: 3599 }));
-    const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback" });
+    const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback", codeVerifier: "ignored" });
     expect(transport.requests[0]!.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
     expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "authorization_code", code: "c", client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: "http://localhost:5/oauth-callback" });
     expect(api.calls).toEqual(["fetchUserInfo", "loadCodeAssist"]);
@@ -210,20 +210,20 @@ describe("GoogleOAuthClient", () => {
     api.userInfo = () => Promise.reject(new Error("u"));
     api.codeAssist = () => Promise.reject(new Error("l"));
     const { client, logger } = make(() => json({ access_token: "a1", expires_in: "60" }), api);
-    const account = fromCredential(await client.exchange({ code: "c", state: "s", redirectUri: "r" }))!;
+    const account = fromCredential(await client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored" }))!;
     expect(account).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 61_000 }, projectIds: ["onboarded"], activeProjectId: "onboarded" });
     expect(logger.lines).toEqual(["WARN antigravity: fetchUserInfo failed (Error: u)", "WARN antigravity: loadCodeAssist failed (Error: l)"]);
     const empty = new ScriptedApi();
     empty.userInfo = async () => ({});
     empty.codeAssist = async () => ({});
     empty.onboard = async () => ({});
-    const none = fromCredential(await make(() => json({ access_token: "a1" }), empty).client.exchange({ code: "c", state: "s", redirectUri: "r" }))!;
+    const none = fromCredential(await make(() => json({ access_token: "a1" }), empty).client.exchange({ code: "c", state: "s", redirectUri: "r", codeVerifier: "ignored" }))!;
     expect(none).toEqual({ email: "", tokens: { accessToken: "a1", expiresAt: 1_000 + 3_600_000 }, projectIds: [] });
   });
 
-  test("refresh keeps the refresh token unless rotated; needs one", async () => {
+  test("refresh returns the token endpoint's answer (rotated() keeps the old refresh token); needs one", async () => {
     const { client, transport } = make(() => json({ access_token: "a2", expires_in: 10 }));
-    expect(await client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt", expiresAt: 11_000 });
+    expect(await client.refresh(tokens)).toEqual({ accessToken: "a2", expiresAt: 11_000 });
     expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
     expect(await make(() => json({ access_token: "a2", refresh_token: "rt2", expires_in: 10 })).client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt2", expiresAt: 11_000 });
     await expect(client.refresh({ accessToken: "a", expiresAt: 0 })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
@@ -243,7 +243,6 @@ describe("GoogleOAuthClient", () => {
 class StubOAuth extends AntigravityOAuthPort {
   readonly provider = "antigravity";
   readonly callbackPath = "/oauth-callback";
-  readonly usesPkce = false;
   readonly manualRedirectUri = undefined;
   calls = 0;
   constructor(private readonly result: (t: AuthTokens) => Promise<AuthTokens> = async () => ({ accessToken: "SECRET-new", expiresAt: 9_000_000_000_000 })) {
@@ -663,10 +662,10 @@ describe("AntigravityProvider", () => {
     expect(frames.at(-1)).toBe('data: {"error":{"code":503,"message":"no capacity","status":"UNAVAILABLE"}}\r\n\r\n');
     expect(sse.logger.lines.some((l) => l.startsWith("WARN antigravity: stream failed after the first byte"))).toBe(true);
 
-    const json = make(failing("not an Error"));
+    const json = make(failing(new TypeError("connection reset")));
     const body = (await decode((await json.provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello))).body)).join("");
     expect(JSON.parse(body)[1]).toEqual({ error: { code: 500, message: "internal router error (details are in the router log)", status: "INTERNAL" } });
-    expect(json.logger.lines.some((l) => l.endsWith("not an Error"))).toBe(true);
+    expect(json.logger.lines.some((l) => l.endsWith("connection reset"))).toBe(true);
   });
 
   test("a client that stops reading ends the upstream stream", async () => {

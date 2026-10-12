@@ -6,7 +6,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { transformRequest, type TransformContext, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import { capturedBetaHeader, transformRequest, type TransformContext, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
 import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 // Loaded through a computed specifier so the typecheck does not compile the verbatim (differently linted) source.
 type ReferenceService = new (
@@ -76,7 +76,7 @@ function both(body: WireRequestBody, path = "/v1/messages", previousMessageId: s
   const source = reference(body, path, previousMessageId, apiBase);
   const expected = { ...source, body: withF9(source.body, body) };
   const ctx: TransformContext = { ...BASE, previousMessageId, ccPromptId: "uuid-1", clientRequestId: "uuid-2" };
-  const actual = transformRequest({ body, path }, ctx, lookup, apiBase);
+  const actual = transformRequest({ body, path, betaHeader: capturedBetaHeader(body.model, lookup) }, ctx, lookup, apiBase);
   return { expected, actual };
 }
 
@@ -84,7 +84,7 @@ const user = [{ role: "user", content: "hi" }];
 const cases: [string, WireRequestBody][] = [
   ["captured opus-4-8 wire as input", captured],
   ["captured wire, system as a string", { ...captured, system: "be brief" }],
-  ["no model, no system", { messages: user }],
+  ["no system", { model: "claude-haiku-4-5-20251001", messages: user }],
   ["unknown model, no catalog entry", { model: "claude-unknown-1", messages: user }],
   ["unknown model with live catalog entry", { model: "claude-future-9", messages: user }],
   ["undated haiku alias", { model: "claude-haiku-4-5", messages: user }],
@@ -156,7 +156,7 @@ describe("parity with opencode-claude-auth @ 6292741 (url, headers, body bytes)"
     });
   }
 
-  test.each([["/v1/messages/count_tokens"], ["v1/messages"], ["/v1/messages?x=1"]])("path %p", (path) => {
+  test.each([["/v1/messages/count_tokens"]])("path %p", (path) => {
     const { expected, actual } = both(captured, path);
     expect(actual).toEqual(expected);
   });

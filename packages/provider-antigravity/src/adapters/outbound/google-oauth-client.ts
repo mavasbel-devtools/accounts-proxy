@@ -19,7 +19,6 @@ export const PRODUCTION_ENDPOINTS: GoogleOAuthEndpoints = { authorizeUrl: AUTHOR
 export class GoogleOAuthClient extends AntigravityOAuthPort {
   readonly provider = "antigravity";
   readonly callbackPath = LOOPBACK_CALLBACK_PATH;
-  readonly usesPkce = false;
   readonly manualRedirectUri = undefined;
 
   constructor(
@@ -64,8 +63,8 @@ export class GoogleOAuthClient extends AntigravityOAuthPort {
 
   async refresh(tokens: AuthTokens): Promise<AuthTokens> {
     if (tokens.refreshToken === undefined) throw new ProviderAuthRequiredError("antigravity", "access token expired and no refresh token is stored");
-    const fresh = await this.token({ grant_type: "refresh_token", refresh_token: tokens.refreshToken, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
-    return { ...fresh, ...(fresh.refreshToken === undefined ? { refreshToken: tokens.refreshToken } : {}) };
+    // The caller keeps the previous refresh token when none is issued (rotated()).
+    return this.token({ grant_type: "refresh_token", refresh_token: tokens.refreshToken, client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
   }
 
   /** Source LoginUseCase.buildAccount: each step is best-effort except onboarding, which runs only without a project. */

@@ -3,7 +3,7 @@
 // envelope (transformRequest with the router's own session, identity and catalog) with exactly one change per probe,
 // sent through the recording transport. Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/q6-thinking-probe.ts
 import { readAll } from "@inference-router/core/domain/wire.ts";
-import { transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
+import { capturedBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
 import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
 import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@inference-router/scripts/evidence/live/harness.ts";
 
@@ -44,8 +44,9 @@ const VARIANTS: readonly Variant[] = [
 async function send(live: Live, variant: Variant): Promise<string> {
   const tokens = await live.claude.session.freshTokens();
   const entries = await live.claude.catalog.entries();
+  const lookup = (id: string) => entries.find((e) => e.id === id);
   const upstream = transformRequest(
-    { body: { model: MODEL, stream: true, ...variant.body } as unknown as WireRequestBody, path: "/v1/messages" },
+    { body: { model: MODEL, stream: true, ...variant.body } as unknown as WireRequestBody, path: "/v1/messages", betaHeader: capturedBetaHeader(MODEL, lookup) },
     {
       accessToken: tokens.accessToken,
       accountUuid: tokens.accountUuid ?? "",
@@ -55,7 +56,7 @@ async function send(live: Live, variant: Variant): Promise<string> {
       ccPromptId: live.graph.random.uuid(),
       clientRequestId: live.graph.random.uuid(),
     },
-    (id) => entries.find((e) => e.id === id),
+    lookup,
     API_BASE,
   );
   const wire = variant.edit(JSON.parse(upstream.body) as Record<string, unknown>);
