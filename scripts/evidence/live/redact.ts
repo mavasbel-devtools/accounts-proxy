@@ -9,8 +9,11 @@ const CREDENTIAL_HEADERS = new Set(["authorization", "x-api-key", "x-goog-api-ke
 /** JSON field names whose string value is a credential wherever they appear ("code" is form-only: JSON error and tool
  * payloads legitimately carry a `code` field). */
 const CREDENTIAL_FIELDS = new Set(["access_token", "refresh_token", "id_token", "code_verifier", "client_secret"]);
-/** Prefixes of live token formats: Anthropic OAuth / API keys, Google access tokens, Google refresh tokens. */
-export const TOKEN_PREFIXES: readonly string[] = ["sk-ant-", "ya29.", "1//"];
+/**
+ * Prefixes of live token formats: Anthropic OAuth / API keys, Google access tokens, Google refresh tokens, and a JWS
+ * whose header starts with `{"alg":` (OpenAI access and ID tokens are JWTs).
+ */
+export const TOKEN_PREFIXES: readonly string[] = ["sk-ant-", "ya29.", "1//", "eyJhbGci"];
 
 export class Redactor {
   private readonly secrets: Secret[] = [];

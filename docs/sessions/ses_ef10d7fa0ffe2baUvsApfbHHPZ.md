@@ -67,16 +67,28 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   177 tests. e2e alone 100%, unit+component 100% (497), merged 100%; `bun run verify` GATE: PASS. Fixed: Antigravity
   signature-store write race (found by the 2001-signature e2e test). Next: P0-E4 (refresh-token test, may cost one
   re-login), then P5.
+- 2026-10-11 User asked to add OpenAI (opencode's built-in ChatGPT sign-in) and to finish everything; plans are only
+  ever extended. Plan v4 written: docs/plans/2026-10-11-22-11-completion-plan.md (Phase H → P4.5 → P5 → P9), main
+  plan extended (Changes v3.1 → v4). Decisions H-Q1..6, O1..O12 approved (O9 changed by the user: send opencode's
+  session headers); O3 (repo visibility) open.
+- 2026-10-11 Phase H done (6eda43e): OAuthSessionBase, locked account writes, 30 s token deadline, Claude 401
+  retry, H4 fallback + 30 s cooldown, 502 upstream_unreachable, needsLogin. E4 live: Claude rotates refresh tokens
+  and rejects the old one; Google does not. verify GATE PASS.
+- 2026-10-12 P4.5 part 1 (acce877): packages/provider-openai (SIWC dynamic registration, JWKS ID-token check, session,
+  model list, native Responses route with limits/aggregation/opencode headers); unit+component 100%. Live probe script
+  ready (scripts/evidence/live/p45-openai-probe.ts). Waiting: user sign-in `bun run router login openai` (+ O3).
 
 ## Progress map
 | Phase | State |
 |---|---|
 | P0-E1/E5/E6 | done |
 | P0-E2/E3 | done 2026-10-11 (docs/reference/2026-10-10-23-17-p0-live-findings.md) |
-| P0-E4 | after P4 (can cost one re-login) |
+| P0-E4 | done 2026-10-11 (docs/reference/2026-10-11-23-06-e4-refresh-rotation.md) |
 | P1 | done |
 | P2 | done |
 | P3 | done (providers, router CLI, alias imports) |
 | Linux migration + rename to `claude` | done 2026-10-10 |
 | P4 | done 2026-10-11; R1 resolved (option B), `bun run verify` GATE: PASS |
-| P5–P10 | not started |
+| Phase H (plan v4) | done 2026-10-11 |
+| P4.5 openai | part 1 done (code + unit/component); waiting for the user's OpenAI sign-in, then live probe + e2e |
+| P5–P9 | not started |

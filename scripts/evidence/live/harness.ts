@@ -12,7 +12,7 @@ import type { StreamEnvelope } from "@inference-router/provider-antigravity/doma
 import { TrajectoryState, type TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 import type { ChatMessage } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
+import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type OpenAIGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
 import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 import { Redactor } from "@inference-router/scripts/evidence/live/redact.ts";
 import { RecordingTransport, type Exchange } from "@inference-router/scripts/evidence/live/recording-transport.ts";
@@ -25,6 +25,8 @@ export type Live = {
   readonly graph: ProviderGraph;
   readonly claude: ClaudeGraph;
   readonly antigravity: AntigravityGraph;
+  /** Present when the openai provider is enabled (plan v4 P4.5). */
+  readonly openai: OpenAIGraph | undefined;
   readonly recorder: RecordingTransport;
   readonly redactor: Redactor;
   readonly trajectory: TrajectoryState;
@@ -45,7 +47,7 @@ export async function openLive(): Promise<Live> {
   const graph = await buildGraph({ home, transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in router.yaml");
   const redactor = new Redactor();
-  for (const provider of ["claude", "antigravity"] as const) {
+  for (const provider of ["claude", "antigravity", "openai"] as const) {
     const pool = await graph.store.load(provider);
     for (const account of pool.accounts) {
       redactor.add("account_id", account.id);
@@ -55,16 +57,20 @@ export async function openLive(): Promise<Live> {
   }
   redactor.add("claude_device_id", await graph.claude.identity.deviceId());
   redactor.add("claude_session_id", graph.claude.identity.sessionId);
+  if (graph.openai !== undefined) {
+    redactor.add("openai_host_id", await graph.openai.identity.hostId());
+    redactor.add("openai_session_id", graph.openai.identity.sessionId);
+  }
   const sessionId = await graph.antigravity.state.sessionId();
   redactor.add("antigravity_session_id", sessionId);
   const trajectory = new TrajectoryState({ sessionUuid: graph.random.uuid(), sessionId, uuid: () => graph.random.uuid(), now: () => graph.clock.now() });
-  return { graph, claude: graph.claude, antigravity: graph.antigravity, recorder, redactor, trajectory, home };
+  return { graph, claude: graph.claude, antigravity: graph.antigravity, openai: graph.openai, recorder, redactor, trajectory, home };
 }
 
 /** Every string leaf of an account record that names or authenticates the user is a secret. */
 function collectStrings(value: unknown, key: string, redactor: Redactor): void {
   if (typeof value === "string") {
-    if (/token|email|uuid|project|label|id$/i.test(key) && !/scope/i.test(key)) redactor.add(key.replace(/[^a-z0-9]+/gi, "_").toLowerCase(), value);
+    if (/token|email|uuid|project|label|subject|id$/i.test(key) && !/scope/i.test(key)) redactor.add(key.replace(/[^a-z0-9]+/gi, "_").toLowerCase(), value);
     return;
   }
   if (Array.isArray(value)) {
@@ -217,7 +223,7 @@ const round = (n: number | undefined) => (n === undefined ? undefined : Math.rou
 
 /** Token-endpoint exchanges are never persisted, only counted (they carry grants). */
 export function isTokenEndpoint(url: string): boolean {
-  return url.startsWith("https://oauth2.googleapis.com/token") || url.includes("/v1/oauth/token");
+  return url.startsWith("https://oauth2.googleapis.com/token") || url.includes("/v1/oauth/token") || url.includes("/api/accounts/oauth/token");
 }
 
 export function writeCapture(live: Live, relativePath: string, record: CaptureRecord): string {
