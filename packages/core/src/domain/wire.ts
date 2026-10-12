@@ -9,11 +9,6 @@ export type HttpRequest = {
   readonly body?: string;
   /** Abort the request (including the body read) after this many milliseconds. */
   readonly timeoutMs?: number;
-  /**
-   * Fail when the connection stays idle (no byte sent or received) this long. Absent: the router's explicit
-   * default (UPSTREAM_IDLE_TIMEOUT_MS), never the runtime's own default (P0-LIVE finding L12).
-   */
-  readonly idleTimeoutMs?: number;
   /** Aborts the exchange, body read included (the client of a streamed response disconnected). */
   readonly signal?: AbortSignal | undefined;
 };

@@ -5,14 +5,14 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
+import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { activeProject } from "@inference-router/provider-antigravity/domain/account.ts";
 import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { TrajectoryState, type TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 import type { ChatMessage } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { FetchTransport } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { buildGraph, defaultHome, type AntigravityGraph, type ClaudeGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
+import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
 import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 import { Redactor } from "@inference-router/scripts/evidence/live/redact.ts";
 import { RecordingTransport, type Exchange } from "@inference-router/scripts/evidence/live/recording-transport.ts";
@@ -41,8 +41,8 @@ export function requireLive(): void {
 export async function openLive(): Promise<Live> {
   requireLive();
   const home = defaultHome(process.env);
-  const recorder = new RecordingTransport(new FetchTransport());
-  const graph = await buildGraph({ home, transport: recorder });
+  const recorder = new RecordingTransport(new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS));
+  const graph = await buildGraph({ home, transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in router.yaml");
   const redactor = new Redactor();
   for (const provider of ["claude", "antigravity"] as const) {

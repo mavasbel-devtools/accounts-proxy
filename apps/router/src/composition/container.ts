@@ -2,11 +2,13 @@
 // clients are wired only when enabled with acknowledgeTermsRisk (plan D4). Upstream seams (P4 plan §2.5) exist only
 // for hermetic e2e: INFERENCE_ROUTER_TEST_UPSTREAM_* repoint a provider's hosts, and only to http://127.0.0.1 — any
 // other value is a fatal configuration error, so a production configuration can never be redirected.
+import * as nodeFs from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { enabledProviders, parseRouterConfig, type RouterConfig } from "@inference-router/core/domain/config.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
@@ -49,8 +51,8 @@ import { RouteHandler } from "@inference-router/router/adapters/inbound/http/rou
 import { ProcessShutdownSignal } from "@inference-router/router/adapters/inbound/process-shutdown-signal.ts";
 import type { ShutdownSignal } from "@inference-router/router/adapters/inbound/server.ts";
 import { SystemBrowserLauncher } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
-import { FetchTransport } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { FileLock } from "@inference-router/router/adapters/outbound/file-lock.ts";
+import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { DEFAULT_LOCK_OPTIONS, FileLock, vanishingStatFs, type FileLockOptions, type LockFs } from "@inference-router/router/adapters/outbound/file-lock.ts";
 import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore } from "@inference-router/router/adapters/outbound/file-stores.ts";
 import { LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
@@ -109,6 +111,59 @@ export function seamsFrom(env: Readonly<Record<string, string | undefined>>): Up
   return seams;
 }
 
+/** Hermetic-test hooks for what a black-box test cannot otherwise reach (R1 option B, group 3). */
+export type TestHooks = {
+  /** The browser opener's platform (win32 / darwin openers, exercised on Linux). */
+  readonly platform: NodeJS.Platform | undefined;
+  /** The upstream socket idle timeout (504 paths) instead of UPSTREAM_IDLE_TIMEOUT_MS. */
+  readonly upstreamIdleMs: number | undefined;
+  /** The cross-process lock timeout instead of DEFAULT_LOCK_OPTIONS.timeoutMs. */
+  readonly lockTimeoutMs: number | undefined;
+  /** Every stat of a busy lock reports the file gone (the release race). */
+  readonly lockStatVanishes: boolean;
+};
+
+const HOOK_VARIABLES = {
+  platform: "INFERENCE_ROUTER_TEST_PLATFORM",
+  upstreamIdleMs: "INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS",
+  lockTimeoutMs: "INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS",
+  lockStatVanishes: "INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES",
+} as const;
+const PLATFORMS: readonly string[] = ["linux", "darwin", "win32"];
+
+export class TestHookError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TestHookError";
+  }
+}
+
+/** Reads the hook variables; any hook requires all four upstream seams (so a process that can reach a real
+ * provider never runs with one), and every value is validated. */
+export function hooksFrom(env: Readonly<Record<string, string | undefined>>, seams: UpstreamSeams): TestHooks {
+  const given = Object.values(HOOK_VARIABLES).filter((name) => env[name] !== undefined);
+  if (given.length > 0 && Object.keys(seams).length !== Object.keys(SEAM_VARIABLES).length) {
+    throw new TestHookError(`${given.join(", ")} need every INFERENCE_ROUTER_TEST_UPSTREAM_* seam (hermetic tests only)`);
+  }
+  const platform = env[HOOK_VARIABLES.platform];
+  if (platform !== undefined && !PLATFORMS.includes(platform)) throw new TestHookError(`${HOOK_VARIABLES.platform} must be one of ${PLATFORMS.join(", ")}`);
+  const milliseconds = (name: string): number | undefined => {
+    const value = env[name];
+    if (value === undefined) return undefined;
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1) throw new TestHookError(`${name} must be a positive integer (milliseconds)`);
+    return n;
+  };
+  const vanishes = env[HOOK_VARIABLES.lockStatVanishes];
+  if (vanishes !== undefined && vanishes !== "1") throw new TestHookError(`${HOOK_VARIABLES.lockStatVanishes} must be 1`);
+  return {
+    platform: platform as NodeJS.Platform | undefined,
+    upstreamIdleMs: milliseconds(HOOK_VARIABLES.upstreamIdleMs),
+    lockTimeoutMs: milliseconds(HOOK_VARIABLES.lockTimeoutMs),
+    lockStatVanishes: vanishes === "1",
+  };
+}
+
 /** The production URL with its origin replaced by the seam origin (path and query kept). */
 function onOrigin(production: string, origin: string | undefined): string {
   if (origin === undefined) return production;
@@ -123,12 +178,16 @@ export type ContainerOptions = {
   readonly err: Writer;
   readonly stdin: Readable;
   readonly stdout: Writable;
-  /** Seams for hermetic tests; production uses the real network, browser and process signals. */
-  readonly transport?: HttpTransportPort;
-  readonly browser?: BrowserLauncherPort;
-  readonly shutdown?: ShutdownSignal;
-  readonly seams?: UpstreamSeams;
+  /** The network, browser, process signals and lock: main() passes the production ones (with the hermetic hooks). */
+  readonly transport: HttpTransportPort;
+  readonly browser: BrowserLauncherPort;
+  readonly shutdown: ShutdownSignal;
+  readonly lock: LockConfig;
+  readonly seams: UpstreamSeams;
 };
+
+export type LockConfig = { readonly options: FileLockOptions; readonly fs: LockFs };
+export const PRODUCTION_LOCK: LockConfig = { options: DEFAULT_LOCK_OPTIONS, fs: nodeFs };
 
 export function defaultHome(env: Readonly<Record<string, string | undefined>>): string {
   return env["INFERENCE_ROUTER_HOME"] ?? join(homedir(), ".local", "share", "inference-router");
@@ -136,8 +195,9 @@ export function defaultHome(env: Readonly<Record<string, string | undefined>>): 
 
 export type GraphOptions = {
   readonly home: string;
-  readonly transport?: HttpTransportPort;
-  readonly seams?: UpstreamSeams;
+  readonly transport: HttpTransportPort;
+  readonly lock: LockConfig;
+  readonly seams: UpstreamSeams;
 };
 
 /** The wired provider objects, typed by their abstractions (used by the CLI and by scripts/evidence/live). */
@@ -173,15 +233,15 @@ export type ProviderGraph = {
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
   const config = parseRouterConfig(await new YamlConfigFile(join(options.home, "router.yaml")).read());
   const enabled = enabledProviders(config);
-  const seams = options.seams ?? {};
+  const seams = options.seams;
   const clock = new SystemClock();
   const random = new CryptoRandom();
   const timer = new SystemTimer();
   const logger = new FileLogger(join(options.home, "logs", "router.log"), clock);
-  const transport = options.transport ?? new FetchTransport();
+  const transport = options.transport;
   const store = new FileCredentialStore(options.home);
   const state = new FileKeyValueStore(options.home);
-  const lock = new FileLock(options.home, clock, timer);
+  const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
 
   let claude: ClaudeGraph | undefined;
   if (enabled.includes("claude")) {
@@ -235,7 +295,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   const login = new LoginService(
     clients,
     new LoopbackCallbackServerFactory(),
-    options.browser ?? new SystemBrowserLauncher(),
+    options.browser,
     new TerminalManualCode(options.stdin, options.stdout),
     graph.store,
     graph.random,
@@ -262,7 +322,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       health,
       status: new DaemonStatusService(graph.transport, `http://${LOOPBACK_HOST}:${graph.config.port}`),
     },
-    { server, shutdown: options.shutdown ?? new ProcessShutdownSignal() },
+    { server, shutdown: options.shutdown },
     options.out,
     options.err,
   );
@@ -285,10 +345,12 @@ export async function runCli(argv: readonly string[], options: ContainerOptions)
 export async function main(argv: readonly string[]): Promise<number> {
   const err = (text: string) => void process.stderr.write(text);
   let seams: UpstreamSeams;
+  let hooks: TestHooks;
   try {
     seams = seamsFrom(process.env);
+    hooks = hooksFrom(process.env, seams);
   } catch (error) {
-    err(`error: ${(error as Error).message}\n`);
+    err(`error: ${errorMessage(error)}\n`);
     return 1;
   }
   return runCli(argv, {
@@ -298,5 +360,12 @@ export async function main(argv: readonly string[]): Promise<number> {
     stdin: process.stdin,
     stdout: process.stdout,
     seams,
+    transport: new FetchTransport(fetch as unknown as FetchFunction, hooks.upstreamIdleMs ?? UPSTREAM_IDLE_TIMEOUT_MS),
+    browser: new SystemBrowserLauncher(hooks.platform ?? process.platform),
+    shutdown: new ProcessShutdownSignal(),
+    lock: {
+      options: { ...DEFAULT_LOCK_OPTIONS, timeoutMs: hooks.lockTimeoutMs ?? DEFAULT_LOCK_OPTIONS.timeoutMs },
+      fs: hooks.lockStatVanishes ? vanishingStatFs(nodeFs) : nodeFs,
+    },
   });
 }

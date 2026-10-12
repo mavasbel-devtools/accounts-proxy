@@ -2,7 +2,7 @@
 // Holders in the same process are additionally queued in memory, so one process never contends with itself.
 // A lock file older than `staleMs` (a crashed holder) is removed and acquisition is retried; waiting longer than
 // `timeoutMs` fails with a named error instead of hanging.
-import * as nodeFs from "node:fs/promises";
+import type * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { LockPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { ClockPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -28,8 +28,8 @@ export class FileLock extends LockPort {
     private readonly directory: string,
     private readonly clock: ClockPort,
     private readonly timer: TimerPort,
-    private readonly options: FileLockOptions = DEFAULT_LOCK_OPTIONS,
-    private readonly fs: LockFs = nodeFs,
+    private readonly options: FileLockOptions,
+    private readonly fs: LockFs,
   ) {
     super();
   }
@@ -77,4 +77,13 @@ export class FileLock extends LockPort {
       return false;
     }
   }
+}
+
+/**
+ * Hermetic-test hook (INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES): every stat of a busy lock reports the file gone, as
+ * when its holder releases it between the failed create and the stale check.
+ */
+export function vanishingStatFs(fs: LockFs): LockFs {
+  const gone = (path: string) => Object.assign(new Error(`ENOENT: no such file or directory, stat '${path}'`), { code: "ENOENT" });
+  return { ...fs, stat: ((path: string) => Promise.reject(gone(path))) as LockFs["stat"] };
 }

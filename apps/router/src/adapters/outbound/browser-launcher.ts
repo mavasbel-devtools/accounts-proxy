@@ -18,7 +18,7 @@ export function browserCommand(platform: NodeJS.Platform, url: string): { comman
 
 export class SystemBrowserLauncher extends BrowserLauncherPort {
   constructor(
-    private readonly platform: NodeJS.Platform = process.platform,
+    private readonly platform: NodeJS.Platform,
     private readonly spawner: Spawner = spawn as unknown as Spawner,
   ) {
     super();

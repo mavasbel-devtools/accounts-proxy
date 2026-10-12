@@ -6,12 +6,13 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import type { HttpRequest } from "@inference-router/core/domain/wire.ts";
+import { UPSTREAM_IDLE_TIMEOUT_MS, type HttpRequest } from "@inference-router/core/domain/wire.ts";
 import { BrowserLauncherPort } from "@inference-router/core/ports/outbound/system.ts";
 import { ScriptedTransport, type ScriptedResponse } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
 import { ShutdownSignal } from "@inference-router/router/adapters/inbound/server.ts";
-import { buildCli, defaultHome, runCli, seamsFrom, type ContainerOptions } from "@inference-router/router/composition/container.ts";
+import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { buildCli, defaultHome, hooksFrom, PRODUCTION_LOCK, runCli, seamsFrom, TestHookError, type ContainerOptions } from "@inference-router/router/composition/container.ts";
 
 let home: string | undefined;
 afterEach(() => {
@@ -41,13 +42,36 @@ class ApprovingBrowser extends BrowserLauncherPort {
   }
 }
 
+class ManualSignal extends ShutdownSignal {
+  private fire!: (name: string) => void;
+  private readonly fired = new Promise<string>((resolve) => (this.fire = resolve));
+  wait() {
+    return this.fired;
+  }
+  trigger(name: string) {
+    this.fire(name);
+  }
+}
+
 function options(extra: Partial<ContainerOptions> = {}) {
   home = makeTemporary("router-container");
   const out: string[] = [];
   const err: string[] = [];
   const transport = new ScriptedTransport(google);
   const browser = new ApprovingBrowser();
-  const opts: ContainerOptions = { home, out: (t) => out.push(t), err: (t) => err.push(t), stdin: new PassThrough(), stdout: new PassThrough(), transport, browser, ...extra };
+  const opts: ContainerOptions = {
+    home,
+    out: (t) => out.push(t),
+    err: (t) => err.push(t),
+    stdin: new PassThrough(),
+    stdout: new PassThrough(),
+    transport,
+    browser,
+    shutdown: new ManualSignal(),
+    lock: PRODUCTION_LOCK,
+    seams: {},
+    ...extra,
+  };
   return { opts, out, err, transport, browser };
 }
 
@@ -135,16 +159,6 @@ describe("process entry (main/cli.ts)", () => {
   });
 });
 
-class ManualSignal extends ShutdownSignal {
-  private fire!: (name: string) => void;
-  private readonly fired = new Promise<string>((resolve) => (this.fire = resolve));
-  wait() {
-    return this.fired;
-  }
-  trigger(name: string) {
-    this.fire(name);
-  }
-}
 
 async function freePort(): Promise<number> {
   const probe = createServer();
@@ -180,8 +194,7 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       const origin = `http://127.0.0.1:${upstream.port}`;
       const seams = { antigravityApi: origin, googleOAuth: origin, claudeApi: origin, claudeOAuth: origin };
       const shutdown = new ManualSignal();
-      const { opts, out, err } = options({ seams, shutdown, transport: undefined as never });
-      const { transport: _scripted, ...real } = opts;
+      const { opts: real, out, err } = options({ seams, shutdown, transport: new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS) });
       const port = await freePort();
       writeFileSync(join(home!, "router.yaml"), `port: ${port}\n${BOTH}`);
       expect(await runCli(["login", "antigravity", "--timeout-seconds", "10"], real)).toBe(0);
@@ -243,6 +256,43 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       process.stderr.write = saved.ewrite;
       if (saved.env === undefined) delete process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"];
       else process.env["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH"] = saved.env;
+    }
+  });
+});
+
+describe("hermetic test hooks", () => {
+  const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1" };
+
+  test("absent: nothing changes; present: parsed", () => {
+    expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false });
+    const env = { INFERENCE_ROUTER_TEST_PLATFORM: "win32", INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS: "1000", INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS: "200", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1" };
+    expect(hooksFrom(env, seams)).toEqual({ platform: "win32", upstreamIdleMs: 1000, lockTimeoutMs: 200, lockStatVanishes: true });
+  });
+
+  test.each([
+    [{ INFERENCE_ROUTER_TEST_PLATFORM: "linux" }, { claudeApi: "http://127.0.0.1:1" }, "INFERENCE_ROUTER_TEST_PLATFORM need every INFERENCE_ROUTER_TEST_UPSTREAM_* seam (hermetic tests only)"],
+    [{ INFERENCE_ROUTER_TEST_PLATFORM: "aix" }, seams, "INFERENCE_ROUTER_TEST_PLATFORM must be one of linux, darwin, win32"],
+    [{ INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS: "1.5" }, seams, "INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS must be a positive integer (milliseconds)"],
+    [{ INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS: "0" }, seams, "INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS must be a positive integer (milliseconds)"],
+    [{ INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "yes" }, seams, "INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES must be 1"],
+  ])("%p is refused", (env, given, message) => {
+    expect(() => hooksFrom(env, given)).toThrow(new TestHookError(message));
+  });
+
+  test("main wires the vanishing-stat hook (a held lock then times out instead of being inspected)", async () => {
+    home = makeTemporary("router-hooks");
+    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_HOME: home };
+    const saved = Object.fromEntries(Object.keys(keys).map((k) => [k, process.env[k]]));
+    const write = process.stdout.write;
+    Object.assign(process.env, keys);
+    process.stdout.write = (() => true) as typeof process.stdout.write;
+    try {
+      const { main } = await import("@inference-router/router/composition/container.ts");
+      expect(await main(["help"])).toBe(0);
+    } finally {
+      process.stdout.write = write;
+      for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
     }
   });
 });

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
@@ -10,8 +11,8 @@ import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain
 import { FixedClock } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
 import { browserCommand, SystemBrowserLauncher, type Spawner } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
-import { FetchTransport, type FetchInit } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { DEFAULT_LOCK_OPTIONS, FileLock, LockTimeoutError } from "@inference-router/router/adapters/outbound/file-lock.ts";
+import { FetchTransport, type FetchFunction, type FetchInit } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
+import { DEFAULT_LOCK_OPTIONS, FileLock, LockTimeoutError, vanishingStatFs } from "@inference-router/router/adapters/outbound/file-lock.ts";
 import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore, StoreCorruptError, writeJsonAtomic } from "@inference-router/router/adapters/outbound/file-stores.ts";
 import { CallbackTimeoutError, LoopbackCallbackServer, LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
@@ -45,7 +46,7 @@ describe("file stores", () => {
     const root = join(temp(), "data");
     await new FileCredentialStore(root).save("antigravity", EMPTY_POOL);
     await new FileKeyValueStore(root).write("claude/device-id", "ab");
-    await new FileLock(root, new SystemClock(), new SystemTimer()).withLock("x", async () => {
+    await new FileLock(root, new SystemClock(), new SystemTimer(), DEFAULT_LOCK_OPTIONS, nodeFs).withLock("x", async () => {
       if (process.platform !== "win32") expect(statSync(join(root, "locks", "x.lock")).mode & 0o777).toBe(0o600);
     });
     new FileLogger(join(root, "logs", "router.log"), new FixedClock(0)).info("i");
@@ -110,8 +111,8 @@ describe("FileLock", () => {
     const root = temp();
     const clock = new SystemClock();
     const timer = new SystemTimer();
-    const a = new FileLock(root, clock, timer, { ...DEFAULT_LOCK_OPTIONS, pollMs: 5 });
-    const b = new FileLock(root, clock, timer, { ...DEFAULT_LOCK_OPTIONS, pollMs: 5 });
+    const a = new FileLock(root, clock, timer, { ...DEFAULT_LOCK_OPTIONS, pollMs: 5 }, nodeFs);
+    const b = new FileLock(root, clock, timer, { ...DEFAULT_LOCK_OPTIONS, pollMs: 5 }, nodeFs);
     const order: string[] = [];
     const job = (name: string) => async () => {
       order.push(`${name}+`);
@@ -124,7 +125,7 @@ describe("FileLock", () => {
   });
 
   test("a failing holder releases the lock", async () => {
-    const lock = new FileLock(temp(), new SystemClock(), new SystemTimer());
+    const lock = new FileLock(temp(), new SystemClock(), new SystemTimer(), DEFAULT_LOCK_OPTIONS, nodeFs);
     await expect(lock.withLock("x", () => Promise.reject(new Error("work failed")))).rejects.toThrow("work failed");
     expect(await lock.withLock("x", async () => "next")).toBe("next");
   });
@@ -136,12 +137,18 @@ describe("FileLock", () => {
     writeFileSync(file, "999 0\n");
     const old = new Date(Date.now() - 120_000);
     utimesSync(file, old, old);
-    const lock = new FileLock(root, new SystemClock(), new SystemTimer(), { staleMs: 60_000, timeoutMs: 200, pollMs: 5 });
+    const lock = new FileLock(root, new SystemClock(), new SystemTimer(), { staleMs: 60_000, timeoutMs: 200, pollMs: 5 }, nodeFs);
     expect(await lock.withLock("x", async () => "broke stale")).toBe("broke stale");
     writeFileSync(file, "999 0\n");
     const started = Date.now();
     await expect(lock.withLock("x", async () => "never")).rejects.toBeInstanceOf(LockTimeoutError);
     expect(Date.now() - started).toBeGreaterThanOrEqual(150);
+  });
+
+  test("the vanishing-stat hook reports every stat as ENOENT and keeps the other calls", async () => {
+    const fs = vanishingStatFs(nodeFs);
+    expect(fs.open).toBe(nodeFs.open);
+    expect(((await fs.stat("/x").catch((e: unknown) => e)) as NodeJS.ErrnoException).code).toBe("ENOENT");
   });
 
   test("a lock file that vanishes while being inspected is not stale; a non-EEXIST create error propagates", async () => {
@@ -209,7 +216,7 @@ describe("FetchTransport", () => {
       },
     });
     try {
-      const transport = new FetchTransport();
+      const transport = new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS);
       const res = await transport.send({ method: "POST", url: `http://127.0.0.1:${server.port}/echo`, headers: { "x-test": "1" }, body: "hi" });
       expect(res.status).toBe(200);
       expect(res.headers["x-mixed-case"]).toBe("v");
@@ -236,13 +243,13 @@ describe("FetchTransport", () => {
 
   test("the idle timeout is always explicit; the client signal and the deadline are combined", async () => {
     const inits: FetchInit[] = [];
-    const transport = new FetchTransport(async (_url, init) => {
+    const record = async (_url: string, init: FetchInit) => {
       inits.push(init);
       return new Response("ok");
-    });
-    await transport.send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {} });
+    };
+    await new FetchTransport(record, UPSTREAM_IDLE_TIMEOUT_MS).send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {} });
     const controller = new AbortController();
-    await transport.send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {}, idleTimeoutMs: 1234, signal: controller.signal });
+    await new FetchTransport(record, 1234).send({ method: "GET", url: "http://127.0.0.1:1/a", headers: {}, signal: controller.signal });
     expect(inits.map((i) => i.timeout)).toEqual([UPSTREAM_IDLE_TIMEOUT_MS, 1234]);
     expect(inits[0]!.signal!.aborted).toBe(false);
     controller.abort();
@@ -250,8 +257,8 @@ describe("FetchTransport", () => {
   });
 
   test("an idle timeout before or during the body is UpstreamTimeoutError (504); other failures propagate unchanged", async () => {
-    const before = new FetchTransport(async () => Promise.reject(timeoutError()));
-    const early = await before.send({ method: "GET", url: "http://api.example:8443/x", headers: {}, idleTimeoutMs: 600_000 }).catch((e: unknown) => e);
+    const before = new FetchTransport(async () => Promise.reject(timeoutError()), 600_000);
+    const early = await before.send({ method: "GET", url: "http://api.example:8443/x", headers: {} }).catch((e: unknown) => e);
     expect(early).toBeInstanceOf(UpstreamTimeoutError);
     expect((early as UpstreamTimeoutError).httpStatus).toBe(504);
     expect((early as UpstreamTimeoutError).message).toBe("upstream api.example:8443 sent nothing for 600000 ms");
@@ -267,13 +274,13 @@ describe("FetchTransport", () => {
               },
             }),
           ),
+        1_000,
       );
     const midStream = await failing(timeoutError()).send({ method: "GET", url: "http://h/x", headers: {} });
     await expect(readAll(midStream.body)).rejects.toBeInstanceOf(UpstreamTimeoutError);
     const reset = await failing(new Error("ECONNRESET")).send({ method: "GET", url: "http://h/x", headers: {} });
     await expect(readAll(reset.body)).rejects.toThrow("ECONNRESET");
-    await expect(new FetchTransport(async () => Promise.reject(new Error("refused"))).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toThrow("refused");
-    await expect(new FetchTransport(async () => Promise.reject("not an error")).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toBe("not an error");
+    await expect(new FetchTransport(async () => Promise.reject(new Error("refused")), 1).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toThrow("refused");
   });
 });
 
@@ -330,7 +337,6 @@ describe("SystemBrowserLauncher", () => {
     await expect(new SystemBrowserLauncher("linux", throws).open("https://a.example/")).rejects.toThrow("ENOENT");
     const missing: Spawner = () => ({ once: (event: string, listener: (error: Error) => void) => (event === "error" ? listener(new Error("spawn xdg-open ENOENT")) : undefined), unref: () => undefined }) as ReturnType<Spawner>;
     await expect(new SystemBrowserLauncher("linux", missing).open("https://a.example/")).rejects.toThrow("spawn xdg-open ENOENT");
-    expect(new SystemBrowserLauncher()).toBeInstanceOf(SystemBrowserLauncher);
   });
 });
 

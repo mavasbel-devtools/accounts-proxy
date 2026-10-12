@@ -1,10 +1,10 @@
 // Streaming HTTP client over the runtime's fetch (Bun 1.4.2). The response body is yielded chunk by chunk as it
 // arrives; header names are lower-cased. `timeoutMs` aborts the whole exchange, body read included; `signal` aborts
-// it when the router's client disconnects. The socket idle timeout is always explicit (`idleTimeoutMs`, default
+// it when the router's client disconnects. The socket idle timeout is always explicit (`idleMs`, production value
 // UPSTREAM_IDLE_TIMEOUT_MS) instead of Bun's own 5-minute default (bun-types globals.d.ts `timeout`, P0-LIVE L12).
 // A timeout (whole-exchange or idle, before or during the body) is an UpstreamTimeoutError (504).
 import { UpstreamTimeoutError } from "@inference-router/core/domain/errors.ts";
-import { UPSTREAM_IDLE_TIMEOUT_MS, type HttpRequest, type HttpResponse } from "@inference-router/core/domain/wire.ts";
+import type { HttpRequest, HttpResponse } from "@inference-router/core/domain/wire.ts";
 import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 
 /** The Bun-specific fetch option (`timeout`: socket idle deadline in ms) on top of the standard RequestInit. */
@@ -14,12 +14,16 @@ export type FetchFunction = (url: string, init: FetchInit) => Promise<Response>;
 const isTimeout = (error: unknown) => error instanceof Error && error.name === "TimeoutError";
 
 export class FetchTransport extends HttpTransportPort {
-  constructor(private readonly fetchImpl: FetchFunction = fetch as unknown as FetchFunction) {
+  constructor(
+    private readonly fetchImpl: FetchFunction,
+    /** Fail when the connection stays idle (no byte sent or received) this long (production: UPSTREAM_IDLE_TIMEOUT_MS). */
+    private readonly idleMs: number,
+  ) {
     super();
   }
 
   async send(request: HttpRequest): Promise<HttpResponse> {
-    const idleMs = request.idleTimeoutMs ?? UPSTREAM_IDLE_TIMEOUT_MS;
+    const idleMs = this.idleMs;
     const limitMs = request.timeoutMs ?? idleMs;
     const signals = [request.signal, request.timeoutMs !== undefined ? AbortSignal.timeout(request.timeoutMs) : undefined].filter((s) => s !== undefined);
     const timedOut = () => new UpstreamTimeoutError(new URL(request.url).host, limitMs);
