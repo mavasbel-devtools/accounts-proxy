@@ -10,6 +10,7 @@ import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
+import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -69,12 +70,7 @@ export class AntigravityProvider extends ProviderPort {
     if (method === "countTokens") throw new UnsupportedFeatureError(["countTokens"], `${this.id} (cloudcode-pa has no token-count endpoint)`);
     const descriptor = await this.catalog.descriptor(model);
     if (descriptor === undefined) throw new UnknownModelError(`${this.id}/${model}`);
-    let body: unknown;
-    try {
-      body = JSON.parse(request.body);
-    } catch {
-      throw new InvalidRequestError("request body is not valid JSON");
-    }
+    const body = parseJsonBody(request.body);
     const prepared = prepareGeminiRequest(body, descriptor, { lossy: request.lossy, signatures: await this.native.signatures() });
     const headers: Record<string, string> = {};
     if (prepared.dropped.length > 0) headers[DROPPED_HEADER] = prepared.dropped.join(",");

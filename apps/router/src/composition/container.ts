@@ -121,13 +121,19 @@ export type TestHooks = {
   readonly lockTimeoutMs: number | undefined;
   /** Every stat of a busy lock reports the file gone (the release race). */
   readonly lockStatVanishes: boolean;
+  /** The daemon binds UNASSIGNED_TEST_HOST, so listen fails with an error other than EADDRINUSE. */
+  readonly listenUnassigned: boolean;
 };
+
+/** RFC 5737 TEST-NET-1: documentation-only, never assigned to a host, so binding it always fails (EADDRNOTAVAIL). */
+export const UNASSIGNED_TEST_HOST = "192.0.2.1";
 
 const HOOK_VARIABLES = {
   platform: "INFERENCE_ROUTER_TEST_PLATFORM",
   upstreamIdleMs: "INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS",
   lockTimeoutMs: "INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS",
   lockStatVanishes: "INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES",
+  listenUnassigned: "INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED",
 } as const;
 const PLATFORMS: readonly string[] = ["linux", "darwin", "win32"];
 
@@ -154,13 +160,17 @@ export function hooksFrom(env: Readonly<Record<string, string | undefined>>, sea
     if (!Number.isInteger(n) || n < 1) throw new TestHookError(`${name} must be a positive integer (milliseconds)`);
     return n;
   };
-  const vanishes = env[HOOK_VARIABLES.lockStatVanishes];
-  if (vanishes !== undefined && vanishes !== "1") throw new TestHookError(`${HOOK_VARIABLES.lockStatVanishes} must be 1`);
+  const flag = (name: string): boolean => {
+    const value = env[name];
+    if (value !== undefined && value !== "1") throw new TestHookError(`${name} must be 1`);
+    return value === "1";
+  };
   return {
     platform: platform as NodeJS.Platform | undefined,
     upstreamIdleMs: milliseconds(HOOK_VARIABLES.upstreamIdleMs),
     lockTimeoutMs: milliseconds(HOOK_VARIABLES.lockTimeoutMs),
-    lockStatVanishes: vanishes === "1",
+    lockStatVanishes: flag(HOOK_VARIABLES.lockStatVanishes),
+    listenUnassigned: flag(HOOK_VARIABLES.listenUnassigned),
   };
 }
 
@@ -184,6 +194,8 @@ export type ContainerOptions = {
   readonly shutdown: ShutdownSignal;
   readonly lock: LockConfig;
   readonly seams: UpstreamSeams;
+  /** The daemon's bind address: LOOPBACK_HOST (UNASSIGNED_TEST_HOST only through the hermetic hook). */
+  readonly listenHost: string;
 };
 
 export type LockConfig = { readonly options: FileLockOptions; readonly fs: LockFs };
@@ -311,7 +323,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     { access, passthrough: new PassthroughService(providers, graph.config.aliases), models, health },
     errors,
   );
-  const server = new NodeHttpServer(handler, { host: LOOPBACK_HOST, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
+  const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
   const driver = new CliDriver(
     {
       login,
@@ -363,6 +375,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     transport: new FetchTransport(fetch as unknown as FetchFunction, hooks.upstreamIdleMs ?? UPSTREAM_IDLE_TIMEOUT_MS),
     browser: new SystemBrowserLauncher(hooks.platform ?? process.platform),
     shutdown: new ProcessShutdownSignal(),
+    listenHost: hooks.listenUnassigned ? UNASSIGNED_TEST_HOST : LOOPBACK_HOST,
     lock: {
       options: { ...DEFAULT_LOCK_OPTIONS, timeoutMs: hooks.lockTimeoutMs ?? DEFAULT_LOCK_OPTIONS.timeoutMs },
       fs: hooks.lockStatVanishes ? vanishingStatFs(nodeFs) : nodeFs,

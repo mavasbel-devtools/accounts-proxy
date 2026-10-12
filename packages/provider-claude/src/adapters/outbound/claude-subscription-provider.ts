@@ -11,6 +11,7 @@ import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
+import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -83,12 +84,7 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {
     const path = Object.hasOwn(NATIVE_PATHS, request.path) ? NATIVE_PATHS[request.path]! : undefined;
     if (path === undefined) throw new InvalidRequestError(`${this.id} has no native route ${request.path}`);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(request.body);
-    } catch {
-      throw new InvalidRequestError("request body is not valid JSON");
-    }
+    const parsed = parseJsonBody(request.body);
     if (!isJsonObject(parsed) || !Array.isArray(parsed["messages"])) {
       throw new InvalidRequestError("request body must be an object with a messages array");
     }

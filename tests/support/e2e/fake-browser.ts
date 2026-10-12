@@ -2,6 +2,7 @@
 // user chosen by INFERENCE_ROUTER_E2E_BROWSER_MODE:
 //   approve (default)  calls the loopback redirect with a code and the URL's own state
 //   deny               the user refuses: error=access_denied with a description
+//   deny-bare          the user refuses: error=access_denied without a description
 //   wrong-state        a callback whose state does not match (a forged redirect)
 //   no-code            a callback with the right state and no code
 //   wrong-path-twice   first a request to another path (404), then approves twice (the second gets 409)
@@ -18,6 +19,9 @@ const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => 
 switch (process.env["INFERENCE_ROUTER_E2E_BROWSER_MODE"] ?? "approve") {
   case "deny":
     await visit(`${redirect}?error=access_denied&error_description=${encodeURIComponent("The user denied access")}&state=${state}`);
+    break;
+  case "deny-bare":
+    await visit(`${redirect}?error=access_denied&state=${state}`);
     break;
   case "wrong-state":
     await visit(`${redirect}?code=e2e-code&state=forged`);

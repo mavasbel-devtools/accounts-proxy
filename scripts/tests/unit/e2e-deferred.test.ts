@@ -67,12 +67,13 @@ describe("applyDeferrals", () => {
     expect([[...unloaded.exemptFiles], unloaded.problems]).toEqual([[path], []]);
   });
 
-  test("a deferred branch (named by its source line) leaves the map; unknown, ambiguous or covered branch lines are stale", async () => {
-    const { path, data } = fixture({ live: 1, stream: 1, inner: 1, branch: [1, 0] });
+  test("a deferred branch (named by its source line) leaves the map with its line's unrun statements; unknown, ambiguous or covered branch lines are stale", async () => {
+    const { path, data } = fixture({ live: 0, stream: 0, inner: 1, branch: [1, 0] });
     const line = "yield (() => 2)();";
     const pristine = structuredClone(data);
     const result = applyDeferrals(createCoverageMap({ [path]: data }), [{ file: "src/p.ts", branches: [line], phase: "P5", reason: "r" }], root!);
-    expect((result.map.fileCoverageFor(path).toJSON() as FileCoverageData).branchMap).toEqual({});
+    const kept = result.map.fileCoverageFor(path).toJSON() as FileCoverageData;
+    expect([kept.branchMap, Object.keys(kept.statementMap), kept.s]).toEqual([{}, ["0"], { "0": 0 }]);
     expect([result.notes, result.problems]).toEqual([["deferred src/p.ts [branch `yield (() => 2)();`] (P5: r)"], []]);
     const again = () => createCoverageMap({ [path]: structuredClone(pristine) });
     expect(applyDeferrals(again(), [{ file: "src/p.ts", branches: ["nope"], phase: "P5", reason: "r" }], root!).problems).toEqual(["stale deferral: src/p.ts has 0 branches on a line `nope` (expected exactly one)"]);

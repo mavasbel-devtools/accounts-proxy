@@ -85,7 +85,8 @@ export class ReplayUpstreams {
   }
 
   start(): this {
-    this.server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: (req) => this.answer(req) });
+    // No server-side idle limit (Bun's default is 10 s): a scripted answer may stay silent longer than that.
+    this.server = Bun.serve({ port: 0, hostname: "127.0.0.1", idleTimeout: 0, fetch: (req) => this.answer(req) });
     return this;
   }
 

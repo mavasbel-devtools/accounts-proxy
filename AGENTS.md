@@ -82,8 +82,13 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
   a normal exit path (SIGTERM is handled), never a hard kill, or its coverage is lost. Upstreams are the replay server
   `tests/support/e2e/upstreams.ts`, answering only from committed captures; browser logins use the fake `xdg-open`.
   The built bundle is run separately (`apps/router/tests/e2e/bundle.test.ts`); it cannot carry coverage.
-  Measured state: e2e alone is below 100% ([risk R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)), so the
-  e2e gate fails until the user decides how R1 is resolved.
+  Code that only the translated cells (P5) reach is deferred by name in `scripts/gate/e2e-deferred.ts` (file, function
+  or branch, each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate). The list
+  must be empty when P5 is done ([R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)).
+- **Hermetic test hooks** (only with all four upstream seams set; validated; read only by `main()`):
+  `INFERENCE_ROUTER_TEST_PLATFORM`, `INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS`, `INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS`,
+  `INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES=1`, `INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
+  `192.0.2.1`, so listen fails). They exist only for paths no outside test can otherwise reach.
 - **Recursive deletes** in tests go only through `tests/support/temporary.ts#removeTemporary`, which refuses anything
   outside `os.tmpdir()`.
 - **`bun run verify`** runs typecheck → unit+component+arch coverage gate → build → e2e gate → merged gate → docs lint.

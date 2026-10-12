@@ -62,6 +62,11 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   route table, node:http server, CLI serve/token/status, seams); unit+component 100% (486 tests), merged 100%;
   e2e 21 tests pass but e2e-alone coverage 73%/55% → risk R1 report docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md,
   awaiting the user's decision.
+- 2026-10-11 User chose R1 option B. Done: P5-only code deferred by name (scripts/gate/e2e-deferred.ts, 11 entries,
+  must be empty after P5); unreachable branches removed; five hermetic hooks (only with all four seams); e2e grown to
+  177 tests. e2e alone 100%, unit+component 100% (497), merged 100%; `bun run verify` GATE: PASS. Fixed: Antigravity
+  signature-store write race (found by the 2001-signature e2e test). Next: P0-E4 (refresh-token test, may cost one
+  re-login), then P5.
 
 ## Progress map
 | Phase | State |
@@ -73,5 +78,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P2 | done |
 | P3 | done (providers, router CLI, alias imports) |
 | Linux migration + rename to `claude` | done 2026-10-10 |
-| P4 | built; e2e-alone coverage gate failing (R1, decision pending) |
+| P4 | done 2026-10-11; R1 resolved (option B), `bun run verify` GATE: PASS |
 | P5–P10 | not started |

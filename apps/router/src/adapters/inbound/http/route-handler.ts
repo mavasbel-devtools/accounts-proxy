@@ -7,6 +7,7 @@
 //   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (model URL-encoded or raw, up to the last ':')
 import { InternalError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
+import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import type { DialectCodecPort, EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
@@ -104,12 +105,7 @@ export class RouteHandler extends HttpHandler {
 
 /** The Anthropic body's `model` (required by the Messages and Count Tokens APIs, anthropic-messages.md). */
 function anthropicModel(body: string): string {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body);
-  } catch {
-    throw new InvalidRequestError("request body is not valid JSON");
-  }
+  const parsed = parseJsonBody(body);
   if (!isJsonObject(parsed) || typeof parsed.model !== "string") throw new InvalidRequestError("request body needs a string model (<provider>/<model> or an alias)");
   return parsed.model;
 }

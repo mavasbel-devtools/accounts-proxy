@@ -12,7 +12,8 @@ export type Deferral = {
   readonly file: string;
   /** Function or method names to defer (each must name exactly one function in the file). */
   readonly functions?: readonly string[];
-  /** Branches to defer, each named by the exact (trimmed) source line it starts on, which must hold exactly one. */
+  /** Branches to defer, each named by the exact (trimmed) source line it starts on, which must hold exactly one; the
+   * statements on that line no e2e process ran (the deferred arm, e.g. an if's `continue`) are deferred with it. */
   readonly branches?: readonly string[];
   readonly phase: "P5";
   readonly reason: string;
@@ -29,6 +30,8 @@ export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/provider-antigravity/src/domain/catalog.ts", functions: ["wireDefaultsFor"], phase: "P5", reason: `per-model defaults of the translated requests: ${TRANSLATED}` },
   { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
   { file: "packages/provider-claude/src/adapters/outbound/claude-subscription-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
+  { file: "packages/dialect-anthropic/src/adapters/inbound/anthropic-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
+  { file: "packages/dialect-openai/src/adapters/inbound/openai-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
   { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-runner.ts", branches: ["if (out === undefined) continue;"], phase: "P5", reason: `only the chat mapper skips content-free envelopes (the native mapper forwards every response): ${TRANSLATED}` },
 ];
 
@@ -93,8 +96,15 @@ export function applyDeferrals(map: CoverageMap, deferrals: readonly Deferral[],
         problems.push(`stale deferral: ${deferral.file} branch \`${text}\` is fully covered by e2e; remove it from scripts/gate/e2e-deferred.ts`);
         continue;
       }
+      const line = file.branchMap[id]!.loc.start.line;
       delete file.branchMap[id];
       delete file.b[id];
+      for (const [statement, loc] of Object.entries(file.statementMap)) {
+        if (loc.start.line === line && file.s[statement] === 0) {
+          delete file.statementMap[statement];
+          delete file.s[statement];
+        }
+      }
     }
     for (const name of deferral.functions ?? []) {
       const matches = Object.entries(file.fnMap).filter(([, f]) => nameOf(f, lines) === name);

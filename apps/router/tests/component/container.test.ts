@@ -70,6 +70,7 @@ function options(extra: Partial<ContainerOptions> = {}) {
     shutdown: new ManualSignal(),
     lock: PRODUCTION_LOCK,
     seams: {},
+    listenHost: "127.0.0.1",
     ...extra,
   };
   return { opts, out, err, transport, browser };
@@ -264,9 +265,9 @@ describe("hermetic test hooks", () => {
   const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1" };
 
   test("absent: nothing changes; present: parsed", () => {
-    expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false });
-    const env = { INFERENCE_ROUTER_TEST_PLATFORM: "win32", INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS: "1000", INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS: "200", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1" };
-    expect(hooksFrom(env, seams)).toEqual({ platform: "win32", upstreamIdleMs: 1000, lockTimeoutMs: 200, lockStatVanishes: true });
+    expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false, listenUnassigned: false });
+    const env = { INFERENCE_ROUTER_TEST_PLATFORM: "win32", INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS: "1000", INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS: "200", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1" };
+    expect(hooksFrom(env, seams)).toEqual({ platform: "win32", upstreamIdleMs: 1000, lockTimeoutMs: 200, lockStatVanishes: true, listenUnassigned: true });
   });
 
   test.each([
@@ -279,9 +280,9 @@ describe("hermetic test hooks", () => {
     expect(() => hooksFrom(env, given)).toThrow(new TestHookError(message));
   });
 
-  test("main wires the vanishing-stat hook (a held lock then times out instead of being inspected)", async () => {
+  test("main wires the vanishing-stat and unassigned-listen hooks", async () => {
     home = makeTemporary("router-hooks");
-    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_HOME: home };
+    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1", INFERENCE_ROUTER_HOME: home };
     const saved = Object.fromEntries(Object.keys(keys).map((k) => [k, process.env[k]]));
     const write = process.stdout.write;
     Object.assign(process.env, keys);

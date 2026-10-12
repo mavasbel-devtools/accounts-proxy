@@ -38,10 +38,14 @@ export async function makeHome(yaml: string = BOTH_PROVIDERS, port?: number): Pr
 
 export type Result = { readonly code: number; readonly stdout: string; readonly stderr: string };
 
+/** The child's environment: the test process's (without seams or hooks), the home's variables, then `extra`, where an
+ * empty value removes the variable (e.g. INFERENCE_ROUTER_HOME, to exercise the default data directory). */
 function environment(home: Home, extra: Record<string, string>): Record<string, string> {
   const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith("INFERENCE_ROUTER_TEST_UPSTREAM_")) env[k] = v;
-  return { ...env, INFERENCE_ROUTER_HOME: home.dir, INFERENCE_ROUTER_E2E_BROWSER_LOG: home.browserLog, PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith("INFERENCE_ROUTER_TEST_")) env[k] = v;
+  const merged: Record<string, string> = { ...env, INFERENCE_ROUTER_HOME: home.dir, INFERENCE_ROUTER_E2E_BROWSER_LOG: home.browserLog, PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
+  for (const [k, v] of Object.entries(merged)) if (v === "") delete merged[k];
+  return merged;
 }
 
 function spawnRouter(home: Home, argv: readonly string[], env: Record<string, string>) {

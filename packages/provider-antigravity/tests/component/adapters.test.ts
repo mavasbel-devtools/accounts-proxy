@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { activeAccount, EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
 import { TimerPort } from "@inference-router/core/ports/outbound/system.ts";
 import {
@@ -351,6 +352,40 @@ describe("AntigravityState", () => {
     arrayStored.values.set(SIGNATURES_KEY, ["x"]);
     expect(await new AntigravityState(arrayStored, new SequenceRandom()).signatures()).toEqual({});
     expect(await new AntigravityState(new MemoryKeyValueStore(), new SequenceRandom()).signatures()).toEqual({});
+  });
+
+  test("concurrent saves: one read, writes never overlap, a burst coalesces, the last write holds the newest map; a failed write rejects only its callers", async () => {
+    class SlowStore extends MemoryKeyValueStore {
+      reads = 0;
+      writes: unknown[] = [];
+      active = 0;
+      overlapped = false;
+      fail = false;
+      override async read(key: string) {
+        this.reads++;
+        await Bun.sleep(5);
+        return super.read(key);
+      }
+      override async write(key: string, value: JsonValue) {
+        this.overlapped ||= this.active > 0;
+        this.active++;
+        await Bun.sleep(5);
+        this.active--;
+        if (this.fail) throw new Error("disk full");
+        this.writes.push(value);
+        return super.write(key, value);
+      }
+    }
+    const kv = new SlowStore();
+    const state = new AntigravityState(kv, new SequenceRandom());
+    await Promise.all(Array.from({ length: 50 }, (_, i) => state.saveSignature(`c${i}`, `S${i}`)));
+    expect([kv.reads, kv.overlapped, kv.writes.length <= 3]).toEqual([1, false, true]);
+    expect(Object.keys(kv.values.get(SIGNATURES_KEY) as object)).toHaveLength(50);
+    kv.fail = true;
+    await expect(state.saveSignature("x", "X")).rejects.toThrow("disk full");
+    kv.fail = false;
+    await state.saveSignature("y", "Y");
+    expect(Object.keys(kv.values.get(SIGNATURES_KEY) as object)).toHaveLength(52);
   });
 });
 

@@ -172,6 +172,7 @@ Steps 1–7 are built; commits `3a1d131` (steps 1–5) and the e2e/docs commit a
 | 6 e2e | 21 tests (CLI, daemon with the three SDKs, bundle); measured e2e-alone coverage 73.16% statements / 54.64% branches — risk R1, [report](../reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) |
 | live | the real daemon on the router's own accounts answered every P4 route (Anthropic messages plain and streamed — Q6 live: no thinking, "OK"; Gemini generateContent and SSE; the three model lists, 46 models): [smoke](../reference/2026-10-11-11-47-p4-live-daemon-smoke.md) |
 | 7 Docs | README (daemon how-to, routes, headers, notes), AGENTS (laws, seams, e2e, pins), diagram, this record |
+| R1 | user chose option B (2026-10-11). Result: e2e alone 100% on every metric (177 tests, 11 named P5 deferrals), unit+component 100% (497 tests), merged 100%; `bun run verify` **GATE: PASS**. Two defects found and fixed (signature-store write race; replay server idle limit), five hermetic hooks: [resolution](../reference/2026-10-11-11-43-p4-e2e-coverage-r1.md#5-resolution-option-b-user-decision-2026-10-11-measured-2026-10-11) |
 
 Deviations, each stated in the code or docs where it applies:
 - e2e runs the source entry under the coverage preload; the bundle (plan §3) is smoke-tested separately because a bundle cannot carry per-source instrumentation.

@@ -172,7 +172,7 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run typecheck` | `tsc --noEmit` over every workspace, test and script |
 | `bun run test` | unit + component + architecture + support tests |
 | `bun run coverage` | same set under istanbul; fails below 100% lines/statements/functions/branches or if a source file is never loaded |
-| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (currently failing: [risk R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
+| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%, P5-only code deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
 | `bun run verify` | the full release gate |
 | `bun run fetch:specs` | re-fetch the official wire specs into `docs/reference/specs/` |
@@ -185,5 +185,5 @@ also inside one workspace. Relative imports are rejected by the architecture gat
   [E2 captures](docs/reference/2026-10-10-22-57-p0-live-e2-captures.md) ·
   [E3 fidelity matrix](docs/reference/2026-10-10-23-17-fidelity-matrix.md) ·
   [Q6 thinking probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md)
-- [P4 e2e coverage and risk R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) ·
+- [P4 e2e coverage, risk R1 and its resolution](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) ·
   [P4 live daemon smoke](docs/reference/2026-10-11-11-47-p4-live-daemon-smoke.md)
