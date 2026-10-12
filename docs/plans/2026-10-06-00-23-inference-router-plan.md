@@ -1,6 +1,19 @@
 # PLAN — `inference-router`: local multi-dialect LLM router built from the mavasbel auth plugins
 
-Date: 2026-10-06 00:23 · Status: **LOCKED v3.1 — APPROVED 2026-10-06 ("Confirmed. Could we proceed?") — IN EXECUTION**
+Date: 2026-10-06 00:23 · Status: **LOCKED v3.1 — APPROVED 2026-10-06 ("Confirmed. Could we proceed?") — IN EXECUTION**; extended by v4 (below).
+
+## Changes v3.1 → v4 (user, 2026-10-11)
+- **Plans are only extended, never replaced** (user rule 2026-10-11). Everything below this section stays as written;
+  parts no longer in force are marked "superseded by v4".
+- **Third provider `openai`** through OpenAI's official "Sign in with ChatGPT" plan usage flow (`api.openai.com/v1`,
+  Responses API), extracted from opencode's built-in `packages/core/src/plugin/provider/chatgpt.ts` @ `35ef229454`,
+  with opencode's request headers (`session-id`, `thread-id`, `x-client-request-id`).
+- **Fourth inbound dialect: OpenAI Responses** (`POST /openai/v1/responses`), moved forward from P10. Matrix v4 is
+  4 dialects × 3 providers = 12 cells (3 native, 9 translated); it supersedes §1.
+- **Phase H** (hardening of renewal and failure handling, gaps H1–H7) and **Phase P4.5** (the `openai` provider and the
+  native Responses cell) are inserted before P5.
+- Full detail, decisions H-Q1…H-Q6 and O1…O12, and the execution record:
+  [2026-10-11-22-11-completion-plan.md](2026-10-11-22-11-completion-plan.md).
 
 ## Changes v3 → v3.1 (user, 2026-10-10)
 - **Provider id `claude-subscription` → `claude`.** No alias is kept. `antigravity` is unchanged. Commands are `inference-router login claude` / `login antigravity`; the config key is `claude:`; model addresses are `claude/<model-id>`; files are `accounts-claude.json` and `state/claude/...`. The module `claude-subscription-provider.ts` and the class `ClaudeSubscriptionProvider` keep their names: they describe the credential source, not the id.
@@ -61,6 +74,8 @@ Research basis: `docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md`
 | Claude identity envelope: billing block, Agent-SDK identity block, `metadata.user_id` JSON, `context_management`, per-model betas | `RequestTransformService.ts:187-298`, `ModelEnvelope.ts:49-190` |
 
 ## 1. Provider × dialect matrix (v2)
+
+> Superseded by v4 (2026-10-11): 4 dialects × 3 providers, see [completion plan §4](2026-10-11-22-11-completion-plan.md).
 
 | Inbound dialect \ Provider | `claude` (Anthropic Messages upstream) | `antigravity` (Gemini envelope upstream; serves Gemini, Claude and gpt-oss models) |
 |---|---|---|
@@ -215,6 +230,8 @@ inference-router/                       (Bun workspace)
 - Full `verify`, a live re-run, and the hindsight initiative update.
 
 ### P10 — Optional (own plan each)
+
+> Superseded by v4 (2026-10-11): the Responses dialect moved into P4.5/P5; API-key providers stay excluded, so P10 is empty.
 - OpenAI Responses API dialect.
 - API-key providers (Anthropic key, OpenAI-compatible/Cheaper, Gemini key), with the `catalog` reconciliation package.
 
