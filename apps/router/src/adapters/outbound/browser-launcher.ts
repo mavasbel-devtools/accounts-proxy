@@ -3,7 +3,12 @@
 import { spawn, type SpawnOptions } from "node:child_process";
 import { BrowserLauncherPort } from "@inference-router/core/ports/outbound/system.ts";
 
-export type Spawner = (command: string, args: readonly string[], options: SpawnOptions) => { once(event: "error", listener: (error: Error) => void): unknown; unref(): void };
+export type SpawnedProcess = {
+  once(event: "spawn", listener: () => void): unknown;
+  once(event: "error", listener: (error: Error) => void): unknown;
+  unref(): void;
+};
+export type Spawner = (command: string, args: readonly string[], options: SpawnOptions) => SpawnedProcess;
 
 export function browserCommand(platform: NodeJS.Platform, url: string): { command: string; args: string[]; verbatim: boolean } {
   if (platform === "win32") return { command: "cmd", args: ["/c", "start", '""', `"${url}"`], verbatim: true };
@@ -22,15 +27,15 @@ export class SystemBrowserLauncher extends BrowserLauncherPort {
   open(url: string): Promise<void> {
     if (!/^https?:\/\//.test(url)) return Promise.reject(new Error(`refusing to open a non-http(s) URL: ${url}`));
     const { command, args, verbatim } = browserCommand(this.platform, url);
+    // Resolved once the opener is running, rejected when it cannot start (e.g. not installed: ENOENT). A synchronous
+    // throw of the spawner rejects the promise too (thrown inside the executor).
     return new Promise((resolve, reject) => {
-      try {
-        const child = this.spawner(command, args, { detached: true, stdio: "ignore", windowsVerbatimArguments: verbatim });
-        child.once("error", reject);
+      const child = this.spawner(command, args, { detached: true, stdio: "ignore", windowsVerbatimArguments: verbatim });
+      child.once("error", reject);
+      child.once("spawn", () => {
         child.unref();
         resolve();
-      } catch (error) {
-        reject(error);
-      }
+      });
     });
   }
 }

@@ -1,0 +1,47 @@
+{
+  "id": "e5-retrieve-user-quota-summary",
+  "target": "antigravity control plane",
+  "scenario": "retrieve-user-quota-summary",
+  "model": "-",
+  "capturedAt": "2026-10-12T00:35:40.417Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-encoding": "gzip",
+          "content-type": "application/json; charset=UTF-8",
+          "date": "Mon, 12 Oct 2026 00:35:43 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=413",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-cloudaicompanion-trace-id": "f94108f8eb21b38d",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 423.7,
+        "doneAtMs": 423.8,
+        "chunks": [
+          {
+            "atMs": 423.8,
+            "text": "{\n  \"groups\": [\n    {\n      \"buckets\": [\n        {\n          \"bucketId\": \"gemini-weekly\",\n          \"displayName\": \"Weekly Limit Remaining\",\n          \"window\": \"weekly\",\n          \"resetTime\": \"2026-10-17T17:43:49Z\",\n          \"description\": \"You have used some of your weekly limit, it will fully refresh in 5 days, 17 hours.\",\n          \"remainingFraction\": 0.9985346\n        },\n        {\n          \"bucketId\": \"gemini-5h\",\n          \"displayName\": \"Five Hour Limit Remaining\",\n          \"window\": \"5h\",\n          \"resetTime\": \"2026-10-12T05:35:43Z\",\n          \"remainingFraction\": 1\n        }\n      ],\n      \"displayName\": \"Gemini Models\",\n      \"description\": \"Models within this group: Gemini Flash, Gemini Pro\"\n    },\n    {\n      \"buckets\": [\n        {\n          \"bucketId\": \"3p-weekly\",\n          \"displayName\": \"Weekly Limit Remaining\",\n          \"window\": \"weekly\",\n          \"resetTime\": \"2026-10-19T00:35:43Z\",\n          \"remainingFraction\": 1\n        },\n        {\n          \"bucketId\": \"3p-5h\",\n          \"displayName\": \"Five Hour Limit Remaining\",\n          \"window\": \"5h\",\n          \"resetTime\": \"2026-10-12T05:35:43Z\",\n          \"remainingFraction\": 1\n        }\n      ],\n      \"displayName\": \"Claude and GPT models\",\n      \"description\": \"Models within this group: Claude Opus, Claude Sonnet, GPT-OSS\"\n    }\n  ],\n  \"description\": \"Within each group, models share a weekly limit and a 5-hour limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. The 5-hour limit smooths out aggregate demand to fairly distribute global capacity across all users, while your weekly limit is tied directly to your individual tier.\"\n}\n"
+          }
+        ]
+      }
+    }
+  ]
+}

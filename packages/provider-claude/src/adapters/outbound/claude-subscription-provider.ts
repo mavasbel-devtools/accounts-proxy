@@ -125,7 +125,7 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
       url: upstream.url,
       headers: upstream.headers,
       body: upstream.body,
-      ...(request.signal !== undefined ? { signal: request.signal } : {}),
+      signal: request.signal,
     });
     const headers = forwardedResponseHeaders(response.headers);
     if (dropped.length > 0) headers[DROPPED_HEADER] = dropped.join(",");

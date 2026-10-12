@@ -1,8 +1,37 @@
-// The `xdg-open` the e2e daemon finds first on PATH: it records the authorization URL it was given and behaves like
-// a user who approves — it calls the loopback redirect with a code and the URL's own state.
+// The `xdg-open` the e2e daemon finds first on PATH. It records the authorization URL it was given, then acts like the
+// user chosen by INFERENCE_ROUTER_E2E_BROWSER_MODE:
+//   approve (default)  calls the loopback redirect with a code and the URL's own state
+//   deny               the user refuses: error=access_denied with a description
+//   wrong-state        a callback whose state does not match (a forged redirect)
+//   no-code            a callback with the right state and no code
+//   wrong-path-twice   first a request to another path (404), then approves twice (the second gets 409)
+//   ignore             never calls back (the login times out)
 import { appendFileSync } from "node:fs";
 
 const authorize = new URL(process.argv[2]!);
 appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `${authorize.toString()}\n`);
 const params = authorize.searchParams;
-await fetch(`${params.get("redirect_uri")}?code=e2e-code&state=${encodeURIComponent(params.get("state")!)}`, { redirect: "manual" });
+const redirect = params.get("redirect_uri")!;
+const state = encodeURIComponent(params.get("state")!);
+const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
+
+switch (process.env["INFERENCE_ROUTER_E2E_BROWSER_MODE"] ?? "approve") {
+  case "deny":
+    await visit(`${redirect}?error=access_denied&error_description=${encodeURIComponent("The user denied access")}&state=${state}`);
+    break;
+  case "wrong-state":
+    await visit(`${redirect}?code=e2e-code&state=forged`);
+    break;
+  case "no-code":
+    await visit(`${redirect}?state=${state}`);
+    break;
+  case "wrong-path-twice": {
+    await visit(`${new URL(redirect).origin}/elsewhere`);
+    await Promise.all([visit(`${redirect}?code=e2e-code&state=${state}`), visit(`${redirect}?code=e2e-code&state=${state}`)]);
+    break;
+  }
+  case "ignore":
+    break;
+  default:
+    await visit(`${redirect}?code=e2e-code&state=${state}`);
+}

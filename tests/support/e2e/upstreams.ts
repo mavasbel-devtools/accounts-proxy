@@ -1,7 +1,8 @@
 // One loopback replay server standing in for every upstream host the daemon talks to; the composition root's
 // INFERENCE_ROUTER_TEST_UPSTREAM_* seams point all four origins here (paths are the production paths). Every response
 // body is a committed capture: the source plugins' fixtures (plugin-6292741, plugin-5c6f7c2) or the router's own
-// redacted P0-LIVE captures. Non-streamed Claude messages are assembled from a captured stream's events (no
+// redacted P0-LIVE captures (E2/E3 streams, E5 control plane: live catalog, quota, loadCodeAssist, fetchUserInfo).
+// Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
 // non-streamed capture exists); count_tokens answers the spec's example (anthropic-count-tokens.md Response 200).
 // Every request is recorded so tests can assert what the daemon really sent.
 import { readFileSync } from "node:fs";
@@ -133,13 +134,13 @@ export class ReplayUpstreams {
       case "/oauth2/v2/userinfo":
         return json({ email: "e2e@example.com" });
       case "/v1internal:loadCodeAssist":
-        return json({ cloudaicompanionProject: "e2e-project" });
+        return json(captured("e5/load-code-assist.json").body);
       case "/v1internal:fetchUserInfo":
-        return json({ userSettings: { email: "e2e@example.com" } });
+        return json(captured("e5/fetch-user-info.json").body);
       case "/v1internal:fetchAvailableModels":
-        return json(antigravityFixture("fetch-available-models.sample.json"));
+        return json(captured("e5/fetch-available-models.json").body);
       case "/v1internal:retrieveUserQuotaSummary":
-        return json(antigravityFixture("retrieve-user-quota-summary.sample.json"));
+        return json(captured("e5/retrieve-user-quota-summary.json").body);
       case "/v1internal:streamGenerateContent":
         return this.generate(parsed);
       default:
@@ -147,13 +148,13 @@ export class ReplayUpstreams {
     }
   }
 
-  /** cloudcode-pa stream: the P0-LIVE tool loop (first call, then the replay with the function response), a captured
-   * 400 for gemini-3.7-flash-tiered, otherwise the plugin's sample stream. */
+  /** cloudcode-pa stream: the P0-LIVE tool loop (first call, then the replay with the function response), the captured
+   * 400 of gpt-oss-120b-medium, otherwise the plugin's sample stream. */
   private generate(envelope: Record<string, unknown>): Response {
     const request = envelope["request"] as { contents: { parts: Record<string, unknown>[] }[]; tools?: unknown };
     const hasResponse = request.contents.some((c) => c.parts.some((p) => p["functionResponse"] !== undefined));
     const pick =
-      envelope["model"] === "gemini-3.7-flash-tiered"
+      envelope["model"] === "gpt-oss-120b-medium"
         ? captured("e3/t4-f2-document.json")
         : hasResponse
           ? captured("t2-s2-tool-loop.json", 1)

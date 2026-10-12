@@ -116,7 +116,7 @@ describe("daemon: Google GenAI SDK → antigravity (near-native cell)", () => {
     expect(response.text).toBe("Hello, world!");
     expect(String(response.candidates![0]!.finishReason)).toBe("STOP");
     const envelope = JSON.parse(lastUpstream("/v1internal:streamGenerateContent").body) as { model: string; project: string; requestId: string; request: Record<string, unknown> };
-    expect([envelope.model, envelope.project]).toEqual(["gemini-3.6-flash-low", "e2e-project"]);
+    expect([envelope.model, envelope.project]).toEqual(["gemini-3.6-flash-low", "<REDACTED:projectids>"]);
     expect(envelope.requestId).toMatch(/^agent\/[0-9a-f-]{36}\/\d+\/[0-9a-f-]{36}\/\d+$/);
     expect(typeof envelope.request["sessionId"]).toBe("string");
     expect(envelope.request["generationConfig"]).toEqual({ maxOutputTokens: 65536, thinkingConfig: { includeThoughts: true, thinkingBudget: 1000 } });
@@ -154,7 +154,7 @@ describe("daemon: Google GenAI SDK → antigravity (near-native cell)", () => {
     const lossy = await fetch(`${daemon.url}/gemini/v1beta/models/${GEMINI}:generateContent`, { method: "POST", headers: { "x-goog-api-key": token, "x-router-lossy": "1" }, body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }], safetySettings: [] }) });
     expect([lossy.status, lossy.headers.get("x-router-dropped")]).toEqual([200, "safetySettings"]);
     await lossy.text();
-    const upstream = await genai().models.generateContent({ model: "antigravity/gemini-3.7-flash-tiered", contents: "hi" }).catch((e: unknown) => e);
+    const upstream = await genai().models.generateContent({ model: "antigravity/gpt-oss-120b-medium", contents: "hi" }).catch((e: unknown) => e);
     expect([(upstream as ApiError).status, (upstream as ApiError).message.includes("Request contains an invalid argument.")]).toEqual([400, true]);
   });
 

@@ -94,7 +94,7 @@ describe("AntigravityApiClient", () => {
 
   test("stream: captured SSE decoded; request envelope, url and header allowlist", async () => {
     const { client, transport } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: [text("stream-generate.sample.sse").slice(0, 50), text("stream-generate.sample.sse").slice(50)] }));
-    const envelopes = await drain(client.streamGenerate(params, tokens));
+    const envelopes = await drain(client.streamGenerate(params, tokens, undefined));
     expect(envelopes).toHaveLength(3);
     expect(envelopes[2]!.response?.candidates?.[0]?.finishReason).toBe("STOP");
     const sent = transport.requests[0]!;
@@ -110,19 +110,19 @@ describe("AntigravityApiClient", () => {
   test("stream: [DONE] and empty data skipped, malformed events dropped with a warning, non-response payload throws", async () => {
     const body = 'data: [DONE]\n\ndata:\n\ndata: {bad\n\ndata: {"response":{}}\n\n';
     const { client, logger } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body }));
-    expect(await drain(client.streamGenerate(params, tokens))).toEqual([{ response: {} }]);
+    expect(await drain(client.streamGenerate(params, tokens, undefined))).toEqual([{ response: {} }]);
     expect(logger.lines[0]).toContain("dropping malformed SSE event");
     const bad = make(() => ({ status: 200, body: 'data: {"error":{"code":429}}\n\n' }));
-    await expect(drain(bad.client.streamGenerate(params, tokens))).rejects.toThrow("non-response payload");
+    await expect(drain(bad.client.streamGenerate(params, tokens, undefined))).rejects.toThrow("non-response payload");
   });
 
   test("stream: JSON transport (single, array with non-object, malformed) and HTTP failure", async () => {
-    expect(await drain(make(() => json({ response: { responseId: "1" } })).client.streamGenerate(params, tokens))).toEqual([{ response: { responseId: "1" } }]);
+    expect(await drain(make(() => json({ response: { responseId: "1" } })).client.streamGenerate(params, tokens, undefined))).toEqual([{ response: { responseId: "1" } }]);
     const arr = make(() => ({ status: 200, headers: { "content-type": "Application/JSON; charset=utf-8" }, body: '[{"response":{}}, 3]' }));
-    expect(await drain(arr.client.streamGenerate(params, tokens))).toEqual([{ response: {} }]);
+    expect(await drain(arr.client.streamGenerate(params, tokens, undefined))).toEqual([{ response: {} }]);
     expect(arr.logger.lines[0]).toContain("non-object JSON stream envelope (number)");
-    await expect(drain(make(() => ({ status: 200, headers: { "content-type": "application/json" }, body: "{oops" })).client.streamGenerate(params, tokens))).rejects.toThrow("malformed JSON stream body");
-    await expect(drain(make(() => ({ status: 400, body: "User location is not supported" })).client.streamGenerate(params, tokens))).rejects.toBeInstanceOf(UpstreamError);
+    await expect(drain(make(() => ({ status: 200, headers: { "content-type": "application/json" }, body: "{oops" })).client.streamGenerate(params, tokens, undefined))).rejects.toThrow("malformed JSON stream body");
+    await expect(drain(make(() => ({ status: 400, body: "User location is not supported" })).client.streamGenerate(params, tokens, undefined))).rejects.toBeInstanceOf(UpstreamError);
   });
 
   test("production hosts: daily host and Google userinfo", async () => {
@@ -546,7 +546,7 @@ describe("AntigravityNative", () => {
     const body = api.streams[0]!.body as Record<string, unknown>;
     expect(Object.keys(body)).toEqual(["contents", "labels", "generationConfig", "sessionId"]);
     expect(body["sessionId"]).toBe("-42");
-    await drain(native.generate({ model, prepared }));
+    await drain(native.generate({ model, prepared, signal: undefined }));
     expect(api.signals[1]).toBeUndefined();
     await Bun.sleep(1);
     expect(logger.lines.some((l) => l.includes("signature persist failed (Error: disk full)"))).toBe(true);

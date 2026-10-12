@@ -77,7 +77,7 @@ export class AntigravityProvider extends ProviderPort {
     const prepared = prepareGeminiRequest(body, descriptor, { lossy: request.lossy, signatures: await this.native.signatures() });
     const headers: Record<string, string> = {};
     if (prepared.dropped.length > 0) headers[DROPPED_HEADER] = prepared.dropped.join(",");
-    const responses = this.native.generate({ model: descriptor, prepared, ...(request.signal !== undefined ? { signal: request.signal } : {}) });
+    const responses = this.native.generate({ model: descriptor, prepared, signal: request.signal });
 
     if (method === "generateContent") {
       const all: GeminiResponse[] = [];

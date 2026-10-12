@@ -1,20 +1,15 @@
 // RFC 4648 §5 base64url without padding (as required by RFC 7636 PKCE), implemented without any runtime API.
+// The input is zero-filled to whole 3-byte groups and the output cut to ceil(4n/3) characters, which is exactly the
+// unpadded encoding of n bytes (one code path for every length).
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 export function base64UrlEncode(bytes: Uint8Array): string {
+  const groups = new Uint8Array(Math.ceil(bytes.length / 3) * 3);
+  groups.set(bytes);
   let out = "";
-  let i = 0;
-  for (; i + 2 < bytes.length; i += 3) {
-    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+  for (let i = 0; i < groups.length; i += 3) {
+    const n = (groups[i]! << 16) | (groups[i + 1]! << 8) | groups[i + 2]!;
     out += ALPHABET[(n >> 18) & 63]! + ALPHABET[(n >> 12) & 63]! + ALPHABET[(n >> 6) & 63]! + ALPHABET[n & 63]!;
   }
-  const rest = bytes.length - i;
-  if (rest === 1) {
-    const n = bytes[i]! << 16;
-    out += ALPHABET[(n >> 18) & 63]! + ALPHABET[(n >> 12) & 63]!;
-  } else if (rest === 2) {
-    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8);
-    out += ALPHABET[(n >> 18) & 63]! + ALPHABET[(n >> 12) & 63]! + ALPHABET[(n >> 6) & 63]!;
-  }
-  return out;
+  return out.slice(0, Math.ceil((bytes.length * 4) / 3));
 }

@@ -58,14 +58,14 @@ export class AntigravityApiClient extends AntigravityApiPort {
     return this.call("retrieveUserQuotaSummary", tokens, {});
   }
 
-  async *streamGenerate(params: GenerateParams, tokens: AuthTokens, signal?: AbortSignal): AsyncIterable<StreamEnvelope> {
+  async *streamGenerate(params: GenerateParams, tokens: AuthTokens, signal: AbortSignal | undefined): AsyncIterable<StreamEnvelope> {
     const res = await this.transport.send({
       method: "POST",
       url: `${this.host}/v1internal:streamGenerateContent?alt=sse`,
       // Header allowlist captured from the IDE's stream call (source G16).
       headers: { "content-type": "application/json", authorization: bearer(tokens), "user-agent": USER_AGENT, "accept-encoding": "gzip" },
       body: JSON.stringify(outerEnvelope(params)),
-      ...(signal !== undefined ? { signal } : {}),
+      signal,
     });
     if (!ok(res)) throw upstreamFailure(res.status, await readAll(res.body), res.headers["retry-after"]);
     if ((res.headers["content-type"] ?? "").toLowerCase().includes("application/json")) {

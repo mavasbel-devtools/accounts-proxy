@@ -48,8 +48,8 @@ export class LoginService extends LoginPort {
 
   private async loopbackLogin(client: OAuthClientPort, state: string, pkce: Pkce, options: LoginOptions): Promise<AccountCredential> {
     const server = this.servers.create();
+    const redirectUri = loopbackRedirectUri(await server.start(client.callbackPath), client.callbackPath);
     try {
-      const redirectUri = loopbackRedirectUri(await server.start(client.callbackPath), client.callbackPath);
       const url = client.authorizeUrl({ redirectUri, state, ...(pkce ? { codeChallenge: pkce.challenge } : {}) });
       options.onAuthorizeUrl(url);
       await this.browser.open(url).catch((error: unknown) => this.logger.warn(`${client.provider}: could not open the browser (${String(error)}); open the URL by hand`));

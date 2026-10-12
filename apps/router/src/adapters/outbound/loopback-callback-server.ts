@@ -17,7 +17,9 @@ export class LoopbackCallbackServer extends CallbackServerPort {
   private path = "/";
   private pending: ServerResponse | undefined;
   private received: CallbackQuery | undefined;
-  private waiter: ((query: CallbackQuery) => void) | undefined;
+  private settle!: (query: CallbackQuery) => void;
+  /** Settled by the first callback, whenever it arrives (before or after waitForCallback is called). */
+  private readonly callback = new Promise<CallbackQuery>((resolve) => (this.settle = resolve));
 
   async start(path: string): Promise<number> {
     this.path = path;
@@ -31,17 +33,11 @@ export class LoopbackCallbackServer extends CallbackServerPort {
   }
 
   waitForCallback(timeoutMs: number): Promise<CallbackQuery> {
-    if (this.received !== undefined) return Promise.resolve(this.received);
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.waiter = undefined;
-        reject(new CallbackTimeoutError(timeoutMs));
-      }, timeoutMs);
-      this.waiter = (query) => {
-        clearTimeout(timer);
-        resolve(query);
-      };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new CallbackTimeoutError(timeoutMs)), timeoutMs);
     });
+    return Promise.race([this.callback, timeout]).finally(() => clearTimeout(timer));
   }
 
   async finish(answer: { readonly redirect: string } | { readonly status: number; readonly text: string }): Promise<void> {
@@ -53,11 +49,10 @@ export class LoopbackCallbackServer extends CallbackServerPort {
     await new Promise<void>((resolve) => res.end("text" in answer ? answer.text : "", resolve));
   }
 
+  /** Only after a successful start (the caller starts before it can need a stop). */
   async stop(): Promise<void> {
     await this.finish({ status: 500, text: "Sign-in was interrupted. Close this tab and retry." });
-    const server = this.server;
-    this.server = undefined;
-    if (server === undefined) return;
+    const server = this.server!;
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
@@ -76,7 +71,7 @@ export class LoopbackCallbackServer extends CallbackServerPort {
     }
     this.received = Object.fromEntries(url.searchParams);
     this.pending = res;
-    this.waiter?.(this.received);
+    this.settle(this.received);
   }
 }
 

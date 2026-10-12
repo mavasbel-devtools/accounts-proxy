@@ -327,7 +327,7 @@ describe("SystemBrowserLauncher", () => {
     const calls: unknown[] = [];
     const ok: Spawner = (command, args, options) => {
       calls.push([command, args, options]);
-      return { once: () => undefined, unref: () => calls.push("unref") };
+      return { once: (event: string, listener: (error?: Error) => void) => (event === "spawn" ? listener() : undefined), unref: () => void calls.push("unref") } as ReturnType<Spawner>;
     };
     await new SystemBrowserLauncher("win32", ok).open("https://a.example/");
     expect(calls).toEqual([["cmd", ["/c", "start", '""', '"https://a.example/"'], { detached: true, stdio: "ignore", windowsVerbatimArguments: true }], "unref"]);
@@ -336,6 +336,8 @@ describe("SystemBrowserLauncher", () => {
       throw new Error("ENOENT");
     };
     await expect(new SystemBrowserLauncher("linux", throws).open("https://a.example/")).rejects.toThrow("ENOENT");
+    const missing: Spawner = () => ({ once: (event: string, listener: (error: Error) => void) => (event === "error" ? listener(new Error("spawn xdg-open ENOENT")) : undefined), unref: () => undefined }) as ReturnType<Spawner>;
+    await expect(new SystemBrowserLauncher("linux", missing).open("https://a.example/")).rejects.toThrow("spawn xdg-open ENOENT");
     expect(new SystemBrowserLauncher()).toBeInstanceOf(SystemBrowserLauncher);
   });
 });

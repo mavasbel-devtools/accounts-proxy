@@ -15,7 +15,7 @@ export type HttpRequest = {
    */
   readonly idleTimeoutMs?: number;
   /** Aborts the exchange, body read included (the client of a streamed response disconnected). */
-  readonly signal?: AbortSignal;
+  readonly signal?: AbortSignal | undefined;
 };
 
 /** 10 minutes: the captured Claude Code client sends `x-stainless-timeout: 600`; streams idle longer than this fail. */
@@ -52,7 +52,7 @@ export type RawRequest = {
   /** `x-router-lossy: 1`: features the target cannot carry are dropped and reported instead of rejected. */
   readonly lossy: boolean;
   /** Aborted when the client disconnects. */
-  readonly signal?: AbortSignal;
+  readonly signal?: AbortSignal | undefined;
 };
 
 /** Response header naming every feature or element removed from the request (AGENTS.md §4). */

@@ -157,12 +157,17 @@ describe("mapping onto the upstream request", () => {
     expect(request["toolConfig"]).toEqual({ functionCallingConfig: { mode: "VALIDATED" } });
   });
 
-  test("a model without catalog limits or budget (chat_20706): no maxOutputTokens injected, the client's kept, a budget refused, includeThoughts alone kept", async () => {
-    await call(hello, { model: "chat_20706" });
+  test("a model without catalog limits (gemini-3.1-flash-image): nothing injected, the client's maxOutputTokens kept", async () => {
+    await call(hello, { model: "gemini-3.1-flash-image" });
     expect(sent()["generationConfig"]).toEqual({});
-    await call({ ...hello, generationConfig: { maxOutputTokens: 70_000, thinkingConfig: { includeThoughts: true } } }, { model: "chat_20706" });
-    expect(sent()["generationConfig"]).toEqual({ maxOutputTokens: 70_000, thinkingConfig: { includeThoughts: true } });
-    const budget = await call({ ...hello, generationConfig: { thinkingConfig: { thinkingBudget: 2048 } } }, { model: "chat_20706" });
+    await call({ ...hello, generationConfig: { maxOutputTokens: 70_000 } }, { model: "gemini-3.1-flash-image" });
+    expect(sent()["generationConfig"]).toEqual({ maxOutputTokens: 70_000 });
+  });
+
+  test("a model without a catalog budget (claude-sonnet-5-5-low): a budget refused, includeThoughts alone kept", async () => {
+    await call({ ...hello, generationConfig: { thinkingConfig: { includeThoughts: true } } }, { model: "claude-sonnet-5-5-low" });
+    expect(sent()["generationConfig"]).toEqual({ maxOutputTokens: 128_000, thinkingConfig: { includeThoughts: true } });
+    const budget = await call({ ...hello, generationConfig: { thinkingConfig: { thinkingBudget: 2048 } } }, { model: "claude-sonnet-5-5-low" });
     expect(message(budget)).toBe("antigravity (Gemini cell) cannot carry: generationConfig.thinkingConfig.thinkingBudget:2048");
   });
 
@@ -195,7 +200,7 @@ describe("mapping onto the upstream request", () => {
   });
 
   test("law 6 applies only to Gemini models: an unsigned call to another model is kept", async () => {
-    const answer = await call({ contents: [user("q"), { role: "model", parts: [{ functionCall: { id: "t1", name: "f", args: {} } }] }, { role: "user", parts: [{ functionResponse: { id: "t1", name: "f", response: {} } }] }] }, { model: "chat_20706" });
+    const answer = await call({ contents: [user("q"), { role: "model", parts: [{ functionCall: { id: "t1", name: "f", args: {} } }] }, { role: "user", parts: [{ functionResponse: { id: "t1", name: "f", response: {} } }] }] }, { model: "claude-sonnet-5-5-low" });
     expect([answer.status, answer.headers.get("x-router-dropped")]).toEqual([200, null]);
   });
 

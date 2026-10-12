@@ -17,7 +17,7 @@ export abstract class AntigravityApiPort {
   abstract fetchUserInfo(tokens: AuthTokens): Promise<{ readonly email?: string }>;
   abstract fetchAvailableModels(tokens: AuthTokens): Promise<Record<string, unknown>>;
   abstract retrieveUserQuotaSummary(tokens: AuthTokens): Promise<Record<string, unknown>>;
-  abstract streamGenerate(params: GenerateParams, tokens: AuthTokens, signal?: AbortSignal): AsyncIterable<StreamEnvelope>;
+  abstract streamGenerate(params: GenerateParams, tokens: AuthTokens, signal: AbortSignal | undefined): AsyncIterable<StreamEnvelope>;
 }
 
 export abstract class AntigravityOAuthPort extends OAuthClientPort {
@@ -56,7 +56,7 @@ export type RunInput<T> = {
   readonly build: (snapshot: TrajectorySnapshot) => Readonly<Record<string, unknown>>;
   /** Maps each upstream envelope; `undefined` is neither yielded nor counted as output (retry safety). */
   readonly map: (envelope: StreamEnvelope) => T | undefined;
-  readonly signal?: AbortSignal;
+  readonly signal?: AbortSignal | undefined;
 };
 
 /**
@@ -68,7 +68,7 @@ export abstract class AntigravityRunnerPort {
   abstract run<T>(input: RunInput<T>): AsyncIterable<T>;
 }
 
-export type NativeInput = { readonly model: ModelDescriptor; readonly prepared: PreparedGemini; readonly signal?: AbortSignal };
+export type NativeInput = { readonly model: ModelDescriptor; readonly prepared: PreparedGemini; readonly signal: AbortSignal | undefined };
 
 /** The near-native Gemini cell: public GenerateContentResponse objects, thought signatures cached (law 6). */
 export abstract class AntigravityNativePort {

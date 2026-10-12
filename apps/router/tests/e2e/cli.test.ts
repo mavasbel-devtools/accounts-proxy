@@ -45,7 +45,7 @@ describe("inference-router CLI (e2e)", () => {
     expect(antigravity.stdout).toContain("signed in to antigravity as e2e@example.com (active account)");
     const claude = await run(["login", "claude", "--timeout-seconds", "30"]);
     expect([claude.code, claude.stderr]).toEqual([0, ""]);
-    const opened = readFileSync(home.browserLog, "utf8").trim().split("\n").map((u) => new URL(u));
+    const opened = readFileSync(home.browserLog, "utf8").trim().split("\n").filter((l) => l.startsWith("http")).map((u) => new URL(u));
     expect(opened.map((u) => u.pathname)).toEqual(["/o/oauth2/v2/auth", "/cai/oauth/authorize"]);
     expect(opened[0]!.searchParams.get("redirect_uri")).toMatch(/^http:\/\/localhost:\d+\/oauth-callback$/);
     expect(opened[1]!.searchParams.get("redirect_uri")).toMatch(/^http:\/\/localhost:\d+\/callback$/);

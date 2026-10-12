@@ -2,7 +2,7 @@
 // from `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=` (the carriers of the three official SDKs).
 // Each dialect prefix answers its own error shape; a path outside every prefix gets a plain JSON 404.
 //
-//   /anthropic  POST /v1/messages, POST /v1/messages/count_tokens (model from the body), GET /v1/models
+//   /anthropic  POST /v1/* (model from the body; claude serves /v1/messages and /v1/messages/count_tokens), GET /v1/models
 //   /openai     GET /v1/models; POST /v1/chat/completions → unsupported_feature (both OpenAI cells are P5)
 //   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (model URL-encoded or raw, up to the last ':')
 import { InternalError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
@@ -76,7 +76,8 @@ export class RouteHandler extends HttpHandler {
   private async route(codec: DialectCodecPort, request: InboundRequest, path: string): Promise<OutboundResponse> {
     const { method } = request;
     if (method === "GET" && ((codec.dialect !== "gemini" && path === "/v1/models") || (codec.dialect === "gemini" && path === "/v1beta/models"))) return this.models(codec);
-    if (method === "POST" && codec.dialect === "anthropic" && (path === "/v1/messages" || path === "/v1/messages/count_tokens")) {
+    // Every Anthropic POST under /v1/ goes to the model's provider, which serves its native paths and rejects others.
+    if (method === "POST" && codec.dialect === "anthropic" && path.startsWith("/v1/")) {
       const body = await request.readBody();
       return this.forward(codec, anthropicModel(body), request, path, body);
     }

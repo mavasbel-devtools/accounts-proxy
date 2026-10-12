@@ -158,6 +158,7 @@ export async function antigravityGenerate(
     for await (const envelope of live.antigravity.api.streamGenerate(
       { project, requestId: snapshot.requestId, body: build(snapshot), modelWireId: model.wireId },
       active.account.tokens,
+      undefined,
     )) {
       envelopes.push(envelope);
     }

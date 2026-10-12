@@ -45,7 +45,7 @@ export class AntigravityNative extends AntigravityNativePort {
         }
         return response;
       },
-      ...(input.signal !== undefined ? { signal: input.signal } : {}),
+      signal: input.signal,
     });
   }
 
