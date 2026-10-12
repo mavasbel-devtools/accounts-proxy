@@ -100,7 +100,6 @@ describe("trajectory parity", () => {
       ["claude-sonnet-5", "MODEL_X", [u("hi"), a("x"), t, a("y"), u("more")], false],
       ["gpt-oss-120b", "MODEL_G", [u("hi"), a("x"), t, a("y"), u("more"), a("z"), t], true],
       ["gemini-3.6-flash-low", "M", [u("other topic")], true],
-      ["gemini-3.6-flash-low", "M", [], true],
       ["gemini-3.6-flash-low", "M", [a("no user")], true],
     ];
     for (const [model, modelEnum, messages, complete] of steps) {
@@ -110,8 +109,6 @@ describe("trajectory parity", () => {
         reference.complete();
       }
     }
-    const fresh = new TrajectoryState({ sessionUuid: "s", sessionId: "1", uuid: ourUuid, now });
-    expect(() => fresh.complete()).not.toThrow();
   });
 });
 

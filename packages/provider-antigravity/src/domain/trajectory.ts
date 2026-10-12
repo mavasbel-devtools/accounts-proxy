@@ -49,9 +49,9 @@ function countOf(sig: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Same trajectory iff the same first user turn AND the list did not shrink. */
-export function isContinuation(prev: string | undefined, messages: readonly ChatMessage[]): boolean {
-  if (prev === undefined || messages.length === 0) return false;
+/** Same trajectory iff the same first user turn AND the list did not shrink (`messages` is never empty: the cells
+ * send at least one turn). */
+export function isContinuation(prev: string, messages: readonly ChatMessage[]): boolean {
   return prev.startsWith(`${firstUserText(messages)}|`) && messages.length >= countOf(prev);
 }
 
@@ -71,7 +71,7 @@ type Conversation = {
   usedNonGeminiModel: boolean;
   lastExecutionId: string | undefined;
   hasEmittedFirst: boolean;
-  lastSignature: string | undefined;
+  lastSignature: string;
 };
 
 export type TrajectoryDeps = {
@@ -117,7 +117,7 @@ export class TrajectoryState {
     } else if (family === "other") {
       conv.usedNonGeminiModel = true;
     }
-    const isToolContinuation = messages.length > 0 && messages[messages.length - 1]!.role === "tool";
+    const isToolContinuation = messages[messages.length - 1]!.role === "tool";
     if (conv.hasEmittedFirst) {
       if (!isToolContinuation) conv.lastExecutionId = this.deps.uuid();
     } else {
@@ -139,10 +139,10 @@ export class TrajectoryState {
     };
   }
 
-  /** After a completed stream: step counter +3 the first time, then +2. */
+  /** After a completed stream (always preceded by begin): step counter +3 the first time, then +2. */
   complete(): void {
-    if (this.conversation === undefined) return;
-    this.conversation.stepCounter += this.conversation.completedStreams === 0 ? 3 : 2;
-    this.conversation.completedStreams += 1;
+    const conv = this.conversation!;
+    conv.stepCounter += conv.completedStreams === 0 ? 3 : 2;
+    conv.completedStreams += 1;
   }
 }

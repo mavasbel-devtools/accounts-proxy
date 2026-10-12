@@ -10,8 +10,10 @@ import { join, relative } from "node:path";
 export type Deferral = {
   /** Repository-relative source path. */
   readonly file: string;
-  /** Function or method names to defer (each must name exactly one function in the file); absent = the whole file. */
+  /** Function or method names to defer (each must name exactly one function in the file). */
   readonly functions?: readonly string[];
+  /** Branches to defer, each named by the exact (trimmed) source line it starts on, which must hold exactly one. */
+  readonly branches?: readonly string[];
   readonly phase: "P5";
   readonly reason: string;
 };
@@ -27,6 +29,7 @@ export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/provider-antigravity/src/domain/catalog.ts", functions: ["wireDefaultsFor"], phase: "P5", reason: `per-model defaults of the translated requests: ${TRANSLATED}` },
   { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
   { file: "packages/provider-claude/src/adapters/outbound/claude-subscription-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
+  { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-runner.ts", branches: ["if (out === undefined) continue;"], phase: "P5", reason: `only the chat mapper skips content-free envelopes (the native mapper forwards every response): ${TRANSLATED}` },
 ];
 
 export type DeferralResult = { readonly map: CoverageMap; readonly exemptFiles: ReadonlySet<string>; readonly notes: readonly string[]; readonly problems: readonly string[] };
@@ -61,8 +64,9 @@ export function applyDeferrals(map: CoverageMap, deferrals: readonly Deferral[],
   const problems: string[] = [];
   for (const deferral of deferrals) {
     const absolute = byPath.get(deferral.file);
-    const label = `${deferral.file}${deferral.functions ? ` [${deferral.functions.join(", ")}]` : ""} (${deferral.phase}: ${deferral.reason})`;
-    if (deferral.functions === undefined) {
+    const parts = [...(deferral.functions ?? []), ...(deferral.branches ?? []).map((b) => `branch \`${b}\``)];
+    const label = `${deferral.file}${parts.length > 0 ? ` [${parts.join(", ")}]` : ""} (${deferral.phase}: ${deferral.reason})`;
+    if (parts.length === 0) {
       if (absolute !== undefined && fullyCovered(data[absolute]!, () => true)) {
         problems.push(`stale deferral: ${deferral.file} is fully covered by e2e; remove it from scripts/gate/e2e-deferred.ts`);
         continue;
@@ -78,7 +82,21 @@ export function applyDeferrals(map: CoverageMap, deferrals: readonly Deferral[],
     }
     const file = data[absolute]!;
     const lines = readFileSync(absolute, "utf8").split("\n");
-    for (const name of deferral.functions) {
+    for (const text of deferral.branches ?? []) {
+      const matches = Object.entries(file.branchMap).filter(([, b]) => lines[b.loc.start.line - 1]!.trim() === text);
+      if (matches.length !== 1) {
+        problems.push(`stale deferral: ${deferral.file} has ${matches.length} branches on a line \`${text}\` (expected exactly one)`);
+        continue;
+      }
+      const [id] = matches[0]!;
+      if (file.b[id]!.every((n) => n > 0)) {
+        problems.push(`stale deferral: ${deferral.file} branch \`${text}\` is fully covered by e2e; remove it from scripts/gate/e2e-deferred.ts`);
+        continue;
+      }
+      delete file.branchMap[id];
+      delete file.b[id];
+    }
+    for (const name of deferral.functions ?? []) {
       const matches = Object.entries(file.fnMap).filter(([, f]) => nameOf(f, lines) === name);
       if (matches.length !== 1) {
         problems.push(`stale deferral: ${deferral.file} has ${matches.length} functions named ${name} (expected exactly one)`);

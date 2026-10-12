@@ -106,8 +106,7 @@ describe("trajectory helpers", () => {
     expect(defaultFamilyOf("Gemini-3")).toBe("gemini");
     expect(defaultFamilyOf("claude-x")).toBe("claude");
     expect(defaultFamilyOf("gpt-oss")).toBe("other");
-    expect(isContinuation(undefined, [{ role: "user", text: "a" }])).toBe(false);
-    expect(isContinuation("a|1", [])).toBe(false);
+    expect(isContinuation("b|1", [{ role: "user", text: "a" }])).toBe(false);
     expect(isContinuation("a|x", [{ role: "user", text: "a" }])).toBe(true);
   });
 });
