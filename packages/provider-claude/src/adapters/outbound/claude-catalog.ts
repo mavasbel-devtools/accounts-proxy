@@ -59,7 +59,7 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
   }
 
   private async fetchLive(): Promise<CatalogModelEntry[]> {
-    const { accessToken } = await this.session.freshTokens();
+    const { accessToken } = (await this.session.active()).account;
     const out: CatalogModelEntry[] = [];
     let after: string | undefined;
     for (let page = 0; page < CATALOG.maxPages; page++) {

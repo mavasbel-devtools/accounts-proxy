@@ -3,7 +3,7 @@ import { EMPTY_POOL, type AccountPool } from "@inference-router/core/domain/acco
 import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import type { Headers, HttpRequest, HttpResponse } from "@inference-router/core/domain/wire.ts";
-import { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
+import { CredentialStorePort, type PoolChange } from "@inference-router/core/ports/outbound/credentials.ts";
 import { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
 import { ClockPort, LockPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
@@ -60,12 +60,25 @@ export class RecordingLock extends LockPort {
 
 export class MemoryCredentialStore extends CredentialStorePort {
   readonly pools = new Map<ProviderId, AccountPool>();
+  /** Writes performed by update (a change returning the same pool writes nothing). */
   saves = 0;
+  /** Runs inside update between the read and the change, to simulate another writer racing it. */
+  onUpdate: ((provider: ProviderId) => void) | undefined;
   async load(provider: ProviderId): Promise<AccountPool> {
     return this.pools.get(provider) ?? EMPTY_POOL;
   }
-  async save(provider: ProviderId, pool: AccountPool): Promise<void> {
-    this.saves += 1;
+  async update(provider: ProviderId, change: PoolChange): Promise<AccountPool> {
+    this.onUpdate?.(provider);
+    const pool = await this.load(provider);
+    const next = change(pool);
+    if (next !== pool) {
+      this.saves += 1;
+      this.pools.set(provider, next);
+    }
+    return next;
+  }
+  /** Test setup: store a pool directly (not a port method). */
+  seed(provider: ProviderId, pool: AccountPool): void {
     this.pools.set(provider, pool);
   }
 }

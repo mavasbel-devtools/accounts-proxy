@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
 import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
-import { fromAccount, hasScope, isExpired, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
+import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "@inference-router/provider-claude/domain/request-transform.ts";
 
@@ -42,11 +42,6 @@ describe("credential", () => {
       expect(() => tokensFromResponse(bad, 0)).toThrow("token endpoint response lacks access_token/expires_in");
     },
   );
-  test("isExpired uses the 120 s buffer", () => {
-    const t: ClaudeTokens = { accessToken: "a", expiresAt: 1_000_000, scopes: "" };
-    expect(isExpired(t, 1_000_000 - 120_001)).toBe(false);
-    expect(isExpired(t, 1_000_000 - 120_000)).toBe(true);
-  });
   test("hasScope", () => {
     expect(hasScope({ accessToken: "a", expiresAt: 0, scopes: "user:profile  user:inference" }, "user:inference")).toBe(true);
     expect(hasScope({ accessToken: "a", expiresAt: 0, scopes: "user:profile" }, "user:inference")).toBe(false);

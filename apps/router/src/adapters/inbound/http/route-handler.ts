@@ -5,7 +5,7 @@
 //   /anthropic  POST /v1/* (model from the body; claude serves /v1/messages and /v1/messages/count_tokens), GET /v1/models
 //   /openai     GET /v1/models; POST /v1/chat/completions → unsupported_feature (both OpenAI cells are P5)
 //   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (model URL-encoded or raw, up to the last ':')
-import { InternalError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import { asRouterError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, type RawRequest } from "@inference-router/core/domain/wire.ts";
@@ -68,9 +68,8 @@ export class RouteHandler extends HttpHandler {
       if (!(await this.ports.access.authorize(presentedToken(request.headers, request.query)))) throw new UnauthorizedError();
       return await this.route(codec, request, request.path.slice(codec.prefix.length));
     } catch (error) {
-      if (error instanceof RouterError) return encoded(codec.error(error));
-      this.errors.report(`${request.method} ${request.path} failed`, error);
-      return encoded(codec.error(new InternalError()));
+      if (!(error instanceof RouterError)) this.errors.report(`${request.method} ${request.path} failed`, error);
+      return encoded(codec.error(asRouterError(error)));
     }
   }
 

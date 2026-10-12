@@ -252,13 +252,15 @@ describe("upstream answers", () => {
     expect(((await call(hello)).body["error"] as { status: string }).status).toBe("UNAVAILABLE");
   });
 
-  test("a failure after the first byte ends the stream with a Google error element (router error and connection reset)", async () => {
+  test("a failure after the first byte ends the stream with a Google error element (connection reset: 502 upstream_unreachable)", async () => {
     const first = `data: ${JSON.stringify({ response: { candidates: [{ content: { role: "model", parts: [{ text: "partial" }] } }] } })}\n\n`;
     upstreams.script(GENERATE, () => brokenStream(first));
     const sse = await call(hello, { method: "streamGenerateContent", query: "?alt=sse" });
     const frames = sse.text.split("\r\n\r\n").filter((f) => f !== "");
     expect(frames).toHaveLength(2);
-    expect(JSON.parse(frames[1]!.slice(6))).toEqual({ error: { code: 500, message: "internal router error (details are in the router log)", status: "INTERNAL" } });
+    const element = JSON.parse(frames[1]!.slice(6)) as { error: { code: number; message: string; status: string } };
+    expect([element.error.code, element.error.status]).toEqual([502, "UNKNOWN"]);
+    expect(element.error.message).toStartWith(`upstream 127.0.0.1:${new URL(upstreams.origin).port} could not be reached: `);
     upstreams.script(GENERATE, () => new Response(`${first}data: {"error"`, { headers: { "content-type": "application/json" } }));
     expect((await call(hello, { method: "streamGenerateContent" })).status).toBe(502);
   });

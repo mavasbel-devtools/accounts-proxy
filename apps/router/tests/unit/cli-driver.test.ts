@@ -157,10 +157,11 @@ describe("CliDriver", () => {
     const c = cli([
       { provider: "antigravity", id: "a@x", label: "a@x", active: true },
       { provider: "antigravity", id: "b", label: "Bee", active: false },
+      { provider: "antigravity", id: "c", label: "c", active: false, needsLogin: "grant rejected" },
     ]);
     expect(await c.run("account", "list", "antigravity")).toBe(0);
     expect(await c.run("account", "use", "antigravity", "b")).toBe(0);
-    expect(c.out).toEqual(["* a@x\n", "  b  (Bee)\n", "active antigravity account: b\n"]);
+    expect(c.out).toEqual(["* a@x\n", "  b  (Bee)\n", "  c  [needs login: grant rejected]\n", "active antigravity account: b\n"]);
   });
 
   test("quota and models (all or one provider; limits only when known)", async () => {

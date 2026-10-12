@@ -1,5 +1,5 @@
 // Account administration and usage reporting (plan D4: the user picks the active account by hand).
-import { activeAccount, useAccount } from "@inference-router/core/domain/accounts.ts";
+import { activeAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderDisabledError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import type { UsageReport } from "@inference-router/core/domain/usage.ts";
@@ -15,14 +15,12 @@ export class AccountAdminService extends AccountAdminPort {
   async list(provider: ProviderId): Promise<readonly AccountSummary[]> {
     const pool = await this.store.load(provider);
     const active = activeAccount(pool)?.id;
-    return pool.accounts.map((a) => ({ provider, id: a.id, label: a.label, active: a.id === active }));
+    return pool.accounts.map((a) => summary(provider, a, a.id === active));
   }
 
   async use(provider: ProviderId, accountId: string): Promise<AccountSummary> {
-    const pool = useAccount(await this.store.load(provider), provider, accountId);
-    await this.store.save(provider, pool);
-    const chosen = activeAccount(pool)!;
-    return { provider, id: chosen.id, label: chosen.label, active: true };
+    const pool = await this.store.update(provider, (current) => useAccount(current, provider, accountId));
+    return summary(provider, activeAccount(pool)!, true);
   }
 }
 
@@ -40,4 +38,8 @@ export class UsageService extends UsagePort {
     if (reporter === undefined) throw new InvalidRequestError(`${provider} does not report usage`);
     return reporter.usage();
   }
+}
+
+function summary(provider: ProviderId, account: AccountCredential, active: boolean): AccountSummary {
+  return { provider, id: account.id, label: account.label, active, ...(account.needsLogin !== undefined ? { needsLogin: account.needsLogin } : {}) };
 }

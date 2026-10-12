@@ -2,7 +2,7 @@
 // Authorize parameters and order: official Claude Code 2.1.280 `_Ln`; exchange body: `M_r`; success redirect:
 // `handleSuccessRedirect` (P0-E6). Token request headers and refresh body: opencode-claude-auth @ 6292741
 // ClaudeOAuthClientAdapter (captured fixtures refresh-request.json / refresh-request-headers.json).
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { readAll } from "@inference-router/core/domain/wire.ts";
 import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
@@ -81,9 +81,12 @@ export class ClaudeOAuthClient extends ClaudeOAuthPort {
     return tokensFromResponse(response, this.clock.now(), tokens);
   }
 
-  /** 400/401 (RFC 6749 §5.2 invalid_grant / invalid_client) mean the login is no longer valid; other failures are upstream errors. */
+  /**
+   * 400/401 (RFC 6749 §5.2 invalid_grant / invalid_client) mean the login is no longer valid; other failures are upstream
+   * errors. The exchange is bounded by TOKEN_ENDPOINT_TIMEOUT_MS (plan v4 H-c).
+   */
   private async post(body: Record<string, string>): Promise<TokenEndpointResponse> {
-    const res = await this.transport.send({ method: "POST", url: this.endpoints.tokenUrl, headers: TOKEN_HEADERS, body: JSON.stringify(body) });
+    const res = await this.transport.send({ method: "POST", url: this.endpoints.tokenUrl, headers: TOKEN_HEADERS, body: JSON.stringify(body), timeoutMs: TOKEN_ENDPOINT_TIMEOUT_MS });
     const text = await readAll(res.body);
     if (res.status === 400 || res.status === 401) {
       throw new ProviderAuthRequiredError(this.provider, `token endpoint rejected the grant (HTTP ${res.status})`);

@@ -5,7 +5,7 @@
 // renders them in the Gemini shape); after it, a final error element closes the stream. Translated cells: P5.
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
-import { InternalError, InvalidRequestError, RouterError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { asRouterError, InvalidRequestError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
@@ -105,7 +105,7 @@ export class AntigravityProvider extends ProviderPort {
       }
     } catch (error) {
       this.logger.warn(`${this.id}: stream failed after the first byte (model=${model}): ${errorMessage(error)}`);
-      yield encoder.encode(frame(googleErrorEnvelope(error instanceof RouterError ? error : new InternalError())));
+      yield encoder.encode(frame(googleErrorEnvelope(asRouterError(error))));
     } finally {
       await rest.return?.();
     }

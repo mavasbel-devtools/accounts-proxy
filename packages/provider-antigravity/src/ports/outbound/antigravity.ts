@@ -1,6 +1,7 @@
 // Provider-internal abstractions. Every Antigravity adapter depends only on these and the core ports;
 // composition wires the implementations.
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
+import type { OAuthSessionPort, Session } from "@inference-router/core/ports/outbound/session.ts";
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import type { AntigravityAccount, AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
 import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
@@ -24,14 +25,10 @@ export abstract class AntigravityOAuthPort extends OAuthClientPort {
   abstract refresh(tokens: AuthTokens): Promise<AuthTokens>;
 }
 
-export type ActiveAccount = { readonly id: string; readonly account: AntigravityAccount };
+export type ActiveAccount = Session<AntigravityAccount>;
 
-export abstract class AntigravitySessionPort {
-  /** Active account with ≥ the expiry buffer left (proactive refresh on EVERY path, single-flight + locked). */
-  abstract active(): Promise<ActiveAccount>;
-  /** Rotate regardless of the stored expiry (recovery after an upstream 401), persisting the result. */
-  abstract forceRotate(current: ActiveAccount): Promise<ActiveAccount>;
-}
+/** Active account with ≥ the expiry buffer left (proactive refresh on EVERY path); forceRenew after an upstream 401. */
+export type AntigravitySessionPort = OAuthSessionPort<AntigravityAccount>;
 
 /** Durable per-install state: the int64 session id and the thoughtSignature cache (wire laws 6, sessionId law). */
 export abstract class AntigravityStatePort {

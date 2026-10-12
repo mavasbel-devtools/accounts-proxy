@@ -61,7 +61,7 @@ export class AntigravityRunner extends AntigravityRunnerPort {
       } catch (error) {
         if (isUnauthorized(error) && !rotatedOnce && !yielded && active.account.tokens.refreshToken !== undefined) {
           rotatedOnce = true;
-          pinned = await this.session.forceRotate(active);
+          pinned = await this.session.forceRenew(active);
           this.logger.info("antigravity: rotated token after 401");
           continue;
         }

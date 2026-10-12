@@ -251,9 +251,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const timer = new SystemTimer();
   const logger = new FileLogger(join(options.home, "logs", "router.log"), clock);
   const transport = options.transport;
-  const store = new FileCredentialStore(options.home);
   const state = new FileKeyValueStore(options.home);
   const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
+  const store = new FileCredentialStore(options.home, lock);
 
   let claude: ClaudeGraph | undefined;
   if (enabled.includes("claude")) {

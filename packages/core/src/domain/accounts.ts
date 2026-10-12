@@ -10,12 +10,31 @@ export type AccountCredential = {
   readonly label: string;
   /** Provider-specific credential payload (tokens, expiry, project ids …), owned by the provider adapter. */
   readonly data: JsonObject;
+  /**
+   * Set when the provider's token endpoint rejected the refresh grant (plan v4 H6): requests fail fast with
+   * provider_auth_required instead of calling the token endpoint again. A new login replaces the account and clears it.
+   */
+  readonly needsLogin?: string;
 };
 
 export type AccountPool = {
   readonly accounts: readonly AccountCredential[];
   readonly activeId?: string;
 };
+
+/**
+ * Deadline of one token-endpoint exchange (plan v4 H2/H-c). A renewal runs inside the cross-process renewal lock, and a
+ * lock older than its staleness (60 s, apps/router file-lock.ts DEFAULT_LOCK_OPTIONS.staleMs) is taken over by another
+ * process; the deadline must stay below that, or two processes could spend the same refresh token. Design value.
+ */
+export const TOKEN_ENDPOINT_TIMEOUT_MS = 30_000;
+
+/**
+ * After a transient renewal failure the stored, still valid token is used without a new renewal attempt for this long
+ * (plan v4 H4), so a failing or hanging token endpoint is not called (and waited for) by every request inside the
+ * expiry buffer. Design value.
+ */
+export const RENEWAL_RETRY_AFTER_MS = 30_000;
 
 export const EMPTY_POOL: AccountPool = { accounts: [] };
 
@@ -36,4 +55,9 @@ export function activeAccount(pool: AccountPool): AccountCredential | undefined 
 
 export function replaceAccount(pool: AccountPool, account: AccountCredential): AccountPool {
   return { ...pool, accounts: pool.accounts.map((a) => (a.id === account.id ? account : a)) };
+}
+
+/** Mark one stored account as needing a new login (H6). */
+export function markNeedsLogin(pool: AccountPool, account: AccountCredential, reason: string): AccountPool {
+  return replaceAccount(pool, { ...account, needsLogin: reason });
 }

@@ -3,10 +3,10 @@ import { mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "no
 import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import { EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
+import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@inference-router/core/domain/accounts.ts";
 import { ConfigError } from "@inference-router/core/domain/config.ts";
 import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
-import { UpstreamTimeoutError } from "@inference-router/core/domain/errors.ts";
+import { UpstreamTimeoutError, UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
 import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { FixedClock } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
@@ -25,26 +25,45 @@ afterEach(() => {
   dir = undefined;
 });
 const temp = () => (dir = makeTemporary("router-adapters"));
+const credentialStore = (root: string) => new FileCredentialStore(root, new FileLock(root, new SystemClock(), new SystemTimer(), { ...DEFAULT_LOCK_OPTIONS, pollMs: 2 }, nodeFs));
 
 describe("file stores", () => {
   test("credential pool: missing → empty; atomic round trip; 0600 where supported; BOM tolerated", async () => {
-    const store = new FileCredentialStore(temp());
+    const store = credentialStore(temp());
     expect(await store.load("antigravity")).toBe(EMPTY_POOL);
     const pool = upsertAccount(EMPTY_POOL, { provider: "antigravity", id: "me@x", label: "me@x", data: { tokens: { accessToken: "a" } } });
-    await store.save("antigravity", pool);
+    expect(await store.update("antigravity", () => pool)).toBe(pool);
     expect(await store.load("antigravity")).toEqual(pool);
     const path = store.path("antigravity");
     expect(path).toBe(join(dir!, "accounts-antigravity.json"));
     if (process.platform !== "win32") expect(statSync(path).mode & 0o777).toBe(0o600);
     writeFileSync(path, `\uFEFF${readFileSync(path, "utf8")}`);
     expect(await store.load("antigravity")).toEqual(pool);
-    await store.save("antigravity", { accounts: pool.accounts });
+    await store.update("antigravity", () => ({ accounts: pool.accounts }));
     expect(await store.load("antigravity")).toEqual({ accounts: pool.accounts });
+  });
+
+  test("update: a change returning the same pool writes nothing; needsLogin round-trips", async () => {
+    const store = credentialStore(temp());
+    expect(await store.update("claude", (p) => p)).toBe(EMPTY_POOL);
+    expect(() => statSync(store.path("claude"))).toThrow();
+    const marked = upsertAccount(EMPTY_POOL, { provider: "claude", id: "a", label: "a", data: {}, needsLogin: "grant rejected" });
+    await store.update("claude", () => marked);
+    expect(await store.load("claude")).toEqual(marked);
+  });
+
+  test("update holds across processes: concurrent read-change-writes from two stores lose nothing (H1)", async () => {
+    const root = temp();
+    const one = credentialStore(root);
+    const two = credentialStore(root);
+    const add = (id: string) => (p: typeof EMPTY_POOL) => ({ ...p, accounts: [...p.accounts, { provider: "claude" as const, id, label: id, data: {} }] });
+    await Promise.all(Array.from({ length: 10 }, (_, i) => (i % 2 === 0 ? one : two).update("claude", add(`acct-${i}`))));
+    expect((await one.load("claude")).accounts.map((a) => a.id).sort()).toEqual(Array.from({ length: 10 }, (_, i) => `acct-${i}`).sort());
   });
 
   test("directories the stores, the lock and the logger create are 0700; lock and log files are 0600", async () => {
     const root = join(temp(), "data");
-    await new FileCredentialStore(root).save("antigravity", EMPTY_POOL);
+    await credentialStore(root).update("antigravity", () => ({ accounts: [] }));
     await new FileKeyValueStore(root).write("claude/device-id", "ab");
     await new FileLock(root, new SystemClock(), new SystemTimer(), DEFAULT_LOCK_OPTIONS, nodeFs).withLock("x", async () => {
       if (process.platform !== "win32") expect(statSync(join(root, "locks", "x.lock")).mode & 0o777).toBe(0o600);
@@ -55,17 +74,17 @@ describe("file stores", () => {
     expect(statSync(join(root, "logs", "router.log")).mode & 0o777).toBe(0o600);
   });
 
-  test.each([["{oops"], ["[]"], ['{"accounts":{}}'], ['{"accounts":[{"provider":"claude","id":"x","label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}']])(
+  test.each([["{oops"], ["[]"], ['{"accounts":{}}'], ['{"accounts":[{"provider":"claude","id":"x","label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":"x","label":"x","data":{},"needsLogin":1}]}']])(
     "a corrupt pool %p is an error, never an empty pool",
     async (content) => {
-      const store = new FileCredentialStore(temp());
+      const store = credentialStore(temp());
       writeFileSync(store.path("antigravity"), content);
       await expect(store.load("antigravity")).rejects.toBeInstanceOf(StoreCorruptError);
     },
   );
 
   test("an unreadable path is not mistaken for a missing file", async () => {
-    const store = new FileCredentialStore(temp());
+    const store = credentialStore(temp());
     mkdirSync(store.path("antigravity"));
     await expect(store.load("antigravity")).rejects.toHaveProperty("code");
   });
@@ -256,7 +275,7 @@ describe("FetchTransport", () => {
     expect(inits[1]!.signal!.aborted).toBe(true);
   });
 
-  test("an idle timeout before or during the body is UpstreamTimeoutError (504); other failures propagate unchanged", async () => {
+  test("an idle timeout before or during the body is UpstreamTimeoutError (504); no HTTP answer is UpstreamUnreachableError (502)", async () => {
     const before = new FetchTransport(async () => Promise.reject(timeoutError()), 600_000);
     const early = await before.send({ method: "GET", url: "http://api.example:8443/x", headers: {} }).catch((e: unknown) => e);
     expect(early).toBeInstanceOf(UpstreamTimeoutError);
@@ -279,8 +298,33 @@ describe("FetchTransport", () => {
     const midStream = await failing(timeoutError()).send({ method: "GET", url: "http://h/x", headers: {} });
     await expect(readAll(midStream.body)).rejects.toBeInstanceOf(UpstreamTimeoutError);
     const reset = await failing(new Error("ECONNRESET")).send({ method: "GET", url: "http://h/x", headers: {} });
-    await expect(readAll(reset.body)).rejects.toThrow("ECONNRESET");
-    await expect(new FetchTransport(async () => Promise.reject(new Error("refused")), 1).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toThrow("refused");
+    await expect(readAll(reset.body)).rejects.toThrow(new UpstreamUnreachableError("h", "Error: ECONNRESET"));
+    await expect(new FetchTransport(async () => Promise.reject(new Error("refused")), 1).send({ method: "GET", url: "http://h:9/x", headers: {} })).rejects.toThrow(
+      new UpstreamUnreachableError("h:9", "Error: refused"),
+    );
+    await expect(new FetchTransport(async () => Promise.reject("odd"), 1).send({ method: "GET", url: "http://h/x", headers: {} })).rejects.toThrow(new UpstreamUnreachableError("h", "odd"));
+    const controller = new AbortController();
+    controller.abort();
+    const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
+    const gone = new FetchTransport(async () => Promise.reject(abort), 1).send({ method: "GET", url: "http://h/x", headers: {}, signal: controller.signal });
+    await expect(gone).rejects.toBe(abort);
+    const live = new AbortController();
+    await expect(new FetchTransport(async () => Promise.reject(new Error("refused")), 1).send({ method: "GET", url: "http://h/x", headers: {}, signal: live.signal })).rejects.toBeInstanceOf(UpstreamUnreachableError);
+  });
+
+  test("a closed local port is UpstreamUnreachableError, measured with the real fetch", async () => {
+    const server = Bun.serve({ port: 0, fetch: () => new Response("x") });
+    const port = server.port;
+    server.stop(true);
+    const error = await new FetchTransport(fetch as FetchFunction, 5_000).send({ method: "GET", url: `http://127.0.0.1:${port}/`, headers: {} }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(UpstreamUnreachableError);
+    expect((error as UpstreamUnreachableError).httpStatus).toBe(502);
+  });
+});
+
+describe("session invariants (plan v4 H-c)", () => {
+  test("a token-endpoint call ends before the renewal lock can be taken over as stale", () => {
+    expect(TOKEN_ENDPOINT_TIMEOUT_MS).toBeLessThan(DEFAULT_LOCK_OPTIONS.staleMs);
   });
 });
 

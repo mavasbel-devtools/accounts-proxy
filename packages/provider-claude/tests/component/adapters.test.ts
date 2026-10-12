@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { upsertAccount, EMPTY_POOL, activeAccount } from "@inference-router/core/domain/accounts.ts";
+import { upsertAccount, EMPTY_POOL, activeAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { readAll, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import {
@@ -25,7 +25,8 @@ import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@infer
 import { fromAccount, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { STATIC_CATALOG } from "@inference-router/provider-claude/domain/model-envelope.ts";
 import { capturedBetaHeader } from "@inference-router/provider-claude/domain/request-transform.ts";
-import { ClaudeCatalogPort, ClaudeOAuthPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { ClaudeCatalogPort, ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { OAuthSessionPort, type Session } from "@inference-router/core/ports/outbound/session.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -66,6 +67,7 @@ describe("ClaudeOAuthClient", () => {
       state: "st",
     });
     expect(Object.keys(JSON.parse(sent.body!))).toEqual(["grant_type", "code", "redirect_uri", "client_id", "code_verifier", "state"]);
+    expect(sent.timeoutMs).toBe(TOKEN_ENDPOINT_TIMEOUT_MS);
     expect(account.id).toBe("<account-email>");
     expect(fromAccount(account)?.expiresAt).toBe(1_000 + 28_800_000);
     expect(client.successRedirect(account)).toBe(CLAUDEAI_SUCCESS_URL);
@@ -147,14 +149,14 @@ describe("ClaudeSession", () => {
 
   test("a valid token is returned without locking or refreshing", async () => {
     const { session, oauth, lock } = setup(tokens(5_000_000));
-    expect((await session.freshTokens()).accessToken).toBe("at-5000000");
+    expect((await session.active()).account.accessToken).toBe("at-5000000");
     expect(oauth.calls).toBe(0);
     expect(lock.acquired).toEqual([]);
   });
 
   test("an expiring token is refreshed under the lock, saved under the same account id, and logged without secrets", async () => {
     const { session, store, lock, logger } = setup(tokens(1_000_000 + 60_000));
-    expect((await session.freshTokens()).accessToken).toBe("SECRET-rotated");
+    expect((await session.active()).account.accessToken).toBe("SECRET-rotated");
     expect(lock.acquired).toEqual([REFRESH_LOCK]);
     const saved = activeAccount(await store.load("claude"))!;
     expect(saved.id).toBe("me@x");
@@ -170,37 +172,45 @@ describe("ClaudeSession", () => {
       await gate;
       return { ...t, accessToken: "SECRET-rotated", expiresAt: 10_000_000 };
     });
-    const all = Promise.all([session.freshTokens(), session.freshTokens(), session.freshTokens()]);
+    const all = Promise.all([session.active(), session.active(), session.active()]);
     await Bun.sleep(5);
     release();
-    expect((await all).map((t) => t.accessToken)).toEqual(["SECRET-rotated", "SECRET-rotated", "SECRET-rotated"]);
+    expect((await all).map((t) => t.account.accessToken)).toEqual(["SECRET-rotated", "SECRET-rotated", "SECRET-rotated"]);
     expect(oauth.calls).toBe(1);
   });
 
   test("a refresh completed by another process while waiting for the lock is reused", async () => {
     const { session, store, oauth, lock } = setup(tokens(0));
-    lock.onAcquire = () => store.save("claude", upsertAccount(EMPTY_POOL, toAccount(tokens(9_000_000, { accessToken: "other-process" }))));
-    expect((await session.freshTokens()).accessToken).toBe("other-process");
+    lock.onAcquire = async () => store.seed("claude", upsertAccount(EMPTY_POOL, toAccount(tokens(9_000_000, { accessToken: "other-process" }))));
+    expect((await session.active()).account.accessToken).toBe("other-process");
     expect(oauth.calls).toBe(0);
   });
 
-  test("a failed refresh propagates and the next call retries", async () => {
+  test("a failed refresh of an expired token propagates and the next call retries", async () => {
     let fail = true;
     const { session, oauth } = setup(tokens(0), async (t) => {
-      if (fail) throw new ProviderAuthRequiredError("claude", "rejected");
+      if (fail) throw new UpstreamError("claude", 503, "busy");
       return { ...t, accessToken: "SECRET-rotated", expiresAt: 10_000_000 };
     });
-    await expect(session.freshTokens()).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+    await expect(session.active()).rejects.toBeInstanceOf(UpstreamError);
     fail = false;
-    expect((await session.freshTokens()).accessToken).toBe("SECRET-rotated");
+    expect((await session.active()).account.accessToken).toBe("SECRET-rotated");
     expect(oauth.calls).toBe(2);
   });
 
+  test("a rejected refresh grant marks the account needsLogin (H6)", async () => {
+    const { session, store, oauth } = setup(tokens(0), () => Promise.reject(new ProviderAuthRequiredError("claude", "token endpoint rejected the grant (HTTP 400)")));
+    await expect(session.active()).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+    expect(activeAccount(await store.load("claude"))!.needsLogin).toBe("token endpoint rejected the grant (HTTP 400)");
+    await expect(session.active()).rejects.toThrow("account me@x needs a new login");
+    expect(oauth.calls).toBe(1);
+  });
+
   test("no account / unreadable account", async () => {
-    await expect(setup(undefined).session.freshTokens()).rejects.toThrow("no active account");
+    await expect(setup(undefined).session.active()).rejects.toThrow("no active account");
     const { session, store } = setup(undefined);
     store.pools.set("claude", upsertAccount(EMPTY_POOL, { provider: "claude", id: "bad", label: "bad", data: { x: 1 } }));
-    await expect(session.freshTokens()).rejects.toThrow("stored credential of bad is unreadable");
+    await expect(session.active()).rejects.toThrow("stored credential of bad is unreadable");
   });
 });
 
@@ -229,11 +239,16 @@ describe("ClaudeIdentity", () => {
   });
 });
 
-class FixedSession extends ClaudeSessionPort {
+class FixedSession extends OAuthSessionPort<ClaudeTokens> {
   calls = 0;
-  async freshTokens(): Promise<ClaudeTokens> {
+  renewals = 0;
+  async active(): Promise<Session<ClaudeTokens>> {
     this.calls += 1;
-    return { accessToken: "at", expiresAt: 0, scopes: "", accountUuid: "acct-1" };
+    return { id: "acct", account: { accessToken: "at", refreshToken: "rt", expiresAt: 0, scopes: "", accountUuid: "acct-1" } };
+  }
+  async forceRenew(seen: Session<ClaudeTokens>): Promise<Session<ClaudeTokens>> {
+    this.renewals += 1;
+    return { id: seen.id, account: { ...seen.account, accessToken: "at-renewed" } };
   }
 }
 
@@ -353,6 +368,35 @@ describe("ClaudeSubscriptionProvider", () => {
     lossy,
   });
 
+  test("H-d: an upstream 401 renews the token once and resends the same request; a second 401 is returned as is", async () => {
+    const statuses = [401, 200];
+    const session = new FixedSession();
+    const transport = new ScriptedTransport(() => ({ ...ok({ ok: true }), status: statuses.shift() ?? 401 }));
+    const logger = new MemoryLogger();
+    const provider = new ClaudeSubscriptionProvider(session, new FixedCatalog(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), transport, new SequenceRandom(), logger, "http://up");
+    const first = await provider.passthrough("m", raw({ messages: [{ role: "user", content: "hi" }] }));
+    expect(first.status).toBe(200);
+    expect(session.renewals).toBe(1);
+    expect(transport.requests.map((r) => r.headers["authorization"])).toEqual(["Bearer at", "Bearer at-renewed"]);
+    expect(transport.requests[0]!.body).toBe(transport.requests[1]!.body);
+    expect(logger.lines).toContain("INFO claude: upstream 401; renewing the token once and retrying");
+    expect((await provider.passthrough("m", raw({ messages: [] }))).status).toBe(401);
+    expect(session.renewals).toBe(2);
+  });
+
+  test("an upstream 401 without a refresh token is returned without renewing", async () => {
+    class NoRefresh extends FixedSession {
+      override async active(): Promise<Session<ClaudeTokens>> {
+        return { id: "acct", account: { accessToken: "at", expiresAt: 0, scopes: "" } };
+      }
+    }
+    const session = new NoRefresh();
+    const transport = new ScriptedTransport(() => ({ ...ok({}), status: 401 }));
+    const provider = new ClaudeSubscriptionProvider(session, new FixedCatalog(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), transport, new SequenceRandom(), new MemoryLogger(), "http://up");
+    expect((await provider.passthrough("m", raw({ messages: [] }))).status).toBe(401);
+    expect([session.renewals, transport.requests.length]).toEqual([0, 1]);
+  });
+
   test("identity and capabilities", async () => {
     const { provider } = make(ok({}));
     expect(provider.id).toBe("claude");
@@ -466,9 +510,9 @@ describe("ClaudeSubscriptionProvider", () => {
   });
 
   test("an account without uuid sends an empty account_uuid (source behaviour)", async () => {
-    class NoUuid extends ClaudeSessionPort {
-      async freshTokens(): Promise<ClaudeTokens> {
-        return { accessToken: "at", expiresAt: 0, scopes: "" };
+    class NoUuid extends FixedSession {
+      override async active(): Promise<Session<ClaudeTokens>> {
+        return { id: "acct", account: { accessToken: "at", expiresAt: 0, scopes: "" } };
       }
     }
     const transport = new ScriptedTransport(() => ok({}));

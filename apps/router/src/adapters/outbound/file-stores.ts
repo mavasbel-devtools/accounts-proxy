@@ -13,9 +13,10 @@ import { dirname, join } from "node:path";
 import { EMPTY_POOL, type AccountCredential, type AccountPool } from "@inference-router/core/domain/accounts.ts";
 import { isJsonObject, type JsonValue } from "@inference-router/core/domain/json.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
+import { CredentialStorePort, type PoolChange } from "@inference-router/core/ports/outbound/credentials.ts";
 import { RouterTokenStorePort } from "@inference-router/core/ports/outbound/router-token.ts";
 import { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
+import type { LockPort } from "@inference-router/core/ports/outbound/system.ts";
 
 export const PRIVATE_DIRECTORY_MODE = 0o700;
 export const PRIVATE_FILE_MODE = 0o600;
@@ -58,11 +59,18 @@ export async function writeJsonAtomic(path: string, value: unknown, mode: number
 }
 
 function isAccount(value: unknown, provider: ProviderId): value is AccountCredential {
-  return isJsonObject(value) && value.provider === provider && typeof value.id === "string" && typeof value.label === "string" && isJsonObject(value.data);
+  return isJsonObject(value) && value.provider === provider && typeof value.id === "string" && typeof value.label === "string" && isJsonObject(value.data) && (value.needsLogin === undefined || typeof value.needsLogin === "string");
 }
 
+/**
+ * Account pools, one file per provider. `update` holds the `accounts-<provider>` lock across processes for the whole
+ * read → change → write (plan v4 H1); a change that returns the pool it was given writes nothing.
+ */
 export class FileCredentialStore extends CredentialStorePort {
-  constructor(private readonly directory: string) {
+  constructor(
+    private readonly directory: string,
+    private readonly lock: LockPort,
+  ) {
     super();
   }
 
@@ -81,8 +89,13 @@ export class FileCredentialStore extends CredentialStorePort {
     return typeof value.activeId === "string" ? { accounts, activeId: value.activeId } : { accounts };
   }
 
-  save(provider: ProviderId, pool: AccountPool): Promise<void> {
-    return writeJsonAtomic(this.path(provider), pool, PRIVATE_FILE_MODE);
+  update(provider: ProviderId, change: PoolChange): Promise<AccountPool> {
+    return this.lock.withLock(`accounts-${provider}`, async () => {
+      const pool = await this.load(provider);
+      const next = change(pool);
+      if (next !== pool) await writeJsonAtomic(this.path(provider), next, PRIVATE_FILE_MODE);
+      return next;
+    });
   }
 }
 

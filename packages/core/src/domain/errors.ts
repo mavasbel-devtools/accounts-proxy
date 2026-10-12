@@ -15,6 +15,7 @@
 //   │   ├── ProviderDisabledError     503 provider_disabled
 //   │   ├── QuotaExhaustedError       429 quota_exhausted
 //   │   ├── UpstreamTimeoutError      504 upstream_timeout
+//   │   ├── UpstreamUnreachableError  502 upstream_unreachable (DNS, refused, reset: no HTTP answer at all)
 //   │   └── UpstreamError             <upstream status> upstream_error
 //   └── InternalError             500 internal_error (a defect; the message is logged, the client sees a fixed text)
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
@@ -31,6 +32,7 @@ export type RouterErrorCode =
   | "provider_disabled"
   | "quota_exhausted"
   | "upstream_timeout"
+  | "upstream_unreachable"
   | "upstream_error"
   | "internal_error";
 
@@ -125,6 +127,17 @@ export class UpstreamTimeoutError extends ProviderError {
   }
 }
 
+export class UpstreamUnreachableError extends ProviderError {
+  readonly code = "upstream_unreachable";
+  readonly httpStatus = 502;
+  constructor(
+    readonly host: string,
+    detail: string,
+  ) {
+    super(`upstream ${host} could not be reached: ${detail}`);
+  }
+}
+
 export class InternalError extends RouterError {
   readonly code = "internal_error";
   readonly httpStatus = 500;
@@ -138,7 +151,7 @@ export class ProviderAuthRequiredError extends ProviderError {
   readonly httpStatus = 401;
   constructor(
     readonly provider: ProviderId,
-    detail: string,
+    readonly detail: string,
   ) {
     super(`${provider}: ${detail}; run \`inference-router login ${provider}\``);
   }
@@ -178,4 +191,17 @@ export class UpstreamError extends ProviderError {
     super(`${provider} upstream HTTP ${httpStatus}: ${body.slice(0, 500)}`);
     this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+/**
+ * A failure that may pass on its own: no HTTP answer (timeout, unreachable) or an upstream 5xx. A token renewal that
+ * fails this way does not invalidate a stored access token that has not expired yet (plan v4 H4).
+ */
+export function isTransientUpstream(error: unknown): boolean {
+  return error instanceof UpstreamTimeoutError || error instanceof UpstreamUnreachableError || (error instanceof UpstreamError && error.httpStatus >= 500);
+}
+
+/** The error a client is shown: a RouterError as it is, anything else (a defect) as the fixed InternalError. */
+export function asRouterError(error: unknown): RouterError {
+  return error instanceof RouterError ? error : new InternalError();
 }

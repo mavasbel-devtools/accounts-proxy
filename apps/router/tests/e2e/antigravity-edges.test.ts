@@ -405,14 +405,16 @@ describe("refresh lock", () => {
     home = await makeHome();
     await login();
     let session = await serve({ INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS: "300" });
-    setTokens({ expiresAt: 0 });
+    // An expiring (still valid) token whose renewal fails with a 5xx is used as stored (H4): nothing is written, so the
+    // only file the locks directory still needs is the release of the renewal lock, which the chmod makes fail.
+    setTokens({ expiresAt: Date.now() + 60_000 });
     let release: () => void = () => undefined;
     const refreshing = new Promise<void>((resolve) => (release = resolve));
     let entered = false;
     upstreams.script("/token", async () => {
       entered = true;
       await refreshing;
-      return googleToken()();
+      return jsonResponse({ error: "backend" }, 503);
     });
     const slow = generate(session, hello);
     await until(() => entered, "the refresh");

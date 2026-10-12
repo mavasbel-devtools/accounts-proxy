@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, upsertAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { EMPTY_POOL, upsertAccount, type AccountCredential, markNeedsLogin } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
@@ -185,6 +185,8 @@ describe("AccountAdminService and UsageService", () => {
     expect((await store.load("antigravity")).activeId).toBe("a");
     await expect(admin.use("antigravity", "zz")).rejects.toBeInstanceOf(UnknownAccountError);
     expect(await admin.list("claude")).toEqual([]);
+    store.seed("antigravity", markNeedsLogin(await store.load("antigravity"), credential("b"), "grant rejected"));
+    expect((await admin.list("antigravity"))[1]).toEqual({ provider: "antigravity", id: "b", label: "b", active: false, needsLogin: "grant rejected" });
   });
 
   test("usage: disabled, enabled without a reporter, and reported", async () => {

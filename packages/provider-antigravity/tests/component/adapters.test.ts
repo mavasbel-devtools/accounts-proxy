@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { activeAccount, EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
+import { activeAccount, EMPTY_POOL, upsertAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
@@ -33,7 +33,8 @@ import { toModelDescriptors } from "@inference-router/provider-antigravity/domai
 import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { prepareGeminiRequest } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
-import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravitySessionPort, AntigravityStatePort, type ActiveAccount } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
+import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravityStatePort, type ActiveAccount } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -226,6 +227,7 @@ describe("GoogleOAuthClient", () => {
     const { client, transport } = make(() => json({ access_token: "a2", expires_in: 10 }));
     expect(await client.refresh(tokens)).toEqual({ accessToken: "a2", expiresAt: 11_000 });
     expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+    expect(transport.requests[0]!.timeoutMs).toBe(TOKEN_ENDPOINT_TIMEOUT_MS);
     expect(await make(() => json({ access_token: "a2", refresh_token: "rt2", expires_in: 10 })).client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt2", expiresAt: 11_000 });
     await expect(client.refresh({ accessToken: "a", expiresAt: 0 })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
   });
@@ -304,17 +306,17 @@ describe("AntigravitySession", () => {
     expect((await all).map((a) => a.account.tokens.accessToken)).toEqual(["SECRET-new", "SECRET-new"]);
     expect(slow.calls).toBe(1);
     const other = setup(acct({ tokens: { accessToken: "old", refreshToken: "r", expiresAt: 0 } }));
-    other.lock.onAcquire = () => other.store.save("antigravity", upsertAccount(EMPTY_POOL, toCredential(acct({ tokens: { accessToken: "by-other", expiresAt: 9_000_000_000_000 } }), "me@x")));
+    other.lock.onAcquire = async () => other.store.seed("antigravity", upsertAccount(EMPTY_POOL, toCredential(acct({ tokens: { accessToken: "by-other", expiresAt: 9_000_000_000_000 } }), "me@x")));
     expect((await other.session.active()).account.tokens.accessToken).toBe("by-other");
     expect(other.oauth.calls).toBe(0);
   });
 
-  test("forceRotate rotates regardless of expiry, or reuses a token already rotated by someone else", async () => {
+  test("forceRenew rotates regardless of expiry, or reuses a token already rotated by someone else", async () => {
     const { session, oauth } = setup(acct());
     const current = await session.active();
-    expect((await session.forceRotate(current)).account.tokens.accessToken).toBe("SECRET-new");
+    expect((await session.forceRenew(current)).account.tokens.accessToken).toBe("SECRET-new");
     expect(oauth.calls).toBe(1);
-    expect((await session.forceRotate(current)).account.tokens.accessToken).toBe("SECRET-new");
+    expect((await session.forceRenew(current)).account.tokens.accessToken).toBe("SECRET-new");
     expect(oauth.calls).toBe(1);
   });
 
@@ -389,7 +391,7 @@ describe("AntigravityState", () => {
   });
 });
 
-class FixedSession extends AntigravitySessionPort {
+class FixedSession extends OAuthSessionPort<AntigravityAccount> {
   rotations = 0;
   constructor(private current: ActiveAccount = { id: "me@x", account: acct() }) {
     super();
@@ -397,7 +399,7 @@ class FixedSession extends AntigravitySessionPort {
   async active() {
     return this.current;
   }
-  async forceRotate(_c: ActiveAccount) {
+  async forceRenew(_c: ActiveAccount) {
     this.rotations++;
     this.current = { ...this.current, account: { ...this.current.account, tokens: { ...tokens, accessToken: `rotated-${this.rotations}` } } };
     return this.current;

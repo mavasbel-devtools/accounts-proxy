@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeAccount, EMPTY_POOL, replaceAccount, upsertAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { activeAccount, EMPTY_POOL, markNeedsLogin, replaceAccount, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import {
   ClientRequestError,
   InvalidRequestError,
@@ -13,6 +13,11 @@ import {
   UnknownModelError,
   UnsupportedFeatureError,
   UpstreamError,
+  UpstreamTimeoutError,
+  UpstreamUnreachableError,
+  isTransientUpstream,
+  asRouterError,
+  InternalError,
 } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import { formatModelAddress, isProviderId, PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
@@ -69,6 +74,7 @@ describe("errors", () => {
       [new ProviderDisabledError("claude"), "provider_disabled", 503, ProviderError],
       [new QuotaExhaustedError("antigravity", "5h window", 30), "quota_exhausted", 429, ProviderError],
       [new UpstreamError("claude", 529, "overloaded", 5), "upstream_error", 529, ProviderError],
+      [new UpstreamUnreachableError("api.anthropic.com", "Unable to connect"), "upstream_unreachable", 502, ProviderError],
     ];
     for (const [error, code, status, family] of cases) {
       expect(error).toBeInstanceOf(RouterError);
@@ -86,6 +92,21 @@ describe("errors", () => {
     expect(new UpstreamError("antigravity", 500, "e".repeat(600)).message.length).toBeLessThan(560);
     expect(new UpstreamError("antigravity", 500, "e").retryAfterSeconds).toBeUndefined();
     expect(new InvalidRequestError("bad").retryAfterSeconds).toBeUndefined();
+    expect(new UpstreamUnreachableError("h:1", "refused").message).toBe("upstream h:1 could not be reached: refused");
+    expect(new ProviderAuthRequiredError("claude", "why").detail).toBe("why");
+  });
+  test("asRouterError keeps a RouterError and turns anything else into the fixed InternalError", () => {
+    const quota = new QuotaExhaustedError("claude", "x");
+    expect(asRouterError(quota)).toBe(quota);
+    expect(asRouterError(new Error("defect"))).toBeInstanceOf(InternalError);
+  });
+  test("transient upstream failures (plan v4 H4)", () => {
+    expect(isTransientUpstream(new UpstreamTimeoutError("h", 1))).toBe(true);
+    expect(isTransientUpstream(new UpstreamUnreachableError("h", "x"))).toBe(true);
+    expect(isTransientUpstream(new UpstreamError("claude", 500, "x"))).toBe(true);
+    expect(isTransientUpstream(new UpstreamError("claude", 499, "x"))).toBe(false);
+    expect(isTransientUpstream(new QuotaExhaustedError("claude", "x"))).toBe(false);
+    expect(isTransientUpstream(new Error("x"))).toBe(false);
   });
 });
 
@@ -110,6 +131,14 @@ describe("accounts", () => {
     const replaced = replaceAccount(pool, { ...a, data: { t: 9 } });
     expect(replaced.accounts[0]!.data).toEqual({ t: 9 });
     expect(replaced.activeId).toBe("b@x");
+  });
+  test("markNeedsLogin marks one account; a login clears it", () => {
+    const pool = upsertAccount(upsertAccount(EMPTY_POOL, a), b);
+    const marked = markNeedsLogin(pool, a, "grant rejected");
+    expect(marked.accounts[0]!.needsLogin).toBe("grant rejected");
+    expect(marked.accounts[1]!.needsLogin).toBeUndefined();
+    expect(upsertAccount(marked, a).accounts.find((x) => x.id === "a@x")!.needsLogin).toBeUndefined();
+    expect(TOKEN_ENDPOINT_TIMEOUT_MS).toBe(30_000);
   });
 });
 

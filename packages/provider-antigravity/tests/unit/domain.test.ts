@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { accountId, activeProject, fromCredential, isExpired, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
+import { accountId, activeProject, fromCredential, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
 import { advertisedLimits, wireDefaultsFor, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { chunkHasContent, usageFrom } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
@@ -33,9 +33,7 @@ describe("account", () => {
   ])("fromCredential rejects %p", (data) => {
     expect(fromCredential({ provider: "antigravity", id: "x", label: "x", data: data as never })).toBeUndefined();
   });
-  test("expiry buffer, active project, rotation keeps the refresh token", () => {
-    expect(isExpired(account.tokens, 1_000_000 - 120_001)).toBe(false);
-    expect(isExpired(account.tokens, 1_000_000 - 120_000)).toBe(true);
+  test("active project, rotation keeps the refresh token", () => {
     expect(activeProject(account)).toBe("p2");
     expect(activeProject({ ...account, activeProjectId: undefined } as never)).toBe("p1");
     expect(rotated(account.tokens, { accessToken: "b", expiresAt: 9 })).toEqual({ accessToken: "b", refreshToken: "r", expiresAt: 9 });

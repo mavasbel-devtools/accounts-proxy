@@ -12,11 +12,12 @@ import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import { DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
+import { DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 import { ANTHROPIC_VERSION_HEADER } from "@inference-router/provider-claude/domain/constants.ts";
+import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
 
@@ -97,32 +98,29 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
       dropped.push(feature);
     }
 
-    const tokens = await this.session.freshTokens();
+    const active = await this.session.active();
     const entries = await this.catalog.entries();
     const lookup = (id: string) => entries.find((e) => e.id === id);
     const betas = mergeBetaHeader(request.headers["anthropic-beta"], capturedBetaHeader(model, lookup), request.lossy);
     dropped.push(...betas.dropped);
-    const upstream = transformRequest(
-      { body, path, betaHeader: betas.header },
-      {
-        accessToken: tokens.accessToken,
-        accountUuid: tokens.accountUuid ?? "",
-        deviceId: await this.identity.deviceId(),
-        sessionId: this.identity.sessionId,
-        previousMessageId: this.identity.previousMessageId(),
-        ccPromptId: this.random.uuid(),
-        clientRequestId: this.random.uuid(),
-      },
-      lookup,
-      this.apiBase,
-    );
-    const response = await this.transport.send({
-      method: "POST",
-      url: upstream.url,
-      headers: upstream.headers,
-      body: upstream.body,
-      signal: request.signal,
-    });
+    const ids = { deviceId: await this.identity.deviceId(), previousMessageId: this.identity.previousMessageId(), ccPromptId: this.random.uuid(), clientRequestId: this.random.uuid() };
+    const send = (tokens: ClaudeTokens) => {
+      const upstream = transformRequest(
+        { body, path, betaHeader: betas.header },
+        { ...ids, accessToken: tokens.accessToken, accountUuid: tokens.accountUuid ?? "", sessionId: this.identity.sessionId },
+        lookup,
+        this.apiBase,
+      );
+      return this.transport.send({ method: "POST", url: upstream.url, headers: upstream.headers, body: upstream.body, signal: request.signal });
+    };
+    let response = await send(active.account);
+    // Plan v4 H3/H-d (deviation from the source, which has no retry): a 401 means the stored expiry was wrong (clock
+    // skew, server-side revocation). Nothing has reached the client yet, so renew once and resend the same request.
+    if (response.status === 401 && active.account.refreshToken !== undefined) {
+      await readAll(response.body);
+      this.logger.info(`${this.id}: upstream 401; renewing the token once and retrying`);
+      response = await send((await this.session.forceRenew(active)).account);
+    }
     const headers = forwardedResponseHeaders(response.headers);
     if (dropped.length > 0) headers[DROPPED_HEADER] = dropped.join(",");
     this.logger.info(`${this.id}: ${path} model=${model} -> HTTP ${response.status}`);

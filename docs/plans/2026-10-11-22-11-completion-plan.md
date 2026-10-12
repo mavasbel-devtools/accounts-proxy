@@ -134,3 +134,13 @@ Every phase ends with its own commit on top of pushed history (`git revert` work
 
 ## 8. Execution record
 - 2026-10-11 22:11 plan written and approved.
+- 2026-10-11 23:06 **Phase H done** (H-a…H-h). `OAuthSessionBase` (`packages/core/src/ports/outbound/session.ts`) is the
+  base of both sessions; account files are written only through `CredentialStorePort.update` (locked
+  read-change-write); token calls are bounded by 30 s (< 60 s lock staleness, asserted by a test); Claude renews and
+  resends once on an upstream 401; a transient renewal failure keeps a still-valid token and waits 30 s
+  (`RENEWAL_RETRY_AFTER_MS`, added when the e2e lock test showed every request otherwise re-calls a failing
+  endpoint); no HTTP answer is 502 `upstream_unreachable`; a rejected refresh marks the account `needsLogin`
+  (`account list` shows it, a new login clears it). E4 ran ([E4](../reference/2026-10-11-23-06-e4-refresh-rotation.md)):
+  Claude rotates and rejects the previous refresh token (`invalid_grant`), reuse does not revoke the new one; Google
+  keeps the same refresh token; no re-login needed. `bun run verify`: GATE PASS (524 unit+component, 182 e2e, 100%
+  everywhere).

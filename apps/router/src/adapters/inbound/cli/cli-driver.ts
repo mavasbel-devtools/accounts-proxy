@@ -159,7 +159,10 @@ export class CliDriver extends Driver {
     if (sub === "list" && accountId === undefined) {
       const accounts = await this.ports.accounts.list(provider(id, true));
       if (accounts.length === 0) this.out(`no ${id} accounts; run: inference-router login ${id}\n`);
-      for (const a of accounts) this.out(`${a.active ? "*" : " "} ${a.id}${a.label !== a.id ? `  (${a.label})` : ""}\n`);
+      for (const a of accounts) {
+        const relogin = a.needsLogin !== undefined ? `  [needs login: ${a.needsLogin}]` : "";
+        this.out(`${a.active ? "*" : " "} ${a.id}${a.label !== a.id ? `  (${a.label})` : ""}${relogin}\n`);
+      }
       return;
     }
     if (sub === "use" && accountId !== undefined && extra.length === 0) {

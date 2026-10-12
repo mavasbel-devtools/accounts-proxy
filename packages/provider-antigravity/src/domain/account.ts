@@ -3,7 +3,6 @@
 // automatically (plan D4) — the active account is chosen only by `inference-router account use`.
 import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import { EXPIRY_BUFFER_MS } from "@inference-router/provider-antigravity/domain/constants.ts";
 
 export type AuthTokens = { readonly accessToken: string; readonly refreshToken?: string; readonly expiresAt: number };
 
@@ -13,10 +12,6 @@ export type AntigravityAccount = {
   readonly projectIds: readonly string[];
   readonly activeProjectId?: string;
 };
-
-export function isExpired(tokens: AuthTokens, now: number): boolean {
-  return tokens.expiresAt - now <= EXPIRY_BUFFER_MS;
-}
 
 /** Source pickActiveProject. */
 export function activeProject(account: AntigravityAccount): string | undefined {

@@ -78,6 +78,27 @@ await openai.models.list(); // chat completions: P5
 The token is accepted as `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=`. Errors use each dialect's
 own error shape; upstream errors on the native cells pass through with their status, body and `retry-after`.
 
+Router errors:
+
+| Status | Code | When |
+|---|---|---|
+| 400 | `invalid_request`, `unsupported_feature` | the request cannot be served as sent |
+| 401 | `unauthorized` | missing or wrong router token |
+| 401 | `provider_auth_required` | no usable login: no account, an unreadable one, or one whose refresh was rejected (`account list` shows it as `[needs login: …]` until `login <provider>`) |
+| 404 | `unknown_model`, `unknown_account`, `not_found` | unknown model address, account or route |
+| 413 | `payload_too_large` | request body over the limit |
+| 429 | `quota_exhausted` | provider quota, with `retry-after` when known |
+| 502 | `upstream_unreachable` | no HTTP answer from the provider (DNS, refused, reset) |
+| 503 | `provider_disabled` | the provider is not enabled in `router.yaml` |
+| 504 | `upstream_timeout` | the provider sent nothing for the idle timeout |
+| 500 | `internal_error` | a router defect (details in the log) |
+
+Sign-in sessions (plan v4 Phase H): an access token is renewed 2 minutes before it expires, once for all concurrent
+requests and processes. A renewal never undoes a concurrent `login` or `account use` (every account-file write is a
+locked read-change-write), each token call is bounded by 30 s, and a renewal that fails transiently (5xx, timeout,
+unreachable) keeps using a token that is still valid, retrying after 30 s. On `claude`, an upstream 401 renews the
+token once and resends the request before anything reaches the client.
+
 Router headers:
 
 | Header | Direction | Meaning |

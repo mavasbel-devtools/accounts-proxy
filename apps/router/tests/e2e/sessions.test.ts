@@ -1,13 +1,14 @@
 // Account sessions and the provider control planes, black-box: token refresh (single-flight, rejected, impossible),
 // forced rotation on 401, the geo-gate retry, quota answers, project onboarding, catalog fallbacks and the stored
 // per-install state. Each test signs in its own data directory with scripted token answers.
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@inference-router/test-support/temporary.ts";
 import { makeHome, runRouter, startDaemon, type Daemon, type Home } from "@inference-router/test-support/e2e/router-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@inference-router/test-support/e2e/upstreams.ts";
 
+setDefaultTimeout(60_000);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());
@@ -65,16 +66,152 @@ describe("claude sessions", () => {
     expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
   });
 
-  test("a rejected refresh asks for a new login (401); a failing token endpoint is an upstream error", async () => {
+  test("H6: a rejected refresh marks the account needsLogin, later requests fail fast, a new login clears it; H4: a 5xx renewal keeps a valid token", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
+    await login("claude");
+    const id = accounts("claude").accounts[0]!.id;
+    const s = await serve();
+    upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "invalid_grant" }, 400));
+    const rejected = await claudeMessage(s);
+    expect([rejected.status, ((await rejected.json()) as { error: { message: string } }).error.message]).toEqual([401, "claude: token endpoint rejected the grant (HTTP 400); run `inference-router login claude`"]);
+    const calls = tokenCalls("/v1/oauth/token", "refresh_token");
+    const fast = await claudeMessage(s);
+    expect([fast.status, ((await fast.json()) as { error: { message: string } }).error.message]).toEqual([
+      401,
+      `claude: account ${id} needs a new login (token endpoint rejected the grant (HTTP 400)); run \`inference-router login claude\``,
+    ]);
+    expect(tokenCalls("/v1/oauth/token", "refresh_token")).toBe(calls);
+    expect((await run(["account", "list", "claude"])).stdout).toBe(`* ${id}  [needs login: token endpoint rejected the grant (HTTP 400)]\n`);
+
+    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
+    await login("claude");
+    expect((await run(["account", "list", "claude"])).stdout).toBe(`* ${id}\n`);
+    upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "server" }, 503));
+    expect((await claudeMessage(s)).status).toBe(200);
+    expect(routerLog()).toContain(`WARN claude: token renewal failed (claude upstream HTTP 503: {"error":"server"}); using the stored token of ${id} until it expires`);
+
+    const pool = accounts("claude");
+    pool.accounts[0]!.data["expiresAt"] = 0;
+    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify(pool));
+    upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "server" }, 503));
+    expect((await claudeMessage(s)).status).toBe(503);
+  });
+
+  test("H-d: an upstream 401 renews the token once and the same request succeeds", async () => {
+    home = await makeHome();
+    await login("claude");
+    const s = await serve();
+    const before = tokenCalls("/v1/oauth/token", "refresh_token");
+    upstreams.script("/v1/messages", () => jsonResponse({ type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } }, 401));
+    const answer = await claudeMessage(s);
+    expect(answer.status).toBe(200);
+    await answer.text();
+    expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
+    const sent = upstreams.find("/v1/messages").slice(-2);
+    expect(sent[0]!.body).toBe(sent[1]!.body);
+    expect(routerLog()).toContain("INFO claude: upstream 401; renewing the token once and retrying");
+  });
+
+  /** Holds the next token-endpoint answer until `release`; then answers with `answer`. */
+  function holdRenewal(answer: () => Response | Promise<Response>) {
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const state = { entered: false };
+    upstreams.script("/v1/oauth/token", async () => {
+      state.entered = true;
+      await held;
+      return answer();
+    });
+    return {
+      release,
+      entered: async () => {
+        while (!state.entered) await Bun.sleep(10);
+      },
+    };
+  }
+
+  test("H1: a new login during a renewal is kept: the renewed token serves only that request; a rejected renewal does not mark the new login", async () => {
     home = await makeHome();
     upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
-    upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "invalid_grant" }, 400), () => jsonResponse({ error: "server" }, 503));
-    const rejected = await claudeMessage(s);
-    expect(rejected.status).toBe(401);
-    expect(((await rejected.json()) as { error: { message: string } }).error.message).toContain("run `inference-router login claude`");
-    expect((await claudeMessage(s)).status).toBe(503);
+    const renewal = holdRenewal(claudeToken({ access_token: "e2e-renewed" }));
+    upstreams.script("/v1/oauth/token", claudeToken({ access_token: "e2e-login-1" }));
+    const pending = claudeMessage(s);
+    await renewal.entered();
+    await login("claude");
+    renewal.release();
+    expect((await pending).status).toBe(200);
+    expect(accounts("claude").accounts[0]!.data["accessToken"]).toBe("e2e-login-1");
+    expect(routerLog()).toContain("was written meanwhile (new login); the renewed token serves this call only");
+
+    const expiring = accounts("claude");
+    expiring.accounts[0]!.data["expiresAt"] = Date.now() + 60_000;
+    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify(expiring));
+    const rejected = holdRenewal(() => jsonResponse({ error: "invalid_grant" }, 400));
+    upstreams.script("/v1/oauth/token", claudeToken({ access_token: "e2e-login-2" }));
+    const failing = claudeMessage(s);
+    await rejected.entered();
+    await login("claude");
+    rejected.release();
+    expect((await failing).status).toBe(401);
+    expect(accounts("claude").accounts[0]!.data["accessToken"]).toBe("e2e-login-2");
+    expect((accounts("claude").accounts[0] as Record<string, unknown>)["needsLogin"]).toBeUndefined();
+    expect((await claudeMessage(s)).status).toBe(200);
+  });
+
+  test("H1: an account removed from the file during a renewal stays removed; the renewed token serves that request", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
+    await login("claude");
+    const s = await serve();
+    const renewal = holdRenewal(claudeToken({ access_token: "e2e-renewed" }));
+    const pending = claudeMessage(s);
+    await renewal.entered();
+    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [] }));
+    renewal.release();
+    expect((await pending).status).toBe(200);
+    expect(accounts("claude").accounts).toEqual([]);
+  });
+
+  test("H-d: an upstream 401 without a stored refresh token is answered as is", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken({}, ["refresh_token"]));
+    await login("claude");
+    const s = await serve();
+    const before = upstreams.find("/v1/oauth/token").length;
+    upstreams.script("/v1/messages", () => jsonResponse({ type: "error", error: { type: "authentication_error", message: "invalid" } }, 401));
+    const answer = await claudeMessage(s);
+    expect(answer.status).toBe(401);
+    expect(((await answer.json()) as { error: { type: string } }).error.type).toBe("authentication_error");
+    expect(upstreams.find("/v1/oauth/token").length).toBe(before);
+  });
+
+  test("H1: `account use` while the daemon renews a token is not undone, and the renewed token is stored", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
+    await login("claude");
+    const first = accounts("claude").accounts[0]!.id;
+    const pool = accounts("claude");
+    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }], activeId: first }));
+    const s = await serve();
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let entered = false;
+    upstreams.script("/v1/oauth/token", async () => {
+      entered = true;
+      await held;
+      return claudeToken({ access_token: "e2e-renewed" })();
+    });
+    const pending = claudeMessage(s);
+    while (!entered) await Bun.sleep(10);
+    expect((await run(["account", "use", "claude", "spare"])).code).toBe(0);
+    release();
+    expect((await pending).status).toBe(200);
+    const after = JSON.parse(readFileSync(join(home.dir, "accounts-claude.json"), "utf8")) as { activeId: string; accounts: { id: string; data: Record<string, unknown> }[] };
+    expect(after.activeId).toBe("spare");
+    expect(after.accounts.find((a) => a.id === first)!.data["accessToken"]).toBe("e2e-renewed");
   });
 
   test("without a refresh token an expired login cannot be renewed; without scopes the refresh asks for the default set", async () => {

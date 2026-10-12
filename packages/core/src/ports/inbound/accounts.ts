@@ -7,6 +7,8 @@ export type AccountSummary = {
   readonly id: string;
   readonly label: string;
   readonly active: boolean;
+  /** Why this account must sign in again (its refresh grant was rejected); absent when it is usable. */
+  readonly needsLogin?: string;
 };
 
 export type LoginOptions = {

@@ -66,6 +66,13 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
   [P0-E6](docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md).
 - **Own credentials.** The router's credentials live only in `~/.local/share/inference-router/`. The router never
   writes Claude Code's or the plugins' credential files.
+- **Sessions** (plan v4 Phase H). Every provider session extends `OAuthSessionBase`
+  (`packages/core/src/ports/outbound/session.ts`). Account files are written only through
+  `CredentialStorePort.update` (a locked read → change → write); there is no blind save. Lock order is always renewal
+  lock → store lock. A token-endpoint call is bounded by `TOKEN_ENDPOINT_TIMEOUT_MS` (30 s), which must stay below the
+  lock staleness (60 s). A rejected refresh marks the account `needsLogin` (fast 401 until a new login); a transient
+  renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude retries once after renewing on an
+  upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
   Every route except `/health` requires the router token (`<data>/token.json`, 0600), compared in constant time.
 - **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH}` repoint a

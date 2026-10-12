@@ -9,6 +9,6 @@ export async function withActive<T>(session: AntigravitySessionPort, call: (acti
     return await call(active);
   } catch (error) {
     if (!isUnauthorized(error) || active.account.tokens.refreshToken === undefined) throw error;
-    return call(await session.forceRotate(active));
+    return call(await session.forceRenew(active));
   }
 }

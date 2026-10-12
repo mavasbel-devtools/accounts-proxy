@@ -2,7 +2,7 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 GoogleOAuthClientAdapter.ts (authorize parameters and order, token form)
 // and LoginUseCase.buildAccount (userinfo → loadCodeAssist → onboardUser bootstrap). The source uses no PKCE, so
 // none is added (an unmeasured wire change).
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { readAll } from "@inference-router/core/domain/wire.ts";
 import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
@@ -88,13 +88,14 @@ export class GoogleOAuthClient extends AntigravityOAuthPort {
     return { email, tokens, projectIds, ...(projectIds[0] !== undefined ? { activeProjectId: projectIds[0] } : {}) };
   }
 
-  /** 400/401 (RFC 6749 §5.2) mean the grant is no longer valid; other failures are upstream errors. */
+  /** 400/401 (RFC 6749 §5.2) mean the grant is no longer valid; other failures are upstream errors. Bounded by TOKEN_ENDPOINT_TIMEOUT_MS (H-c). */
   private async token(form: Record<string, string>): Promise<AuthTokens> {
     const res = await this.transport.send({
       method: "POST",
       url: this.endpoints.tokenUrl,
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(form).toString(),
+      timeoutMs: TOKEN_ENDPOINT_TIMEOUT_MS,
     });
     const text = await readAll(res.body);
     if (res.status === 400 || res.status === 401) throw new ProviderAuthRequiredError("antigravity", `token endpoint rejected the grant (HTTP ${res.status})`);

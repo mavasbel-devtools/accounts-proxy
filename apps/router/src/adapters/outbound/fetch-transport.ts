@@ -2,8 +2,10 @@
 // arrives; header names are lower-cased. `timeoutMs` aborts the whole exchange, body read included; `signal` aborts
 // it when the router's client disconnects. The socket idle timeout is always explicit (`idleMs`, production value
 // UPSTREAM_IDLE_TIMEOUT_MS) instead of Bun's own 5-minute default (bun-types globals.d.ts `timeout`, P0-LIVE L12).
-// A timeout (whole-exchange or idle, before or during the body) is an UpstreamTimeoutError (504).
-import { UpstreamTimeoutError } from "@inference-router/core/domain/errors.ts";
+// A timeout (whole-exchange or idle, before or during the body) is an UpstreamTimeoutError (504). Any other failure
+// without an HTTP answer (DNS, refused, reset, TLS), before or during the body, is an UpstreamUnreachableError (502,
+// plan v4 H5), except when the router's own client went away: that abort is passed through unchanged.
+import { UpstreamTimeoutError, UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
 import type { HttpRequest, HttpResponse } from "@inference-router/core/domain/wire.ts";
 import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 
@@ -26,7 +28,12 @@ export class FetchTransport extends HttpTransportPort {
     const idleMs = this.idleMs;
     const limitMs = request.timeoutMs ?? idleMs;
     const signals = [request.signal, request.timeoutMs !== undefined ? AbortSignal.timeout(request.timeoutMs) : undefined].filter((s) => s !== undefined);
-    const timedOut = () => new UpstreamTimeoutError(new URL(request.url).host, limitMs);
+    const host = new URL(request.url).host;
+    const failure = (error: unknown): unknown => {
+      if (isTimeout(error)) return new UpstreamTimeoutError(host, limitMs);
+      if (request.signal?.aborted === true) return error;
+      return new UpstreamUnreachableError(host, String(error));
+    };
     let res: Response;
     try {
       res = await this.fetchImpl(request.url, {
@@ -37,21 +44,21 @@ export class FetchTransport extends HttpTransportPort {
         timeout: idleMs,
       });
     } catch (error) {
-      throw isTimeout(error) ? timedOut() : error;
+      throw failure(error);
     }
     const headers: Record<string, string> = {};
     res.headers.forEach((value, name) => {
       headers[name.toLowerCase()] = value;
     });
-    return { status: res.status, headers, body: bodyOf(res.body, timedOut) };
+    return { status: res.status, headers, body: bodyOf(res.body, failure) };
   }
 }
 
-async function* bodyOf(stream: ReadableStream<Uint8Array> | null, timedOut: () => Error): AsyncIterable<Uint8Array> {
+async function* bodyOf(stream: ReadableStream<Uint8Array> | null, failure: (error: unknown) => unknown): AsyncIterable<Uint8Array> {
   if (stream === null) return;
   try {
     for await (const chunk of stream) yield chunk;
   } catch (error) {
-    throw isTimeout(error) ? timedOut() : error;
+    throw failure(error);
   }
 }

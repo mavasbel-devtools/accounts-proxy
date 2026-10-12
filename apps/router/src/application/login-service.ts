@@ -36,7 +36,7 @@ export class LoginService extends LoginPort {
     const state = base64UrlEncode(this.random.bytes(32));
     const pkce = this.pkce();
     const account = options.manual ? await this.manualLogin(client, state, pkce, options) : await this.loopbackLogin(client, state, pkce, options);
-    await this.store.save(provider, upsertAccount(await this.store.load(provider), account));
+    await this.store.update(provider, (pool) => upsertAccount(pool, account));
     this.logger.info(`${provider}: signed in account ${account.id}`);
     return { provider, id: account.id, label: account.label, active: true };
   }

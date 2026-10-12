@@ -2,7 +2,6 @@
 // Fields mirror opencode-claude-auth @ 6292741 ClaudeOAuthCredential + TokenEndpointResult.
 import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
-import { EXPIRY_BUFFER_MS } from "@inference-router/provider-claude/domain/constants.ts";
 
 export type ClaudeTokens = {
   readonly accessToken: string;
@@ -52,10 +51,6 @@ export function tokensFromResponse(response: TokenEndpointResponse, now: number,
     ...(organizationUuid !== undefined ? { organizationUuid } : {}),
     ...(email !== undefined ? { email } : {}),
   };
-}
-
-export function isExpired(tokens: ClaudeTokens, now: number): boolean {
-  return tokens.expiresAt - now <= EXPIRY_BUFFER_MS;
 }
 
 export function hasScope(tokens: ClaudeTokens, scope: string): boolean {

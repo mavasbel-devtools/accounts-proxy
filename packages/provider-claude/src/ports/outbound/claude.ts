@@ -2,6 +2,7 @@
 // adapters/outbound implement them and composition wires them.
 import type { ModelsSource } from "@inference-router/core/domain/models.ts";
 import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
+import type { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
 import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
 
@@ -10,10 +11,8 @@ export abstract class ClaudeOAuthPort extends OAuthClientPort {
   abstract refresh(tokens: ClaudeTokens): Promise<ClaudeTokens>;
 }
 
-export abstract class ClaudeSessionPort {
-  /** Tokens of the active account with at least the expiry buffer left; refreshes (single-flight, locked) when needed. */
-  abstract freshTokens(): Promise<ClaudeTokens>;
-}
+/** The Claude session: the active account's tokens with at least the expiry buffer left (core OAuthSessionPort). */
+export type ClaudeSessionPort = OAuthSessionPort<ClaudeTokens>;
 
 export abstract class ClaudeIdentityPort {
   /** Persistent device id (official CLI format: 32 random bytes as 64 lowercase hex characters). */

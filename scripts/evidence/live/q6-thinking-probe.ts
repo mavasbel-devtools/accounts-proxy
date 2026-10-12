@@ -42,7 +42,7 @@ const VARIANTS: readonly Variant[] = [
 ];
 
 async function send(live: Live, variant: Variant): Promise<string> {
-  const tokens = await live.claude.session.freshTokens();
+  const tokens = (await live.claude.session.active()).account;
   const entries = await live.claude.catalog.entries();
   const lookup = (id: string) => entries.find((e) => e.id === id);
   const upstream = transformRequest(
