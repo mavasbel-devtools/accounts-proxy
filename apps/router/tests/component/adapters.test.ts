@@ -17,6 +17,7 @@ import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore, StoreCorr
 import { CallbackTimeoutError, LoopbackCallbackServer, LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
 import { TerminalManualCode } from "@inference-router/router/adapters/outbound/terminal-manual-code.ts";
+import { TerminalSecretPrompt } from "@inference-router/router/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@inference-router/router/adapters/outbound/yaml-config-file.ts";
 
 let dir: string | undefined;
@@ -444,6 +445,30 @@ describe("TerminalManualCode", () => {
     expect(await answer).toBe("the-code#state");
     expect(printed).toContain("paste the code");
     expect(printed).not.toContain("https://auth.example/");
+  });
+});
+
+describe("TerminalSecretPrompt (plan P4.6 N4)", () => {
+  test("prints the question and reads one line from a pipe; the key is never written to the output", async () => {
+    const input = new PassThrough();
+    const output = new PassThrough();
+    let printed = "";
+    output.on("data", (c: Buffer) => (printed += c.toString()));
+    const answer = new TerminalSecretPrompt(input, output).prompt("key: ");
+    input.write("oc_sk_secret\n");
+    expect(await answer).toBe("oc_sk_secret");
+    expect(printed).toBe("key: \n");
+  });
+
+  test("on a TTY readline runs in terminal mode and echoes into the discarding stream", async () => {
+    const input = Object.assign(new PassThrough(), { isTTY: true, setRawMode: () => input });
+    const output = new PassThrough();
+    let printed = "";
+    output.on("data", (c: Buffer) => (printed += c.toString()));
+    const answer = new TerminalSecretPrompt(input, output).prompt("key: ");
+    input.write("sk-typed\r");
+    expect(await answer).toBe("sk-typed");
+    expect(printed).toBe("key: \n");
   });
 });
 

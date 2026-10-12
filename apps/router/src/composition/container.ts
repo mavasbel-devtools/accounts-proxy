@@ -10,10 +10,11 @@ import { enabledProviders, parseRouterConfig, type RouterConfig } from "@inferen
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
+import type { ApiKeyLoginPort } from "@inference-router/core/ports/outbound/api-key.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import type { BrowserLauncherPort, ClockPort, LoggerPort, RandomPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
+import type { BrowserLauncherPort, ClockPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 import type { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import { AnthropicCodec } from "@inference-router/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
@@ -37,6 +38,9 @@ import type {
   AntigravitySessionPort,
   AntigravityStatePort,
 } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import { CheaperCatalogSource, CheaperKeyLogin, CheaperQuota } from "@inference-router/provider-cheaper-inference/adapters/outbound/cheaper-inference-adapters.ts";
+import { CHEAPER_BUILTIN } from "@inference-router/provider-cheaper-inference/domain/builtin-models.ts";
+import { CHEAPER_SPEC, PUBLIC_MODELS_URL as CHEAPER_PUBLIC_MODELS_URL } from "@inference-router/provider-cheaper-inference/domain/cheaper-inference.ts";
 import { ClaudeCatalog } from "@inference-router/provider-claude/adapters/outbound/claude-catalog.ts";
 import { ClaudeIdentity } from "@inference-router/provider-claude/adapters/outbound/claude-identity.ts";
 import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS as CLAUDE_ENDPOINTS } from "@inference-router/provider-claude/adapters/outbound/claude-oauth-client.ts";
@@ -44,6 +48,11 @@ import { ClaudeSession } from "@inference-router/provider-claude/adapters/outbou
 import { ClaudeSubscriptionProvider } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
 import { API_BASE as CLAUDE_API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeOAuthPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { GatewayCatalog } from "@inference-router/provider-gateway/adapters/outbound/gateway-catalog.ts";
+import { GatewayKeySession } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-session.ts";
+import { GatewayProvider } from "@inference-router/provider-gateway/adapters/outbound/gateway-provider.ts";
+import type { GatewayModel, GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
+import type { GatewayCatalogPort, GatewayCatalogSourcePort, GatewayKeySessionPort } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
 import { JwksIdTokenVerifier } from "@inference-router/provider-openai/adapters/outbound/jwks-id-token-verifier.ts";
 import { OpenAICatalog } from "@inference-router/provider-openai/adapters/outbound/openai-catalog.ts";
 import { OpenAIIdentity } from "@inference-router/provider-openai/adapters/outbound/openai-identity.ts";
@@ -52,6 +61,15 @@ import { OpenAIProvider } from "@inference-router/provider-openai/adapters/outbo
 import { OpenAISession } from "@inference-router/provider-openai/adapters/outbound/openai-session.ts";
 import { API_BASE as OPENAI_API_BASE, ISSUER as OPENAI_ISSUER, JWKS_PATH as OPENAI_JWKS_PATH } from "@inference-router/provider-openai/domain/constants.ts";
 import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAIOAuthPort, OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+import { OpencodeCatalogSource } from "@inference-router/provider-opencode/adapters/outbound/opencode-catalog-source.ts";
+import { OpencodeKeyLogin } from "@inference-router/provider-opencode/adapters/outbound/opencode-key-login.ts";
+import { GO_BUILTIN, ZEN_BUILTIN } from "@inference-router/provider-opencode/domain/builtin-models.ts";
+import { GO_SPEC, MODELS_DEV_URL, ZEN_SPEC } from "@inference-router/provider-opencode/domain/opencode.ts";
+import { OpenRouterCatalogSource } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
+import { OpenRouterOAuthClient } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
+import { OpenRouterQuota } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-quota.ts";
+import { OPENROUTER_BUILTIN } from "@inference-router/provider-openrouter/domain/builtin-models.ts";
+import { AUTH_URL as OPENROUTER_AUTH_URL, OPENROUTER_SPEC } from "@inference-router/provider-openrouter/domain/openrouter.ts";
 import { CliDriver, type Writer } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
 import type { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 import { MAX_BODY_BYTES, NodeHttpServer } from "@inference-router/router/adapters/inbound/http/node-http-server.ts";
@@ -65,6 +83,7 @@ import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore } from "@i
 import { LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
 import { TerminalManualCode } from "@inference-router/router/adapters/outbound/terminal-manual-code.ts";
+import { TerminalSecretPrompt } from "@inference-router/router/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@inference-router/router/adapters/outbound/yaml-config-file.ts";
 import { AccessService } from "@inference-router/router/application/access-service.ts";
 import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
@@ -85,6 +104,8 @@ export type UpstreamSeams = {
   readonly googleOAuth?: string;
   readonly openaiApi?: string;
   readonly openaiAuth?: string;
+  /** Every API-key gateway host (OpenRouter, opencode.ai, Cheaper Inference, models.dev) on one origin, paths kept. */
+  readonly gateways?: string;
 };
 
 const SEAM_VARIABLES: Readonly<Record<keyof UpstreamSeams, string>> = {
@@ -94,6 +115,7 @@ const SEAM_VARIABLES: Readonly<Record<keyof UpstreamSeams, string>> = {
   googleOAuth: "INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH",
   openaiApi: "INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API",
   openaiAuth: "INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH",
+  gateways: "INFERENCE_ROUTER_TEST_UPSTREAM_GATEWAYS",
 };
 
 export class UpstreamSeamError extends Error {
@@ -156,7 +178,7 @@ export class TestHookError extends Error {
   }
 }
 
-/** Reads the hook variables; any hook requires all four upstream seams (so a process that can reach a real
+/** Reads the hook variables; any hook requires every upstream seam (so a process that can reach a real
  * provider never runs with one), and every value is validated. */
 export function hooksFrom(env: Readonly<Record<string, string | undefined>>, seams: UpstreamSeams): TestHooks {
   const given = Object.values(HOOK_VARIABLES).filter((name) => env[name] !== undefined);
@@ -248,6 +270,16 @@ export type OpenAIGraph = {
   readonly catalog: OpenAICatalogPort;
   readonly provider: ProviderPort;
 };
+/** An API-key gateway (plan P4.6): its login is either a key prompt (`keyLogin`) or a browser login (`oauth`). */
+export type GatewayGraph = {
+  readonly spec: GatewaySpec;
+  readonly session: GatewayKeySessionPort;
+  readonly catalog: GatewayCatalogPort;
+  readonly provider: ProviderPort;
+  readonly keyLogin?: ApiKeyLoginPort;
+  readonly oauth?: OAuthClientPort;
+  readonly quota?: UsageReporterPort;
+};
 export type ProviderGraph = {
   readonly config: RouterConfig;
   readonly enabled: readonly ProviderId[];
@@ -260,6 +292,7 @@ export type ProviderGraph = {
   readonly claude?: ClaudeGraph;
   readonly antigravity?: AntigravityGraph;
   readonly openai?: OpenAIGraph;
+  readonly gateways: readonly GatewayGraph[];
 };
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
@@ -308,16 +341,8 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       provider: new AntigravityProvider(catalog, new AntigravityNative(runner, antigravityState, logger), logger),
     };
   }
-  let openai: OpenAIGraph | undefined;
-  if (enabled.includes("openai")) {
-    const apiBase = seams.openaiApi ?? OPENAI_API_BASE;
-    const authOrigin = seams.openaiAuth ?? OPENAI_ISSUER;
-    const identity = new OpenAIIdentity(state, random);
-    const oauth = new OpenAIOAuthClient(transport, store, identity, new JwksIdTokenVerifier(transport, clock, `${authOrigin}${OPENAI_JWKS_PATH}`), clock, authOrigin);
-    const session = new OpenAISession(store, oauth, lock, clock, logger);
-    const catalog = new OpenAICatalog(transport, session, state, clock, logger, apiBase);
-    openai = { oauth, session, identity, catalog, provider: new OpenAIProvider(session, catalog, identity, transport, logger, apiBase) };
-  }
+  const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;
+  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, logger, hash: new NodeHash() });
   return {
     config,
     enabled,
@@ -327,10 +352,76 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     logger,
     store,
     transport,
+    gateways,
     ...(claude ? { claude } : {}),
     ...(antigravity ? { antigravity } : {}),
     ...(openai ? { openai } : {}),
   };
+}
+
+type OpenAIDeps = {
+  readonly seams: UpstreamSeams;
+  readonly transport: HttpTransportPort;
+  readonly store: CredentialStorePort;
+  readonly state: FileKeyValueStore;
+  readonly random: RandomPort;
+  readonly clock: ClockPort;
+  readonly lock: FileLock;
+  readonly logger: LoggerPort;
+};
+
+/** The openai provider (plan v4 P4.5) on its production hosts or on the openai seams. */
+function wireOpenAI(deps: OpenAIDeps): OpenAIGraph {
+  const { seams, transport, store, state, random, clock, lock, logger } = deps;
+  const apiBase = seams.openaiApi ?? OPENAI_API_BASE;
+  const authOrigin = seams.openaiAuth ?? OPENAI_ISSUER;
+  const identity = new OpenAIIdentity(state, random);
+  const oauth = new OpenAIOAuthClient(transport, store, identity, new JwksIdTokenVerifier(transport, clock, `${authOrigin}${OPENAI_JWKS_PATH}`), clock, authOrigin);
+  const session = new OpenAISession(store, oauth, lock, clock, logger);
+  const catalog = new OpenAICatalog(transport, session, state, clock, logger, apiBase);
+  return { oauth, session, identity, catalog, provider: new OpenAIProvider(session, catalog, identity, transport, logger, apiBase) };
+}
+
+type GatewayDeps = {
+  readonly enabled: readonly ProviderId[];
+  readonly seams: UpstreamSeams;
+  readonly transport: HttpTransportPort;
+  readonly store: CredentialStorePort;
+  readonly state: FileKeyValueStore;
+  readonly clock: ClockPort;
+  readonly logger: LoggerPort;
+  readonly hash: HashPort;
+};
+
+/** The enabled API-key gateways (plan P4.6), each on its production hosts or on the gateways seam. */
+function buildGateways(deps: GatewayDeps): GatewayGraph[] {
+  const { seams, transport, store, state, clock, logger, hash } = deps;
+  const at = (url: string) => onOrigin(url, seams.gateways);
+  const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[]) => {
+    const spec: GatewaySpec = { ...base, apiBase: at(base.apiBase) };
+    const session = new GatewayKeySession(spec.provider, store);
+    const catalog = new GatewayCatalog(spec.provider, source(spec), session, state, clock, logger, builtin);
+    return { spec, session, catalog, provider: new GatewayProvider(spec, session, catalog, transport, logger) };
+  };
+  const out: GatewayGraph[] = [];
+  if (deps.enabled.includes("openrouter")) {
+    const g = wire(OPENROUTER_SPEC, (spec) => new OpenRouterCatalogSource(transport, spec.apiBase), OPENROUTER_BUILTIN);
+    out.push({ ...g, oauth: new OpenRouterOAuthClient(transport, hash, at(OPENROUTER_AUTH_URL), g.spec.apiBase), quota: new OpenRouterQuota(transport, g.session, clock, g.spec.apiBase) });
+  }
+  for (const [base, builtin] of [
+    [ZEN_SPEC, ZEN_BUILTIN],
+    [GO_SPEC, GO_BUILTIN],
+  ] as const) {
+    if (!deps.enabled.includes(base.provider)) continue;
+    const provider = base.provider as "opencode" | "opencode-go";
+    const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, logger, spec.apiBase, at(MODELS_DEV_URL)), builtin);
+    out.push({ ...g, keyLogin: new OpencodeKeyLogin(provider, hash, transport, g.spec.apiBase) });
+  }
+  if (deps.enabled.includes("cheaper-inference")) {
+    const g = wire(CHEAPER_SPEC, (spec) => new CheaperCatalogSource(transport, spec.apiBase, at(CHEAPER_PUBLIC_MODELS_URL)), CHEAPER_BUILTIN);
+    out.push({ ...g, keyLogin: new CheaperKeyLogin(hash, transport, g.spec.apiBase), quota: new CheaperQuota(transport, g.session, clock, g.spec.apiBase) });
+  }
+  return out;
 }
 
 export async function buildCli(options: ContainerOptions): Promise<{ readonly config: RouterConfig; readonly driver: Driver }> {
@@ -344,6 +435,13 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     providers.push(wired.provider);
   }
   if (graph.antigravity) reporters.push(graph.antigravity.quota);
+  const keyClients: ApiKeyLoginPort[] = [];
+  for (const gateway of graph.gateways) {
+    providers.push(gateway.provider);
+    if (gateway.oauth) clients.push(gateway.oauth);
+    if (gateway.keyLogin) keyClients.push(gateway.keyLogin);
+    if (gateway.quota) reporters.push(gateway.quota);
+  }
 
   const hash = new NodeHash();
   const login = new LoginService(
@@ -355,6 +453,8 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     graph.random,
     hash,
     graph.logger,
+    keyClients,
+    new TerminalSecretPrompt(options.stdin, options.stdout),
   );
   const access = new AccessService(new FileRouterTokenStore(options.home), graph.random, hash);
   const models = new ListModelsService(providers);

@@ -10,7 +10,7 @@ import {
   UnknownModelError,
   UnsupportedFeatureError,
 } from "@inference-router/core/domain/errors.ts";
-import type { Dialect, ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import { bodyOf, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import { HealthPort, ListModelsPort, PassthroughPort } from "@inference-router/core/ports/inbound/routing.ts";
@@ -33,15 +33,19 @@ class Provider extends ProviderPort {
   calls: [string, RawRequest][] = [];
   constructor(
     readonly id: ProviderId,
-    readonly nativeDialect: Dialect,
+    /** Native formats of every model; undefined: the provider does not know them (forwarded as sent). */
+    readonly formats: readonly WireFormat[] | undefined,
   ) {
     super();
+  }
+  async nativeFormats() {
+    return this.formats === undefined ? undefined : new Set(this.formats);
   }
   capabilities() {
     return new Set<never>();
   }
   async models(): Promise<ModelCatalog> {
-    return { provider: this.id, nativeDialect: this.nativeDialect, source: "live", models: [] };
+    return { provider: this.id, formats: this.formats ?? [], source: "live", models: [] };
   }
   async *stream() {}
   async countTokens() {
@@ -53,22 +57,28 @@ class Provider extends ProviderPort {
   }
 }
 
-const raw: RawRequest = { path: "/v1/messages", query: {}, headers: {}, body: "{}", lossy: false };
+const raw: RawRequest = { format: "anthropic-messages", path: "/v1/messages", query: {}, headers: {}, body: "{}", lossy: false };
 
 describe("PassthroughService and HealthService", () => {
   test("resolves addresses and aliases to the provider's native cell", async () => {
-    const claude = new Provider("claude", "anthropic");
-    const service = new PassthroughService([claude, new Provider("antigravity", "gemini")], { fast: "claude/claude-haiku-4-5-20251001" });
-    await service.forward("anthropic", "claude/claude-opus-5", raw);
-    await service.forward("anthropic", "fast", raw);
+    const claude = new Provider("claude", ["anthropic-messages"]);
+    const service = new PassthroughService([claude, new Provider("antigravity", ["gemini"])], { fast: "claude/claude-haiku-4-5-20251001" });
+    await service.forward("anthropic-messages", "claude/claude-opus-5", raw);
+    await service.forward("anthropic-messages", "fast", raw);
     expect(claude.calls.map(([m]) => m)).toEqual(["claude-opus-5", "claude-haiku-4-5-20251001"]);
   });
 
+  test("a model whose formats the provider does not know is forwarded as sent (plan P4.6 rule Z6)", async () => {
+    const gateway = new Provider("opencode-go", undefined);
+    await new PassthroughService([gateway], {}).forward("openai-chat", "opencode-go/new-model", { ...raw, format: "openai-chat" });
+    expect(gateway.calls.map(([m]) => m)).toEqual(["new-model"]);
+  });
+
   test("unknown model, disabled provider, and a translated cell (P5) are errors", async () => {
-    const service = new PassthroughService([new Provider("antigravity", "gemini")], {});
-    expect(() => service.forward("anthropic", "nope", raw)).toThrow(UnknownModelError);
-    expect(() => service.forward("anthropic", "claude/x", raw)).toThrow(ProviderDisabledError);
-    expect(() => service.forward("anthropic", "antigravity/g", raw)).toThrow("antigravity (it speaks gemini; translated cells arrive in P5)");
+    const service = new PassthroughService([new Provider("antigravity", ["gemini"])], {});
+    expect(service.forward("anthropic-messages", "nope", raw)).rejects.toBeInstanceOf(UnknownModelError);
+    expect(service.forward("anthropic-messages", "claude/x", raw)).rejects.toBeInstanceOf(ProviderDisabledError);
+    expect(service.forward("anthropic-messages", "antigravity/g", raw)).rejects.toThrow("antigravity/g (it accepts gemini; translated cells arrive in P5) cannot carry: anthropic-messages_format");
   });
 
   test("health lists the enabled providers", () => {
@@ -187,18 +197,18 @@ class Access extends AccessPort {
   }
 }
 class Passthrough extends PassthroughPort {
-  calls: [Dialect, string, RawRequest][] = [];
+  calls: [WireFormat, string, RawRequest][] = [];
   next: () => Promise<HttpResponse> = async () => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: bodyOf("data: x\n\n") });
-  forward(dialect: Dialect, model: string, request: RawRequest) {
-    this.calls.push([dialect, model, request]);
+  forward(format: WireFormat, model: string, request: RawRequest) {
+    this.calls.push([format, model, request]);
     return this.next();
   }
 }
 class Models extends ListModelsPort {
   async listModels(): Promise<readonly ModelCatalog[]> {
     return [
-      { provider: "claude", nativeDialect: "anthropic", source: "cache", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
-      { provider: "antigravity", nativeDialect: "gemini", source: "live", models: [] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "cache", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
+      { provider: "antigravity", formats: ["gemini"], source: "live", models: [] },
     ];
   }
 }
@@ -266,10 +276,10 @@ describe("RouteHandler", () => {
     expect(response.headers["content-type"]).toBe("text/event-stream");
     expect(await readAll(response.body)).toBe("data: x\n\n");
     await handler.handle(request("POST", "/anthropic/v1/messages/count_tokens"));
-    const [[dialect, model, raw], [, , count]] = passthrough.calls as [[Dialect, string, RawRequest], [Dialect, string, RawRequest]];
-    expect([dialect, model, raw.path, raw.query, raw.lossy, raw.signal]).toEqual(["anthropic", "claude/claude-opus-5", "/v1/messages", { beta: "true" }, true, controller.signal]);
+    const [[format, model, raw], [, , count]] = passthrough.calls as [[WireFormat, string, RawRequest], [WireFormat, string, RawRequest]];
+    expect([format, model, raw.format, raw.path, raw.query, raw.lossy, raw.signal]).toEqual(["anthropic-messages", "claude/claude-opus-5", "anthropic-messages", "/v1/messages", { beta: "true" }, true, controller.signal]);
     expect(raw.body).toBe('{"model":"claude/claude-opus-5","messages":[]}');
-    expect([count.path, count.lossy]).toEqual(["/v1/messages/count_tokens", false]);
+    expect([count.format, count.path, count.lossy]).toEqual(["anthropic-messages", "/v1/messages/count_tokens", false]);
   });
 
   test.each([
@@ -284,25 +294,22 @@ describe("RouteHandler", () => {
     expect(passthrough.calls).toHaveLength(0);
   });
 
-  test("OpenAI Responses: model from the body, dialect-relative path", async () => {
+  test("OpenAI Responses and Chat Completions: model from the body, dialect-relative path, the route's format", async () => {
     const { handler, passthrough } = make();
     await handler.handle(request("POST", "/openai/v1/responses", { readBody: async () => '{"model":"openai/gpt-6.1-sol","input":"hi"}' }));
-    const [[dialect, model, raw]] = passthrough.calls as [[Dialect, string, RawRequest]];
-    expect([dialect, model, raw.path, raw.body]).toEqual(["openai", "openai/gpt-6.1-sol", "/v1/responses", '{"model":"openai/gpt-6.1-sol","input":"hi"}']);
+    await handler.handle(request("POST", "/openai/v1/chat/completions", { readBody: async () => '{"model":"openrouter/openai/gpt-5","messages":[]}' }));
+    const [[format, model, raw], [chatFormat, chatModel, chat]] = passthrough.calls as [[WireFormat, string, RawRequest], [WireFormat, string, RawRequest]];
+    expect([format, model, raw.format, raw.path, raw.body]).toEqual(["openai-responses", "openai/gpt-6.1-sol", "openai-responses", "/v1/responses", '{"model":"openai/gpt-6.1-sol","input":"hi"}']);
+    expect([chatFormat, chatModel, chat.format, chat.path]).toEqual(["openai-chat", "openrouter/openai/gpt-5", "openai-chat", "/v1/chat/completions"]);
     const missing = await json(await handler.handle(request("POST", "/openai/v1/responses", { readBody: async () => '{"input":"hi"}' })));
     expect([missing.status, (missing.body as { error: { message: string } }).error.message]).toEqual([400, "request body needs a string model (<provider>/<model> or an alias)"]);
-  });
-
-  test("OpenAI chat completions is a translated cell: 400 unsupported_feature in the OpenAI shape", async () => {
-    const { handler } = make();
-    const result = await json(await handler.handle(request("POST", "/openai/v1/chat/completions")));
-    expect(result).toEqual({ status: 400, body: { error: { message: "openai dialect (Chat Completions cells are translated: P5) cannot carry: chat_completions", type: "unsupported_feature", param: null, code: "unsupported_feature" } } });
   });
 
   test("Gemini model routes: decoded model, dialect-relative path; a malformed segment is a Gemini 400", async () => {
     const { handler, passthrough } = make();
     await handler.handle(request("POST", "/gemini/v1beta/models/antigravity%2Fg:streamGenerateContent", { query: { alt: "sse", key: "T" }, headers: {} }));
     expect(passthrough.calls[0]!.slice(0, 2)).toEqual(["gemini", "antigravity/g"]);
+    expect(passthrough.calls[0]![2].format).toBe("gemini");
     expect([passthrough.calls[0]![2].path, passthrough.calls[0]![2].query]).toEqual(["/v1beta/models/antigravity%2Fg:streamGenerateContent", { alt: "sse" }]);
     const bad = await json(await handler.handle(request("POST", "/gemini/v1beta/models/%E0%A4%A:generateContent")));
     expect((bad.body as { error: { status: string } }).error.status).toBe("INVALID_ARGUMENT");

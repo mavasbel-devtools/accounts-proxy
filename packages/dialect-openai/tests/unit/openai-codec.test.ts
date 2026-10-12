@@ -19,8 +19,8 @@ describe("OpenAiCodec", () => {
 
   test("models: list of Model objects owned by the provider; created in Unix seconds or 0", () => {
     const encoded = codec.models([
-      { provider: "claude", nativeDialect: "anthropic", source: "cache", models: [{ address: { provider: "claude", model: "c" }, displayName: "C", createdAt: "2026-07-24T00:00:00Z" }] },
-      { provider: "antigravity", nativeDialect: "gemini", source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G" }] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "cache", models: [{ address: { provider: "claude", model: "c" }, displayName: "C", createdAt: "2026-07-24T00:00:00Z" }] },
+      { provider: "antigravity", formats: ["gemini"], source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G" }] },
     ]);
     expect(JSON.parse(encoded.body)).toEqual({
       object: "list",

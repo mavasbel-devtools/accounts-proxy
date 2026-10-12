@@ -3,6 +3,9 @@
 // its phase and reason, is printed on every e2e gate run, and fails the gate when it is stale (the file or function no
 // longer exists, the name is ambiguous, or the e2e tier already covers it fully, so it must leave the list). The list
 // must be empty when P5 ends (P5 wires the translated cells that call all of it).
+// Plan P4.6 (2026-10-12) adds two phases of the same kind: code whose e2e replay needs a committed live capture that
+// only the user's own sign-in or key can produce (`P4.5-live`: the OpenAI ChatGPT sign-in; `P4.6-live`: a gateway API
+// key, decision N8). Those entries leave the list when the capture is committed and replayed.
 import { createCoverageMap, type CoverageMap, type FileCoverageData, type Range } from "istanbul-lib-coverage";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -15,11 +18,13 @@ export type Deferral = {
   /** Branches to defer, each named by the exact (trimmed) source line it starts on, which must hold exactly one; the
    * statements on that line no e2e process ran (the deferred arm, e.g. an if's `continue`) are deferred with it. */
   readonly branches?: readonly string[];
-  readonly phase: "P5";
+  readonly phase: "P5" | "P4.5-live" | "P4.6-live";
   readonly reason: string;
 };
 
 const TRANSLATED = "only the translated cells (P5) call it; no P4 route or command reaches it";
+const GATEWAY_LIVE = (provider: string) => `needs the replay of a live ${provider} answer to an accepted key (plan P4.6 step 5; decision N8: the user's \`login ${provider}\`); no committed capture yet`;
+const OPENAI_LIVE = "needs the replay of a live ChatGPT sign-in (plan v4 P4.5 step 2: the user's `login openai`); no committed capture yet";
 
 export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/core/src/domain/services/feature-support.ts", phase: "P5", reason: `capability matrix of the translated cells: ${TRANSLATED}` },
@@ -33,6 +38,23 @@ export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/dialect-anthropic/src/adapters/inbound/anthropic-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
   { file: "packages/dialect-openai/src/adapters/inbound/openai-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
   { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-runner.ts", branches: ["if (out === undefined) continue;"], phase: "P5", reason: `only the chat mapper skips content-free envelopes (the native mapper forwards every response): ${TRANSLATED}` },
+  { file: "packages/provider-gateway/src/adapters/outbound/gateway-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `translated cells of the API-key gateways: ${TRANSLATED}` },
+  { file: "packages/provider-openai/src/domain/id-token.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/domain/catalog.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/domain/credential.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/domain/responses.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/jwks-id-token-verifier.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-catalog.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-identity.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-oauth-client.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-provider.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-session.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "packages/core/src/domain/services/base64url.ts", functions: ["base64UrlDecode"], phase: "P4.5-live", reason: `only the OpenAI ID-token check decodes base64url; ${OPENAI_LIVE}` },
+  { file: "apps/router/src/composition/container.ts", functions: ["wireOpenAI"], branches: ['const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;', "...(openai ? { openai } : {}),"], phase: "P4.5-live", reason: OPENAI_LIVE },
+  { file: "apps/router/src/adapters/inbound/cli/cli-driver.ts", branches: ['else if (flag === "--new") fresh = true;'], phase: "P4.5-live", reason: `\`login --new\` registers another ChatGPT account; ${OPENAI_LIVE}` },
+  { file: "packages/provider-cheaper-inference/src/domain/cheaper-inference.ts", functions: ["parseAccount", "balanceText"], phase: "P4.6-live", reason: GATEWAY_LIVE("cheaper-inference") },
+  { file: "packages/provider-cheaper-inference/src/adapters/outbound/cheaper-inference-adapters.ts", functions: ["identify", "usage"], phase: "P4.6-live", reason: GATEWAY_LIVE("cheaper-inference") },
+  { file: "packages/provider-opencode/src/adapters/outbound/opencode-key-login.ts", branches: ["if (res.status !== 200) throw new ProviderAuthRequiredError(this.provider, `the key was refused: HTTP ${res.status} ${text.slice(0, 200)}`);"], phase: "P4.6-live", reason: GATEWAY_LIVE("opencode-go") },
 ];
 
 export type DeferralResult = { readonly map: CoverageMap; readonly exemptFiles: ReadonlySet<string>; readonly notes: readonly string[]; readonly problems: readonly string[] };
@@ -40,7 +62,7 @@ export type DeferralResult = { readonly map: CoverageMap; readonly exemptFiles: 
 /** istanbul names class methods "(anonymous_N)"; the method name is read from the source at the declaration. */
 function nameOf(fn: { name: string; decl: Range }, lines: readonly string[]): string {
   if (!fn.name.startsWith("(anonymous_")) return fn.name;
-  const declared = /^(?:async\s+)?\*?\s*(?:get\s+|set\s+)?([A-Za-z_$][\w$]*)\s*[(<]/.exec(lines[fn.decl.start.line - 1]!.slice(fn.decl.start.column));
+  const declared = /^(?:(?:public|protected|private|static|override)\s+)*(?:async\s+)?\*?\s*(?:get\s+|set\s+)?([A-Za-z_$][\w$]*)\s*[(<]/.exec(lines[fn.decl.start.line - 1]!.slice(fn.decl.start.column));
   return declared?.[1] ?? fn.name;
 }
 

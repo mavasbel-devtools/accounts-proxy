@@ -4,6 +4,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { activeProject } from "@inference-router/provider-antigravity/domain/account.ts";
@@ -12,7 +13,7 @@ import type { StreamEnvelope } from "@inference-router/provider-antigravity/doma
 import { TrajectoryState, type TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
 import type { ChatMessage } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type OpenAIGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
+import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type GatewayGraph, type OpenAIGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
 import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
 import { Redactor } from "@inference-router/scripts/evidence/live/redact.ts";
 import { RecordingTransport, type Exchange } from "@inference-router/scripts/evidence/live/recording-transport.ts";
@@ -27,6 +28,8 @@ export type Live = {
   readonly antigravity: AntigravityGraph;
   /** Present when the openai provider is enabled (plan v4 P4.5). */
   readonly openai: OpenAIGraph | undefined;
+  /** The enabled API-key gateways (plan P4.6). */
+  readonly gateways: readonly GatewayGraph[];
   readonly recorder: RecordingTransport;
   readonly redactor: Redactor;
   readonly trajectory: TrajectoryState;
@@ -47,7 +50,7 @@ export async function openLive(): Promise<Live> {
   const graph = await buildGraph({ home, transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in router.yaml");
   const redactor = new Redactor();
-  for (const provider of ["claude", "antigravity", "openai"] as const) {
+  for (const provider of PROVIDER_IDS) {
     const pool = await graph.store.load(provider);
     for (const account of pool.accounts) {
       redactor.add("account_id", account.id);
@@ -64,7 +67,7 @@ export async function openLive(): Promise<Live> {
   const sessionId = await graph.antigravity.state.sessionId();
   redactor.add("antigravity_session_id", sessionId);
   const trajectory = new TrajectoryState({ sessionUuid: graph.random.uuid(), sessionId, uuid: () => graph.random.uuid(), now: () => graph.clock.now() });
-  return { graph, claude: graph.claude, antigravity: graph.antigravity, openai: graph.openai, recorder, redactor, trajectory, home };
+  return { graph, claude: graph.claude, antigravity: graph.antigravity, openai: graph.openai, gateways: graph.gateways, recorder, redactor, trajectory, home };
 }
 
 /** Every string leaf of an account record that names or authenticates the user is a secret. */
@@ -92,7 +95,7 @@ export function quotaSignal(status: number | undefined, text: string): boolean {
 export type ClaudeResult = { readonly status: number; readonly text: string; readonly events: Array<Record<string, unknown>> };
 
 export async function claudeMessages(live: Live, model: string, body: Record<string, unknown>): Promise<ClaudeResult> {
-  const response = await live.claude.provider.passthrough(model, { path: "/v1/messages", query: {}, headers: {}, body: JSON.stringify(body), lossy: false });
+  const response = await live.claude.provider.passthrough(model, { format: "anthropic-messages", path: "/v1/messages", query: {}, headers: {}, body: JSON.stringify(body), lossy: false });
   const text = await readAll(response.body);
   const events: Array<Record<string, unknown>> = [];
   if ((response.headers["content-type"] ?? "").includes("text/event-stream")) {

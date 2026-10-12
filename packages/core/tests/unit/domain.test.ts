@@ -20,7 +20,7 @@ import {
   InternalError,
 } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { formatModelAddress, isProviderId, PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
+import { formatModelAddress, isProviderId, modelFormats, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS } from "@inference-router/core/domain/models.ts";
 import { base64UrlDecode, base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
 import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
 import { mergeUsage, ZERO_USAGE } from "@inference-router/core/domain/services/usage.ts";
@@ -37,9 +37,15 @@ describe("json", () => {
 
 describe("models", () => {
   test("provider ids", () => {
-    expect(PROVIDER_IDS).toEqual(["claude", "antigravity", "openai"]);
+    expect(PROVIDER_IDS).toEqual(["claude", "antigravity", "openai", "openrouter", "opencode", "opencode-go", "cheaper-inference"]);
+    expect(SUBSCRIPTION_PROVIDERS).toEqual(["claude", "antigravity", "openai"]);
     expect(isProviderId("antigravity")).toBe(true);
     expect(isProviderId("cheaper")).toBe(false);
+  });
+  test("modelFormats: the model's own formats, else the catalog's", () => {
+    const catalog = { provider: "opencode" as const, formats: [], source: "live" as const, models: [] };
+    expect(modelFormats(catalog, { address: { provider: "opencode", model: "a" }, displayName: "A", formats: ["gemini"] })).toEqual(["gemini"]);
+    expect(modelFormats({ ...catalog, formats: ["openai-chat"] }, { address: { provider: "opencode", model: "b" }, displayName: "B" })).toEqual(["openai-chat"]);
   });
   test("formatModelAddress", () => {
     expect(formatModelAddress({ provider: "antigravity", model: "gemini-3-pro" })).toBe("antigravity/gemini-3-pro");
@@ -87,6 +93,8 @@ describe("errors", () => {
   test("messages and retry hints", () => {
     expect(new UnsupportedFeatureError(["images", "top_k"], "antigravity").message).toBe("antigravity cannot carry: images, top_k");
     expect(new ProviderAuthRequiredError("antigravity", "no account").message).toContain("inference-router login antigravity");
+    expect(new ProviderDisabledError("claude").message).toBe("claude is disabled; enable it with acknowledgeTermsRisk: true in router.yaml");
+    expect(new ProviderDisabledError("openrouter").message).toBe("openrouter is disabled; enable it with enabled: true in router.yaml");
     expect(new QuotaExhaustedError("antigravity", "x", 30).retryAfterSeconds).toBe(30);
     expect(new QuotaExhaustedError("antigravity", "x").retryAfterSeconds).toBeUndefined();
     expect(new UpstreamError("antigravity", 500, "e".repeat(600)).message.length).toBeLessThan(560);

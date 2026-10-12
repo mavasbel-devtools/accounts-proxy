@@ -13,12 +13,16 @@
   },
   "dependencies": {
     "@inference-router/core": "workspace:*",
-    "@inference-router/provider-claude": "workspace:*",
-    "@inference-router/provider-antigravity": "workspace:*",
-    "@inference-router/provider-openai": "workspace:*",
     "@inference-router/dialect-anthropic": "workspace:*",
+    "@inference-router/dialect-gemini": "workspace:*",
     "@inference-router/dialect-openai": "workspace:*",
-    "@inference-router/dialect-gemini": "workspace:*"
+    "@inference-router/provider-antigravity": "workspace:*",
+    "@inference-router/provider-cheaper-inference": "workspace:*",
+    "@inference-router/provider-claude": "workspace:*",
+    "@inference-router/provider-gateway": "workspace:*",
+    "@inference-router/provider-openai": "workspace:*",
+    "@inference-router/provider-opencode": "workspace:*",
+    "@inference-router/provider-openrouter": "workspace:*"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.133.0",

@@ -1,0 +1,17 @@
+{
+  "name": "@inference-router/provider-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Shared base of the API-key gateway providers (plan P4.6).",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
+  }
+}

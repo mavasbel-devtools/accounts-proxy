@@ -2,6 +2,18 @@
 
 Date: 2026-10-06 00:23 · Status: **LOCKED v3.1 — APPROVED 2026-10-06 ("Confirmed. Could we proceed?") — IN EXECUTION**; extended by v4 (below).
 
+## Changes v4 → v4.1 (user, 2026-10-12)
+
+- **API-key gateways added** ([plan P4.6](2026-10-12-15-35-p46-gateway-providers-plan.md)): `openrouter`,
+  `opencode` (OpenCode Zen), `opencode-go`, `cheaper-inference`. This reverses the 2026-10-06 decision "no API-key
+  providers" (decision N1); every earlier text that says otherwise stays as written and is superseded here.
+- **Routing by wire format.** A model accepts some formats natively (`anthropic-messages`, `openai-chat`,
+  `openai-responses`, `gemini`): one fixed format per subscription provider, per model or uniform on a gateway. OpenAI
+  Chat Completions is now a routed format (native on the gateways). The v4 matrix (4 formats × 3 providers) grows to
+  4 formats × 7 providers; P5 translates only the pairs no provider serves natively.
+- **Order** (decision N7): P4.6 → P5 → P4.5 live part (when the user signs in to OpenAI) → P6–P9.
+- The repository stays private until everything works (user, 2026-10-12; O3).
+
 ## Changes v3.1 → v4 (user, 2026-10-11)
 - **Plans are only extended, never replaced** (user rule 2026-10-11). Everything below this section stays as written;
   parts no longer in force are marked "superseded by v4".

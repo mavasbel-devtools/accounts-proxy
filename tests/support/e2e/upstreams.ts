@@ -1,7 +1,9 @@
 // One loopback replay server standing in for every upstream host the daemon talks to; the composition root's
 // INFERENCE_ROUTER_TEST_UPSTREAM_* seams point all four origins here (paths are the production paths). Every response
 // body is a committed capture: the source plugins' fixtures (plugin-6292741, plugin-5c6f7c2) or the router's own
-// redacted P0-LIVE captures (E2/E3 streams, E5 control plane: live catalog, quota, loadCodeAssist, fetchUserInfo).
+// redacted P0-LIVE captures (E2/E3 streams, E5 control plane: live catalog, quota, loadCodeAssist, fetchUserInfo), and
+// the gateways' public model lists fetched into docs/reference/specs (plan P4.6), OpenRouter's documented OpenAPI examples
+// (key exchange, key info, Chat / Responses / Messages answers), and the captured OpenCode gateway refusal (probe z0).
 // Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
 // non-streamed capture exists); count_tokens answers the spec's example (anthropic-count-tokens.md Response 200).
 // Every request is recorded so tests can assert what the daemon really sent.
@@ -11,11 +13,25 @@ import { join } from "node:path";
 export type Recorded = { readonly method: string; readonly path: string; readonly search: string; readonly headers: Record<string, string>; readonly body: string };
 
 const repo = join(import.meta.dir, "..", "..", "..");
+/** P4.6: the gateways' public model lists as fetched into docs/reference/specs (provenance in manifest.json). */
+export const spec = (name: string) => readFileSync(join(repo, "docs", "reference", "specs", name), "utf8");
+type OpenApi = { paths: Record<string, Record<string, { responses: Record<string, { content?: Record<string, { example?: unknown }> }> }>> };
+let openRouterApi: OpenApi | undefined;
+/** P4.6: an example of OpenRouter's OpenAPI document (`openrouter-openapi.yaml`), the documented answer of one operation. */
+export function openRouterExample(path: string, method: "get" | "post", status: string, contentType: string): unknown {
+  openRouterApi ??= Bun.YAML.parse(spec("openrouter-openapi.yaml")) as OpenApi;
+  return openRouterApi.paths[path]![method]!.responses[status]!.content![contentType]!.example;
+}
+/** The documented SSE example (one event) as a stream frame. */
+function openRouterStream(path: string): string {
+  const frame = openRouterExample(path, "post", "200", "text/event-stream") as { event?: string; data: unknown };
+  return `${frame.event !== undefined ? `event: ${frame.event}\n` : ""}data: ${JSON.stringify(frame.data)}\n\n`;
+}
 const claudeFixture = (name: string) => readFileSync(join(repo, "packages", "provider-claude", "tests", "fixtures", "plugin-6292741", name), "utf8");
 const antigravityFixture = (name: string) => readFileSync(join(repo, "packages", "provider-antigravity", "tests", "fixtures", "plugin-5c6f7c2", name), "utf8");
 type Capture = { exchanges: { response: { status: number; headers: Record<string, string>; chunks: { text: string }[] } }[] };
 const capture = (relative: string): Capture => JSON.parse(readFileSync(join(repo, "tests", "fixtures", "captures", "p0-live", relative), "utf8")) as Capture;
-const captured = (relative: string, index = 0) => {
+export const captured = (relative: string, index = 0) => {
   const exchange = capture(relative).exchanges[index]!.response;
   return { status: exchange.status, contentType: exchange.headers["content-type"] ?? "text/event-stream", body: exchange.chunks.map((c) => c.text).join("") };
 };
@@ -83,6 +99,7 @@ export class ReplayUpstreams {
       INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: this.origin,
       INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API: this.origin,
       INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH: this.origin,
+      INFERENCE_ROUTER_TEST_UPSTREAM_GATEWAYS: this.origin,
     };
   }
 
@@ -118,6 +135,19 @@ export class ReplayUpstreams {
 
     const queued = this.scripted.get(url.pathname)?.shift();
     if (queued !== undefined) return queued(parsed, this.requests.at(-1)!);
+    // OpenCode Zen / Go inference: the gateway's captured answer to a request it does not serve (P4.6 probe z0).
+    if (req.method === "POST" && url.pathname.startsWith("/zen/")) {
+      const answer = captured("gateways/z0-opencode-keyless-none.json");
+      const logId = capture("gateways/z0-opencode-keyless-none.json").exchanges[0]!.response.headers["x-opencode-log-id"]!;
+      return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, "x-opencode-log-id": logId } });
+    }
+    const orInference = req.method === "POST" ? /^\/api\/v1(\/chat\/completions|\/responses|\/messages)$/.exec(url.pathname)?.[1] : undefined;
+    if (orInference !== undefined) {
+      const headers = { "x-generation-id": "gen-e2e" };
+      return parsed["stream"] === true
+        ? new Response(openRouterStream(orInference), { headers: { "content-type": "text/event-stream", ...headers } })
+        : json(openRouterExample(orInference, "post", "200", "application/json"), 200, headers);
+    }
     switch (url.pathname) {
       case "/v1/oauth/token":
         return json(claudeFixture("refresh-response.json"));
@@ -146,6 +176,20 @@ export class ReplayUpstreams {
         return json(captured("e5/retrieve-user-quota-summary.json").body);
       case "/v1internal:streamGenerateContent":
         return this.generate(parsed);
+      case "/api/v1/models":
+        return json(spec("openrouter-models.json"));
+      case "/zen/v1/models":
+        return json(spec("opencode-zen-models.json"));
+      case "/zen/go/v1/models":
+        return json(spec("opencode-go-models.json"));
+      case "/api.json":
+        return json(spec("models-dev-gateways.json"));
+      case "/public/models":
+        return json(spec("cheaper-inference-public-models.json"));
+      case "/api/v1/auth/keys":
+        return json(openRouterExample("/auth/keys", "post", "200", "application/json"));
+      case "/api/v1/key":
+        return json(openRouterExample("/key", "get", "200", "application/json"));
       default:
         return new Response(`no replay for ${req.method} ${url.pathname}`, { status: 404 });
     }

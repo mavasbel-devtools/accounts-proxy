@@ -1,21 +1,29 @@
 # inference-router
 
-A local LLM router. It exposes **Anthropic Messages**, **OpenAI Chat Completions** and **Gemini generateContent**
-endpoints on `127.0.0.1`, so any stock SDK or tool can call the subscription models directly. It routes each call to:
+A local LLM router. It exposes **Anthropic Messages**, **OpenAI Chat Completions**, **OpenAI Responses** and **Gemini
+generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call the models of seven providers directly:
 
-- **`claude`**: Claude Pro/Max OAuth, sent upstream as Anthropic Messages.
-- **`antigravity`**: Google Antigravity OAuth, sent upstream through the Cloud Code Assist envelope. It serves Gemini,
-  Claude and gpt-oss models.
+| Provider | Sign-in | Upstream | Native formats |
+|---|---|---|---|
+| **`claude`** | Claude Pro/Max OAuth (browser) | Anthropic Messages | Anthropic Messages |
+| **`antigravity`** | Google Antigravity OAuth (browser) | Cloud Code Assist envelope (Gemini, Claude and gpt-oss models) | Gemini |
+| **`openai`** | Sign in with ChatGPT, plan usage (browser) | OpenAI Responses | OpenAI Responses |
+| **`openrouter`** | OpenRouter PKCE (browser, yields an API key) | OpenRouter API | Chat, Responses and Anthropic Messages for every model |
+| **`opencode`** | OpenCode Zen API key (hidden prompt) | `opencode.ai/zen/v1` | per model: Responses (GPT, Grok), Messages (Claude, …), Gemini, Chat |
+| **`opencode-go`** | OpenCode Go API key (hidden prompt) | `opencode.ai/zen/go/v1` | per model: Responses, Messages, Chat |
+| **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
-> **Status: P4.** The daemon serves the two native cells (Anthropic Messages → `claude`, Gemini → `antigravity`) and
-> the model lists of all three dialects. The translated cells (OpenAI Chat Completions, Anthropic → antigravity,
-> Gemini → claude) arrive in P5 and answer 400 `unsupported_feature` until then. See the plan:
-> [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md) and
-> [P4](docs/plans/2026-10-10-19-00-p4-daemon-native-cells-plan.md).
+> **Status: P4.6.** Every provider serves its native formats; a request in another format is a translated cell
+> (P5) and answers 400 `unsupported_feature` until then. `openai` and the API-key gateways are built and tested against
+> documented and captured answers; their live checks wait for the user's sign-ins (OpenAI) and keys (gateways). Plans:
+> [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
+> [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md).
 
-> **Terms risk.** Both providers' terms restrict third-party clients. The verbatim quotes are in
-> [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md) §3.
-> Each provider stays disabled until its config sets `acknowledgeTermsRisk: true`.
+> **Terms risk.** The subscription providers' terms restrict third-party clients. The verbatim quotes are in
+> [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md) §3
+> and [the OpenAI rules](docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md). `claude`, `antigravity` and
+> `openai` stay disabled until their config sets `acknowledgeTermsRisk: true`; the API-key gateways need only
+> `enabled: true`.
 
 ## Configuration
 
@@ -26,7 +34,7 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 |---|---|
 | `router.yaml` | configuration; example: [config/router.example.yaml](config/router.example.yaml). No file = every provider disabled. Unknown keys are errors. |
 | `token.json` | the router token clients present (created on first `serve` or `token`, mode 0600) |
-| `accounts-<provider>.json` | the router's own accounts and tokens (atomic writes, mode 0600) |
+| `accounts-<provider>.json` | the router's own accounts, tokens and API keys (atomic writes, mode 0600) |
 | `state/` | per-install provider state (device and session ids, catalog cache, thought signatures) |
 | `locks/` | cross-process lock files (token refresh) |
 | `logs/router.log` | the log; never contains tokens |
@@ -37,10 +45,10 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 
 | Command | What it does |
 |---|---|
-| `login <provider> [--manual] [--timeout-seconds N]` | Browser sign-in. A loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback; only `claude` has one. |
+| `login <provider> [--manual] [--new] [--timeout-seconds N]` | Browser sign-in for `claude`, `antigravity`, `openai`, `openrouter`: a loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback (`claude`, `openrouter`). `--new` registers another ChatGPT account (`openai`). For `opencode`, `opencode-go` and `cheaper-inference` the API key is read at a hidden prompt and checked where the vendor documents a way. |
 | `account list <provider>` | stored accounts; `*` marks the active one |
 | `account use <provider> <account-id>` | choose the active account (the router never switches accounts by itself) |
-| `quota <provider>` | remaining quota as reported by the provider (`antigravity`) |
+| `quota <provider>` | remaining quota as reported by the provider: `antigravity`, `openrouter` (key usage and limit), `cheaper-inference` (wallet) |
 | `models [<provider>]` | each provider's model catalog with advertised limits, and where it came from (live, stored copy, or the built-in list) |
 | `serve` | runs the daemon in the foreground on `127.0.0.1:<port>` (Ctrl-C or SIGTERM stops it; in-flight responses get 10 s) |
 | `token` | prints the router token (created on first use) |
@@ -64,16 +72,21 @@ await gemini.models.generateContent({ model: "antigravity/gemini-3.6-flash-low",
 
 import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: TOKEN, baseURL: "http://127.0.0.1:4141/openai/v1" });
-await openai.models.list(); // chat completions: P5
+await openai.chat.completions.create({ model: "openrouter/openai/gpt-oss-20b:free", messages: [{ role: "user", content: "hi" }] });
+await openai.responses.create({ model: "openai/gpt-5.5", input: "hi" });
 ```
 
-| Route | P4 behaviour |
-|---|---|
-| `GET /health` | `{status, providers}`; the only route without the token |
-| `POST /anthropic/v1/messages`, `POST /anthropic/v1/messages/count_tokens` | `claude/*`: native passthrough, streamed as it arrives; other providers: 400 (P5) |
-| `POST /gemini/v1beta/models/{model}:streamGenerateContent` (`?alt=sse` or a JSON array), `:generateContent` | `antigravity/*`: near-native cell; `:countTokens`: 400 (Antigravity has no token count) |
-| `POST /openai/v1/chat/completions` | 400 `unsupported_feature` (P5) |
-| `GET /anthropic/v1/models`, `GET /openai/v1/models`, `GET /gemini/v1beta/models` | every enabled provider's models in that dialect's shape |
+| Route | Format | Served natively by |
+|---|---|---|
+| `GET /health` | | `{status, providers}`; the only route without the token |
+| `POST /anthropic/v1/messages`, `/anthropic/v1/messages/count_tokens` | Anthropic Messages | `claude/*`; `openrouter/*`; the Messages models of `opencode`, `opencode-go`, `cheaper-inference` (`count_tokens`: `claude`, `cheaper-inference`) |
+| `POST /openai/v1/chat/completions` | OpenAI Chat | `openrouter/*`; the Chat models of `opencode`, `opencode-go`, `cheaper-inference` |
+| `POST /openai/v1/responses` | OpenAI Responses | `openai/*`; `openrouter/*`; the Responses models of the other gateways |
+| `POST /gemini/v1beta/models/{model}:streamGenerateContent` (`?alt=sse` or a JSON array), `:generateContent` | Gemini | `antigravity/*` (near-native cell); the Gemini models of `opencode`; `:countTokens`: 400 |
+| `GET /anthropic/v1/models`, `GET /openai/v1/models`, `GET /gemini/v1beta/models` | | every enabled provider's models in that dialect's shape |
+
+Any other provider × format pair is a translated cell (P5): 400 `unsupported_feature` until then. A gateway model whose
+formats the vendor's list does not state is forwarded in the client's format, and the gateway answers it.
 
 The token is accepted as `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=`. Errors use each dialect's
 own error shape; upstream errors on the native cells pass through with their status, body and `retry-after`.
@@ -117,17 +130,27 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
   rejects them, L6). Tool schemas may use only `type, format, description, nullable, enum, items, properties,
   required, propertyOrdering`. The model list is the upstream catalog minus its tab/deprecated ids and can include IDE
   helper models such as `tab_*` (L13).
+- **API-key gateways** ([rules](docs/reference/2026-10-12-15-35-gateway-provider-rules.md)): the body `model` (or the
+  Gemini path model) becomes the vendor's bare id; only the key, `content-type`, `accept` and, on Messages,
+  `anthropic-version`/`anthropic-beta` travel upstream; the answer (status, body, `retry-after`, the vendor's request
+  id) streams back unchanged, errors included. Model lists: OpenRouter's, OpenCode's and Cheaper Inference's own lists
+  (OpenCode formats from models.dev), live → stored copy (24 h) → built-in copy of the committed lists. OpenCode's
+  keyless free tier answers 403 `FreeTierError` "can only be used from within OpenCode" to any other client, so
+  `opencode` needs a key.
 - **Model-list fields the catalogs do not have** are neutral markers, never invented values: Antigravity models list
   `created_at: 1970-01-01T00:00:00Z` (Anthropic shape) and `created: 0` (OpenAI shape); Gemini-shape `version` is the
   provider id and `baseModelId` the routable `<provider>/<model>` (decision Q5).
 
-## Dialect × provider matrix
+## Format × provider matrix
 
-| Inbound dialect \ Provider | claude | antigravity |
-|---|---|---|
-| Anthropic Messages | native passthrough (P4) | translated (P5) |
-| OpenAI Chat Completions | translated (P5) | translated (P5) |
-| Gemini generateContent | translated (P5) | near-native (P4) |
+| Inbound format \ Provider | claude | antigravity | openai | openrouter | opencode | opencode-go | cheaper-inference |
+|---|---|---|---|---|---|---|---|
+| Anthropic Messages | native | P5 | P5 | native | native per model | native per model | native per model |
+| OpenAI Chat Completions | P5 | P5 | P5 | native | native per model | native per model | native per model |
+| OpenAI Responses | P5 | P5 | native | native | native per model | native per model | native per model |
+| Gemini generateContent | P5 | near-native | P5 | P5 | native per model | P5 | P5 |
+
+"Native per model": the models whose list entry names that format; the others are P5 for that format.
 
 ## Architecture
 
@@ -155,16 +178,20 @@ flowchart LR
   subgraph providers[packages/provider-*  outbound adapters]
     PC[claude]
     PA[antigravity]
+    PO[openai]
+    PG[gateway base: openrouter, opencode, opencode-go, cheaper-inference]
   end
   A --> H
   O --> H
   G --> H
   H --> DA & DO & DG --> S
   S --> P
-  P -.implemented by.-> PC & PA
+  P -.implemented by.-> PC & PA & PO & PG
   PC --> X[(api.anthropic.com)]
   PA --> Y[(cloudcode-pa.googleapis.com)]
-  C -.wires.-> H & S & PC & PA
+  PO --> Z[(api.openai.com)]
+  PG --> W[(openrouter.ai · opencode.ai · api.cheaperinference.com)]
+  C -.wires.-> H & S & PC & PA & PO & PG
 ```
 
 The full component diagram is [docs/architecture.drawio](docs/architecture.drawio). The architecture rules are in
@@ -177,6 +204,9 @@ Workspaces:
 | `@inference-router/core` | `packages/core` | canonical domain and ports |
 | `@inference-router/provider-claude` | `packages/provider-claude` | Claude subscription provider |
 | `@inference-router/provider-antigravity` | `packages/provider-antigravity` | Antigravity provider |
+| `@inference-router/provider-openai` | `packages/provider-openai` | OpenAI provider (Sign in with ChatGPT plan usage) |
+| `@inference-router/provider-gateway` | `packages/provider-gateway` | shared base of the API-key gateways (native cells, catalogs, key sessions and logins) |
+| `@inference-router/provider-{openrouter,opencode,cheaper-inference}` | `packages/provider-*` | the gateway vendors' rules, logins, catalogs and quota |
 | `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: router errors and model lists (P4), translation (P5) |
 | `@inference-router/router` | `apps/router` | application, adapters, composition, CLI |
 | `@inference-router/test-support` | `tests/support` | shared test doubles, guarded temp directories, e2e replay upstreams and process runner |
@@ -193,10 +223,11 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run typecheck` | `tsc --noEmit` over every workspace, test and script |
 | `bun run test` | unit + component + architecture + support tests |
 | `bun run coverage` | same set under istanbul; fails below 100% lines/statements/functions/branches or if a source file is never loaded |
-| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%, P5-only code deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
+| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; P5-only code and code waiting for the user's live captures deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md), [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
 | `bun run verify` | the full release gate |
 | `bun run fetch:specs` | re-fetch the official wire specs into `docs/reference/specs/` |
+| `bun scripts/evidence/gateway-snapshots.ts` | regenerate the gateways' built-in model lists from the committed vendor lists |
 
 ## Evidence
 
@@ -208,3 +239,7 @@ also inside one workspace. Relative imports are rejected by the architecture gat
   [Q6 thinking probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md)
 - [P4 e2e coverage, risk R1 and its resolution](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md) ·
   [P4 live daemon smoke](docs/reference/2026-10-11-11-47-p4-live-daemon-smoke.md)
+- [E4 refresh-token rotation](docs/reference/2026-10-11-23-06-e4-refresh-rotation.md) ·
+  [OpenAI ChatGPT plan rules](docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md)
+- [Gateway provider rules](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) ·
+  [P4.6 gateway live probe](docs/reference/2026-10-12-16-09-p46-gateway-live-probe.md)

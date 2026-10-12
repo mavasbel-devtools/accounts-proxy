@@ -77,6 +77,11 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - 2026-10-12 P4.5 part 1 (acce877): packages/provider-openai (SIWC dynamic registration, JWKS ID-token check, session,
   model list, native Responses route with limits/aggregation/opencode headers); unit+component 100%. Live probe script
   ready (scripts/evidence/live/p45-openai-probe.ts). Waiting: user sign-in `bun run router login openai` (+ O3).
+- 2026-10-12 User: repo stays private (O3); add Cheaper Inference, OpenCode Zen/Go, OpenRouter while OpenAI waits.
+  Plan P4.6 (docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md, N1–N9 approved). 2026-10-12 17:08: built and tested
+  (provider-gateway + three vendor packages, routing by wire format, Chat route, PKCE/key logins, quota). Live: Zen
+  keyless → 403 FreeTierError (Z8). verify GATE PASS (646 unit+component, 193 e2e, 100%). Waiting: the user's gateway
+  keys (live probes) and OpenAI sign-in.
 
 ## Progress map
 | Phase | State |
@@ -91,4 +96,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P4 | done 2026-10-11; R1 resolved (option B), `bun run verify` GATE: PASS |
 | Phase H (plan v4) | done 2026-10-11 |
 | P4.5 openai | part 1 done (code + unit/component); waiting for the user's OpenAI sign-in, then live probe + e2e |
+| P4.6 API-key gateways | built, verify GATE PASS; per-provider live probes wait for the user's keys |
 | P5–P9 | not started |

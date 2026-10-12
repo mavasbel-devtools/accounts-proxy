@@ -29,7 +29,7 @@ describe("configuration", () => {
     ["a port that is not a number", "port: x\n", "port must be an integer 1-65535"],
     ["a port out of range", "port: 70000\n", "port must be an integer 1-65535"],
     ["providers as a list", "providers: []\n", "providers must be a mapping"],
-    ["an unknown provider", "providers:\n  openai: {}\n", "unknown provider openai (known: claude, antigravity)"],
+    ["an unknown provider", "providers:\n  anthropic: {}\n", "unknown provider anthropic (known: claude, antigravity, openai, openrouter, opencode, opencode-go, cheaper-inference)"],
     ["a provider that is not a mapping", "providers:\n  claude: 1\n", "providers.claude must be a mapping"],
     ["aliases as a list", "aliases: []\n", "aliases must be a mapping"],
     ["an alias that is not a string", "aliases:\n  fast: 1\n", "aliases.fast must be a <provider>/<model> string"],
@@ -124,7 +124,7 @@ describe("stores", () => {
 describe("usage errors (exit 2)", () => {
   test.each([
     [["login"], "missing or extra arguments"],
-    [["login", "openai"], "unknown provider openai"],
+    [["login", "anthropic"], "unknown provider anthropic"],
     [["login", "claude", "--bogus"], "unknown login option --bogus"],
     [["login", "claude", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer"],
     [["account", "use", "claude"], "account list <provider> | account use <provider> <account-id>"],

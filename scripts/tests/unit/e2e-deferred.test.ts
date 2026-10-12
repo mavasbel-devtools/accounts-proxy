@@ -13,7 +13,7 @@ afterEach(() => {
   root = undefined;
 });
 
-const SOURCE = ["export class P {", "  live() {", "    return 1;", "  }", "  async *stream() {", "    yield (() => 2)();", "  }", "}", "export function twin() {}", "export function twin2() {}", ""].join("\n");
+const SOURCE = ["export class P {", "  protected override live() {", "    return 1;", "  }", "  async *stream() {", "    yield (() => 2)();", "  }", "}", "export function twin() {}", "export function twin2() {}", ""].join("\n");
 const range = (l1: number, c1: number, l2: number, c2: number) => ({ start: { line: l1, column: c1 }, end: { line: l2, column: c2 } });
 
 function fixture(hits: { live: number; stream: number; inner: number; branch: [number, number] }): { path: string; data: FileCoverageData } {
@@ -42,7 +42,7 @@ function fixture(hits: { live: number; stream: number; inner: number; branch: [n
 
 describe("applyDeferrals", () => {
   test("the committed list is empty or every entry names a phase and a reason", () => {
-    for (const d of E2E_DEFERRED) expect([d.phase, d.reason.length > 0, d.file.endsWith(".ts")]).toEqual(["P5", true, true]);
+    for (const d of E2E_DEFERRED) expect([["P5", "P4.5-live", "P4.6-live"].includes(d.phase), d.reason.length > 0, d.file.endsWith(".ts")]).toEqual([true, true, true]);
   });
 
   test("a deferred method (resolved from its declaration) and everything nested in it leave the map", () => {
@@ -55,6 +55,12 @@ describe("applyDeferrals", () => {
     expect(result.map.getCoverageSummary().toJSON().statements.pct).toBe(100);
     expect(result.notes).toEqual(["deferred src/p.ts [stream] (P5: translated cells)"]);
     expect(result.problems).toEqual([]);
+  });
+
+  test("a method declared with modifiers (protected override) is found by its name", () => {
+    const { path, data } = fixture({ live: 0, stream: 1, inner: 1, branch: [1, 1] });
+    const result = applyDeferrals(createCoverageMap({ [path]: data }), [{ file: "src/p.ts", functions: ["live"], phase: "P4.6-live", reason: "needs a capture" }], root!);
+    expect([result.notes, result.problems]).toEqual([["deferred src/p.ts [live] (P4.6-live: needs a capture)"], []]);
   });
 
   test("a deferred file leaves the map and is exempt from completeness, loaded or not", () => {

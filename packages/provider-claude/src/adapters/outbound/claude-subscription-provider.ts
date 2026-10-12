@@ -8,7 +8,7 @@ import type { CanonicalEvent } from "@inference-router/core/domain/canonical/eve
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
@@ -39,7 +39,8 @@ export function forwardedResponseHeaders(headers: Readonly<Record<string, string
 
 export class ClaudeSubscriptionProvider extends ProviderPort {
   readonly id = "claude";
-  readonly nativeDialect = "anthropic";
+  /** The one format this provider serves natively, for every model. */
+  readonly formats: readonly WireFormat[] = ["anthropic-messages"];
 
   constructor(
     private readonly session: ClaudeSessionPort,
@@ -54,6 +55,10 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
   }
 
   /** Translated-cell features: empty until the P0-E3 fidelity matrix is measured (plan amendment A1). */
+  async nativeFormats(_model: string): Promise<ReadonlySet<WireFormat>> {
+    return new Set(this.formats);
+  }
+
   capabilities(): ReadonlySet<Feature> {
     return new Set<Feature>();
   }
@@ -62,7 +67,7 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
     const { source, entries } = await this.catalog.listing();
     return {
       provider: this.id,
-      nativeDialect: this.nativeDialect,
+      formats: this.formats,
       source,
       models: entries.map((e) => ({
         address: { provider: this.id, model: e.id },

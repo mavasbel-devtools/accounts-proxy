@@ -132,6 +132,13 @@ Every phase ends with its own commit on top of pushed history (`git revert` work
 - A quota limit hit during a live run.
 - Live evidence that contradicts a rule here: an amendment is written and the user is asked; nothing is guessed.
 
+## 7a. Amendment 2026-10-12: Phase P4.6 (API-key gateways)
+
+The user asked to add Cheaper Inference, the OpenCode API (Zen and Go) and OpenRouter while the OpenAI sign-in is
+pending. Planned in [P4.6](2026-10-12-15-35-p46-gateway-providers-plan.md) (decisions N1–N9); it runs before P5, and
+the P4.5 live part follows when the user signs in to OpenAI. §3–§4 above stay as written; P5's matrix grows to the
+seven providers (main plan "Changes v4 → v4.1").
+
 ## 8. Execution record
 - 2026-10-11 22:11 plan written and approved.
 - 2026-10-11 23:06 **Phase H done** (H-a…H-h). `OAuthSessionBase` (`packages/core/src/ports/outbound/session.ts`) is the

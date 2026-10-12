@@ -1,9 +1,22 @@
 // Provider and model identity shared by every layer.
 
-export type ProviderId = "claude" | "antigravity" | "openai";
-export const PROVIDER_IDS: readonly ProviderId[] = ["claude", "antigravity", "openai"];
+export type ProviderId = "claude" | "antigravity" | "openai" | "openrouter" | "opencode" | "opencode-go" | "cheaper-inference";
+export const PROVIDER_IDS: readonly ProviderId[] = ["claude", "antigravity", "openai", "openrouter", "opencode", "opencode-go", "cheaper-inference"];
+
+/**
+ * Providers signed in with a consumer subscription (plan D4: usable only with `acknowledgeTermsRisk: true`). The others
+ * are API-key gateways (plan P4.6, decision N1).
+ */
+export const SUBSCRIPTION_PROVIDERS: readonly ProviderId[] = ["claude", "antigravity", "openai"];
 
 export type Dialect = "anthropic" | "openai" | "gemini";
+
+/**
+ * The request format of one route (plan P4.6 §2): `/anthropic/v1/messages*` → anthropic-messages,
+ * `/openai/v1/chat/completions` → openai-chat, `/openai/v1/responses` → openai-responses, `/gemini/v1beta/models/*` →
+ * gemini. A model serves some formats natively; any other format is a translated cell (P5).
+ */
+export type WireFormat = "anthropic-messages" | "openai-chat" | "openai-responses" | "gemini";
 
 export function isProviderId(value: string): value is ProviderId {
   return (PROVIDER_IDS as readonly string[]).includes(value);
@@ -25,6 +38,8 @@ export type ModelInfo = {
   readonly maxOutputTokens?: number;
   /** RFC 3339 release date, when the provider's catalog states it (the Antigravity catalog has none). */
   readonly createdAt?: string;
+  /** The model's own native formats when they differ per model (gateways); absent: the catalog's `formats`. */
+  readonly formats?: readonly WireFormat[];
 };
 
 /** Where a model list came from: fetched now, a stored copy, or the built-in minimum (P0-LIVE plan §7). */
@@ -32,8 +47,13 @@ export type ModelsSource = "live" | "cache" | "static";
 
 export type ModelCatalog = {
   readonly provider: ProviderId;
-  /** The client dialect the provider serves natively (its models are generation targets only there until P5). */
-  readonly nativeDialect: Dialect;
+  /** The formats every model of the provider serves natively, unless a model states its own `formats`. */
+  readonly formats: readonly WireFormat[];
   readonly source: ModelsSource;
   readonly models: readonly ModelInfo[];
 };
+
+/** The native formats of one listed model. */
+export function modelFormats(catalog: ModelCatalog, model: ModelInfo): readonly WireFormat[] {
+  return model.formats ?? catalog.formats;
+}

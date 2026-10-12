@@ -12,7 +12,8 @@ import { appendFileSync } from "node:fs";
 const authorize = new URL(process.argv[2]!);
 appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `${authorize.toString()}\n`);
 const params = authorize.searchParams;
-const redirect = params.get("redirect_uri")!;
+// OAuth providers name the loopback `redirect_uri`; OpenRouter's PKCE page names it `callback_url` (rule R5).
+const redirect = (params.get("redirect_uri") ?? params.get("callback_url"))!;
 const state = encodeURIComponent(params.get("state")!);
 const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
 

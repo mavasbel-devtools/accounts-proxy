@@ -11,8 +11,12 @@
   "dependencies": {
     "@inference-router/core": "workspace:*",
     "@inference-router/provider-antigravity": "workspace:*",
+    "@inference-router/provider-cheaper-inference": "workspace:*",
     "@inference-router/provider-claude": "workspace:*",
+    "@inference-router/provider-gateway": "workspace:*",
     "@inference-router/provider-openai": "workspace:*",
+    "@inference-router/provider-opencode": "workspace:*",
+    "@inference-router/provider-openrouter": "workspace:*",
     "@inference-router/router": "workspace:*"
   },
   "devDependencies": {

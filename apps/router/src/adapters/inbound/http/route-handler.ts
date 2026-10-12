@@ -2,12 +2,15 @@
 // from `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=` (the carriers of the three official SDKs).
 // Each dialect prefix answers its own error shape; a path outside every prefix gets a plain JSON 404.
 //
-//   /anthropic  POST /v1/* (model from the body; claude serves /v1/messages and /v1/messages/count_tokens), GET /v1/models
-//   /openai     GET /v1/models; POST /v1/responses (model from the body; native to openai, plan v4 P4.5);
-//               POST /v1/chat/completions → unsupported_feature (every Chat Completions cell is translated: P5)
-//   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (model URL-encoded or raw, up to the last ':')
-import { asRouterError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+//   /anthropic  POST /v1/* (format anthropic-messages, model from the body; the provider serves /v1/messages and, where
+//               it has one, /v1/messages/count_tokens), GET /v1/models
+//   /openai     GET /v1/models; POST /v1/chat/completions (openai-chat) and /v1/responses (openai-responses), model from
+//               the body (plan P4.6 §2)
+//   /gemini     GET /v1beta/models; POST /v1beta/models/{model}:{method} (gemini; model URL-encoded or raw, up to the last ':')
+// Whether the model accepts the route's format natively is decided by its provider (PassthroughPort).
+import { asRouterError, InvalidRequestError, RouteNotFoundError, RouterError, UnauthorizedError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
+import type { Dialect, WireFormat } from "@inference-router/core/domain/models.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
@@ -78,19 +81,13 @@ export class RouteHandler extends HttpHandler {
     const { method } = request;
     if (method === "GET" && ((codec.dialect !== "gemini" && path === "/v1/models") || (codec.dialect === "gemini" && path === "/v1beta/models"))) return this.models(codec);
     // Every Anthropic POST under /v1/ goes to the model's provider, which serves its native paths and rejects others.
-    if (method === "POST" && codec.dialect === "anthropic" && path.startsWith("/v1/")) {
+    const format = method === "POST" ? bodyRouteFormat(codec.dialect, path) : undefined;
+    if (format !== undefined) {
       const body = await request.readBody();
-      return this.forward(codec, bodyModel(body), request, path, body);
-    }
-    if (method === "POST" && codec.dialect === "openai" && path === "/v1/responses") {
-      const body = await request.readBody();
-      return this.forward(codec, bodyModel(body), request, path, body);
-    }
-    if (method === "POST" && codec.dialect === "openai" && path === "/v1/chat/completions") {
-      throw new UnsupportedFeatureError(["chat_completions"], "openai dialect (Chat Completions cells are translated: P5)");
+      return this.forward(format, bodyModel(body), request, path, body);
     }
     const gemini = codec.dialect === "gemini" && method === "POST" ? geminiModelRoute(path) : undefined;
-    if (gemini !== undefined) return this.forward(codec, gemini.model, request, path, await request.readBody());
+    if (gemini !== undefined) return this.forward("gemini", gemini.model, request, path, await request.readBody());
     throw new RouteNotFoundError(method, request.path);
   }
 
@@ -100,14 +97,22 @@ export class RouteHandler extends HttpHandler {
     return encoded({ ...response, headers: { ...response.headers, [MODELS_SOURCE_HEADER]: catalogs.map((c) => `${c.provider}=${c.source}`).join(",") } });
   }
 
-  private async forward(codec: DialectCodecPort, model: string, request: InboundRequest, path: string, body: string): Promise<OutboundResponse> {
+  private async forward(format: WireFormat, model: string, request: InboundRequest, path: string, body: string): Promise<OutboundResponse> {
     const { key: _token, ...query } = request.query;
-    const raw: RawRequest = { path, query, headers: request.headers, body, lossy: request.headers[LOSSY_HEADER] === "1", signal: request.signal };
-    return this.ports.passthrough.forward(codec.dialect, model, raw);
+    const raw: RawRequest = { format, path, query, headers: request.headers, body, lossy: request.headers[LOSSY_HEADER] === "1", signal: request.signal };
+    return this.ports.passthrough.forward(format, model, raw);
   }
 }
 
-/** The body's `model` (required by the Anthropic Messages / Count Tokens APIs and the OpenAI Responses API). */
+/** The format of a POST route whose model is in the body (every Anthropic `/v1/*` route, Chat Completions, Responses). */
+function bodyRouteFormat(dialect: Dialect, path: string): WireFormat | undefined {
+  if (dialect === "anthropic" && path.startsWith("/v1/")) return "anthropic-messages";
+  if (dialect === "openai" && path === "/v1/chat/completions") return "openai-chat";
+  if (dialect === "openai" && path === "/v1/responses") return "openai-responses";
+  return undefined;
+}
+
+/** The body's `model` (required by the Anthropic Messages / Count Tokens APIs and the OpenAI Chat and Responses APIs). */
 function bodyModel(body: string): string {
   const parsed = parseJsonBody(body);
   if (!isJsonObject(parsed) || typeof parsed.model !== "string") throw new InvalidRequestError("request body needs a string model (<provider>/<model> or an alias)");

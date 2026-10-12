@@ -6,7 +6,7 @@
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
 import { asRouterError, InvalidRequestError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
@@ -25,7 +25,8 @@ const emptyStream = () => new UpstreamError("antigravity", 502, "empty stream: t
 
 export class AntigravityProvider extends ProviderPort {
   readonly id = "antigravity";
-  readonly nativeDialect = "gemini";
+  /** The one format this provider serves natively, for every model. */
+  readonly formats: readonly WireFormat[] = ["gemini"];
 
   constructor(
     private readonly catalog: AntigravityCatalogPort,
@@ -33,6 +34,10 @@ export class AntigravityProvider extends ProviderPort {
     private readonly logger: LoggerPort,
   ) {
     super();
+  }
+
+  async nativeFormats(_model: string): Promise<ReadonlySet<WireFormat>> {
+    return new Set(this.formats);
   }
 
   capabilities(): ReadonlySet<Feature> {
@@ -43,7 +48,7 @@ export class AntigravityProvider extends ProviderPort {
     const descriptors = await this.catalog.descriptors();
     return {
       provider: this.id,
-      nativeDialect: this.nativeDialect,
+      formats: this.formats,
       source: "live",
       models: descriptors.map((d) => {
         const limits = advertisedLimits(d);

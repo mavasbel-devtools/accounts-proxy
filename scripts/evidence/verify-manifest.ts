@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = resolve(process.argv[2] ?? join(import.meta.dir, "..", "..", "docs", "reference", "specs"));
-type Entry = { file: string; bytes: number; sha256: string };
+/** An extract (fetch-specs `extract`) is verified against `extractSha256`/`extractBytes`; `sha256` is the full download. */
+type Entry = { file: string; bytes: number; sha256: string; extractBytes?: number; extractSha256?: string };
 const raw = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "docs", "reference", "specs", "manifest.json"), "utf8")) as Entry[] | Record<string, Entry>;
 let failures = 0;
 for (const entry of Array.isArray(raw) ? raw : Object.values(raw)) {
@@ -17,8 +18,9 @@ for (const entry of Array.isArray(raw) ? raw : Object.values(raw)) {
   }
   const bytes = readFileSync(path);
   const sha = createHash("sha256").update(bytes).digest("hex");
-  const ok = sha === entry.sha256 && bytes.length === entry.bytes;
+  const want = { sha: entry.extractSha256 ?? entry.sha256, bytes: entry.extractBytes ?? entry.bytes };
+  const ok = sha === want.sha && bytes.length === want.bytes;
   if (!ok) failures++;
-  console.log(`${ok ? "OK      " : "MISMATCH"} ${entry.file} bytes=${bytes.length}/${entry.bytes}`);
+  console.log(`${ok ? "OK      " : "MISMATCH"} ${entry.file} bytes=${bytes.length}/${want.bytes}`);
 }
 process.exit(failures === 0 ? 0 : 1);

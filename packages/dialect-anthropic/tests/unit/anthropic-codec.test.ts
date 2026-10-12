@@ -40,8 +40,8 @@ describe("AnthropicCodec", () => {
 
   test("models: every catalog, routable ids, dates or the neutral marker, limits or null", () => {
     const catalogs: ModelCatalog[] = [
-      { provider: "claude", nativeDialect: "anthropic", source: "live", models: [{ address: { provider: "claude", model: "claude-opus-5" }, displayName: "Opus", contextWindow: 1000, maxOutputTokens: 10, createdAt: "2026-07-24T00:00:00Z" }] },
-      { provider: "antigravity", nativeDialect: "gemini", source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G" }] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "claude-opus-5" }, displayName: "Opus", contextWindow: 1000, maxOutputTokens: 10, createdAt: "2026-07-24T00:00:00Z" }] },
+      { provider: "antigravity", formats: ["gemini"], source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G" }] },
     ];
     const encoded = codec.models(catalogs);
     expect(encoded.status).toBe(200);

@@ -30,8 +30,12 @@
         "@inference-router/dialect-gemini": "workspace:*",
         "@inference-router/dialect-openai": "workspace:*",
         "@inference-router/provider-antigravity": "workspace:*",
+        "@inference-router/provider-cheaper-inference": "workspace:*",
         "@inference-router/provider-claude": "workspace:*",
+        "@inference-router/provider-gateway": "workspace:*",
         "@inference-router/provider-openai": "workspace:*",
+        "@inference-router/provider-opencode": "workspace:*",
+        "@inference-router/provider-openrouter": "workspace:*",
       },
       "devDependencies": {
         "@anthropic-ai/sdk": "0.133.0",
@@ -75,8 +79,29 @@
         "@inference-router/test-support": "workspace:*",
       },
     },
+    "packages/provider-cheaper-inference": {
+      "name": "@inference-router/provider-cheaper-inference",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+        "@inference-router/provider-gateway": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
+    },
     "packages/provider-claude": {
       "name": "@inference-router/provider-claude",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
+    },
+    "packages/provider-gateway": {
+      "name": "@inference-router/provider-gateway",
       "version": "0.1.0",
       "dependencies": {
         "@inference-router/core": "workspace:*",
@@ -95,14 +120,40 @@
         "@inference-router/test-support": "workspace:*",
       },
     },
+    "packages/provider-opencode": {
+      "name": "@inference-router/provider-opencode",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+        "@inference-router/provider-gateway": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
+    },
+    "packages/provider-openrouter": {
+      "name": "@inference-router/provider-openrouter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+        "@inference-router/provider-gateway": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
+      },
+    },
     "scripts": {
       "name": "@inference-router/scripts",
       "version": "0.1.0",
       "dependencies": {
         "@inference-router/core": "workspace:*",
         "@inference-router/provider-antigravity": "workspace:*",
+        "@inference-router/provider-cheaper-inference": "workspace:*",
         "@inference-router/provider-claude": "workspace:*",
+        "@inference-router/provider-gateway": "workspace:*",
         "@inference-router/provider-openai": "workspace:*",
+        "@inference-router/provider-opencode": "workspace:*",
+        "@inference-router/provider-openrouter": "workspace:*",
         "@inference-router/router": "workspace:*",
       },
       "devDependencies": {
@@ -184,9 +235,17 @@
 
     "@inference-router/provider-antigravity": ["@inference-router/provider-antigravity@workspace:packages/provider-antigravity"],
 
+    "@inference-router/provider-cheaper-inference": ["@inference-router/provider-cheaper-inference@workspace:packages/provider-cheaper-inference"],
+
     "@inference-router/provider-claude": ["@inference-router/provider-claude@workspace:packages/provider-claude"],
 
+    "@inference-router/provider-gateway": ["@inference-router/provider-gateway@workspace:packages/provider-gateway"],
+
     "@inference-router/provider-openai": ["@inference-router/provider-openai@workspace:packages/provider-openai"],
+
+    "@inference-router/provider-opencode": ["@inference-router/provider-opencode@workspace:packages/provider-opencode"],
+
+    "@inference-router/provider-openrouter": ["@inference-router/provider-openrouter@workspace:packages/provider-openrouter"],
 
     "@inference-router/router": ["@inference-router/router@workspace:apps/router"],
 

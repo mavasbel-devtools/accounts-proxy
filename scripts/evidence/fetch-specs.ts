@@ -8,7 +8,16 @@ import { join } from "node:path";
 const out = join(import.meta.dir, "..", "..", "docs", "reference", "specs");
 mkdirSync(out, { recursive: true });
 
-type Source = { file: string; url: string; commitOf?: { repo: string; branch: string; path: string } };
+/** `extract` keeps only part of a large body on disk; the manifest records the SHA-256 of both the full download
+ * (`sha256`) and the written extract (`extractSha256`). */
+type Source = { file: string; url: string; commitOf?: { repo: string; branch: string; path: string }; extract?: (body: string) => string };
+
+/** models.dev entries of the gateways the router serves (5 MB in full). */
+const modelsDevGateways = (body: string): string => {
+  const all = JSON.parse(body) as Record<string, unknown>;
+  const kept = Object.fromEntries(["opencode", "opencode-go", "openrouter"].map((id) => [id, all[id]]));
+  return JSON.stringify(kept, null, 1) + "\n";
+};
 
 const sources: Source[] = [
   { file: "anthropic-messages.md", url: "https://platform.claude.com/docs/en/api/messages.md" },
@@ -31,6 +40,23 @@ const sources: Source[] = [
   { file: "openai-siwc-errors-and-recovery.md", url: "https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery.md" },
   { file: "openai-siwc-preview-limitations.md", url: "https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations.md" },
   { file: "openai-siwc-ui-ux-guidelines.md", url: "https://developers.openai.com/siwc/ui-ux-guidelines.md" },
+  // Plan P4.6: API-key gateways.
+  { file: "openrouter-openapi.yaml", url: "https://openrouter.ai/docs/openapi/openapi.yaml" },
+  { file: "openrouter-models.json", url: "https://openrouter.ai/api/v1/models" },
+  { file: "openrouter-oauth-pkce.md", url: "https://openrouter.ai/docs/guides/overview/auth/oauth.md" },
+  { file: "openrouter-authentication.md", url: "https://openrouter.ai/docs/api_reference/authentication.md" },
+  { file: "openrouter-streaming.md", url: "https://openrouter.ai/docs/api_reference/streaming.md" },
+  { file: "openrouter-errors.md", url: "https://openrouter.ai/docs/api_reference/errors-and-debugging.md" },
+  { file: "openrouter-limits.md", url: "https://openrouter.ai/docs/api_reference/limits.md" },
+  { file: "openrouter-models.md", url: "https://openrouter.ai/docs/guides/overview/models.md" },
+  { file: "openrouter-free-variant.md", url: "https://openrouter.ai/docs/guides/routing/model-variants/free.md" },
+  { file: "openrouter-claude-code.md", url: "https://openrouter.ai/docs/cookbook/coding-agents/claude-code-integration.md" },
+  { file: "cheaper-inference-llms-full.txt", url: "https://cheaperinference.com/llms-full.txt" },
+  { file: "cheaper-inference-openapi.json", url: "https://api.cheaperinference.com/openapi.json" },
+  { file: "cheaper-inference-public-models.json", url: "https://api.cheaperinference.com/public/models" },
+  { file: "models-dev-gateways.json", url: "https://models.dev/api.json", extract: modelsDevGateways },
+  { file: "opencode-zen-models.json", url: "https://opencode.ai/zen/v1/models" },
+  { file: "opencode-go-models.json", url: "https://opencode.ai/zen/go/v1/models" },
   { file: "gemini-generate-content.md", url: "https://ai.google.dev/api/generate-content.md.txt" },
   { file: "gemini-models.md", url: "https://ai.google.dev/api/models.md.txt" },
   { file: "gemini-tokens.md", url: "https://ai.google.dev/api/tokens.md.txt" },
@@ -67,7 +93,8 @@ for (const source of sources) {
   const res = await fetch(source.url);
   const body = await res.text();
   if (res.status !== 200) throw new Error(`${source.file}: HTTP ${res.status} ${source.url}`);
-  writeFileSync(join(out, source.file), body);
+  const written = source.extract ? source.extract(body) : body;
+  writeFileSync(join(out, source.file), written);
   manifest.push({
     file: source.file,
     url: source.url,
@@ -75,6 +102,7 @@ for (const source of sources) {
     contentType: res.headers.get("content-type"),
     bytes: Buffer.byteLength(body),
     sha256: createHash("sha256").update(body).digest("hex"),
+    ...(source.extract ? { extractBytes: Buffer.byteLength(written), extractSha256: createHash("sha256").update(written).digest("hex") } : {}),
     commit: source.commitOf ? await commitSha(source.commitOf) : undefined,
     fetchedAt: new Date().toISOString(),
   });

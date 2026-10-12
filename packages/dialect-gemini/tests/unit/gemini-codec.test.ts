@@ -24,8 +24,8 @@ describe("GeminiCodec", () => {
 
   test("models: name models/<provider>/<model>, limits when known, generation methods only for Gemini-native providers", () => {
     const encoded = codec.models([
-      { provider: "antigravity", nativeDialect: "gemini", source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80_000, maxOutputTokens: 65_536 }] },
-      { provider: "claude", nativeDialect: "anthropic", source: "static", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
+      { provider: "antigravity", formats: ["gemini"], source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80_000, maxOutputTokens: 65_536 }] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "static", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
     ]);
     expect(encoded.status).toBe(200);
     expect(JSON.parse(encoded.body)).toEqual({

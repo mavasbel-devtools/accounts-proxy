@@ -1,5 +1,6 @@
 // Browser login (plan D10). Default: loopback listener on 127.0.0.1 + system browser + automatic redirect capture.
-// Fallback (--manual): the provider's paste-code page, only for providers that have one (Claude).
+// Fallback (--manual): the provider's paste-code page, only for providers that have one (Claude, OpenRouter headless).
+// API-key providers (plan P4.6 N4): the key is read at a hidden prompt and checked by the provider's login client.
 // PKCE (RFC 7636 S256) is used exactly when the provider's client uses it (Claude yes, Google/Antigravity no — both as
 // their official clients do, see docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md).
 import { upsertAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
@@ -9,6 +10,7 @@ import { base64UrlEncode } from "@inference-router/core/domain/services/base64ur
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import { codeFromCallback, codeFromManualInput } from "@inference-router/core/domain/services/oauth-flow.ts";
 import { LoginPort, type AccountSummary, type LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
+import type { ApiKeyLoginPort, SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { CallbackServerFactoryPort, ManualCodePort, OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { BrowserLauncherPort, HashPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -25,19 +27,30 @@ export class LoginService extends LoginPort {
     private readonly random: RandomPort,
     private readonly hash: HashPort,
     private readonly logger: LoggerPort,
+    private readonly keyClients: readonly ApiKeyLoginPort[],
+    private readonly secrets: SecretPromptPort,
   ) {
     super();
   }
 
   async login(provider: ProviderId, options: LoginOptions): Promise<AccountSummary> {
+    const account = await this.signIn(provider, options);
+    await this.store.update(provider, (pool) => upsertAccount(pool, account));
+    this.logger.info(`${provider}: signed in account ${account.id}`);
+    return { provider, id: account.id, label: account.label, active: true };
+  }
+
+  private async signIn(provider: ProviderId, options: LoginOptions): Promise<AccountCredential> {
+    const keyClient = this.keyClients.find((c) => c.provider === provider);
+    if (keyClient !== undefined) {
+      if (options.manual || options.fresh) throw new InvalidRequestError(`${provider} signs in with an API key; --manual and --new do not apply`);
+      return keyClient.account(await this.secrets.prompt(keyClient.question));
+    }
     const client = this.clients.find((c) => c.provider === provider);
     // Composition wires a client for every ENABLED provider only (plan D4).
     if (client === undefined) throw new ProviderDisabledError(provider);
     const attempt = this.attempt(options.fresh);
-    const account = options.manual ? await this.manualLogin(client, attempt, options) : await this.loopbackLogin(client, attempt, options);
-    await this.store.update(provider, (pool) => upsertAccount(pool, account));
-    this.logger.info(`${provider}: signed in account ${account.id}`);
-    return { provider, id: account.id, label: account.label, active: true };
+    return options.manual ? this.manualLogin(client, attempt, options) : this.loopbackLogin(client, attempt, options);
   }
 
   /**

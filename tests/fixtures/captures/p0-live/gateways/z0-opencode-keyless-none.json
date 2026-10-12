@@ -1,0 +1,51 @@
+{
+  "id": "z0-opencode-keyless-none",
+  "target": "opencode",
+  "scenario": "z0-opencode-keyless-none",
+  "model": "big-pickle",
+  "capturedAt": "2026-10-12T22:09:37.470Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/zen/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "big-pickle",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "max_tokens": 32
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "cf-placement": "remote-ORD",
+          "cf-ray": "a4996e206a8b66ef-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Mon, 12 Oct 2026 22:09:40 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "e62b9215-5c2c-421e-946d-9bed164096e8"
+        },
+        "headersAtMs": 175.8,
+        "doneAtMs": 175.9,
+        "chunks": [
+          {
+            "atMs": 175.8,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"OpenCode's free tier can only be used from within OpenCode\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

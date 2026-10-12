@@ -1,17 +1,26 @@
 # AGENTS.md — inference-router laws (non-negotiable)
 
-Plan: [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md) ·
+Plan: [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md),
+extended by [plan v4](docs/plans/2026-10-11-22-11-completion-plan.md) and
+[P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md) ·
 Research: [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md)
 
 ## 1. What this is
-A local daemon on `127.0.0.1` that exposes the Anthropic Messages, OpenAI Chat Completions and Gemini `generateContent`
-dialects. It routes each request to one of two subscription providers: `claude` (Anthropic Messages upstream)
-and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-key providers (user decision 2026-10-06).
+A local daemon on `127.0.0.1` that exposes the Anthropic Messages, OpenAI Chat Completions, OpenAI Responses and
+Gemini `generateContent` formats and routes each request to one of seven providers:
+- subscription providers: `claude` (Anthropic Messages upstream), `antigravity` (Google Cloud Code Assist envelope
+  upstream), `openai` (ChatGPT plan usage, OpenAI Responses upstream; plan v4 P4.5);
+- API-key gateways (plan P4.6; the 2026-10-06 "no API-key providers" decision was reversed on 2026-10-12, N1):
+  `openrouter`, `opencode` (OpenCode Zen), `opencode-go`, `cheaper-inference`.
+
+A model accepts some formats natively (one fixed format per subscription provider; per model, or uniformly, on a
+gateway); a request in any other format is a translated cell (P5).
 
 ## 2. Architecture law (enforced by `tests/arch/architecture.test.ts`; part of `verify`)
 - **Workspaces.**
   - `packages/core`: domain and ports only.
-  - `packages/provider-*`: domain (pure provider rules) and `adapters/outbound`.
+  - `packages/provider-*`: domain (pure provider rules), `ports/outbound` (provider-internal abstractions) and
+    `adapters/outbound`; `provider-gateway` is the shared base the gateway vendors build on.
   - `packages/dialect-*`: `adapters/inbound` codecs.
   - `apps/router`: application, `adapters/{inbound,outbound}`, `composition`, `main`.
 - **Layers** are recognised by path: `src/domain`, `src/ports/{inbound,outbound}`, `src/application`,
@@ -54,6 +63,9 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 | Claude identity envelope (billing block, identity block, `metadata.user_id`, `context_management`, betas) | `RequestTransformService.ts:187-298`, `ModelEnvelope.ts:49-190` |
 | Claude thinking is the client's: absent stays absent, `disabled` stays disabled, and the clear-thinking `context_management` edit is sent only with thinking on (deviation F9, user decision Q6) | [P0-LIVE L1–L3](docs/reference/2026-10-10-23-17-p0-live-findings.md), [Q6 probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md) |
 | Antigravity Gemini cell: `functionResponse` parts move to model-role contents (law 7); only `AUTO`/`VALIDATED` function-calling modes | plugin wire law 7; P0-LIVE L6 |
+| Gateway native cells: the body `model` (or Gemini path model) becomes the bare id; upstream headers are only the key header, `content-type`, the client's `accept` and, on Messages, `anthropic-version`/`anthropic-beta`; the answer streams back with `content-type`, `retry-after` and the vendor's request id | [gateway rules G1–G4](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) |
+| Gateway key header per endpoint: OpenRouter and Cheaper Inference `Authorization: Bearer`; OpenCode `x-api-key` on Messages, `x-goog-api-key` on Gemini, bearer elsewhere | rules R1, C1, Z3 |
+| Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from models.dev `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
 ## 4. Behaviour laws
 - **Evidence only.** Every translation rule cites a spec in `docs/reference/specs/` or a capture in
@@ -63,7 +75,12 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
 - **Quota.** 429 / quota errors are surfaced with `retry-after`. There is **no** automatic account rotation.
 - **Browser login.** `inference-router login <provider>` opens the browser and captures the loopback redirect.
   Paste-code exists only as the headless fallback (`--manual`). Evidence:
-  [P0-E6](docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md).
+  [P0-E6](docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md). OpenRouter's PKCE login is a browser
+  login too (it yields an API key; `--manual` is its headless page, rules R5–R7).
+- **API keys** (plan P4.6 N4). `login opencode | opencode-go | cheaper-inference` reads the key only at a hidden prompt
+  (never a command argument or an environment variable) and checks it where the vendor documents a way. A key is never
+  renewed; an upstream 401 reaches the client unchanged. OpenCode's keyless free tier is not available to the router
+  (live 403 `FreeTierError`, rule Z8).
 - **Own credentials.** The router's credentials live only in `~/.local/share/inference-router/`. The router never
   writes Claude Code's or the plugins' credential files.
 - **Sessions** (plan v4 Phase H). Every provider session extends `OAuthSessionBase`
@@ -75,9 +92,12 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
   upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
   Every route except `/health` requires the router token (`<data>/token.json`, 0600), compared in constant time.
-- **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH}` repoint a
-  provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>` origin; any other value is fatal.
-- **Opt-in providers.** A subscription provider starts only with `acknowledgeTermsRisk: true` in config.
+- **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
+  OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
+  origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference,
+  models.dev) to one origin, paths kept.
+- **Opt-in providers.** Every provider starts only with `enabled: true`; a subscription provider also needs
+  `acknowledgeTermsRisk: true` in config.
 
 ## 5. Tests and gate
 - Every workspace has `tests/{unit,component,live,e2e}`.
@@ -91,8 +111,11 @@ and `antigravity` (Google Cloud Code Assist envelope upstream). It has no API-ke
   The built bundle is run separately (`apps/router/tests/e2e/bundle.test.ts`); it cannot carry coverage.
   Code that only the translated cells (P5) reach is deferred by name in `scripts/gate/e2e-deferred.ts` (file, function
   or branch, each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate). The list
-  must be empty when P5 is done ([R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)).
-- **Hermetic test hooks** (only with all four upstream seams set; validated; read only by `main()`):
+  must be empty when P5 is done ([R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)). Plan P4.6 adds
+  the phases `P4.5-live` and `P4.6-live`: code whose replay needs a live capture only the user's own sign-in or key can
+  produce; such an entry leaves the list when its capture is committed and replayed. Replayed answers come from
+  committed captures or from the vendors' documented examples (`docs/reference/specs/`).
+- **Hermetic test hooks** (only with every upstream seam set; validated; read only by `main()`):
   `INFERENCE_ROUTER_TEST_PLATFORM`, `INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS`, `INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS`,
   `INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES=1`, `INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
   `192.0.2.1`, so listen fails). They exist only for paths no outside test can otherwise reach.

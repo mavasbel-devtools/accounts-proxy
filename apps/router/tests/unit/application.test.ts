@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { EMPTY_POOL, upsertAccount, type AccountCredential, markNeedsLogin } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
+import { ApiKeyLoginPort, SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
 import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import { BrowserLauncherPort, HashPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -88,20 +90,44 @@ class FakeManual extends ManualCodePort {
   }
 }
 
+class FakeKeyLogin extends ApiKeyLoginPort {
+  readonly question = "key: ";
+  keys: string[] = [];
+  constructor(readonly provider: ProviderId) {
+    super();
+  }
+  async account(key: string) {
+    this.keys.push(key);
+    if (key === "bad") throw new ProviderAuthRequiredError(this.provider, "the key was refused");
+    return apiKeyAccount(this.provider, `id-${key}`, `label-${key}`, key);
+  }
+}
+
+class FakeSecrets extends SecretPromptPort {
+  questions: string[] = [];
+  constructor(private readonly answers: string[]) {
+    super();
+  }
+  async prompt(question: string) {
+    this.questions.push(question);
+    return this.answers.shift()!;
+  }
+}
+
 class FixedHash extends HashPort {
   sha256(input: string) {
     return new TextEncoder().encode(`h(${input})`);
   }
 }
 
-function setup(client: FakeClient, query: (state: string) => CallbackQuery = (state) => ({ code: "c0de", state })) {
+function setup(client: FakeClient, query: (state: string) => CallbackQuery = (state) => ({ code: "c0de", state }), keyClients: ApiKeyLoginPort[] = [], secrets = new FakeSecrets([])) {
   let state = "";
   const factory = new Factory(() => new FakeServer(query, () => state));
   const browser = new FakeBrowser();
   const store = new MemoryCredentialStore();
   const logger = new MemoryLogger();
   const manual = new FakeManual((url) => `pasted#${new URL(url).searchParams.get("state")}`);
-  const service = new LoginService([client], factory, browser, manual, store, new SequenceRandom(), new FixedHash(), logger);
+  const service = new LoginService([client], factory, browser, manual, store, new SequenceRandom(), new FixedHash(), logger, keyClients, secrets);
   const urls: string[] = [];
   const options = { manual: false, fresh: false, timeoutMs: 1000, onAuthorizeUrl: (u: string) => urls.push(u) };
   const capture = () => {
@@ -191,6 +217,21 @@ describe("LoginService", () => {
 describe("AccountAdminService and UsageService", () => {
   const credential = (id: string): AccountCredential => ({ provider: "antigravity", id, label: id === "a" ? "Alpha" : id, data: {} });
 
+  test("API-key login (plan P4.6 N4): hidden prompt, the provider's check, stored and active; flags refused; a refused key stores nothing", async () => {
+    const keyLogin = new FakeKeyLogin("cheaper-inference");
+    const secrets = new FakeSecrets(["ci_live_1", "bad"]);
+    const s = setup(new FakeClient("claude", undefined), undefined, [keyLogin], secrets);
+    expect(await s.service.login("cheaper-inference", s.options)).toEqual({ provider: "cheaper-inference", id: "id-ci_live_1", label: "label-ci_live_1", active: true });
+    expect(secrets.questions).toEqual(["key: "]);
+    expect((await s.store.load("cheaper-inference")).activeId).toBe("id-ci_live_1");
+    expect(s.browser.opened).toEqual([]);
+    expect(s.logger.lines.at(-1)).toBe("INFO cheaper-inference: signed in account id-ci_live_1");
+    await expect(s.service.login("cheaper-inference", { ...s.options, manual: true })).rejects.toThrow("cheaper-inference signs in with an API key; --manual and --new do not apply");
+    await expect(s.service.login("cheaper-inference", { ...s.options, fresh: true })).rejects.toBeInstanceOf(InvalidRequestError);
+    await expect(s.service.login("cheaper-inference", s.options)).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+    expect((await s.store.load("cheaper-inference")).accounts).toHaveLength(1);
+  });
+
   test("list marks the active account; use switches it and persists", async () => {
     const store = new MemoryCredentialStore();
     store.pools.set("antigravity", upsertAccount(upsertAccount(EMPTY_POOL, credential("a")), credential("b")));
@@ -223,15 +264,17 @@ describe("AccountAdminService and UsageService", () => {
 
 describe("ListModelsService", () => {
   class Provider extends ProviderPort {
-    readonly nativeDialect = "anthropic";
     constructor(readonly id: ProviderId) {
       super();
+    }
+    async nativeFormats() {
+      return undefined;
     }
     capabilities() {
       return new Set<never>();
     }
     async models() {
-      return { provider: this.id, nativeDialect: "anthropic" as const, source: "live" as const, models: [{ address: { provider: this.id, model: `${this.id}-m` }, displayName: "M" }] };
+      return { provider: this.id, formats: ["anthropic-messages"] as const, source: "live" as const, models: [{ address: { provider: this.id, model: `${this.id}-m` }, displayName: "M" }] };
     }
     async *stream() {}
     async countTokens() {

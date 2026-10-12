@@ -1,0 +1,118 @@
+import { describe, expect, test } from "bun:test";
+import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import type { RawRequest } from "@inference-router/core/domain/wire.ts";
+import {
+  asArray,
+  asObject,
+  fieldsText,
+  firstString,
+  forwardedResponseHeaders,
+  gatewayModel,
+  isCatalogSnapshot,
+  keyHeaders,
+  positiveInteger,
+  rowsWithId,
+  servedFormats,
+  upstreamCall,
+  type GatewaySpec,
+} from "@inference-router/provider-gateway/domain/gateway.ts";
+
+const SPEC: GatewaySpec = {
+  provider: "opencode",
+  apiBase: "https://gw/v1",
+  endpoints: {
+    "openai-chat": { path: "/chat/completions", keyHeader: "authorization" },
+    "anthropic-messages": { path: "/messages", keyHeader: "x-api-key" },
+    gemini: { path: "/models", keyHeader: "x-goog-api-key" },
+  },
+  requestIdHeader: "x-log-id",
+};
+
+const raw = (fields: Partial<RawRequest> & Pick<RawRequest, "format" | "path">): RawRequest => ({ query: {}, headers: {}, body: '{"model":"opencode/m","messages":[]}', lossy: false, ...fields });
+
+describe("upstreamCall (rules G1, G2, G4)", () => {
+  test("Chat: the vendor endpoint, the bare model id, only content-type and the client's accept", () => {
+    const call = upstreamCall(SPEC, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { accept: "text/event-stream", "x-other": "1", authorization: "Bearer router" } }));
+    expect(call).toEqual({
+      url: "https://gw/v1/chat/completions",
+      keyHeader: "authorization",
+      headers: { "content-type": "application/json", accept: "text/event-stream" },
+      body: '{"model":"m","messages":[]}',
+    });
+  });
+
+  test("Messages: the Anthropic version and beta headers travel; count_tokens only where the vendor has it", () => {
+    const call = upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/messages", headers: { "anthropic-version": "2023-06-01", "anthropic-beta": "b1" } }));
+    expect([call.url, call.keyHeader, call.headers]).toEqual(["https://gw/v1/messages", "x-api-key", { "content-type": "application/json", "anthropic-version": "2023-06-01", "anthropic-beta": "b1" }]);
+    expect(() => upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/messages/count_tokens" }))).toThrow("opencode cannot carry: count_tokens");
+    const counting = { ...SPEC, countTokens: { path: "/messages/count_tokens", keyHeader: "authorization" as const } };
+    expect(upstreamCall(counting, "m", raw({ format: "anthropic-messages", path: "/v1/messages/count_tokens" })).url).toBe("https://gw/v1/messages/count_tokens");
+    expect(() => upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/batches" }))).toThrow(InvalidRequestError);
+  });
+
+  test("Gemini: the model and method in the path, alt kept, the body unchanged; other methods are refused", () => {
+    const body = '{"contents":[]}';
+    const call = upstreamCall(SPEC, "gemini-3.6-flash", raw({ format: "gemini", path: "/v1beta/models/opencode%2Fgemini-3.6-flash:streamGenerateContent", query: { alt: "sse" }, body }));
+    expect([call.url, call.keyHeader, call.body]).toEqual(["https://gw/v1/models/gemini-3.6-flash:streamGenerateContent?alt=sse", "x-goog-api-key", body]);
+    expect(upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:generateContent", body })).url).toBe("https://gw/v1/models/g:generateContent");
+    expect(() => upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:countTokens", body }))).toThrow("opencode cannot carry: countTokens");
+  });
+
+  test("a format without a vendor endpoint is a translated cell", () => {
+    expect(() => upstreamCall(SPEC, "m", raw({ format: "openai-responses", path: "/v1/responses" }))).toThrow(UnsupportedFeatureError);
+    expect(() => upstreamCall(SPEC, "m", raw({ format: "openai-responses", path: "/v1/responses" }))).toThrow("opencode (no native endpoint; translated cells arrive in P5) cannot carry: openai-responses_format");
+  });
+});
+
+describe("headers and formats", () => {
+  test("keyHeaders: bearer for authorization, the bare key elsewhere", () => {
+    expect(keyHeaders("authorization", "k")).toEqual({ authorization: "Bearer k" });
+    expect(keyHeaders("x-api-key", "k")).toEqual({ "x-api-key": "k" });
+  });
+
+  test("forwardedResponseHeaders keeps content-type, retry-after and the vendor's request id (G3)", () => {
+    expect(forwardedResponseHeaders(SPEC, { "Content-Type": "text/event-stream", "retry-after": "3", "X-Log-Id": "abc", "set-cookie": "x" })).toEqual({ "content-type": "text/event-stream", "retry-after": "3", "x-log-id": "abc" });
+  });
+
+  test("servedFormats keeps the formats the spec has an endpoint for", () => {
+    expect(servedFormats(SPEC, ["openai-responses", "gemini", "openai-chat"])).toEqual(["gemini", "openai-chat"]);
+  });
+});
+
+describe("catalog helpers", () => {
+  test("isCatalogSnapshot", () => {
+    const model = { id: "m", displayName: "M", formats: ["openai-chat"] };
+    expect(isCatalogSnapshot({ version: 1, fetchedAt: 1, models: [model, { id: "n", displayName: "N" }] })).toBe(true);
+    expect(isCatalogSnapshot({ version: 1, fetchedAt: 1, models: [] })).toBe(true);
+    for (const bad of [
+      null,
+      { version: 2, fetchedAt: 1, models: [model] },
+      { version: 1, fetchedAt: "1", models: [model] },
+      { version: 1, fetchedAt: 1, models: "x" },
+      { version: 1, fetchedAt: 1, models: [{ id: 1, displayName: "M" }] },
+      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: 1 }] },
+      { version: 1, fetchedAt: 1, models: ["m"] },
+      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: "openai-chat" }] },
+      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: ["smoke-signals"] }] },
+      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: [1] }] },
+    ]) {
+      expect(isCatalogSnapshot(bad)).toBe(false);
+    }
+  });
+
+  test("positiveInteger and gatewayModel (Unix seconds become RFC 3339)", () => {
+    expect([positiveInteger(5), positiveInteger(0), positiveInteger(1.5), positiveInteger("5")]).toEqual([5, undefined, undefined, undefined]);
+    const bare = { id: "m", displayName: "M", contextWindow: undefined, maxOutputTokens: undefined, createdSeconds: undefined, formats: undefined };
+    expect(gatewayModel(bare)).toEqual({ id: "m", displayName: "M" });
+    expect(gatewayModel({ ...bare, contextWindow: 1, maxOutputTokens: 2, createdSeconds: 1_791_807_945, formats: ["gemini"] })).toEqual({ id: "m", displayName: "M", contextWindow: 1, maxOutputTokens: 2, createdAt: "2026-10-12T12:25:45.000Z", formats: ["gemini"] });
+  });
+
+  test("vendor JSON readers: a field of the wrong type reads as absent", () => {
+    expect([asObject({ a: 1 }), asObject([1]), asObject(null)]).toEqual([{ a: 1 }, {}, {}]);
+    expect([asArray([1]), asArray({})]).toEqual([[1], []]);
+    expect([firstString(undefined, "", 3, "x", "y"), firstString(1)]).toEqual(["x", undefined]);
+    expect(rowsWithId([{ id: "a" }, { id: 1 }, "b", null])).toEqual([{ id: "a" }]);
+    expect(rowsWithId(undefined)).toEqual([]);
+    expect(fieldsText("T:", { b: 1.5, a: "x", c: null }, ["a", "b", "c", "d"])).toBe('T:\n  a: "x"\n  b: 1.5\n  c: null');
+  });
+});

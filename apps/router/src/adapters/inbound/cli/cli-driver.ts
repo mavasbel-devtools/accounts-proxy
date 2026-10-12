@@ -1,6 +1,6 @@
 // Command-line inbound adapter: parses argv, drives the inbound ports, renders results. Exit codes: 0 success,
 // 1 the command failed (message on stderr), 2 usage error.
-import { isProviderId, type ModelsSource, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { isProviderId, PROVIDER_IDS, type ModelsSource, type ProviderId } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import type { AccountAdminPort, LoginPort, UsagePort } from "@inference-router/core/ports/inbound/accounts.ts";
@@ -30,7 +30,8 @@ export const DEFAULT_LOGIN_TIMEOUT_S = 300;
 export const USAGE = `usage: inference-router <command>
   login <provider> [--manual] [--new] [--timeout-seconds N]
                                                       browser sign-in (default timeout ${DEFAULT_LOGIN_TIMEOUT_S} s); openai:
-                                                      --new registers another ChatGPT account
+                                                      --new registers another ChatGPT account; opencode, opencode-go,
+                                                      cheaper-inference: the API key is asked at a hidden prompt
   account list <provider>                             accounts stored by the router
   account use <provider> <account-id>                 choose the active account
   quota <provider>                                    remaining provider quota
@@ -39,7 +40,7 @@ export const USAGE = `usage: inference-router <command>
   token                                               print the router token clients send (created on first use)
   status                                              check whether the daemon answers on the configured port
   help
-providers: claude, antigravity, openai`;
+providers: ${PROVIDER_IDS.join(", ")}`;
 
 class UsageError extends Error {}
 

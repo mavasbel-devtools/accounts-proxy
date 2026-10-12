@@ -1,0 +1,18 @@
+{
+  "name": "@inference-router/provider-cheaper-inference",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Cheaper Inference provider (API-key gateway).",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*",
+    "@inference-router/provider-gateway": "workspace:*"
+  },
+  "devDependencies": {
+    "@inference-router/test-support": "workspace:*"
+  }
+}

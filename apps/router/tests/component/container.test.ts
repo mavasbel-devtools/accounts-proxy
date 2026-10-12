@@ -121,6 +121,58 @@ describe("composition root", () => {
     }
   });
 
+  test("the API-key gateways (plan P4.6) are wired when enabled, on the production hosts or on the gateways seam", async () => {
+    const GATEWAYS = "providers:\n  openrouter: {enabled: true}\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n  cheaper-inference: {enabled: true}\n";
+    for (const [seams, origin] of [
+      [{}, undefined],
+      [{ gateways: "http://127.0.0.1:1" }, "http://127.0.0.1:1"],
+    ] as const) {
+      const { opts, out, transport } = options({ seams });
+      writeFileSync(join(home!, "router.yaml"), GATEWAYS);
+      expect(await runCli(["models"], opts)).toBe(0);
+      expect(out.filter((l) => l.startsWith("# "))).toEqual([
+        "# openrouter: 459 models (built-in list: the live catalog was unavailable)\n",
+        "# opencode: 83 models (built-in list: the live catalog was unavailable)\n",
+        "# opencode-go: 38 models (built-in list: the live catalog was unavailable)\n",
+        "# cheaper-inference: 91 models (built-in list: the live catalog was unavailable)\n",
+      ]);
+      const at = (url: string) => (origin === undefined ? url : `${origin}${new URL(url).pathname}`);
+      expect(transport.requests.map((r) => r.url)).toEqual([
+        at("https://openrouter.ai/api/v1/models"),
+        at("https://opencode.ai/zen/v1/models"),
+        at("https://opencode.ai/zen/go/v1/models"),
+        at("https://api.cheaperinference.com/public/models"),
+      ]);
+      removeTemporary(home!);
+      home = undefined;
+    }
+  });
+
+  test("an API-key login reads the key from the hidden prompt; quota and the keyed model list use it", async () => {
+    const stdin = new PassThrough();
+    const transport = new ScriptedTransport((request) => {
+      if (request.url.endsWith("/v1/account")) return json({ email: "me@x", workspace_name: "Team" });
+      if (request.url.endsWith("/v1/account/balance")) return json({ currency: "USD", balance_usd: 2, available_usd: 2, reserved_usd: 0 });
+      if (request.url.endsWith("/v1/models")) return json({ data: [{ id: "m", supported_endpoints: ["/v1/chat/completions"] }] });
+      return { status: 404 };
+    });
+    const { opts, out } = options({ stdin, transport });
+    writeFileSync(join(home!, "router.yaml"), "providers:\n  cheaper-inference: {enabled: true}\n");
+    stdin.write("ci_live_1\n");
+    expect(await runCli(["login", "cheaper-inference"], opts)).toBe(0);
+    expect(out.at(-1)).toBe("signed in to cheaper-inference as Team (active account)\n");
+    expect(await runCli(["quota", "cheaper-inference"], opts)).toBe(0);
+    expect(out.at(-1)).toBe('Cheaper Inference wallet (GET /v1/account/balance):\n  currency: "USD"\n  balance_usd: 2\n  available_usd: 2\n  reserved_usd: 0\n');
+    expect(await runCli(["models", "cheaper-inference"], opts)).toBe(0);
+    expect(out.slice(-2)).toEqual(["# cheaper-inference: 1 models (live catalog)\n", "cheaper-inference/m  m\n"]);
+    expect(transport.requests.map((r) => [r.url, r.headers["authorization"]])).toEqual([
+      ["https://api.cheaperinference.com/v1/account", "Bearer ci_live_1"],
+      ["https://api.cheaperinference.com/v1/account/balance", "Bearer ci_live_1"],
+      ["https://api.cheaperinference.com/v1/models", "Bearer ci_live_1"],
+    ]);
+    expect(JSON.parse(readFileSync(join(home!, "accounts-cheaper-inference.json"), "utf8"))).toEqual({ accounts: [{ provider: "cheaper-inference", id: "me@x", label: "Team", data: { apiKey: "ci_live_1" } }], activeId: "me@x" });
+  });
+
   test("an invalid router.yaml is reported, not thrown", async () => {
     const { opts, err } = options();
     writeFileSync(join(home!, "router.yaml"), "providers:\n  antigravity: {enabled: true}\n");
@@ -276,7 +328,7 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
 });
 
 describe("hermetic test hooks", () => {
-  const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1", openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1" };
+  const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1", openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1", gateways: "http://127.0.0.1:1" };
 
   test("absent: nothing changes; present: parsed", () => {
     expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false, listenUnassigned: false });
@@ -296,7 +348,7 @@ describe("hermetic test hooks", () => {
 
   test("main wires the vanishing-stat and unassigned-listen hooks", async () => {
     home = makeTemporary("router-hooks");
-    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1", INFERENCE_ROUTER_HOME: home };
+    const keys = { INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_UPSTREAM_GATEWAYS: "http://127.0.0.1:1", INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES: "1", INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED: "1", INFERENCE_ROUTER_HOME: home };
     const saved = Object.fromEntries(Object.keys(keys).map((k) => [k, process.env[k]]));
     const write = process.stdout.write;
     Object.assign(process.env, keys);

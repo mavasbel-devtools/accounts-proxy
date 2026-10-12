@@ -1,0 +1,666 @@
+# Cheaper Inference: full documentation
+
+> The complete corpus. The index is at https://cheaperinference.com/llms.txt; the same sections are
+> searchable over the API at https://api.cheaperinference.com/v1/docs?q=...
+
+## Quickstart [quickstart]
+Category: Getting started
+Link: https://cheaperinference.com/docs#quick-start
+CheaperInference provides OpenAI-compatible API endpoints. Point your SDK at https://api.cheaperinference.com/v1 and use a CheaperInference key created in the dashboard under API keys. Read GET https://api.cheaperinference.com/v1/models to choose an exact model id, its endpoint or supported_endpoints, and supported capabilities before sending a request. Use Chat Completions for models that list /v1/chat/completions; dedicated Pro models such as gpt-5.5-pro require /v1/responses and stream: false. Authenticate with "Authorization: Bearer ci_live_...".
+
+## API keys [api-keys]
+Category: Getting started
+Link: https://cheaperinference.com/docs#quick-start
+Keys are created in the dashboard under API keys. New keys begin ci_live_; existing customer keys beginning ir_live_ remain valid after the platform cutover. The full key is shown once at creation; only a hash is stored, so it cannot be recovered later; if you lose it, revoke it and create another. Keys may be sent as "Authorization: Bearer ..." or in the Anthropic-style "x-api-key" header on every endpoint. Keys carry scopes, so a key can be limited to usage reads without being able to run inference. Revoking is immediate.
+
+## Chat completions [chat-completions]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+POST https://api.cheaperinference.com/v1/chat/completions accepts OpenAI-style model, messages, max_tokens and supported optional controls. Check each model's endpoint, supported_endpoints and capabilities in GET /v1/models. Sampling, tools, vision and reasoning support vary by model; omit controls the model does not support. Set stream: true only when capabilities.streaming is true and the model supports this endpoint, then read Chat server-sent events (SSE). Otherwise use buffered JSON. The response uses the Chat Completions shape, with a cheaper_inference envelope describing billing and savings. Claude reasoning aliases and cache controls are documented in the Claude sections.
+
+## Claude reasoning and thinking [claude-reasoning]
+Category: API
+Link: https://cheaperinference.com/docs#claude-reasoning
+To request Claude thinking through Chat Completions, send reasoning_effort: "high" or reasoning: { "effort": "high" }, with a sufficient output limit such as max_tokens: 8192. These spellings are aliases; conflicting values return 400. Effort support depends on the model and serving provider. When thinking is requested through native Messages translation, Sonnet 4.6 and Opus 4.6 use adaptive thinking by default; Haiku 4.5 uses a manual thinking budget. Explicit native thinking and output_config settings take precedence over portable effort.
+
+Manual thinking requires an integer budget of at least 1,024 tokens, strictly below max_tokens or max_completion_tokens. The bridge never raises your output limit. Where supported, reasoning.max_tokens selects a manual budget; adaptive-only models reject that portable budget. For automatic manual budgets, minimal uses 10% of the output limit, low 20%, medium 50%, high 80%, and xhigh/max 95%, with a 1,024-token floor and 128,000-token ceiling. Leave room for the answer, for example max_tokens: 8192. Invalid budgets return 400 before a provider request is submitted.
+
+Use n: 1 and modern tools, tool_choice, tool_calls and tool-result messages. Legacy functions, function_call and function-role history return 400 for Claude requests using thinking or explicit caching. Active thinking allows auto or none tool_choice; a forced named tool or required tool choice is rejected. Sampling support is model-specific: omit temperature, top_p and top_k on models that do not support them. The Chat-to-native bridge caps temperature values above 1 at 1 to match Anthropic Chat compatibility.
+
+Chat requests using a native Messages route translate thinking and cache controls while still returning Chat JSON or server-sent events (SSE). Thinking summaries, when returned, appear in message.reasoning_content for buffered JSON and delta.reasoning_content for streams. reasoning.exclude: true or include_reasoning: false hides the summary without disabling thinking. Adaptive thinking can skip a simple task, so an empty summary does not prove the effort was ignored. Native /v1/messages clients use thinking and output_config and receive the Messages response format.
+
+## Claude prompt caching [prompt-caching]
+Category: API
+Link: https://cheaperinference.com/docs#prompt-caching
+Claude requests can carry cache_control on the request, tools, messages and supported content blocks. The Chat-to-Messages bridge preserves supported cache controls during translation. x-ci-prompt-cache: on adds breakpoints to an unmarked Claude request at the system/tools prefix and the last eligible conversation block. Existing explicit markers and lifetimes remain the caller's policy. The default passthrough mode adds no markers. off removes explicit controls; it cannot disable a provider's implicit cache. Zero data retention (ZDR) forces the effective mode to off.
+
+Send a distinct, stable x-ci-prompt-cache-session value for each conversation to request consistent routing affinity. A nonempty header takes precedence over prompt_cache_key. Affinity is separate from provider cache storage and does not guarantee the same provider or a cache hit. A cache marker requests caching; reuse still requires an identical eligible prefix, the model's minimum length, a successful cache write, and matching provider scope and retention window. Changing tools, system instructions or reasoning settings can change the prefix.
+
+Measure reuse from reported cache-read and cache-write token usage. GET /v1/usage/daily reports cache_hit_pct only across requests whose upstream reports cache usage; null means unknown, not zero. A successful request, an affinity hit, or visible reasoning is not evidence of a prompt-cache hit. Exact-response caching is a separate optional optimization that replays a stored answer without a provider generation.
+
+## Text completions [text-completions]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+POST https://api.cheaperinference.com/v1/completions serves the legacy prompt-style interface for older clients. New integrations should use chat completions instead; this endpoint exists for compatibility with code that has not migrated.
+
+## Anthropic Messages API [messages]
+Category: API
+Link: https://cheaperinference.com/docs#messages-api
+POST https://api.cheaperinference.com/v1/messages implements the Anthropic Messages surface, and POST https://api.cheaperinference.com/v1/messages/count_tokens returns token counts without running inference. This is what makes Claude Code and other Anthropic-native clients work against CheaperInference with no code change. Both bearer tokens and the x-api-key header are accepted.
+
+## Responses API [responses]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+POST https://api.cheaperinference.com/v1/responses implements the OpenAI Responses API, which is what Codex speaks. Configure Codex with wire_api = "responses" and point base_url at https://api.cheaperinference.com/v1.
+
+## Pro reasoning [pro-reasoning]
+Category: API
+Link: https://cheaperinference.com/docs#pro-reasoning
+To use Pro, send a POST request to /v1/responses with store: false and reasoning.mode: "pro". Set reasoning.effort separately to control how much reasoning the model does. Pro requires the Responses endpoint. Chat Completions returns HTTP 400 for Pro requests. The models gpt-5.6-luna, gpt-5.6-terra, gpt-5.6-sol and gpt-6-astra support Pro mode. Set stream: true to receive output as it arrives, or stream: false to receive one complete response. These models use standard mode when reasoning.mode is omitted. For gpt-5.5-pro, the model ID already selects Pro. Omit reasoning.mode and set stream: false. This model does not support streaming. Your price, provider, region and data-retention settings still apply. The provider must also support the features in your request. If no compatible Pro provider is available, the API returns HTTP 503 without charging you. A provider response that does not confirm Pro is rejected without a charge. Other OpenAI Pro model IDs, model IDs with a date suffix, and Pro reasoning replay are not yet supported. This includes requesting reasoning.encrypted_content. Pro can take longer and use more tokens than standard mode. Billing includes the total input and output tokens used across its model work, so input_tokens can exceed your original prompt's token count. The gpt-5.5-pro model has its own pricing. For streaming requests, read the final event as well as the HTTP status. A stream can start with HTTP 200 and later report an error. Pro streams are charged only when a valid final response confirms Pro and includes token usage.
+
+## Listing models [models]
+Category: API
+Link: https://cheaperinference.com/docs#models-and-pricing
+GET https://api.cheaperinference.com/v1/models returns every model currently available with its id, capabilities and current pricing. Use it to discover model ids rather than hardcoding them, since the catalog moves. Curated model pricing and discounts vary by model and can change; other marketplace models route at the cheapest live seller ask plus the configured routing markup.
+
+## Pricing change feed [pricing-changes]
+Category: API
+Link: https://cheaperinference.com/docs#models-and-pricing
+GET https://api.cheaperinference.com/v1/pricing/changes?since=... returns the latest customer-facing model object for each catalog row changed at or after the required RFC 3339 since timestamp; a removal has change_type "removed" and model null. previous_pricing and current_pricing each carry input_per_million, output_per_million, media_unit_price, cache_read_per_million and cache_write_per_million. Follow next_cursor while has_more is true, keeping the original since on every page. There is no pricing webhook. Poll this feed, process changes idempotently by model_id and changed_at, then use the newest changed_at as the next since (the inclusive boundary may repeat). GET https://api.cheaperinference.com/v1/models also returns pricing_version (a SHA-256 of the API-key-filtered catalog), pricing_checked_at and pricing_updated_at (the latest customer-facing price change among the returned models) so a cache can tell when it is stale.
+
+## Price ceiling [price-ceiling]
+Category: API
+Link: https://cheaperinference.com/docs#price-ceiling
+Add min_discount_percent (0 to 99.99) to a chat completions, completions, messages or responses request to set the minimum discount off list price the request will accept. The gateway checks the value against our published list price, not a price a source claims, and strips the field before forwarding so no upstream sees it. Only supply priced at or under the ceiling can serve the request (input and output rates are checked separately), and the bill is capped at list price times (1 minus min_discount_percent/100) for each rate. When nothing clears the ceiling the request fails with 503 min_discount_unavailable rather than falling back to a pricier source; an out-of-range value returns 400 invalid_min_discount, and a model with no known list price returns 400 list_price_unknown. GET https://api.cheaperinference.com/v1/models/supply?model=...&min_discount_percent=... counts the sources that currently clear a ceiling before you send a real request.
+
+## Zero data retention [zdr]
+Category: API
+Link: https://cheaperinference.com/docs#zero-data-retention
+Add zdr: true to a chat completions, completions, messages or responses request to route only through providers that support a zero-data-retention policy. They do not keep your prompts or responses and do not train on them. ZDR does not detect, mask, or anonymize PII; there is no automatic pre-provider PII redaction. Remove sensitive data in your application before sending it, including tool results and attachments. Billing and operational metadata is retained. An existing agreement with a model developer does not establish coverage for requests purchased through Cheaper Inference; confirm the serving account, model, features, approved providers and applicable terms with your contract owner. The gateway strips the field before forwarding. The flag only adds to the account Data Protection setting; a request cannot switch it off with zdr: false. The ZDR pool is smaller, so the price is usually higher than the standard price for the same model, and GET https://api.cheaperinference.com/v1/models?zdr=true returns the ZDR price view. A non-boolean returns 400 invalid_zdr; when no ZDR provider currently serves the model the request fails before it is sent upstream with 503 zdr_capacity_unavailable. GET https://api.cheaperinference.com/v1/models reports each model's zero_data_retention_route: discounted, rail_only or none. Use GET https://api.cheaperinference.com/v1/models/supply?model=...&zdr=true to count ZDR sources first.
+
+## Ranking: speed, discount, balance [ranking]
+Category: API
+Link: https://cheaperinference.com/docs#ranking
+Add ranking to a chat completions, completions, messages or responses request to choose the order the gateway tries the discounted sources: "discount" (cheapest first, the historic default), "speed" (highest recent speed score first, cost breaking ties), or "balance" (the default: speed score times discount, highest first). The speed score comes from the gateway's own recent traffic on the same model (time to first token and output tokens per second over the last twelve hours, most recent weighted highest), not a fixed list of "fast" providers; a source with fewer than five recent requests scores neutral. Ranking only orders the eligible sources: it does not add or remove candidates and does not change the rule that the source which serves the request sets the price. It combines freely with min_discount_percent and zdr. An API key can also carry a default (Routing priority in the key settings); a ranking in the request still wins over it. Fallback routes are not ranked and are tried only when no discounted source can serve the request in time. An invalid value returns 400 invalid_ranking.
+
+## Image generation and editing [image-generation]
+Category: API
+Link: https://cheaperinference.com/docs#images-and-vision
+POST https://api.cheaperinference.com/v1/images/generations creates images from a prompt (not Chat Completions); each data entry carries a URL or base64 image data. POST https://api.cheaperinference.com/v1/images/edits edits images, and only works with a model whose capabilities.image_edit is true. A multipart edit accepts one to ten PNG, JPEG or WebP sources plus an optional PNG mask, at most 20 MiB decoded; the JSON form accepts source HTTP(S) URLs in input_references, which are passed only to compatible providers and never downloaded by CheaperInference. An unsupported edit is refused rather than silently turned into a text-to-image generation.
+
+## Video generation [video-generation]
+Category: API
+Link: https://cheaperinference.com/docs#images-and-vision
+POST https://api.cheaperinference.com/v1/videos/generations creates video from a prompt. Generation is buffered while the provider completes the job, so use a client timeout of at least five minutes; the response carries a videos array with URLs or base64 MP4 data. There is currently no audio, speech or transcription endpoint, and the catalog has no audio-generation rows.
+
+## Response feedback [feedback]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+POST https://api.cheaperinference.com/v1/feedback attaches a 1-to-5 score and an optional comment to a previous request, identified by its request id. Feedback is what turns an A/B experiment from a cost comparison into a quality comparison, so send it if you are running experiments.
+
+## Request and response headers [headers]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+Every response carries attribution headers: x-ci-request-id identifies the request for feedback and support, x-ci-tokens-saved is the number of tokens removed before billing, x-ci-saved-usd is the dollar amount saved against list price, and x-ci-techniques lists which optimizations fired. On the request side, X-CI-Experiment opts a request into a named A/B experiment by slug.
+
+## Usage reporting [usage-api]
+Category: API
+Link: https://cheaperinference.com/docs#usage-and-billing
+GET https://api.cheaperinference.com/v1/usage/requests returns per-request usage with cursor pagination, and GET https://api.cheaperinference.com/v1/usage/daily returns daily aggregates. Both accept a date range and api_key_id to restrict usage to one key. In Dashboard → Reports, use API keys and Members to filter consumption and spend; totals and CSV/Excel/PDF exports use the same filters, including revoked-key history. Members requires owner/admin or granted Team reports access. Attribution follows the key owner: use a separate key per person because a shared key cannot identify individuals. Report filters do not change scheduled delivery scope. A key needs the usage:read scope; a usage-only key cannot run inference. /usage/daily also reports prompt-cache use per day and for the window: prompt_tokens, cached_tokens (the share of those served from cache), cache_hit_pct, and cache_reported_request_count. cache_hit_pct is measured only over requests whose upstream reported cache usage, and is null (not 0) when no upstream reported any, because an unknown rate is not the same as a reported zero.
+
+## Checking your balance [balance-api]
+Category: API
+Link: https://cheaperinference.com/docs#account
+GET https://api.cheaperinference.com/v1/account/balance returns the workspace wallet: balance_usd, available_usd, reserved_usd, plus auto_recharge_enabled, threshold_usd and recharge_amount_usd. Spend against available_usd, not balance_usd; the difference is money already held for requests that have not settled, so the balance alone overstates what can still be spent. The key needs the account:read scope; a usage-only key gets a 403.
+
+## Error reference [errors]
+Category: API
+Link: https://cheaperinference.com/docs#errors
+OpenAI-compatible endpoints (chat/completions, completions, responses, images, videos) return errors as {"error": {"message", "type", "param", "code"}}, so existing OpenAI error handling works unchanged. /v1/messages and /v1/messages/count_tokens return Anthropic's {"type": "error", "error": {"type", "message"}} instead, which has no code or param. Branch on the status and type, and log the message together with the x-ci-request-id response header. 400 means the request itself is wrong and will fail the same way on retry. When every route for a model refuses the same field, the 400 names it in param and the message: unsupported_parameter (the field is not accepted by this model), unexpected_parameter (the field is not recognised), or invalid_parameter (the field's value is not accepted). Remove or change that field, for example a reasoning setting the model does not support. Other 400 codes: context_length_exceeded (shorten the prompt), output_limit_exceeded (lower the output cap for the endpoint: max_output_tokens on Responses, max_tokens on Messages and Chat Completions, or max_completion_tokens where the Chat model requires it), invalid_thinking_signature (drop replayed thinking blocks or start a fresh conversation), content_moderation (the model's content moderation refused the prompt and no other route served it; change the prompt), and request_rejected (every route refused the request without naming a field). An image or video model sent to a text endpoint, a text model sent to a media endpoint, or a dedicated Pro model sent anywhere but /v1/responses also returns 400, with a message naming the endpoint to use. 401 means the key is missing, malformed or revoked. 403 end_user_blocked means the model provider blocked an end user for a usage-policy violation; the message names the end user from your request. Send a distinct safety_identifier (or user, or metadata.user_id on Messages) for each end user, so that a block applies to that end user only and not to your whole account. 402 with code insufficient_quota or insufficient_balance means the wallet cannot cover the request's worst-case reservation; top up or enable auto-recharge. 429 means a rate limit was hit; retry with backoff. 502 gateway_error means the gateway, not your request, was at fault; retry. 503 means no route could serve the request at that moment; retry with backoff. Eligible upstream 5xx failures are retried across routes before they reach you.
+
+## Which endpoint a model uses [endpoint-formats]
+Category: API
+Link: https://cheaperinference.com/docs#api-reference
+Text models are served in four request formats: OpenAI Chat Completions (POST https://api.cheaperinference.com/v1/chat/completions), OpenAI legacy Completions (POST https://api.cheaperinference.com/v1/completions), OpenAI Responses (POST https://api.cheaperinference.com/v1/responses) and Anthropic Messages (POST https://api.cheaperinference.com/v1/messages). Media models have their own endpoints: POST https://api.cheaperinference.com/v1/images/generations, POST https://api.cheaperinference.com/v1/images/edits and POST https://api.cheaperinference.com/v1/videos/generations. Each model in GET https://api.cheaperinference.com/v1/models lists its endpoint and supported_endpoints; send the request to one of those. Image and video models are not served through Chat Completions, and dedicated Pro models such as gpt-5.5-pro require /v1/responses with stream: false. Two mismatches are refused up front with a 400 before anything is billed, and the message names the endpoint to use: a media model on a text endpoint or a text model on a media endpoint, for example "Model 'nano-banana' is an image-generation model. Use POST /v1/images/generations.", and a dedicated Pro model sent anywhere but /v1/responses. That is the expected refusal, not an outage: change the endpoint rather than retrying. Other endpoint restrictions are not checked in advance, so a text model sent to a text endpoint it does not list can fail with the route's own error instead; read the message rather than assuming a client error.
+
+## Cache token fields in usage [cache-token-fields]
+Category: API
+Link: https://cheaperinference.com/docs#token-usage
+Usage field names follow the endpoint you called, not the provider that served the request, so a field name says nothing about the serving provider or architecture. On OpenAI-compatible endpoints (chat/completions, completions, responses), prompt-cache reads are reported as cached_tokens: read usage.prompt_tokens_details.cached_tokens on Chat Completions or usage.input_tokens_details.cached_tokens on Responses, and fall back to usage.cached_tokens where a route reports it at the top of usage. cached_tokens is part of prompt_tokens (or input_tokens), not in addition to it. On /v1/messages the Anthropic names are kept: cache_read_input_tokens and cache_creation_input_tokens, which Anthropic counts separately from input_tokens. Cache-write counts, where a provider reports them, are passed through as reported. A missing cache field means the provider reported no cache usage for that request; it is not proof of a miss. Cache reads and writes are billed at the model's cache rates, shown as cache_read_per_million and cache_write_per_million in GET /v1/models.
+
+## Reasoning tokens and completion_tokens [reasoning-tokens]
+Category: API
+Link: https://cheaperinference.com/docs#token-usage
+CheaperInference does not compute, pad or estimate output tokens: usage reports the counts the serving model returns. For most reasoning models, completion_tokens (output_tokens on Responses and Messages) includes the tokens the model spent reasoning as well as the visible answer, so a short reply can carry a large completion_tokens. Where the model itemises it, the reasoning share appears in usage.completion_tokens_details.reasoning_tokens (output_tokens_details.reasoning_tokens on Responses). Some providers report reasoning only in that breakdown and leave it out of completion_tokens, so the aggregate can be smaller than the tokens billed; the billed count always includes reasoning, whichever way the provider reported it. Not every model reports the breakdown on every response, so a missing reasoning_tokens field does not mean no reasoning happened. Reasoning tokens are billed as output at the model's output rate unless its pricing lists a separate reasoning rate. To spend fewer, lower reasoning_effort (or reasoning.effort), disable reasoning where the model allows it, or lower the output cap for the endpoint: max_output_tokens on Responses, max_tokens on Messages and Chat Completions, or max_completion_tokens where the Chat model requires it, which bounds reasoning and answer together. A reasoning setting the model does not accept returns 400 naming the field; for example Gemini 3 models accept effort minimal, low, medium or high and cannot disable thinking.
+
+## Timeouts [timeouts]
+Category: API
+Link: https://cheaperinference.com/docs#timeouts
+Streaming (SSE) and non-streaming requests have the same request limit. They run through the same endpoints and are not capped differently.
+
+A request may run for up to 795 seconds on /v1/chat/completions, /v1/messages, /v1/completions and /v1/responses, and up to 295 seconds on the image and video endpoints. A request still running when it reaches that limit is ended and returns an error, so treat the limit as a ceiling rather than an allowance you can plan to use.
+
+Set your own client timeout no lower than the longest response you expect, since many HTTP clients and SDKs default to far less than these limits and will give up while the request is still running.
+
+## Rate limits and retries [rate-limits]
+Category: API
+Link: https://cheaperinference.com/docs#errors
+Eligible upstream failures are retried before the error reaches your code. Retry 429 and 5xx responses with exponential backoff; do not retry 4xx other than 429, since the request will fail the same way. Streaming responses that fail mid-stream are billed only for what was delivered. Pro streams are charged only when a valid final response confirms Pro and includes token usage.
+
+## How billing works [wallet]
+Category: Billing
+Link: https://cheaperinference.com/dashboard/billing
+Billing is a prepaid wallet, not a subscription and not an invoice. Each request reserves its worst-case cost up front, then refunds the unused part once the actual token counts are known, so a request can never overdraw the wallet. The ledger on the billing page records every reservation, charge, refund and top-up.
+
+## Refunds and promotional credits in practice [refunds-and-credits]
+Category: Billing
+Link: https://cheaperinference.com/legal/terms#fees
+How support applies the refund clause of the Terms of Service (section 7, Fees, wallet credits and taxes, which is indexed separately under Legal). This is operational guidance, not part of the Terms. A billing error means a mistake on our side, such as a duplicate charge or a charge for a request that did not run. Unused credit, dissatisfaction with a model, latency, a change of mind or a customer's own mistake is not a billing error, so those payments stay final. The first-funding bonus and referral rewards are granted once per customer after eligibility checks and may be withheld where related or overlapping account activity is detected. Wallet funding is processed by Stripe. A crypto transfer that does not complete a payment (the amount arrived short, the token or network was not the one the session expected, or it arrived after the session expired) is held by Stripe rather than received by Cheaper Inference; support raises it with Stripe on the customer's behalf and the outcome is Stripe's decision. Supported crypto is USDC on Ethereum, Solana, Polygon, Base or Tempo, sent for the exact amount shown at checkout.
+
+## Topping up [topping-up]
+Category: Billing
+Link: https://cheaperinference.com/dashboard/billing
+Top up on the Billing page. The card form is collected in-app by Stripe; there is no redirect to a hosted checkout page. Amounts run from $5 to $100,000. Funds land in the wallet as soon as the payment clears, usually immediately. Saving the card is on by default, which is what makes auto-recharge available afterwards; CheaperInference stores only the card brand and last four digits.
+
+## Auto-recharge [auto-recharge]
+Category: Billing
+Link: https://cheaperinference.com/dashboard/billing
+Auto-recharge charges your saved card once when the settled wallet balance reaches a threshold you set. It is the way to stop production traffic failing with 402 when the balance runs out. It needs a card on file, which the top-up flow saves by default. If a charge fails the card is paused rather than retried in a loop, and the billing page explains why.
+
+## Pricing [pricing]
+Category: Billing
+Link: https://cheaperinference.com/#pricing
+Curated model pricing and discounts vary by model and can change. Check the Models page or GET /v1/models for current prices before sending requests. Models outside the curated catalog route at the cheapest live seller ask plus a routing markup, and carry no list-price discount claim because the official list price is unknown. Optimization savings stack on top of whichever applies. There is no subscription and no seat fee; you pay for tokens.
+
+## Ask us anything: Docs and My account [ask-us-anything]
+Category: Account
+Link: https://cheaperinference.com/docs#ask-us-anything
+The Ask us anything button in the dashboard header opens a panel with two tabs, split by what they can see. The Docs tab searches only this documentation: ask about setup, API behavior, billing rules, models, error codes or troubleshooting; it never reads your account, keys or balance, and if the docs do not cover a question it says so. The My account tab reads your own workspace data (balance, usage, savings, experiments, techniques and keys) plus the docs for how-to questions: ask for a readout of spend or savings, compare what a model would cost you, or change a setting; it changes only what you ask it to. Both tabs accept screenshots and files (PDF, CSV, Excel) attached to a question.
+
+## Connecting Slack, Discord and Telegram [chat-platforms]
+Category: Account
+Link: https://cheaperinference.com/docs#chat-platforms
+Connect Slack, Discord or Telegram from the Reports page in the dashboard. Slack and Discord connect through the platform's own authorization flow; Telegram opens a direct chat with the bot through your personal link, and a separate link adds the bot to a group. Connecting creates a direct-message channel addressed to you, and the bot can also live in shared channels. Each channel keeps its own notification and report settings.
+
+## Chat notifications and scheduled reports [chat-notifications]
+Category: Account
+Link: https://cheaperinference.com/docs#chat-notifications
+A connected Slack, Discord or Telegram channel can receive the savings report on a schedule (daily, weekly or monthly, at the hour and day you choose) and event notifications, on by default and adjustable per channel: low wallet balance while auto-recharge is off, spend anomalies, an organization spend limit being reached, an expiring card, pricing alerts when a recently used minimum discount is no longer met, experiment updates (started, paused, resumed, completed, winner promoted), and technique changes. Manage them from the Reports page, or by asking the bot in the channel itself. The email savings digest is configured separately on the Reports page.
+
+## Asking the bot about your account [chat-assistant]
+Category: Account
+Link: https://cheaperinference.com/docs#chat-assistant
+The bot on every connected platform is the account assistant. Type balance, usage or info for an instant answer, or ask anything in plain language: it reads your account (balance, usage, savings, experiments, account details, report settings) and searches this same documentation, so it can answer billing, profile, report and how-do-I questions, set up or change the report schedule, adjust which events the channel receives, and send a report immediately. Figures are for the workspace's billing account, so an organization member asking about the wallet gets the organization's wallet. Changes apply only to the channel you are chatting in, and the bot never moves money or changes billing; those stay in the dashboard. Questions are rate limited per hour.
+
+## Closing your account [account-closure]
+Category: Account
+Link: https://cheaperinference.com/docs#account-closure
+Close your account yourself from the dashboard: Settings, then Profile, under "Permanently close account". Closure requires a sign-in within the last 10 minutes (if the request is refused, sign out, sign back in and return), typing your account email exactly, and confirming that any positive prepaid balance is forfeited; the balance is stated in US dollars because that is the currency it is held in. Active requests must finish first, and if the balance changes before submission the closure stops so you can review the new amount. A workspace you own that still has other members blocks closure until you transfer ownership in Team settings; a workspace where you are the only member closes with the account. Closure cannot be undone: API keys and sessions are revoked immediately, auto-recharge and integrations are disabled, saved Stripe data is deleted, and personal data is anonymized. Financial and support records that must be retained remain in de-identified form. Signing in later with the same email starts a brand-new account; it does not restore the closed one, and the first sign-in shows a notice saying the previous account was deleted.
+
+## Choose your starting point [optimization]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#optimization
+Optimization brings Prompt Studio, Experiments, and Techniques together. They are connected starting points, not mandatory onboarding steps. Choose the tool that matches the change you want to make.
+
+Three tools, three scopes
+
+Prompt Studio takes a task description, a baseline prompt, and a target model. It produces rewritten messages for you to review and copy into your application. Running Studio does not deploy those messages or change workspace defaults.
+
+Experiments compares system prompts, models, or technique settings. A variant applies to test requests or application requests sent with that experiment's header. Creating an experiment does not enroll existing application traffic.
+
+Techniques describes optional request processing and lets authorized users change workspace defaults for eligible requests. A workspace default can affect requests beyond a single experiment, so enabling it is a separate decision.
+
+Use the overview
+
+Open Build → Optimization in the sidebar. Select Overview, Prompt Studio, Experiments, or Techniques from its children. The parent label opens Overview; its chevron expands the menu. In the collapsed rail, the Optimization icon opens the destination menu.
+
+Overview shows the latest three saved Studio runs, the total number of running experiments and their three newest entries, and enabled techniques among available implementations. In-progress Studio jobs remain managed in Studio. Overview is read-only: Refresh reloads activity, and each panel shows its update time. An unavailable or failed panel is not a count of zero; retry that panel or open its tool.
+
+## Prompt Studio: prepare and run [prompt-studio]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#prompt-studio
+Use Prompt Studio when you have a prompt to improve for a specific task and model. Start with a representative task and define what a useful answer must include.
+
+Set up a run
+
+1. Describe the task, the intended audience, the required output, and important constraints. For example: Generate five distinct search keywords for a local healthcare clinic; include the service and location and avoid unsupported claims.
+
+2. Provide a system prompt, a user prompt, or both. The system prompt contains the model's role and shared instructions. The user prompt contains the particular task or question. Keep representative constraints in your baseline so the optimizer has them to work with.
+
+3. Use double-brace placeholders such as {{service}} and {{location}} for values supplied by your application. These placeholders survive optimization. You replace them with real values when using the result.
+
+4. Choose the Target task model on which you intend to use the rewritten prompt. Studio identifies the separate model it uses to rewrite and refine candidates; that optimizer model is not your deployment target.
+
+5. Set Candidate evaluations, from 4 to 100. This is the number of scored candidate evaluations, not a dollar limit. More evaluations can explore further and take longer or cost more. Begin with a smaller run while refining your task description.
+
+6. Select Bill to API key and optionally enter a Run name to recognize it in History. Start the run and watch its progress in Studio.
+
+Billing and availability
+
+Optimization calls are billed to the selected API key and share its budget and request limits. Candidate evaluations does not cap spend in dollars. Check the selected key and available wallet balance before running. If no key is listed, create an active inference-capable key under API keys and return to Studio.
+
+If Studio is unavailable, follow its availability message or contact support. A failed run is not a usable result. Read its error, check key access and balance where relevant, and retry after resolving the issue. Completed inference calls may still have incurred costs even if the overall optimization fails.
+
+## Review, reuse, and test a Studio result [prompt-studio-results]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#prompt-studio-results
+A completed run supplies a candidate prompt to review. Its optimizer scores describe the optimization run; they are not measured production savings or a guarantee of quality on your traffic.
+
+Review and use the messages
+
+1. Read the rewritten system and user messages. Check instructions, output format, factual constraints, and the listed variables against your original task.
+
+2. Treat initial, final, and improvement scores as evaluation results from this run. Validate the output on representative examples, including edge cases, before wider use. Do not read an improvement percentage as a reduction in your API bill.
+
+3. Copy an individual message or the result's JSON payload. Replace placeholders with actual values, keep the target model intentional, and integrate the messages into your application's request construction. Copying alone does not deploy anything.
+
+4. Use History to reopen recent saved results. Studio also tracks in-progress jobs there, while the overview shows saved runs only. Use Refresh to reload saved history. An empty history means no saved runs were returned; a history error means the read failed.
+
+Test techniques with this prompt
+
+Select Test techniques with this prompt to open a technique experiment setup. The handoff seeds the same optimized system prompt and target model into both Control and Treatment. It places the optimized user prompt in the experiment's test-request box after creation. Choose the technique differences before creating the experiment.
+
+This handoff tests technique settings against a shared prompt. It does not create an original-versus-rewritten prompt comparison, and it does not create per-variant user messages. Replace any placeholders in the test request before sending it. Browse techniques opens the catalog if you need to understand the available settings first.
+
+## Experiments: create control and treatments [experiments]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#experiments
+Compare variants using test requests or application traffic sent to an experiment. The workflow is create variants, send requests, review cost, tokens, and feedback, then choose a winner.
+
+Create an experiment
+
+1. Select New experiment. Name the comparison and use the description to record your hypothesis and what would count as success. The generated slug identifies the experiment in application headers.
+
+2. Choose the comparison dimension: system prompt, model, technique settings, or a mixed comparison. For an interpretable first experiment, change one thing between variants.
+
+3. Choose Sticky or Random assignment. Sticky uses X-CI-End-User to consistently assign an end user. Send a stable identifier for each user. Without it, assignment falls back to the account identity, so calls without user identifiers can all land on the same variant. Random makes a weighted choice for each request.
+
+4. Define Control as your baseline and name each Treatment after its change. Set relative traffic weights: equal weights split traffic evenly in expectation; weights of 3 and 1 target a 75% and 25% split. Small samples can differ from the intended proportions.
+
+5. For a system-prompt comparison, enter the variant instructions. A nonempty override replaces the first system message, or adds one if none exists. Leaving it empty inherits the incoming request's system prompt. The user message continues to come from the request.
+
+6. For a model comparison, pin the desired model per variant or inherit the incoming request's model. Check that each chosen model supports the request features you plan to send.
+
+7. Choose technique overrides and create the experiment. Running means ready to receive experiment traffic. Nothing is automatically added to your application requests.
+
+Understand inherited technique settings
+
+Inherit leaves the effective setting unchanged, including workspace defaults and supported per-request opt-ins. Force on or Force off sets an explicit override for that variant. These overrides affect experiment requests and do not save workspace defaults.
+
+For an on-versus-off comparison, explicitly force the chosen technique off in Control and on in Treatment. An inherited Control is not necessarily off if the workspace already enables that technique or requests opt into it. Keep other overrides, prompts, and models aligned to isolate the change.
+
+## Send test requests and application traffic [experiment-traffic]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#experiment-traffic
+An experiment needs requests before it can provide evidence. Start with the detail page's Test a variant panel, then use its integration examples to connect the application traffic you want to compare.
+
+Test a variant in the dashboard
+
+1. Open the experiment detail page and find Test a variant. Choose Control or a Treatment under Send to. This targets that variant directly, so it is useful for a smoke test rather than checking traffic weights.
+
+2. Review the request model and enter a representative user message. A variant with a pinned model overrides the request model. If you arrived from Studio, review its seeded user prompt and substitute all variables.
+
+3. Send the request and inspect the returned variant and output. Repeat the same task for the other variant so you can compare behavior. These are live inference calls using an active API key and its wallet balance.
+
+Connect your application
+
+Add X-CI-Experiment with the exact slug shown on the experiment detail page. For Sticky assignment, also send X-CI-End-User with your stable end-user identifier. Requests without the experiment header follow normal request processing and workspace settings.
+
+The example below uses Chat Completions. Replace the API key, experiment slug, model, and messages with your own values. The -i flag includes response headers so you can inspect x-ci-experiment-variant and retain x-ci-request-id for feedback. Use the detail page's integration examples for your SDK.
+
+curl -i https://api.cheaperinference.com/v1/chat/completions \
+  -H "Authorization: Bearer ci_live_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-CI-Experiment: YOUR_EXPERIMENT_SLUG" \
+  -H "X-CI-End-User: customer-42" \
+  -d '{
+    "model": "YOUR_MODEL_ID",
+    "messages": [
+      {"role": "system", "content": "Answer clearly and accurately."},
+      {"role": "user", "content": "Suggest five search keywords for a dental clinic in Austin."}
+    ]
+  }'
+
+## Interpret results and choose a winner [experiment-results]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#experiment-results
+Compare cost and token usage alongside task quality. Zero requests means no evidence yet. Missing feedback means quality has not been scored, not that a variant passed or failed.
+
+Collect useful evidence
+
+Review request counts, input and output tokens, and average cost for each variant. Use comparable tasks and enough representative requests to judge your workload. A single low-cost answer is not proof that the configuration will work for other inputs. Check output completeness and correctness, especially after context trimming, output caps, or model changes.
+
+Submit a score from 1 to 5 and an optional comment for a completed request using its x-ci-request-id. Feedback is supplied by you or your application; experiment quality is not automatically scored. Use the same scoring rubric across variants. The detail page reports the average score and rating count, so consider how many requests were actually rated.
+
+curl https://api.cheaperinference.com/v1/feedback \
+  -H "Authorization: Bearer ci_live_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "REQUEST_ID_FROM_RESPONSE",
+    "score": 4,
+    "comment": "Relevant keywords and correct format; one suggestion was too broad."
+  }'
+
+Pause, finish, or promote
+
+Pause stops ordinary variant assignment; it does not stop API requests. Those requests continue through normal processing. Resume makes the experiment ready to assign variants again. End without a winner completes the comparison without applying a winning variant. A completed experiment cannot be restarted.
+
+Promote a winner only after reviewing your evidence. The winning variant's prompt, model, and technique settings then apply to future requests carrying that experiment's header. Promotion does not change workspace defaults or requests that do not carry the header. Inherited fields continue to inherit rather than becoming a saved snapshot of every request setting.
+
+To use the result more broadly, make a separate deployment decision: update your application's prompt or model, or have an authorized workspace owner or admin change defaults under Techniques. Review and monitor that wider change independently.
+
+## Techniques: review and configure defaults [techniques]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#techniques
+Techniques contains optional request optimizations. Available means an implementation can run on eligible requests. Enabled means its workspace default is on. Research only means it cannot be enabled as a live technique. Optional techniques remain off unless enabled.
+
+Review before enabling
+
+1. Open Available techniques. Expand an item and read its mechanism, savings summary, quality risk, linked evidence, and implementation. An available technique can still do nothing for an ineligible request or an input that has nothing to change.
+
+2. Use Help me choose if you want guidance. Safest defaults describes the current safe-compression preset, Save more points to context and output controls, and Run an experiment helps you explore changes to behavior. Read the proposed action before selecting it. Opening the help or choosing a guidance card does not itself enable the switches.
+
+3. Test changes on representative inputs. The technique-experiment launcher opens experiment setup so you can keep a baseline Control and select Treatment overrides. It does not turn on workspace defaults or automatically choose a difference for every technique.
+
+4. When ready for wider use, change the individual workspace switch, or explicitly apply the safe-compression preset. Personal workspaces can manage their own defaults. Organization defaults require an owner or admin; members can inspect the catalog and its permission guidance.
+
+5. Send eligible requests and review their reported technique attribution and actual usage. Turn a default off if the tradeoff is unsuitable. Explicit experiment overrides and supported per-request opt-ins have their own scope, so also check those when investigating why a technique still applies.
+
+Read the supporting evidence
+
+Technique sources link to original research papers, technical standards, or official provider documentation. Citations marked related research explain a mechanism or tradeoff; they do not mean the paper tested this exact implementation. Preprints are identified in their citation labels.
+
+Reported research results apply to the paper's models, datasets, and evaluation setup. They are not guaranteed savings for your requests. JSON Minification cites the JSON standard; Batch API and Flex cite the provider's documentation because those features and rates are defined by the provider.
+
+Choose the appropriate scope
+
+A switch on Techniques changes the shared workspace default for eligible future requests. A variant override changes requests assigned to that experiment variant. A Studio result changes neither. Keep these three scopes separate when interpreting activity or deciding how to deploy a result.
+
+The enabled count includes only available implementations with an enabled effective workspace default. It does not count research items or imply that every request used every enabled technique. If either the registry or settings read fails, retry the read before interpreting the state; an error is not an empty registry.
+
+## Understand technique tradeoffs [technique-tradeoffs]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#technique-tradeoffs
+Savings depend on the workload, request eligibility, and technique configuration. Use the live catalog for current availability. Lower token usage alone does not establish that an answer still meets your task requirements.
+
+Formatting and context
+
+JSON Minification removes unnecessary formatting from supported JSON content. It is the technique currently included in the safe-compression preset. Validate any workflow that depends on exact text formatting even when the JSON values are preserved.
+
+Whitespace Normalization reduces redundant spacing and blank lines. Whitespace-sensitive code, data, or Markdown can behave differently, so this technique is not in the safe-compression preset.
+
+Duplicate Message Collapse removes eligible repeated messages. Test cases in which repetition expresses emphasis or conversational intent. Context Window Trim removes older eligible context to meet its context budget; test long conversations where an answer depends on earlier details.
+
+Output and model behavior
+
+Output Token Budget adds an output cap when the request has no existing positive max_tokens or max_completion_tokens cap. A cap can limit runaway generation but may also truncate a valid answer. Check whether the output is complete, not just cheaper.
+
+Concise Output Instruction adds guidance for shorter answers. It can change answer style or omit desired explanation. Simple-Query Model Routing can route eligible simple requests to a configured cheaper model. Verify quality and the resulting model on your tasks.
+
+Concise output and routing also support per-request opt-ins through X-CI-Concise: 1 and X-CI-Route: auto. An explicit experiment override takes precedence over these effective inherited settings. Leave these headers out of a baseline request unless they are part of the behavior you intend to compare.
+
+## Exact-match response caching [caching]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#caching
+Exact-match response caching can reuse an eligible identical deterministic request from the account's private cache instead of making another provider call. It is an optional technique, separate from a provider's prompt-cache usage.
+
+Test cache behavior
+
+Read the current eligibility details on the technique card. Enable caching at the intended scope, send an eligible request to populate the cache, then repeat the same request and inspect its attribution and billed usage. Changing request content or sending an ineligible request may require another provider call.
+
+Use a realistic mix of new and repeated requests when evaluating savings. A warm repeated request does not represent every request in your workload. Disable the workspace default if reuse is unsuitable, and check experiment overrides when testing its off state.
+
+## Research radar and troubleshooting [technique-research-radar]
+Category: Optimization
+Link: https://cheaperinference.com/docs/optimization#technique-research-radar
+Research radar contains source-linked ideas that are not available to run. Discovery or review does not enable a technique. Open How we discover and review techniques for the lifecycle from research to a validated, shipped implementation.
+
+Resolve common points of confusion
+
+Studio completed but the application is unchanged: review and copy the result into your application, or use its technique-experiment handoff. Completion does not deploy a prompt.
+
+Experiment is Running but has zero requests: send a dashboard test request or add its exact X-CI-Experiment slug to application requests. Check the response's variant attribution. Running only indicates readiness.
+
+Sticky traffic appears to choose only one variant: confirm that different end users send different stable X-CI-End-User values. With no identifier, calls use the account fallback. A small sample can also be uneven.
+
+A winner was promoted but workspace switches did not change: this is expected. Promotion affects future requests carrying that experiment's header. Changing shared defaults requires a separate action on Techniques.
+
+An enabled technique reports no savings: inspect its request eligibility, the incoming content, any explicit variant overrides, and the kind of savings it provides. Output changes and model routing may affect downstream cost without reporting removed input tokens.
+
+A workspace switch is unavailable: read the permission guidance and confirm that the technique is available, rather than research only. An organization owner or admin must manage shared defaults. For a failed activity or registry read, retry instead of treating the missing data as zero activity.
+
+## Pi: Claude reasoning and prompt caching [pi]
+Category: Integrations
+Link: https://cheaperinference.com/docs#pi-claude
+Pi does not automatically add cache markers for a custom cheaper-inference provider. In Pi builds supporting compat.cacheControlFormat, set it to "anthropic" in the model entry of ~/.pi/agent/models.json. This guidance was checked against upstream Pi on 2026-09-28; older installed versions can have different options. Set CHEAPER_INFERENCE_API_KEY in Pi's environment, merge the example into your existing configuration, and choose a catalog model available to your key on /v1/chat/completions.
+
+For Pi versions without cacheControlFormat, omit that option and add provider headers: { "x-ci-prompt-cache": "on" } alongside baseUrl. The gateway then marks unmarked requests. cacheRetention controls Pi's marker retention; it does not enable marker support for an unrecognized provider. Its default is short, and none stops Pi adding markers but does not cancel an x-ci-prompt-cache: on header. PI_CACHE_RETENTION=long alone does not enable caching.
+
+With reasoning: true, supportsReasoningEffort: true and an enabled thinking level, thinkingFormat: "openai" sends reasoning_effort. Cheaper Inference also accepts reasoning.effort from clients that send that format. Enabling effort does not guarantee visible thinking or cache hits.
+
+Pi's anthropic-messages adapter is a separate native integration. Use https://api.cheaperinference.com without /v1 as its base URL; it appends /v1/messages and sends native thinking and output_config controls. Preserve that adapter's model-specific thinking and replay configuration. The Chat example below uses https://api.cheaperinference.com/v1 instead.
+
+{
+  "providers": {
+    "cheaper-inference": {
+      "baseUrl": "https://api.cheaperinference.com/v1",
+      "api": "openai-completions",
+      "apiKey": "${CHEAPER_INFERENCE_API_KEY}",
+      "models": [
+        {
+          "id": "claude-opus-4.6",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "compat": {
+            "cacheControlFormat": "anthropic",
+            "supportsReasoningEffort": true,
+            "thinkingFormat": "openai"
+          }
+        }
+      ]
+    }
+  }
+}
+
+## Cursor [cursor]
+Category: Integrations
+Link: https://cheaperinference.com/docs/integrations#cursor
+In Cursor, open Settings → Models → OpenAI API Key → Override OpenAI Base URL. Set the base URL to https://api.cheaperinference.com/v1 and the key to your CheaperInference API key. The base URL includes /v1 because Cursor appends /chat/completions itself. Cursor does not read the catalog, so add the model ids you want manually under Add model; get the ids from GET https://api.cheaperinference.com/v1/models. Select an explicit supported model to use this gateway: Auto, Composer and Cursor-managed Grok offerings are not redirected by the OpenAI override. Check both Cursor billing and Cheaper Inference Requests; Cursor may also charge BYOK fees. Decorated labels such as claude-4.6-opus-high are not catalog IDs. For intermittent failures, open the failed Requests row, copy its Request ID at the bottom and hover or focus the relative time for its timestamp. Send support the gateway x-ci-request-id, timezone, model and Cursor version with a sanitized reproduction; Cursor has a separate request ID.
+
+## Claude Code [claude-code]
+Category: Integrations
+Link: https://cheaperinference.com/docs/integrations#claude-code
+Set ANTHROPIC_BASE_URL to exactly https://api.cheaperinference.com, with no /v1 or /v1/messages suffix. Set ANTHROPIC_AUTH_TOKEN to your CheaperInference API key, then run claude from that terminal. ANTHROPIC_API_KEY is also supported for x-api-key authentication. No Anthropic account is required for inference. Claude Code appends /v1/messages itself, so using https://api.cheaperinference.com/v1 as its base URL produces /v1/v1/messages and a 404 Not Found. To fix this, remove the suffix wherever ANTHROPIC_BASE_URL is saved, including your shell profile or Claude Code settings, then exit and relaunch Claude Code from the configured terminal. Run /status to confirm the active base URL and retry a short prompt. If the old URL persists, check for an ANTHROPIC_BASE_URL override in Claude Code settings. A raw curl request uses the full endpoint https://api.cheaperinference.com/v1/messages; that endpoint URL is not the Claude Code base URL. OpenAI-compatible clients such as Codex and Cursor still use https://api.cheaperinference.com/v1. Claude Code does not load claude.ai connectors while ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN or apiKeyHelper is active, even after /login. Configure a service-supported MCP server directly or through managed MCP settings and authenticate with /mcp. Some Anthropic-hosted connectors require claude.ai login and cannot authenticate locally. Behind a gateway Sonnet 5 may default to 200K. After checking context_length in the catalog, set ANTHROPIC_DEFAULT_SONNET_MODEL to the exact Sonnet ID, unset CLAUDE_CODE_DISABLE_1M_CONTEXT and launch claude --model 'sonnet[1m]' for 1M support. Verify /status and /context. Use /autocompact 500k or CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 for earlier compaction; CLAUDE_CODE_DISABLE_1M_CONTEXT=1 caps the client at 200K. These settings cannot enlarge the provider limit.
+
+## Codex [codex]
+Category: Integrations
+Link: https://cheaperinference.com/docs/integrations#codex
+Add CheaperInference as a model provider in ~/.codex/config.toml with wire_api = "responses", base_url = "https://api.cheaperinference.com/v1", and env_key = "CHEAPER_INFERENCE_API_KEY". Then export that variable with your CheaperInference API key. env_key holds the NAME of the environment variable, not the key itself: pasting your ci_live_ key into env_key fails with "Missing environment variable: ci_live_...", which is Codex quoting your config back rather than an authentication error.
+
+## Obsidian (Claudian) [obsidian]
+Category: Integrations
+Link: https://cheaperinference.com/docs/integrations#obsidian
+Use YishenTu's Claudian plugin in desktop Obsidian with Claude Code installed. In Claudian's Claude provider Environment settings, set ANTHROPIC_BASE_URL=https://api.cheaperinference.com (no /v1 suffix), ANTHROPIC_AUTH_TOKEN to your Cheaper Inference key, and ANTHROPIC_MODEL to an exact catalog ID such as claude-fable-5. Map ANTHROPIC_DEFAULT_OPUS_MODEL, ANTHROPIC_DEFAULT_SONNET_MODEL, ANTHROPIC_DEFAULT_HAIKU_MODEL, ANTHROPIC_DEFAULT_FABLE_MODEL, and ANTHROPIC_SMALL_FAST_MODEL to the same ID. Restart Obsidian, select that custom model in a new chat, and summarize a test note without editing. Verify a settled /v1/messages request in the dashboard. Claudian accesses vault files directly; no separate MCP connector is needed. For an external agent, Obsidian's Local REST API with MCP plugin provides a local MCP endpoint with its own separate vault-access key. Configure that connection in the agent, not in the inference endpoint. Protect plugin settings containing keys; note content included in requests is sent to the serving provider.
+
+## OpenClaw [openclaw]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#openclaw
+OpenClaw talks to CheaperInference as a custom Chat Completions provider. In your OpenClaw configuration, add a "cheaper-inference" provider with baseUrl set to https://api.cheaperinference.com/v1, api set to "openai-completions", and apiKey read from CHEAPER_INFERENCE_API_KEY. Select the model as cheaper-inference/gpt-5.4 (or any other exact catalog id). Add one entry under models for each model id you want to expose.
+
+## Hermes Agent [hermes]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#hermes
+Run "hermes model", choose "Custom endpoint (self-hosted / VLLM / etc.)", enter https://api.cheaperinference.com/v1 as the base URL, paste your CheaperInference API key, and pick "Chat Completions" as the API mode. For a manual setup, put CHEAPER_INFERENCE_API_KEY in ~/.hermes/.env and add a custom_providers block in ~/.hermes/config.yaml pointing at the same base URL with api_mode: chat_completions.
+
+## OpenCode [opencode]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#opencode
+Configure OpenCode with an OpenAI-compatible custom provider. Open /connect, choose Other, enter cheaper-inference, and add your key. Then add a "cheaper-inference" provider to opencode.json using npm: @ai-sdk/openai-compatible, options.baseURL set to https://api.cheaperinference.com/v1, and one entry under models for each id you want to select via /models.
+
+## OpenWork [openwork]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#openwork
+OpenWork is an OpenCode-powered desktop agent that reads OpenCode provider config from each workspace's opencode.json. Add a "cheaper-inference" provider there with baseURL pointing at https://api.cheaperinference.com/v1 and env: ["CHEAPER_INFERENCE_API_KEY"] (the env array declares the key; OpenWork stores the actual secret locally after you connect). Reload the workspace, then Settings → AI Providers → Connect provider → Cheaper Inference and paste your key.
+
+## Open WebUI [open-webui]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#open-webui
+In Open WebUI, open Admin Settings → Connections → OpenAI → Add Connection. Enter https://api.cheaperinference.com/v1 as the base URL and your CheaperInference API key, then save. Discovered models appear automatically; add specific ids under Model IDs (Filter) if needed. Embeddings, speech-to-text and text-to-speech are not part of this connection; configure a separate provider for those.
+
+## Cline [cline]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#cline
+In Cline (VS Code), choose OpenAI Compatible as the API provider, set the Base URL to https://api.cheaperinference.com/v1, paste your CheaperInference API key, and enter an exact model id such as gpt-5.4. Advanced model settings (image support, tool use, context/output limits) are model-specific; enable them only when the selected model supports them.
+
+## Aider [aider]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#aider
+Aider is a terminal pair programmer that reads OpenAI-compatible envs. Export OPENAI_API_BASE=https://api.cheaperinference.com/v1 and OPENAI_API_KEY to your CheaperInference API key, then run "aider --model openai/gpt-5.4". Keep Aider's "openai/" prefix in front of the exact CheaperInference model id.
+
+## LibreChat [librechat]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#librechat
+Add CHEAPER_INFERENCE_API_KEY to LibreChat's .env, then add a custom endpoint in librechat.yaml with name "Cheaper Inference", baseURL https://api.cheaperinference.com/v1, apiKey read from that env var, and models.fetch true so it discovers ids automatically. Restart LibreChat. Selecting a Claude model still uses this custom OpenAI-compatible endpoint; CheaperInference translates the request format to the serving provider.
+
+## Continue [continue]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#continue
+Add a model to Continue's config.yaml with provider: openai, apiBase pointing at https://api.cheaperinference.com/v1, and apiKey set to your CheaperInference API key. Keep useResponsesApi: false so Continue uses the broadly compatible Chat Completions path; the Responses endpoint is targeted at Codex workloads, not Continue.
+
+## OpenAI Node SDK [framework-node]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#framework-node
+Use the official OpenAI Node SDK with new OpenAI({ apiKey: process.env.CHEAPER_INFERENCE_API_KEY, baseURL: "https://api.cheaperinference.com/v1" }). Check GET /v1/models for the selected model's endpoint, supported_endpoints and capabilities. Use client.chat.completions.create for Chat models or client.responses.create for Responses models, and enable streaming or tools only when supported.
+
+## OpenAI Python SDK [framework-python]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#framework-python
+Use the official OpenAI Python SDK with OpenAI(api_key=os.environ["CHEAPER_INFERENCE_API_KEY"], base_url="https://api.cheaperinference.com/v1"). Check GET /v1/models for the selected model's endpoint, supported_endpoints and capabilities. Use client.chat.completions.create for Chat models or client.responses.create for Responses models, and enable streaming or tools only when supported.
+
+## Vercel AI SDK [framework-vercel]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#framework-vercel
+Use @ai-sdk/openai-compatible. Call createOpenAICompatible({ name: "cheaper-inference", apiKey: process.env.CHEAPER_INFERENCE_API_KEY, baseURL: "https://api.cheaperinference.com/v1" }), then pass cheaperInference("gpt-5.4") to generateText or streamText.
+
+## LangChain [framework-langchain]
+Category: Integrations
+Link: https://cheaperinference.com/dashboard/integrations#framework-langchain
+Use langchain_openai's ChatOpenAI. Construct ChatOpenAI(model="gpt-5.4", api_key=os.environ["CHEAPER_INFERENCE_API_KEY"], base_url="https://api.cheaperinference.com/v1") and invoke it as normal.
+
+## OpenAPI spec [openapi]
+Category: Integrations
+Link: https://cheaperinference.com/api-reference
+A machine-readable OpenAPI 3.1 document is served at https://api.cheaperinference.com/openapi.json and checked in at docs/api/openapi.json. Use it to generate a typed client rather than hand-writing request shapes.
+
+## Requests failing with 402 [troubleshoot-402]
+Category: Troubleshooting
+Link: https://cheaperinference.com/dashboard/billing
+A 402 means the wallet could not cover the request's worst-case reservation. Top up on the Billing page, and turn on auto-recharge so it does not recur. If auto-recharge is already on but paused, the billing page shows the card failure that paused it; replacing the card clears the pause.
+
+## Requests failing with 401 [troubleshoot-401]
+Category: Troubleshooting
+Link: https://cheaperinference.com/dashboard/keys
+A 401 means the key is missing, malformed or revoked. Check the key is sent as "Authorization: Bearer ..." and has not been revoked on the API keys page. Both newly issued ci_live_ keys and migrated ir_live_ keys are accepted after cutover. Keys cannot be recovered after creation, so if the value was lost, revoke it and create a new one. If the key is valid but the endpoint returns 401 only on some routes, check the key's scopes.
+
+## Getting 404 from an agent or editor [troubleshoot-404]
+Category: Troubleshooting
+Link: https://cheaperinference.com/docs/integrations#verify
+For a 404 Not Found during agent or editor setup, check the base URL first. Clients differ: Cursor and Codex need https://api.cheaperinference.com/v1, while Claude Code needs ANTHROPIC_BASE_URL=https://api.cheaperinference.com with no /v1 or /v1/messages suffix. Claude Code appends /v1/messages itself, so an extra /v1 produces /v1/v1/messages and a 404. Remove the suffix wherever the value is saved, including your shell profile or Claude Code settings, then exit and relaunch Claude Code from the configured terminal. Run /status to confirm the active base URL and retry a short prompt. If it still shows the old URL, check for an ANTHROPIC_BASE_URL override in Claude Code settings. Raw HTTP requests to the Messages endpoint still use https://api.cheaperinference.com/v1/messages.
+
+## Savings look lower than expected [troubleshoot-no-savings]
+Category: Troubleshooting
+Link: https://cheaperinference.com/dashboard/requests
+Open the request on the Requests page and read its savings receipt, which itemises the provider list price, the marketplace discount and every optimization that fired. Two common explanations: the model is a marketplace-only model, which carries no list-price discount because the official list price is unknown; or the prompt was already tight, so the optimization pass had little to remove. A technique with its workspace default off can still run when an experiment explicitly enables it or a supported request header opts in. Inspect the experiment overrides and request headers as well as workspace defaults.
+
+## Terms of Service, section 1: Agreement, authority, and eligibility [terms-agreement]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#agreement
+You must be at least 18 years old and legally capable of entering into these Terms. The Services are intended for business and professional use and are not directed to children. When you create an account, you confirm that you are at least 18. If we learn that an account belongs to a person under 18, we close it and delete its personal data. If you use the Services for a company or other organization, you represent that you have authority to bind it. In that case, "Customer," "you," and "your" refer to that organization. You may not use the Services if applicable law prohibits your use, if you are subject to trade sanctions that prohibit the transaction, or if we previously terminated your access for material misuse.
+
+## Terms of Service, section 2: The Services and inference routing [terms-services]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#services
+Cheaper Inference provides an OpenAI-compatible interface and related tools that route eligible requests to third-party model providers. Available models, capabilities, routes, and prices may change. We may select or retry an eligible provider for a request based on model availability, price, reliability, compatibility, or other operational criteria. A provider may reject a request or return different output from another provider or model version. Documentation describes supported request shapes and current product behavior. Beta, preview, experimental, or free features may be changed or discontinued at any time and may be subject to additional limits. Customer is responsible for evaluating whether the Services, chosen models, and providers are suitable for Customer's use case, legal obligations, security requirements, and data.
+
+## Terms of Service, section 3: Accounts, workspaces, and API keys [terms-accounts]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#accounts
+You must provide accurate account information and keep it current. You are responsible for activity under your account, workspace, and API keys, including activity by users you invite or authorize. Keep passwords, session credentials, API keys, and provider credentials confidential. Do not place credentials in public repositories, client-side code, URLs, or other insecure locations. Workspace owners and authorized administrators may manage members, permissions, keys, usage, and billing. You are responsible for assigning appropriate permissions and promptly removing access that is no longer required. Notify us through the support form promptly if you suspect unauthorized access or credential compromise. We may rotate, revoke, or restrict credentials to protect the Services.
+
+## Terms of Service, section 4: Customer content and instructions [terms-content]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#content
+Customer Content means prompts, instructions, images, files, data, and other material submitted through the Services, and outputs generated for Customer. As between the parties and to the extent permitted by law, Customer retains its rights in Customer Content. Customer grants Keak a non-exclusive, worldwide, limited right to host, transmit, reproduce, format, and otherwise process Customer Content only as reasonably necessary to provide, secure, support, and maintain the Services and comply with law. Customer represents that it has all rights, notices, consents, and legal bases needed for Customer Content and Keak's processing of it under these Terms. Customer is responsible for Customer Content and its use of outputs. Do not submit protected health information, payment-card data, government identifiers, biometric data, children's data, or other highly sensitive data unless a written agreement with Keak expressly authorizes that processing and Customer has validated the complete provider route.
+
+## Terms of Service, section 5: AI outputs and human review [terms-outputs]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#outputs
+Models can produce inaccurate, incomplete, offensive, or non-unique output. Similar or identical output may be generated for other users. Output may not reflect current information. You must independently evaluate output before relying on or publishing it. Use qualified human review for decisions that could materially affect a person's legal rights, health, safety, employment, credit, housing, education, or access to essential services. Keak does not provide legal, medical, financial, or other professional advice and does not warrant that output is accurate, suitable, protectable, or free of third-party rights.
+
+## Terms of Service, section 6: Acceptable use [terms-acceptable-use]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#acceptable-use
+You must not use or help others use the Services to: Violate law, sanctions, export controls, or third-party rights. Generate, distribute, or facilitate malware, credential theft, unauthorized surveillance, exploitation, fraud, or unlawful harm. Access systems or data without authorization; probe or disrupt the Services; introduce harmful code; or circumvent technical, safety, billing, geographic, or rate limits. Resell, sublicense, or provide shared access to the Services or API keys except through a product or service expressly permitted by Keak in writing. Misrepresent output as human-generated where disclosure is required, or use output to deceive, impersonate, or violate privacy or publicity rights. Scrape the Services or use automated means to extract non-public data, except through documented APIs and within applicable limits. Provider-specific policies may also apply to a model or route. We may enforce the stricter requirement where necessary to maintain provider access or comply with law.
+
+## Terms of Service, section 7: Fees, wallet credits, and taxes [terms-fees]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#fees
+Usage charges. The Services use wallet-based, usage-priced billing. Current catalog rates and applicable units are shown through the Services and APIs. Customer authorizes Keak to reserve an estimated amount and deduct the final settled charge from the workspace wallet for each billable request. Price changes. Model and route prices may change when upstream rates or eligible routes change. Unless a signed agreement states otherwise, the rate applicable when a request is processed controls. Customer is responsible for monitoring current rates and maintaining sufficient wallet funds. Payments. Stripe or another disclosed payment provider processes wallet funding. You authorize that provider and Keak to charge the payment method you select. If you enable auto-recharge, you authorize charges when the configured threshold is reached until you disable it. Before you turn it on, the Billing page shows the amount and the threshold, and we email you a confirmation of those terms. You can turn auto-recharge off at any time on the Billing page, and no further automatic charge is made after you do. Refunds. Except where required by law or where Keak confirms a billing error, payments and funded wallet balances are final and non-refundable. Wallet balances are not deposits, bank accounts, or stored-value products and are not redeemable for cash. Wallet credit expiry. Funded wallet credits do not expire and are not reduced for inactivity while your account remains open. We may introduce an expiry period in future and will give reasonable notice before it takes effect. Promotional credits are governed by the clause below, and Section 12 governs suspension and termination. Promotional credits. Bonus, referral, trial, and other promotional credits are not transferable or redeemable for cash. They may be subject to eligibility conditions, use restrictions, or expiration disclosed with the promotion. Disputes and taxes. Contact us promptly about a charge you believe is incorrect. Customer is responsible for applicable taxes, duties, and assessments other than taxes based on Keak's net income.
+
+## Terms of Service, section 8: Availability, support, and changes [terms-availability]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#availability
+We may update, limit, suspend, or discontinue models, routes, features, or the Services to address provider changes, security, law, maintenance, or business needs. We do not guarantee that any model, provider, feature, response time, capacity, price, or region will remain available. Customer should implement appropriate retries, timeouts, fallbacks, monitoring, and backups for its use case. Support hours and response targets published or communicated outside a signed agreement are operational targets, not service-level commitments. Any binding uptime, support, or service-level commitment must be stated in a written agreement signed by Keak.
+
+## Terms of Service, section 9: Third-party models and services [terms-third-parties]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#third-parties
+The Services depend on third-party model, cloud, payment, communications, analytics, and infrastructure providers. Their services may be unavailable, changed, or discontinued, and their lawful terms or use policies may apply to Customer's use. Keak is not responsible for third-party products or services outside Keak's reasonable control.
+
+## Terms of Service, section 10: Privacy, security, and data processing [terms-privacy]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#privacy
+Our Privacy Policy explains how Keak processes personal data as a controller or business. When Keak processes Customer Personal Data on Customer's behalf, the Data Processing Addendum applies if incorporated into the parties' agreement or executed by both parties. Customer is responsible for configuring and using the Services securely, protecting credentials, and determining whether each model and provider route is appropriate for Customer Content.
+
+## Terms of Service, section 11: Ownership, documentation, and feedback [terms-ownership]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#ownership
+Keak and its licensors own the Services, software, websites, documentation, designs, trademarks, and related technology, excluding Customer Content. No rights are granted except the limited right to use the Services under these Terms. You may use our documentation internally to access the Services. You may not copy, modify, sell, lease, reverse engineer, or create derivative works of the Services except to the extent a restriction is prohibited by law. If you provide suggestions or feedback, you grant Keak a perpetual, irrevocable, worldwide, royalty-free right to use it without restriction or compensation, provided we do not identify you publicly without permission. Copyright complaints. Keak responds to notices of claimed copyright infringement under the Digital Millennium Copyright Act. Send notices to our designated agent as described on our Copyright and DMCA page . In appropriate circumstances, Keak terminates the accounts of repeat infringers.
+
+## Terms of Service, section 12: Suspension and termination [terms-suspension]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#suspension
+You may stop using the Services at any time. Contact support to request account closure, subject to outstanding obligations and required record retention. We may suspend or restrict access immediately if reasonably necessary to prevent security risk, fraud, unlawful activity, provider-policy violations, non-payment, material harm, or disruption. Where practical, we will provide notice and an opportunity to cure. Either party may terminate these Terms for a material breach that is not cured within 30 days after written notice, unless the breach cannot be cured or immediate termination is permitted above. On termination, your right to use the Services ends. Accrued payment obligations and provisions that by their nature should survive will survive, including ownership, disclaimers, liability limits, indemnity, and dispute terms.
+
+## Terms of Service, section 13: Disclaimers [terms-disclaimers]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#disclaimers
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SERVICES, MODELS, PROVIDER ROUTES, DOCUMENTATION, AND OUTPUTS ARE PROVIDED "AS IS" AND "AS AVAILABLE." KEAK AND ITS AFFILIATES AND LICENSORS DISCLAIM ALL EXPRESS, IMPLIED, AND STATUTORY WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, AND QUIET ENJOYMENT. WE DO NOT WARRANT THAT THE SERVICES OR OUTPUTS WILL BE UNINTERRUPTED, SECURE, ERROR-FREE, UNIQUE, OR SUITABLE FOR CUSTOMER'S PURPOSE. Some jurisdictions do not allow certain warranty exclusions, so the exclusions apply only to the extent permitted by law.
+
+## Terms of Service, section 14: Limitation of liability [terms-liability]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#liability
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY WILL BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, REVENUE, GOODWILL, BUSINESS OPPORTUNITY, OR DATA, EVEN IF ADVISED THAT THE DAMAGES WERE POSSIBLE. TO THE MAXIMUM EXTENT PERMITTED BY LAW, KEAK'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THE SERVICES OR THESE TERMS WILL NOT EXCEED USD $100. These limits do not apply where liability cannot lawfully be limited or excluded. A signed agreement may state different liability terms.
+
+## Terms of Service, section 15: Indemnity [terms-indemnity]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#indemnity
+Customer will defend, indemnify, and hold harmless Keak, its affiliates, and their officers, directors, employees, and agents from third-party claims, damages, losses, liabilities, and reasonable legal fees arising from Customer Content, Customer's products or services, Customer's breach of these Terms, or Customer's violation of law or third-party rights. Keak will promptly notify Customer of a claim and provide reasonable cooperation. Customer may not settle a claim in a way that admits fault by or imposes an obligation on Keak without Keak's written consent.
+
+## Terms of Service, section 16: Governing law and courts [terms-law]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#law
+Delaware law governs these Terms, without regard to conflict-of-law rules. The state and federal courts located in Delaware have exclusive jurisdiction over disputes arising out of or relating to these Terms or the Services, and each party consents to their jurisdiction and venue. Nothing prevents either party from seeking urgent injunctive relief in a court of competent jurisdiction. Mandatory consumer protections, if any, remain unaffected.
+
+## Terms of Service, section 17: Changes, notices, and general terms [terms-general]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#general
+Changes. We may update these Terms. We will post the revised version with a new effective date and provide additional notice of material changes where required. Changes apply prospectively. Your continued use after the effective date means you accept the revised Terms. Notices. Keak may send notices to the account email, in the Services, or on this page. Legal notices to Keak must be sent through the support form . Assignment. Customer may not assign these Terms without Keak's written consent. Keak may assign them to an affiliate or in connection with a merger, financing, reorganization, or sale of assets. Entire agreement. These Terms and incorporated documents are the entire agreement regarding the Services unless the parties sign another agreement. Purchase-order terms do not apply unless Keak expressly agrees in writing. Severability and waiver. If a provision is unenforceable, it will be modified to the minimum extent necessary and the rest will remain effective. Failure to enforce a provision is not a waiver. No third-party beneficiaries. These Terms do not create rights for third parties. Headings are for convenience only.
+
+## Terms of Service, section 18: Contact us [terms-contact]
+Category: Legal
+Link: https://cheaperinference.com/legal/terms#contact
+Keak AI, Inc. 651 North Broad Street Middletown, Delaware 19709 United States Legal and support contact form

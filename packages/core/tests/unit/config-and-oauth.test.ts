@@ -22,6 +22,12 @@ describe("parseRouterConfig", () => {
     expect(config.aliases).toEqual({ opus: "claude/claude-opus-4-8" });
   });
 
+  test("an API-key gateway needs only enabled: true (plan P4.6 N1); a subscription provider needs the acknowledgement", () => {
+    const config = parseRouterConfig({ providers: { openrouter: { enabled: true }, "cheaper-inference": { enabled: true, acknowledgeTermsRisk: false } } });
+    expect(enabledProviders(config)).toEqual(["openrouter", "cheaper-inference"]);
+    expect(() => parseRouterConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
+  });
+
   test("acknowledged but disabled stays disabled", () => {
     expect(enabledProviders(parseRouterConfig({ providers: { antigravity: { acknowledgeTermsRisk: true } } }))).toEqual([]);
   });

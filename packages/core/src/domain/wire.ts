@@ -1,4 +1,5 @@
 // Transport-neutral HTTP message shapes used by ports (bodies are bytes; streaming bodies are async iterables).
+import type { WireFormat } from "@inference-router/core/domain/models.ts";
 
 export type Headers = Readonly<Record<string, string>>;
 
@@ -37,6 +38,8 @@ export async function* bodyOf(text: string): AsyncIterable<Uint8Array> {
 
 /** A client request received on a native route, forwarded without canonical translation. */
 export type RawRequest = {
+  /** The route's request format (plan P4.6 §2). */
+  readonly format: WireFormat;
   /** Path relative to the dialect prefix, e.g. `/v1/messages` or `/v1beta/models/<model>:streamGenerateContent`. */
   readonly path: string;
   /** Query parameters (the router token's `key` already removed). */

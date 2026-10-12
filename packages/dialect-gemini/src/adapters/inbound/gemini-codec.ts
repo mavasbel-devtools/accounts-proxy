@@ -7,7 +7,7 @@
 //           invented version (decision Q5). Only Gemini-native providers (antigravity) list generateContent and
 //           streamGenerateContent in P4; the others list none until the translated cells (P5).
 import type { RouterError } from "@inference-router/core/domain/errors.ts";
-import { formatModelAddress, type ModelCatalog } from "@inference-router/core/domain/models.ts";
+import { formatModelAddress, modelFormats, type ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
@@ -36,7 +36,7 @@ export class GeminiCodec extends DialectCodecPort {
           displayName: m.displayName,
           ...(m.contextWindow !== undefined ? { inputTokenLimit: m.contextWindow } : {}),
           ...(m.maxOutputTokens !== undefined ? { outputTokenLimit: m.maxOutputTokens } : {}),
-          supportedGenerationMethods: c.nativeDialect === "gemini" ? ["generateContent", "streamGenerateContent"] : [],
+          supportedGenerationMethods: modelFormats(c, m).includes("gemini") ? ["generateContent", "streamGenerateContent"] : [],
         };
       }),
     );

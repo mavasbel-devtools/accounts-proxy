@@ -15,4 +15,13 @@ providers:
     # Required. ChatGPT plan usage is documented for open-source, locally hosted apps; see
     # docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md and the specs it cites.
     acknowledgeTermsRisk: true
+  # API-key gateways (plan P4.6): no terms acknowledgement; sign in with `inference-router login <provider>`.
+  openrouter:
+    enabled: true
+  opencode:
+    enabled: true
+  opencode-go:
+    enabled: true
+  cheaper-inference:
+    enabled: true
 aliases: {}

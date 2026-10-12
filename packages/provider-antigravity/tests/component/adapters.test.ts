@@ -606,6 +606,7 @@ describe("AntigravityProvider", () => {
     return { api, state, logger, provider };
   };
   const raw = (method: string, body: unknown, query: Record<string, string> = {}, lossy = false): RawRequest => ({
+    format: "gemini",
     path: `/v1beta/models/antigravity/gemini-3.6-flash-low:${method}`,
     query,
     headers: {},
@@ -617,7 +618,7 @@ describe("AntigravityProvider", () => {
 
   test("identity, models (live, advertised limits, 80k clamp; limits omitted when output is unknown), translated cells pending", async () => {
     const { provider } = make();
-    expect([provider.id, provider.nativeDialect, provider.capabilities().size]).toEqual(["antigravity", "gemini", 0]);
+    expect([provider.id, [...(await provider.nativeFormats("any"))], provider.capabilities().size]).toEqual(["antigravity", ["gemini"], 0]);
     const catalog = await provider.models();
     expect([catalog.provider, catalog.source]).toEqual(["antigravity", "live"]);
     expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });

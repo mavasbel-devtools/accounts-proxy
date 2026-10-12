@@ -1,7 +1,7 @@
 // Inbound (driving) ports implemented by the router's application services and called by the HTTP adapter.
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest, TranslationPolicy } from "@inference-router/core/domain/canonical/request.ts";
-import type { Dialect, ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 
@@ -28,9 +28,9 @@ export abstract class ListModelsPort {
 export abstract class PassthroughPort {
   /**
    * Resolves `model` (`<provider>/<model>` or an alias) and forwards the client's own request to that provider's
-   * native cell. A provider whose native dialect is not `dialect` is a translated cell: unsupported_feature (P5).
+   * native cell. A model that does not accept `format` natively is a translated cell: unsupported_feature (P5).
    */
-  abstract forward(dialect: Dialect, model: string, request: RawRequest): Promise<HttpResponse>;
+  abstract forward(format: WireFormat, model: string, request: RawRequest): Promise<HttpResponse>;
 }
 
 export abstract class HealthPort {

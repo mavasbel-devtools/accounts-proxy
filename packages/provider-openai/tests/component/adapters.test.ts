@@ -322,14 +322,14 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     const logger = new MemoryLogger();
     return { transport, logger, provider: new OpenAIProvider(new FixedSession(), new FixedCatalog(), new FixedIdentity(), transport, logger, "http://api") };
   };
-  const raw = (body: unknown, headers: Record<string, string> = {}, lossy = false, path = NATIVE_PATH): RawRequest => ({ path, query: {}, headers, body: typeof body === "string" ? body : JSON.stringify(body), lossy });
+  const raw = (body: unknown, headers: Record<string, string> = {}, lossy = false, path = NATIVE_PATH): RawRequest => ({ format: "openai-responses", path, query: {}, headers, body: typeof body === "string" ? body : JSON.stringify(body), lossy });
 
   test("identity, models, and the translated cells (P5)", async () => {
     const { provider } = make();
-    expect([provider.id, provider.nativeDialect, provider.capabilities().size]).toEqual(["openai", "openai", 0]);
+    expect([provider.id, [...(await provider.nativeFormats("any"))], provider.capabilities().size]).toEqual(["openai", ["openai-responses"], 0]);
     expect(await provider.models()).toEqual({
       provider: "openai",
-      nativeDialect: "openai",
+      formats: ["openai-responses"],
       source: "live",
       models: [
         { address: { provider: "openai", model: "gpt-6.1-sol" }, displayName: "GPT-6.1 Sol", contextWindow: 500_000 },

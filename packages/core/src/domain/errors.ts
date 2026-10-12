@@ -18,7 +18,7 @@
 //   │   ├── UpstreamUnreachableError  502 upstream_unreachable (DNS, refused, reset: no HTTP answer at all)
 //   │   └── UpstreamError             <upstream status> upstream_error
 //   └── InternalError             500 internal_error (a defect; the message is logged, the client sees a fixed text)
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { SUBSCRIPTION_PROVIDERS, type ProviderId } from "@inference-router/core/domain/models.ts";
 
 export type RouterErrorCode =
   | "invalid_request"
@@ -161,7 +161,7 @@ export class ProviderDisabledError extends ProviderError {
   readonly code = "provider_disabled";
   readonly httpStatus = 503;
   constructor(readonly provider: ProviderId) {
-    super(`${provider} is disabled; enable it with acknowledgeTermsRisk: true in router.yaml`);
+    super(`${provider} is disabled; enable it with ${SUBSCRIPTION_PROVIDERS.includes(provider) ? "acknowledgeTermsRisk: true" : "enabled: true"} in router.yaml`);
   }
 }
 

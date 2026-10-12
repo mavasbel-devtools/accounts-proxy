@@ -10,10 +10,12 @@ const CREDENTIAL_HEADERS = new Set(["authorization", "x-api-key", "x-goog-api-ke
  * payloads legitimately carry a `code` field). */
 const CREDENTIAL_FIELDS = new Set(["access_token", "refresh_token", "id_token", "code_verifier", "client_secret"]);
 /**
- * Prefixes of live token formats: Anthropic OAuth / API keys, Google access tokens, Google refresh tokens, and a JWS
- * whose header starts with `{"alg":` (OpenAI access and ID tokens are JWTs).
+ * Prefixes of live token formats: Anthropic OAuth / API keys, Google access tokens, Google refresh tokens, a JWS whose
+ * header starts with `{"alg":` (OpenAI access and ID tokens are JWTs), and the gateway keys of plan P4.6: OpenRouter
+ * `sk-or-` (openrouter-oauth-pkce.md), OpenCode Console `oc_sk_` (inference-proxy.ts), Cheaper Inference `ci_live_` and
+ * legacy `ir_live_` ([api-keys]).
  */
-export const TOKEN_PREFIXES: readonly string[] = ["sk-ant-", "ya29.", "1//", "eyJhbGci"];
+export const TOKEN_PREFIXES: readonly string[] = ["sk-ant-", "ya29.", "1//", "eyJhbGci", "sk-or-", "oc_sk_", "ci_live_", "ir_live_"];
 
 export class Redactor {
   private readonly secrets: Secret[] = [];

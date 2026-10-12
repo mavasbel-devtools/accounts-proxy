@@ -145,6 +145,152 @@
     "fetchedAt": "2026-10-12T05:06:49.805Z"
   },
   {
+    "file": "openrouter-openapi.yaml",
+    "url": "https://openrouter.ai/docs/openapi/openapi.yaml",
+    "status": 200,
+    "contentType": "text/yaml",
+    "bytes": 1981285,
+    "sha256": "2e5fcca9badf2a66bef0fafcb45753ed7870f27819f42186305bfffd36cf3d4c",
+    "fetchedAt": "2026-10-12T21:38:26.964Z"
+  },
+  {
+    "file": "openrouter-models.json",
+    "url": "https://openrouter.ai/api/v1/models",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 769475,
+    "sha256": "ab6cd97db76e4a71c04e3c47d55298a8d1d2e0573f5f332b3290e53748f7cbf3",
+    "fetchedAt": "2026-10-12T21:42:00.804Z"
+  },
+  {
+    "file": "openrouter-oauth-pkce.md",
+    "url": "https://openrouter.ai/docs/guides/overview/auth/oauth.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 9848,
+    "sha256": "15c6ccf2172ffe004eccc9e463f8e8b099a100842be53052e1a2671cf90610d5",
+    "fetchedAt": "2026-10-12T21:38:27.079Z"
+  },
+  {
+    "file": "openrouter-authentication.md",
+    "url": "https://openrouter.ai/docs/api_reference/authentication.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 6201,
+    "sha256": "57ac0886ccf8beb7644cd95d2b34344a2ae271c54110805851303b0066025c02",
+    "fetchedAt": "2026-10-12T21:38:27.194Z"
+  },
+  {
+    "file": "openrouter-streaming.md",
+    "url": "https://openrouter.ai/docs/api_reference/streaming.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 23199,
+    "sha256": "3520eca55c392c83fc6a30d406203cbc28d9a36f09f8b01f9303b107b1f76750",
+    "fetchedAt": "2026-10-12T21:38:27.290Z"
+  },
+  {
+    "file": "openrouter-errors.md",
+    "url": "https://openrouter.ai/docs/api_reference/errors-and-debugging.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 35943,
+    "sha256": "644199d5fdf5aa5c265f714ad41dc086b4ba2cc03a94b294e00a0a423f6cc112",
+    "fetchedAt": "2026-10-12T21:38:27.398Z"
+  },
+  {
+    "file": "openrouter-limits.md",
+    "url": "https://openrouter.ai/docs/api_reference/limits.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 26001,
+    "sha256": "210699a12bbb9858008a23b093206d2277d6962449bd4c2377e8fd12e942e5b4",
+    "fetchedAt": "2026-10-12T21:38:27.496Z"
+  },
+  {
+    "file": "openrouter-models.md",
+    "url": "https://openrouter.ai/docs/guides/overview/models.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 16210,
+    "sha256": "e55f7ed4e1b35b61021050b9811176fd6bc76c127ee92d913089d8485ef9ac8f",
+    "fetchedAt": "2026-10-12T21:38:27.596Z"
+  },
+  {
+    "file": "openrouter-free-variant.md",
+    "url": "https://openrouter.ai/docs/guides/routing/model-variants/free.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 1084,
+    "sha256": "795153d7b376137ccca4db0137529cd8b288675b90620239fef92d17c2620c01",
+    "fetchedAt": "2026-10-12T21:38:27.694Z"
+  },
+  {
+    "file": "openrouter-claude-code.md",
+    "url": "https://openrouter.ai/docs/cookbook/coding-agents/claude-code-integration.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=utf-8",
+    "bytes": 21864,
+    "sha256": "f718e0c4f1ca5e483f39fc738e402ea003267a59a67ddd3c3a3e4cab0d66d7b2",
+    "fetchedAt": "2026-10-12T21:38:27.807Z"
+  },
+  {
+    "file": "cheaper-inference-llms-full.txt",
+    "url": "https://cheaperinference.com/llms-full.txt",
+    "status": 200,
+    "contentType": "text/plain; charset=utf-8",
+    "bytes": 87954,
+    "sha256": "d748ce1a34b29cad64bb2e04f7115d47893db1f1ce8394b944d52bbc066e9de7",
+    "fetchedAt": "2026-10-12T21:38:28.718Z"
+  },
+  {
+    "file": "cheaper-inference-openapi.json",
+    "url": "https://api.cheaperinference.com/openapi.json",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "bytes": 395839,
+    "sha256": "17e28b79198c0c3bebde164c765f542ac51f8d654c04a8229325596db4bbce0b",
+    "fetchedAt": "2026-10-12T21:38:39.681Z"
+  },
+  {
+    "file": "cheaper-inference-public-models.json",
+    "url": "https://api.cheaperinference.com/public/models",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 733010,
+    "sha256": "7ba84ee0bf7eebdcfeb357b008eb833abbb1552b02c03b7597bafc08edc2fe7a",
+    "fetchedAt": "2026-10-12T21:38:29.156Z"
+  },
+  {
+    "file": "models-dev-gateways.json",
+    "url": "https://models.dev/api.json",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 5455907,
+    "sha256": "8b44b72330af2c251a915776b2a8a4ff5b1a0d3126be682e5a366aef0d3b1362",
+    "extractBytes": 493198,
+    "extractSha256": "c3efcc6e90407e62e105b1bf6909395010e6936add11c3c2f197c5b356ea8e1f",
+    "fetchedAt": "2026-10-12T21:38:29.636Z"
+  },
+  {
+    "file": "opencode-zen-models.json",
+    "url": "https://opencode.ai/zen/v1/models",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 6967,
+    "sha256": "6eb2073a2920d4d29e3e9ef893e0ad87f00f31427f6bc20f06e953efaee8a668",
+    "fetchedAt": "2026-10-12T21:38:29.987Z"
+  },
+  {
+    "file": "opencode-go-models.json",
+    "url": "https://opencode.ai/zen/go/v1/models",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 3181,
+    "sha256": "9390389f626fdee14f50bad4a681b9421476957fc36cb96957818996c19da418",
+    "fetchedAt": "2026-10-12T21:38:30.149Z"
+  },
+  {
     "file": "gemini-generate-content.md",
     "url": "https://ai.google.dev/api/generate-content.md.txt",
     "status": 200,

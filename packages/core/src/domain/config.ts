@@ -1,9 +1,10 @@
 // Router configuration (`<home>/router.yaml`), validated strictly: unknown keys and wrong types are errors.
 // Plan D4: a subscription provider is usable only when `enabled: true` AND `acknowledgeTermsRisk: true`; enabling it
-// without the acknowledgement is a named configuration error. No file means every provider is disabled.
+// without the acknowledgement is a named configuration error. An API-key gateway (plan P4.6) needs only `enabled: true`.
+// No file means every provider is disabled.
 // Plan E5: the default port is 4141 (measured free, outside every Windows excluded range).
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { isProviderId, PROVIDER_IDS, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { isProviderId, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS, type ProviderId } from "@inference-router/core/domain/models.ts";
 import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
 
 export class ConfigError extends Error {
@@ -22,7 +23,8 @@ export type RouterConfig = {
 
 export const DEFAULT_PORT = 4141;
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
-export const DEFAULT_CONFIG: RouterConfig = { port: DEFAULT_PORT, providers: { claude: OFF, antigravity: OFF, openai: OFF }, aliases: {} };
+const ALL_OFF: Readonly<Record<ProviderId, ProviderSettings>> = Object.fromEntries(PROVIDER_IDS.map((id) => [id, OFF])) as Record<ProviderId, ProviderSettings>;
+export const DEFAULT_CONFIG: RouterConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {} };
 
 function only(value: Record<string, unknown>, allowed: readonly string[], where: string): void {
   const unknown = Object.keys(value).filter((k) => !allowed.includes(k));
@@ -41,7 +43,7 @@ export function parseRouterConfig(raw: unknown): RouterConfig {
   only(raw, ["port", "providers", "aliases"], "the document");
   const port = raw.port ?? DEFAULT_PORT;
   if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) throw new ConfigError("port must be an integer 1-65535");
-  const providers: Record<ProviderId, ProviderSettings> = { claude: OFF, antigravity: OFF, openai: OFF };
+  const providers: Record<ProviderId, ProviderSettings> = { ...ALL_OFF };
   const rawProviders = raw.providers ?? {};
   if (!isJsonObject(rawProviders)) throw new ConfigError("providers must be a mapping");
   for (const [id, value] of Object.entries(rawProviders)) {
@@ -49,7 +51,7 @@ export function parseRouterConfig(raw: unknown): RouterConfig {
     if (!isJsonObject(value)) throw new ConfigError(`providers.${id} must be a mapping`);
     only(value, ["enabled", "acknowledgeTermsRisk"], `providers.${id}`);
     const settings = { enabled: bool(value.enabled, `providers.${id}.enabled`, false), acknowledgeTermsRisk: bool(value.acknowledgeTermsRisk, `providers.${id}.acknowledgeTermsRisk`, false) };
-    if (settings.enabled && !settings.acknowledgeTermsRisk) {
+    if (settings.enabled && !settings.acknowledgeTermsRisk && SUBSCRIPTION_PROVIDERS.includes(id)) {
       throw new ConfigError(`providers.${id} is enabled without acknowledgeTermsRisk: true (the provider's terms restrict third-party clients)`);
     }
     providers[id] = settings;

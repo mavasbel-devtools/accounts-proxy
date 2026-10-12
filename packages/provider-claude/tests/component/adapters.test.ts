@@ -361,6 +361,7 @@ describe("ClaudeSubscriptionProvider", () => {
     return { transport, identity, logger, provider };
   };
   const raw = (body: unknown, path = "/v1/messages", headers: Record<string, string> = {}, lossy = false): RawRequest => ({
+    format: "anthropic-messages",
     path,
     query: {},
     headers,
@@ -400,7 +401,7 @@ describe("ClaudeSubscriptionProvider", () => {
   test("identity and capabilities", async () => {
     const { provider } = make(ok({}));
     expect(provider.id).toBe("claude");
-    expect(provider.nativeDialect).toBe("anthropic");
+    expect([...(await provider.nativeFormats("any"))]).toEqual(["anthropic-messages"]);
     expect(provider.capabilities().size).toBe(0);
   });
 
@@ -425,7 +426,7 @@ describe("ClaudeSubscriptionProvider", () => {
       }
     }
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger(), API_BASE);
-    expect(await provider.models()).toEqual({ provider: "claude", nativeDialect: "anthropic", source: "live", models: [{ address: { provider: "claude", model: "x" }, displayName: "X" }] });
+    expect(await provider.models()).toEqual({ provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "x" }, displayName: "X" }] });
   });
 
   test("translated cells are not available before P5", async () => {

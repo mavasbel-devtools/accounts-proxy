@@ -40,15 +40,15 @@ class Models extends ListModelsPort {
     return [
       {
         provider: "antigravity",
-        nativeDialect: "gemini",
+        formats: ["gemini"],
         source: "live",
         models: [
           { address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80000, maxOutputTokens: 65536 },
           { address: { provider: "antigravity", model: "c" }, displayName: "C" },
         ],
       },
-      { provider: "claude", nativeDialect: "anthropic", source: "static", models: [] },
-      { provider: "claude", nativeDialect: "anthropic", source: "cache", models: [] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "static", models: [] },
+      { provider: "claude", formats: ["anthropic-messages"], source: "cache", models: [] },
     ];
   }
 }

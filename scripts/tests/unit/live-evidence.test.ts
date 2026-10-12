@@ -47,7 +47,18 @@ describe("Redactor", () => {
   test("scan reports surviving secrets and token prefixes", () => {
     const r = redactor();
     expect(r.scan("clean")).toEqual([]);
-    expect(r.scan("someone@example.com sk-ant-x ya29.secret-access 1//x eyJhbGciOiJSUzI1NiJ9.e30.x")).toEqual(["secret:email", "secret:access_token", "prefix:sk-ant-", "prefix:ya29.", "prefix:1//", "prefix:eyJhbGci"]);
+    expect(r.scan("someone@example.com sk-ant-x ya29.secret-access 1//x eyJhbGciOiJSUzI1NiJ9.e30.x sk-or-v1-x oc_sk_x ci_live_x ir_live_x")).toEqual([
+      "secret:email",
+      "secret:access_token",
+      "prefix:sk-ant-",
+      "prefix:ya29.",
+      "prefix:1//",
+      "prefix:eyJhbGci",
+      "prefix:sk-or-",
+      "prefix:oc_sk_",
+      "prefix:ci_live_",
+      "prefix:ir_live_",
+    ]);
   });
 });
 
