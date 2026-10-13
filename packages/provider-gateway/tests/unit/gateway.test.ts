@@ -21,9 +21,9 @@ const SPEC: GatewaySpec = {
   provider: "opencode",
   apiBase: "https://gw/v1",
   endpoints: {
-    "openai-chat": { path: "/chat/completions", keyHeader: "authorization" },
-    "anthropic-messages": { path: "/messages", keyHeader: "x-api-key" },
-    gemini: { path: "/models", keyHeader: "x-goog-api-key" },
+    "openai-chat": { path: "/chat/completions" },
+    "anthropic-messages": { path: "/messages" },
+    gemini: { path: "/models" },
   },
   requestIdHeader: "x-log-id",
 };
@@ -35,7 +35,6 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
     const call = upstreamCall(SPEC, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { accept: "text/event-stream", "x-other": "1", authorization: "Bearer router" } }));
     expect(call).toEqual({
       url: "https://gw/v1/chat/completions",
-      keyHeader: "authorization",
       headers: { "content-type": "application/json", accept: "text/event-stream" },
       body: '{"model":"m","messages":[]}',
     });
@@ -43,9 +42,9 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
 
   test("Messages: the Anthropic version and beta headers travel; count_tokens only where the vendor has it", () => {
     const call = upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/messages", headers: { "anthropic-version": "2023-06-01", "anthropic-beta": "b1" } }));
-    expect([call.url, call.keyHeader, call.headers]).toEqual(["https://gw/v1/messages", "x-api-key", { "content-type": "application/json", "anthropic-version": "2023-06-01", "anthropic-beta": "b1" }]);
+    expect([call.url, call.headers]).toEqual(["https://gw/v1/messages", { "content-type": "application/json", "anthropic-version": "2023-06-01", "anthropic-beta": "b1" }]);
     expect(() => upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/messages/count_tokens" }))).toThrow("opencode cannot carry: count_tokens");
-    const counting = { ...SPEC, countTokens: { path: "/messages/count_tokens", keyHeader: "authorization" as const } };
+    const counting = { ...SPEC, countTokens: { path: "/messages/count_tokens" } };
     expect(upstreamCall(counting, "m", raw({ format: "anthropic-messages", path: "/v1/messages/count_tokens" })).url).toBe("https://gw/v1/messages/count_tokens");
     expect(() => upstreamCall(SPEC, "m", raw({ format: "anthropic-messages", path: "/v1/batches" }))).toThrow(InvalidRequestError);
   });
@@ -53,9 +52,15 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
   test("Gemini: the model and method in the path, alt kept, the body unchanged; other methods are refused", () => {
     const body = '{"contents":[]}';
     const call = upstreamCall(SPEC, "gemini-3.6-flash", raw({ format: "gemini", path: "/v1beta/models/opencode%2Fgemini-3.6-flash:streamGenerateContent", query: { alt: "sse" }, body }));
-    expect([call.url, call.keyHeader, call.body]).toEqual(["https://gw/v1/models/gemini-3.6-flash:streamGenerateContent?alt=sse", "x-goog-api-key", body]);
+    expect([call.url, call.body]).toEqual(["https://gw/v1/models/gemini-3.6-flash:streamGenerateContent?alt=sse", body]);
     expect(upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:generateContent", body })).url).toBe("https://gw/v1/models/g:generateContent");
     expect(() => upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:countTokens", body }))).toThrow("opencode cannot carry: countTokens");
+  });
+
+  test("a vendor's own headers are sent; the client headers it names travel when present (Z15)", () => {
+    const own = { ...SPEC, headers: { "user-agent": "inference-router/0.1.0" }, forwardHeaders: ["x-opencode-session"] };
+    expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { "x-opencode-session": "ses_1", "user-agent": "client/1" } })).headers).toEqual({ "user-agent": "inference-router/0.1.0", "content-type": "application/json", "x-opencode-session": "ses_1" });
+    expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions" })).headers).toEqual({ "user-agent": "inference-router/0.1.0", "content-type": "application/json" });
   });
 
   test("a format without a vendor endpoint is a translated cell", () => {
@@ -65,9 +70,8 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
 });
 
 describe("headers and formats", () => {
-  test("keyHeaders: bearer for authorization, the bare key elsewhere", () => {
-    expect(keyHeaders("authorization", "k")).toEqual({ authorization: "Bearer k" });
-    expect(keyHeaders("x-api-key", "k")).toEqual({ "x-api-key": "k" });
+  test("keyHeaders: the key as a bearer token (R1, C1, Z14)", () => {
+    expect(keyHeaders("k")).toEqual({ authorization: "Bearer k" });
   });
 
   test("forwardedResponseHeaders keeps content-type, retry-after and the vendor's request id (G3)", () => {

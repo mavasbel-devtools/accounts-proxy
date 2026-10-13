@@ -2,7 +2,7 @@
 // only the network (ScriptedTransport) and the browser are replaced. The fake browser behaves like a user who
 // approves: it calls the loopback redirect with the code and the state from the authorization URL.
 import { afterEach, describe, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -71,6 +71,7 @@ function options(extra: Partial<ContainerOptions> = {}) {
     lock: PRODUCTION_LOCK,
     seams: {},
     listenHost: "127.0.0.1",
+    opencodeData: join(home, "opencode-data"),
     ...extra,
   };
   return { opts, out, err, transport, browser };
@@ -132,15 +133,15 @@ describe("composition root", () => {
       expect(await runCli(["models"], opts)).toBe(0);
       expect(out.filter((l) => l.startsWith("# "))).toEqual([
         "# openrouter: 459 models (built-in list: the live catalog was unavailable)\n",
-        "# opencode: 83 models (built-in list: the live catalog was unavailable)\n",
+        "# opencode: 84 models (built-in list: the live catalog was unavailable)\n",
         "# opencode-go: 38 models (built-in list: the live catalog was unavailable)\n",
         "# cheaper-inference: 91 models (built-in list: the live catalog was unavailable)\n",
       ]);
       const at = (url: string) => (origin === undefined ? url : `${origin}${new URL(url).pathname}`);
       expect(transport.requests.map((r) => r.url)).toEqual([
         at("https://openrouter.ai/api/v1/models"),
-        at("https://opencode.ai/zen/v1/models"),
-        at("https://opencode.ai/zen/go/v1/models"),
+        at("https://opencode.ai/inference/v1/models"),
+        at("https://opencode.ai/inference/go/v1/models"),
         at("https://api.cheaperinference.com/public/models"),
       ]);
       removeTemporary(home!);
@@ -171,6 +172,27 @@ describe("composition root", () => {
       ["https://api.cheaperinference.com/v1/models", "Bearer ci_live_1"],
     ]);
     expect(JSON.parse(readFileSync(join(home!, "accounts-cheaper-inference.json"), "utf8"))).toEqual({ accounts: [{ provider: "cheaper-inference", id: "me@x", label: "Team", data: { apiKey: "ci_live_1" } }], activeId: "me@x" });
+  });
+
+  test("OpenCode (amendment A): one Console account for opencode and opencode-go; --from-opencode imports OpenCode's key, checked against the workspace config", async () => {
+    const transport = new ScriptedTransport((request) => {
+      if (request.url.endsWith("/console/api/v2/config")) return json({ providers: { opencode: { headers: { "x-opencode-org-id": "org_1" } }, "opencode-go": { headers: { "x-opencode-org-id": "org_1" } } } });
+      return { status: 404 };
+    });
+    const { opts, out } = options({ transport });
+    writeFileSync(join(home!, "router.yaml"), "providers:\n  opencode-go: {enabled: true}\n");
+    mkdirSync(join(home!, "opencode-data"));
+    writeFileSync(join(home!, "opencode-data", "auth.json"), JSON.stringify({ "opencode-go": { type: "api", key: "oc_sk_go" } }));
+    expect(await runCli(["login", "opencode-go", "--from-opencode"], opts)).toBe(0);
+    expect(out.at(-1)).toBe("signed in to opencode-go as key-5645e3d2 (active account)\n");
+    expect(JSON.parse(readFileSync(join(home!, "accounts-opencode.json"), "utf8"))).toEqual({
+      accounts: [{ provider: "opencode", id: "key-5645e3d2", label: "key-5645e3d2", data: { workspaceHeaders: { opencode: { "x-opencode-org-id": "org_1" }, "opencode-go": { "x-opencode-org-id": "org_1" } }, apiKey: "oc_sk_go" } }],
+      activeId: "key-5645e3d2",
+    });
+    expect(await runCli(["account", "list", "opencode-go"], opts)).toBe(0);
+    expect(out.at(-1)).toBe("* key-5645e3d2\n");
+    expect(await runCli(["login", "opencode"], opts)).toBe(1);
+    expect(transport.requests.map((r) => [r.url, r.headers["authorization"]])).toEqual([["https://opencode.ai/console/api/v2/config", "Bearer oc_sk_go"]]);
   });
 
   test("an invalid router.yaml is reported, not thrown", async () => {

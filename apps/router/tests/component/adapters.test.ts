@@ -6,7 +6,7 @@ import { PassThrough } from "node:stream";
 import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@inference-router/core/domain/accounts.ts";
 import { ConfigError } from "@inference-router/core/domain/config.ts";
 import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
-import { UpstreamTimeoutError, UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
+import { InvalidRequestError, UpstreamTimeoutError, UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
 import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { FixedClock } from "@inference-router/test-support/fakes.ts";
 import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
@@ -446,6 +446,13 @@ describe("TerminalManualCode", () => {
     expect(printed).toContain("paste the code");
     expect(printed).not.toContain("https://auth.example/");
   });
+
+  test("input that ends before a line is an error, not a wait forever", async () => {
+    const input = new PassThrough();
+    const answer = new TerminalManualCode(input, new PassThrough()).prompt("https://auth.example/");
+    input.end();
+    await expect(answer).rejects.toThrow("standard input ended before a line was entered");
+  });
 });
 
 describe("TerminalSecretPrompt (plan P4.6 N4)", () => {
@@ -469,6 +476,13 @@ describe("TerminalSecretPrompt (plan P4.6 N4)", () => {
     input.write("sk-typed\r");
     expect(await answer).toBe("sk-typed");
     expect(printed).toBe("key: \n");
+  });
+
+  test("input that ends before a line is an error", async () => {
+    const input = new PassThrough();
+    const answer = new TerminalSecretPrompt(input, new PassThrough()).prompt("key: ");
+    input.end();
+    await expect(answer).rejects.toBeInstanceOf(InvalidRequestError);
   });
 });
 

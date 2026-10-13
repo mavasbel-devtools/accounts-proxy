@@ -82,6 +82,10 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   (provider-gateway + three vendor packages, routing by wire format, Chat route, PKCE/key logins, quota). Live: Zen
   keyless → 403 FreeTierError (Z8). verify GATE PASS (646 unit+component, 193 e2e, 100%). Waiting: the user's gateway
   keys (live probes) and OpenAI sign-in.
+- 2026-10-12/13 User: OpenCode's Console replaced its key pages; use the same login as `opencode auth login`. Amendment A
+  of plan P4.6 (K1–K6 approved): device login under client id `inference-router`, one Console account for opencode and
+  opencode-go, `--key` (service-account key), `--from-opencode` (API keys only), config from /console/api/v2/config, new
+  /inference addresses with bearer keys. Built and tested; waiting: the user's `login opencode` (A5 live probe).
 
 ## Progress map
 | Phase | State |
@@ -97,4 +101,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | Phase H (plan v4) | done 2026-10-11 |
 | P4.5 openai | part 1 done (code + unit/component); waiting for the user's OpenAI sign-in, then live probe + e2e |
 | P4.6 API-key gateways | built, verify GATE PASS; per-provider live probes wait for the user's keys |
+| P4.6 amendment A (OpenCode Console) | built and tested; live probe A5 waits for the user's `login opencode` |
 | P5–P9 | not started |

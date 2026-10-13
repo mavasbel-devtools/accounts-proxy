@@ -1,0 +1,53 @@
+{
+  "id": "c1-free-chat",
+  "target": "opencode",
+  "scenario": "c1-free-chat",
+  "model": "big-pickle",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "big-pickle",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "max_tokens": 32
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c01e29fcf741a-MIA",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:40:03 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "f0719f72-6442-41a7-b35f-b48bc1e13a46"
+        },
+        "headersAtMs": 113.2,
+        "doneAtMs": 113.3,
+        "chunks": [
+          {
+            "atMs": 113.3,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building.\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

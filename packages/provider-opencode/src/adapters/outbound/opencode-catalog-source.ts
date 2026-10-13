@@ -1,4 +1,4 @@
-// Zen / Go live model list (Z4, Z5): the gateway's public `GET /models` for the ids, models.dev for each model's format
+// Zen / Go live model list (Z4, Z5, Z12, Z13): the public `GET /v1/models` for the ids, models.dev for each model's format
 // and limits. When models.dev cannot be read, the ids are kept without formats (forwarded as sent, Z6).
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import { readAll } from "@inference-router/core/domain/wire.ts";

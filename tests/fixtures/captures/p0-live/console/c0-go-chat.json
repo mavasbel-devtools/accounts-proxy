@@ -1,0 +1,52 @@
+{
+  "id": "c0-go-chat",
+  "target": "opencode",
+  "scenario": "c0-go-chat",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/v1/chat/completions",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "max_tokens": 32
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c01d57e87741a-MIA",
+          "connection": "keep-alive",
+          "content-length": "195",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:40:01 GMT",
+          "server": "cloudflare",
+          "x-opencode-log-id": "1470254a-9eff-45c0-a172-444449c56964"
+        },
+        "headersAtMs": 104.1,
+        "doneAtMs": 104.2,
+        "chunks": [
+          {
+            "atMs": 104.1,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"MissingSessionID\",\"message\":\"Request is missing x-opencode-session and cannot be routed efficiently. Please see https://opencode.ai/docs/go/#where-can-i-use-it\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "id": "c2-device-flow",
+  "target": "opencode",
+  "scenario": "c2-device-flow",
+  "model": "-",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/console/auth/device/code",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json"
+        },
+        "body": "client_id=inference-router&supports_org_scope=true"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-credentials": "true",
+          "access-control-allow-origin": "https://opencode.ai",
+          "access-control-expose-headers": "retry-after,x-request-id,x-opencode-log-id",
+          "cache-control": "no-store",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c01efda14741a-MIA",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:40:05 GMT",
+          "pragma": "no-cache",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "vary": "Origin",
+          "x-opencode-log-id": "71727260-ae3c-4ec5-a9e9-82fd3ab26613",
+          "x-request-id": "01M4SWCWFTCGEQS75Z2CDNDBYW"
+        },
+        "headersAtMs": 121,
+        "doneAtMs": 121.1,
+        "chunks": [
+          {
+            "atMs": 121.1,
+            "text": "{\"device_code\":\"<REDACTED:device_code>\",\"user_code\":\"<REDACTED:user_code>\",\"verification_uri\":\"/console/device\",\"verification_uri_complete\":\"/console/device?user_code=<REDACTED:user_code>&client_id=inference-router\",\"expires_in\":600,\"interval\":5}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/console/auth/device/token",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/x-www-form-urlencoded",
+          "accept": "application/json"
+        },
+        "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=<REDACTED:device_code>&client_id=inference-router"
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "access-control-allow-credentials": "true",
+          "access-control-allow-origin": "https://opencode.ai",
+          "access-control-expose-headers": "retry-after,x-request-id,x-opencode-log-id",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c020fdaee741a-MIA",
+          "connection": "keep-alive",
+          "content-length": "124",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:40:10 GMT",
+          "server": "cloudflare",
+          "vary": "Origin",
+          "x-opencode-log-id": "f292dcf2-535e-462e-a29b-fb67a8b31bc5",
+          "x-request-id": "01M4SWD1FZ83QH3HX5ZZ2086AE"
+        },
+        "headersAtMs": 122.4,
+        "doneAtMs": 122.5,
+        "chunks": [
+          {
+            "atMs": 122.5,
+            "text": "{\"_tag\":\"DeviceTokenError\",\"error\":\"authorization_pending\",\"error_description\":\"The authorization request is still pending\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

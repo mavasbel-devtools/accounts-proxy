@@ -266,29 +266,84 @@
     "url": "https://models.dev/api.json",
     "status": 200,
     "contentType": "application/json",
-    "bytes": 5455907,
-    "sha256": "8b44b72330af2c251a915776b2a8a4ff5b1a0d3126be682e5a366aef0d3b1362",
-    "extractBytes": 493198,
-    "extractSha256": "c3efcc6e90407e62e105b1bf6909395010e6936add11c3c2f197c5b356ea8e1f",
-    "fetchedAt": "2026-10-12T21:38:29.636Z"
+    "bytes": 5593288,
+    "sha256": "0b48dca978b71f29a976c6091906831a87e4953154a2686817bb693434e80cff",
+    "extractBytes": 495585,
+    "extractSha256": "8e2ab5c0732c70c4156a14f9fba3d096051ada77d26f827d79429be85277dce3",
+    "fetchedAt": "2026-10-13T05:13:26.136Z"
   },
   {
     "file": "opencode-zen-models.json",
-    "url": "https://opencode.ai/zen/v1/models",
+    "url": "https://opencode.ai/inference/v1/models",
     "status": 200,
     "contentType": "application/json",
-    "bytes": 6967,
-    "sha256": "6eb2073a2920d4d29e3e9ef893e0ad87f00f31427f6bc20f06e953efaee8a668",
-    "fetchedAt": "2026-10-12T21:38:29.987Z"
+    "bytes": 7049,
+    "sha256": "03a92916e0d161be0ff925edeb5673776679f4edfebf9218742a393f920efb49",
+    "fetchedAt": "2026-10-13T05:13:26.311Z"
   },
   {
     "file": "opencode-go-models.json",
-    "url": "https://opencode.ai/zen/go/v1/models",
+    "url": "https://opencode.ai/inference/go/v1/models",
     "status": 200,
     "contentType": "application/json",
     "bytes": 3181,
-    "sha256": "9390389f626fdee14f50bad4a681b9421476957fc36cb96957818996c19da418",
-    "fetchedAt": "2026-10-12T21:38:30.149Z"
+    "sha256": "43da091a37d236dcb3fde5020a3d5641c8f8a06009b790fffaf3e50e61bcdc02",
+    "fetchedAt": "2026-10-13T05:13:26.393Z"
+  },
+  {
+    "file": "opencode-console-intro.html",
+    "url": "https://opencode.ai/v2/docs/console/",
+    "status": 200,
+    "contentType": "text/html",
+    "bytes": 10531,
+    "sha256": "d3bd4b43abf65523b893c616f0b4ab02568499b8ed21c15649262c602fab6fc7",
+    "extractBytes": 2761,
+    "extractSha256": "7b5c4142fa82fd8e274e032cb266f98560c3f83a5d04deb6c92c624466d16998",
+    "fetchedAt": "2026-10-13T05:13:26.483Z"
+  },
+  {
+    "file": "opencode-console-api.html",
+    "url": "https://opencode.ai/v2/docs/console/api/",
+    "status": 200,
+    "contentType": "text/html",
+    "bytes": 26877,
+    "sha256": "e087bd4d1886b11353a7e439ba9886a52f2d0accd1d52a22eba9fd611af2fadf",
+    "extractBytes": 18763,
+    "extractSha256": "938759378a0137b0a763e2d5e58838ade17a84a1177162bcec689a0cef84ac73",
+    "fetchedAt": "2026-10-13T05:13:26.809Z"
+  },
+  {
+    "file": "opencode-console-inference-api.html",
+    "url": "https://opencode.ai/v2/docs/console/api/inference/",
+    "status": 200,
+    "contentType": "text/html",
+    "bytes": 19626,
+    "sha256": "237de7b430c6c9ef0c7fed30db3bfc66068e2d994966e3f591d9b22be96a65b0",
+    "extractBytes": 11463,
+    "extractSha256": "3ff2debb4a85885fc747ea59de3084b6855724fc3b28fb59771d06a956642320",
+    "fetchedAt": "2026-10-13T05:13:26.907Z"
+  },
+  {
+    "file": "opencode-console-models.html",
+    "url": "https://opencode.ai/v2/docs/console/models/",
+    "status": 200,
+    "contentType": "text/html",
+    "bytes": 54779,
+    "sha256": "49cda0e6cfb6f575fa22bef455de8009def072a594b84ef1ba36ca20970dba1d",
+    "extractBytes": 46371,
+    "extractSha256": "eefcb4f8d640aeadaf8b15bc17bd6083613d7eb0e16c9012e50b3b4a13f97337",
+    "fetchedAt": "2026-10-13T05:13:26.995Z"
+  },
+  {
+    "file": "opencode-console-go.html",
+    "url": "https://opencode.ai/v2/docs/console/go/",
+    "status": 200,
+    "contentType": "text/html",
+    "bytes": 54750,
+    "sha256": "0587eb164d4d4c7a40a1bbffbfe3a69664ebec4784d2b03387712fb2cb6cd75a",
+    "extractBytes": 46246,
+    "extractSha256": "62fb4c1eb76ada1b7ba8a577b80dc9cd9c6137c690e36af8463a6aa96e3b1e8c",
+    "fetchedAt": "2026-10-13T05:13:27.086Z"
   },
   {
     "file": "gemini-generate-content.md",

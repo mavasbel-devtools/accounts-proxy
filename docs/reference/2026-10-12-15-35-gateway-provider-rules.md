@@ -79,3 +79,37 @@
 | G4 | A format the model does not accept natively is a translated cell: 400 `unsupported_feature` until P5. `count_tokens` goes only to a provider that has it (Cheaper, C2); elsewhere it is 400 `unsupported_feature`. |
 | G5 | Catalogs: live → cached copy (24 h) → built-in list generated from the committed lists above (never empty while a list is committed). |
 | G6 | A fixed key is never renewed; an upstream 401 reaches the client unchanged, and the account keeps working for other requests. |
+
+## 3a. `opencode` and `opencode-go` after the 2026-10-12 Console migration (plan P4.6 amendment A)
+
+Supersedes Z1–Z3, Z7, Z10, Z11 (kept above for the record). Sources: `opencode-console-*.html` (fetched 2026-10-12,
+manifest.json); opencode `packages/console/app/src/lib/inference-proxy.ts` @ `b9ca4d21b4` (blob
+`228d046e0280a24e10f381a04b3071c52942a9ef`); `packages/core/src/plugin/provider/opencode.ts` (blob
+`75de26333acf0889c484f5b2a138d858c6b8b22b`, unchanged); `packages/util/src/global-roots.ts` (blob
+`a9324e4987d1b5c118d1cb4a082b8ab0bb721c6f`) and `…/migration/20260805200742_import_legacy_credentials.ts` (blob
+`0da25f13041716336b07dbe44c8362dee40eb39d`) @ `35ef229454`; live probe
+[2026-10-12-23-40](2026-10-12-23-40-p46a-console-live-probe.md).
+
+| # | Rule | Source |
+|---|---|---|
+| Z12 | Console inference base `https://opencode.ai/inference`: `POST /openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/google/v1beta/models/{model}:generateContent` (`:streamGenerateContent` streams); models `GET /v1/models` | `opencode-console-inference-api.html` "Endpoints"; `opencode-console-models.html` "Model list"; live c0 (each route 401 without a key) |
+| Z13 | Go base `https://opencode.ai/inference/go`: `POST /v1/chat/completions`, `/v1/responses`, `/v1/messages`; models `GET /v1/models` | `opencode-console-go.html` "Endpoints", "Models"; live c0-go-models |
+| Z14 | Every endpoint takes the credential as `Authorization: Bearer <token>` (service-account key or device access token) | `opencode-console-inference-api.html` "Authentication"; `opencode-console-api.html` "Service accounts" |
+| Z15 | Go wants the client's own `User-Agent` and a stable `x-opencode-session` per conversation; without the header Go answers **400** `MissingSessionID` | `opencode-console-go.html` "Where can I use it?"; live c0-go-chat |
+| Z16 | Keys: a service account's API key (`oc_sk_…`, *Keys › Add Service Account › Add API Key*, shown once), bound to one workspace | `opencode-console-api.html` "Service accounts" |
+| Z17 | Device login (RFC 8628, "other CLIs can use the same flow"): `POST /console/auth/device/code` (`client_id`, `supports_org_scope=true`) → `device_code`, `user_code`, `verification_uri_complete` (relative to `https://opencode.ai`), `expires_in` 600, `interval` 5; poll `POST /console/auth/device/token` (`grant_type=urn:ietf:params:oauth:grant-type:device_code`, `device_code`, `client_id`) every `interval` s: 400 `authorization_pending` until approval (`slow_down` adds 5 s), then `access_token`, `refresh_token`, `expires_in`, `org_id`; the token is bound to the chosen workspace | `opencode-console-api.html` "Device flow"; `opencode.ts` `poll` (slow_down +5 s); live c2 (client id `inference-router` accepted) |
+| Z18 | Renewal `POST /console/auth/device/token` (`grant_type=refresh_token`, `refresh_token`, `client_id`); each refresh token is single-use and reusing an old one revokes the whole session; a rejected grant is 400 `invalid_grant` | `opencode-console-api.html` "Device flow"; `opencode.ts` `refresh` |
+| Z19 | Identity after the device login: `GET /console/api/user` (`id`, `email`) and `GET /console/api/orgs` (`[{id, name}]`), bearer access token | `opencode.ts` `credential` |
+| Z20 | `GET /console/api/v2/config` (bearer; every key permission and member role may read it) → `providers.<id>.{settings, headers, models}`, e.g. `headers: {"x-opencode-org-id": "org_…"}`; errors `{"_tag": …}`, 401 = missing/invalid/expired/revoked credential | `opencode-console-api.html` "Workspace config", "Errors"; live c3 (`{"_tag":"Unauthorized"}`) |
+| Z21 | Z8 still holds at the new address: a free model without a key answered **403** `FreeTierError` (the docs' "free chat models can be called without it" does not hold for the router) | live c1 |
+| Z22 | OpenCode's legacy credential file `${XDG_DATA_HOME:-~/.local/share}/opencode/auth.json`: an object keyed by provider id; an API key is `{"type": "api", "key", "metadata"?}`, a sign-in `{"type": "oauth", …}` | `global-roots.ts`; `import_legacy_credentials.ts` (`LegacyKey`, `LegacyOAuth`) |
+| Z23 | Upstream error bodies of the inference routes keep each format's own shape (OpenAI `{"error":{…}}`, Anthropic `{"type":"error",…}`, Gemini `{"error":{"code","status","message"}}`) | live c0 |
+
+Router rules added by amendment A:
+
+| # | Rule |
+|---|---|
+| G7 | Every gateway's key travels as `Authorization: Bearer` (R1, C1, Z14); the per-endpoint headers of Z3 are gone. |
+| G8 | OpenCode requests carry, besides G2, the router's `User-Agent` (Z15), the workspace's config headers for that provider (Z20) and the client's `x-opencode-session` when it sent one (Z15). |
+| G9 | `opencode` and `opencode-go` use one account pool (`accounts-opencode.json`, decision K2): a device sign-in (renewed under the Phase H rules, Z18) or a service-account key (never renewed). |
+| G10 | `login <gateway> --from-opencode` imports the provider's entry of OpenCode's `auth.json` only when it is an API key (Z22); a sign-in entry is refused. |

@@ -25,9 +25,9 @@ export const OPENROUTER_SPEC: GatewaySpec = {
   provider: "openrouter",
   apiBase: API_BASE,
   endpoints: {
-    "openai-chat": { path: "/chat/completions", keyHeader: "authorization" },
-    "openai-responses": { path: "/responses", keyHeader: "authorization" },
-    "anthropic-messages": { path: "/messages", keyHeader: "authorization" },
+    "openai-chat": { path: "/chat/completions" },
+    "openai-responses": { path: "/responses" },
+    "anthropic-messages": { path: "/messages" },
   },
   uniformFormats: ["openai-chat", "openai-responses", "anthropic-messages"],
   /** `openrouter-streaming.md`: "The generation ID is returned in the `X-Generation-Id` response header for all endpoints". */

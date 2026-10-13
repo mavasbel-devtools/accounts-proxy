@@ -9,8 +9,8 @@ const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta
 describe("Cheaper Inference rules", () => {
   test("C1, C2, C8: bearer on every endpoint, count_tokens, x-ci-request-id", () => {
     expect(CHEAPER_SPEC.apiBase).toBe("https://api.cheaperinference.com/v1");
-    expect(Object.values(CHEAPER_SPEC.endpoints).every((e) => e.keyHeader === "authorization")).toBe(true);
-    expect(CHEAPER_SPEC.countTokens).toEqual({ path: "/messages/count_tokens", keyHeader: "authorization" });
+    expect(Object.values(CHEAPER_SPEC.endpoints)).toEqual([{ path: "/chat/completions" }, { path: "/responses" }, { path: "/messages" }]);
+    expect(CHEAPER_SPEC.countTokens).toEqual({ path: "/messages/count_tokens" });
     expect(CHEAPER_SPEC.requestIdHeader).toBe("x-ci-request-id");
   });
 

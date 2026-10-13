@@ -1,4 +1,5 @@
 // Inbound ports driven by the CLI.
+import type { KeyImportSource } from "@inference-router/core/domain/api-key.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import type { UsageReport } from "@inference-router/core/domain/usage.ts";
 
@@ -17,8 +18,14 @@ export type LoginOptions = {
   readonly timeoutMs: number;
   /** Register a new account instead of re-authorizing the active one (`--new`; see AuthorizeInput.fresh). */
   readonly fresh: boolean;
+  /** Enter an API key at the hidden prompt instead of the provider's browser or device login (`--key`). */
+  readonly key: boolean;
+  /** Import the provider's API key once from another tool's credential file (`--from-opencode`). */
+  readonly importFrom: KeyImportSource | undefined;
   /** Receives the authorization URL before the browser is opened (so the user can open it by hand). */
   readonly onAuthorizeUrl: (url: string) => void;
+  /** Receives the code the user confirms on the provider's page (device login). */
+  readonly onUserCode: (code: string) => void;
 };
 
 export abstract class LoginPort {

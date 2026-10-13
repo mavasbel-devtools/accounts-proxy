@@ -9,13 +9,14 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 | **`antigravity`** | Google Antigravity OAuth (browser) | Cloud Code Assist envelope (Gemini, Claude and gpt-oss models) | Gemini |
 | **`openai`** | Sign in with ChatGPT, plan usage (browser) | OpenAI Responses | OpenAI Responses |
 | **`openrouter`** | OpenRouter PKCE (browser, yields an API key) | OpenRouter API | Chat, Responses and Anthropic Messages for every model |
-| **`opencode`** | OpenCode Zen API key (hidden prompt) | `opencode.ai/zen/v1` | per model: Responses (GPT, Grok), Messages (Claude, …), Gemini, Chat |
-| **`opencode-go`** | OpenCode Go API key (hidden prompt) | `opencode.ai/zen/go/v1` | per model: Responses, Messages, Chat |
+| **`opencode`** | OpenCode Console device login (browser + code), or a service-account key (`--key`); one account shared with `opencode-go` | `opencode.ai/inference` | per model: Responses (GPT, Grok), Messages (Claude, …), Gemini, Chat |
+| **`opencode-go`** | the `opencode` account (Go subscription of the same workspace) | `opencode.ai/inference/go/v1` | per model: Responses, Messages, Chat |
 | **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
-> **Status: P4.6.** Every provider serves its native formats; a request in another format is a translated cell
-> (P5) and answers 400 `unsupported_feature` until then. `openai` and the API-key gateways are built and tested against
-> documented and captured answers; their live checks wait for the user's sign-ins (OpenAI) and keys (gateways). Plans:
+> **Status: P4.6 with amendment A (OpenCode Console).** Every provider serves its native formats; a request in another
+> format is a translated cell (P5) and answers 400 `unsupported_feature` until then. `openai` and the gateways are built
+> and tested against documented and captured answers; their live checks wait for the user's sign-ins (OpenAI, OpenCode
+> Console) and keys (gateways). Plans:
 > [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
 > [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md).
 
@@ -34,7 +35,7 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 |---|---|
 | `router.yaml` | configuration; example: [config/router.example.yaml](config/router.example.yaml). No file = every provider disabled. Unknown keys are errors. |
 | `token.json` | the router token clients present (created on first `serve` or `token`, mode 0600) |
-| `accounts-<provider>.json` | the router's own accounts, tokens and API keys (atomic writes, mode 0600) |
+| `accounts-<provider>.json` | the router's own accounts, tokens and API keys (atomic writes, mode 0600); `opencode-go` uses `accounts-opencode.json` |
 | `state/` | per-install provider state (device and session ids, catalog cache, thought signatures) |
 | `locks/` | cross-process lock files (token refresh) |
 | `logs/router.log` | the log; never contains tokens |
@@ -45,7 +46,7 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 
 | Command | What it does |
 |---|---|
-| `login <provider> [--manual] [--new] [--timeout-seconds N]` | Browser sign-in for `claude`, `antigravity`, `openai`, `openrouter`: a loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback (`claude`, `openrouter`). `--new` registers another ChatGPT account (`openai`). For `opencode`, `opencode-go` and `cheaper-inference` the API key is read at a hidden prompt and checked where the vendor documents a way. |
+| `login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]` | Browser sign-in for `claude`, `antigravity`, `openai`, `openrouter`: a loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback (`claude`, `openrouter`). `--new` registers another ChatGPT account (`openai`). `opencode` / `opencode-go`: the OpenCode Console device login (the code is printed, the approval page opened, the router polls until you approve). `cheaper-inference`: the API key at a hidden prompt. `--key` (gateways): enter an API key at a hidden prompt instead (an OpenCode service-account key `oc_sk_…`, an OpenRouter key). `--from-opencode` (gateways): import the API key OpenCode stores in its `auth.json` once (keys only, never OpenCode's sign-ins). Keys are checked where the vendor documents a way. |
 | `account list <provider>` | stored accounts; `*` marks the active one |
 | `account use <provider> <account-id>` | choose the active account (the router never switches accounts by itself) |
 | `quota <provider>` | remaining quota as reported by the provider: `antigravity`, `openrouter` (key usage and limit), `cheaper-inference` (wallet) |
@@ -131,12 +132,15 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
   required, propertyOrdering`. The model list is the upstream catalog minus its tab/deprecated ids and can include IDE
   helper models such as `tab_*` (L13).
 - **API-key gateways** ([rules](docs/reference/2026-10-12-15-35-gateway-provider-rules.md)): the body `model` (or the
-  Gemini path model) becomes the vendor's bare id; only the key, `content-type`, `accept` and, on Messages,
-  `anthropic-version`/`anthropic-beta` travel upstream; the answer (status, body, `retry-after`, the vendor's request
-  id) streams back unchanged, errors included. Model lists: OpenRouter's, OpenCode's and Cheaper Inference's own lists
-  (OpenCode formats from models.dev), live → stored copy (24 h) → built-in copy of the committed lists. OpenCode's
-  keyless free tier answers 403 `FreeTierError` "can only be used from within OpenCode" to any other client, so
-  `opencode` needs a key.
+  Gemini path model) becomes the vendor's bare id; only the key (`Authorization: Bearer`), `content-type`, `accept`
+  and, on Messages, `anthropic-version`/`anthropic-beta` travel upstream; the answer (status, body, `retry-after`, the
+  vendor's request id) streams back unchanged, errors included. Model lists: OpenRouter's, OpenCode's and Cheaper
+  Inference's own lists (OpenCode formats from models.dev), live → stored copy (24 h) → built-in copy of the committed
+  lists. OpenCode's keyless free tier answers 403 `FreeTierError` "can only be used from within OpenCode" to any other
+  client, so `opencode` needs a sign-in or a key.
+- **OpenCode Console** (rules §3a): requests also carry the router's `User-Agent`, the workspace's headers from the
+  Console config (`x-opencode-org-id`) and the client's `x-opencode-session`. OpenCode Go refuses a request without
+  `x-opencode-session` (400 `MissingSessionID`), so a Go client must send a stable one per conversation.
 - **Model-list fields the catalogs do not have** are neutral markers, never invented values: Antigravity models list
   `created_at: 1970-01-01T00:00:00Z` (Anthropic shape) and `created: 0` (OpenAI shape); Gemini-shape `version` is the
   provider id and `baseModelId` the routable `<provider>/<model>` (decision Q5).

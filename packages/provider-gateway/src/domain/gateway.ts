@@ -6,13 +6,10 @@ import type { ProviderId, WireFormat } from "@inference-router/core/domain/model
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
 
-/** The request header that carries the key on one endpoint (Z3; `authorization` is sent as `Bearer <key>`). */
-export type KeyHeader = "authorization" | "x-api-key" | "x-goog-api-key";
-
+/** Every gateway takes its key as `Authorization: Bearer <key>` (R1, C1, Z14). */
 export type Endpoint = {
   /** Path under the spec's `apiBase`; for `gemini`, the prefix `/<model>:<method>` is appended to. */
   readonly path: string;
-  readonly keyHeader: KeyHeader;
 };
 
 export type GatewaySpec = {
@@ -27,6 +24,10 @@ export type GatewaySpec = {
   readonly uniformFormats?: readonly WireFormat[];
   /** The vendor's request-id response header, forwarded to the client (G3). */
   readonly requestIdHeader: string;
+  /** Headers sent on every request (OpenCode's own client identification, Z15). */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** Client request headers forwarded as they are, when present (OpenCode's `x-opencode-session`, Z15). */
+  readonly forwardHeaders?: readonly string[];
 };
 
 /** One model of a gateway catalog. `formats` absent: not known (the request is forwarded as sent, Z6). */
@@ -41,7 +42,6 @@ export type GatewayModel = {
 
 export type UpstreamCall = {
   readonly url: string;
-  readonly keyHeader: KeyHeader;
   /** Every request header except the key (G2). */
   readonly headers: Readonly<Record<string, string>>;
   readonly body: string;
@@ -53,8 +53,9 @@ const GEMINI_ROUTE = /^\/v1beta\/models\/.+:([A-Za-z]+)$/;
 /** The upstream request for a native call: endpoint (G4), body `model` replaced by the bare id (G1), headers (G2). */
 export function upstreamCall(spec: GatewaySpec, model: string, request: RawRequest): UpstreamCall {
   const endpoint = endpointFor(spec, request);
-  const headers: Record<string, string> = { "content-type": "application/json" };
-  for (const name of request.format === "anthropic-messages" ? ["accept", "anthropic-version", "anthropic-beta"] : ["accept"]) {
+  const headers: Record<string, string> = { ...spec.headers, "content-type": "application/json" };
+  const forwarded = request.format === "anthropic-messages" ? ["accept", "anthropic-version", "anthropic-beta"] : ["accept"];
+  for (const name of [...forwarded, ...(spec.forwardHeaders ?? [])]) {
     const value = request.headers[name];
     if (value !== undefined) headers[name] = value;
   }
@@ -62,11 +63,11 @@ export function upstreamCall(spec: GatewaySpec, model: string, request: RawReque
     const method = GEMINI_ROUTE.exec(request.path)![1]!;
     const alt = request.query["alt"];
     const url = `${spec.apiBase}${endpoint.path}/${encodeURIComponent(model)}:${method}${alt !== undefined ? `?alt=${encodeURIComponent(alt)}` : ""}`;
-    return { url, keyHeader: endpoint.keyHeader, headers, body: request.body };
+    return { url, headers, body: request.body };
   }
   // The route handler forwards only a JSON object with a string `model` on these formats.
   const parsed = parseJsonBody(request.body) as JsonObject;
-  return { url: `${spec.apiBase}${endpoint.path}`, keyHeader: endpoint.keyHeader, headers, body: JSON.stringify({ ...parsed, model }) };
+  return { url: `${spec.apiBase}${endpoint.path}`, headers, body: JSON.stringify({ ...parsed, model }) };
 }
 
 function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
@@ -88,9 +89,9 @@ function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
   return endpoint;
 }
 
-/** The key's request header (Z3). */
-export function keyHeaders(header: KeyHeader, key: string): Record<string, string> {
-  return { [header]: header === "authorization" ? `Bearer ${key}` : key };
+/** The key's request header (R1, C1, Z14). */
+export function keyHeaders(key: string): Record<string, string> {
+  return { authorization: `Bearer ${key}` };
 }
 
 /** G3: the status and body pass through; these response headers reach the client. */

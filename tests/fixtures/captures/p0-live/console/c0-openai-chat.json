@@ -1,0 +1,52 @@
+{
+  "id": "c0-openai-chat",
+  "target": "opencode",
+  "scenario": "c0-openai-chat",
+  "model": "kimi-k2.6",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "kimi-k2.6",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "max_tokens": 32
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c01935b54741a-MIA",
+          "connection": "keep-alive",
+          "content-length": "110",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:39:50 GMT",
+          "server": "cloudflare",
+          "x-opencode-log-id": "96735eec-a606-4a38-81a4-8b6e832fdd85"
+        },
+        "headersAtMs": 105.2,
+        "doneAtMs": 105.3,
+        "chunks": [
+          {
+            "atMs": 105.3,
+            "text": "{\"error\":{\"type\":\"server_error\",\"message\":\"Upstream request failed: Rate-limited models require a workspace\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

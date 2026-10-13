@@ -1,5 +1,6 @@
-// Account administration and usage reporting (plan D4: the user picks the active account by hand).
-import { activeAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
+// Account administration and usage reporting (plan D4: the user picks the active account by hand). A provider that
+// shares another's accounts (opencode-go, P4.6 K2) lists and chooses among the owner's.
+import { accountOwner, activeAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderDisabledError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import type { UsageReport } from "@inference-router/core/domain/usage.ts";
@@ -13,13 +14,13 @@ export class AccountAdminService extends AccountAdminPort {
   }
 
   async list(provider: ProviderId): Promise<readonly AccountSummary[]> {
-    const pool = await this.store.load(provider);
+    const pool = await this.store.load(accountOwner(provider));
     const active = activeAccount(pool)?.id;
     return pool.accounts.map((a) => summary(provider, a, a.id === active));
   }
 
   async use(provider: ProviderId, accountId: string): Promise<AccountSummary> {
-    const pool = await this.store.update(provider, (current) => useAccount(current, provider, accountId));
+    const pool = await this.store.update(accountOwner(provider), (current) => useAccount(current, provider, accountId));
     return summary(provider, activeAccount(pool)!, true);
   }
 }

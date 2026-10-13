@@ -19,6 +19,13 @@ const modelsDevGateways = (body: string): string => {
   return JSON.stringify(kept, null, 1) + "\n";
 };
 
+/** The `<main>` element of a documentation page that has no Markdown variant (the site chrome is left out). */
+const mainElement = (body: string): string => {
+  const match = /<main[\s\S]*<\/main>/.exec(body);
+  if (match === null) throw new Error("no <main> element");
+  return match[0] + "\n";
+};
+
 const sources: Source[] = [
   { file: "anthropic-messages.md", url: "https://platform.claude.com/docs/en/api/messages.md" },
   { file: "anthropic-streaming.md", url: "https://platform.claude.com/docs/en/build-with-claude/streaming.md" },
@@ -55,8 +62,14 @@ const sources: Source[] = [
   { file: "cheaper-inference-openapi.json", url: "https://api.cheaperinference.com/openapi.json" },
   { file: "cheaper-inference-public-models.json", url: "https://api.cheaperinference.com/public/models" },
   { file: "models-dev-gateways.json", url: "https://models.dev/api.json", extract: modelsDevGateways },
-  { file: "opencode-zen-models.json", url: "https://opencode.ai/zen/v1/models" },
-  { file: "opencode-go-models.json", url: "https://opencode.ai/zen/go/v1/models" },
+  // Plan P4.6 amendment A: the 2026-10-12 OpenCode Console (new inference addresses, device login, service-account keys).
+  { file: "opencode-zen-models.json", url: "https://opencode.ai/inference/v1/models" },
+  { file: "opencode-go-models.json", url: "https://opencode.ai/inference/go/v1/models" },
+  { file: "opencode-console-intro.html", url: "https://opencode.ai/v2/docs/console/", extract: mainElement },
+  { file: "opencode-console-api.html", url: "https://opencode.ai/v2/docs/console/api/", extract: mainElement },
+  { file: "opencode-console-inference-api.html", url: "https://opencode.ai/v2/docs/console/api/inference/", extract: mainElement },
+  { file: "opencode-console-models.html", url: "https://opencode.ai/v2/docs/console/models/", extract: mainElement },
+  { file: "opencode-console-go.html", url: "https://opencode.ai/v2/docs/console/go/", extract: mainElement },
   { file: "gemini-generate-content.md", url: "https://ai.google.dev/api/generate-content.md.txt" },
   { file: "gemini-models.md", url: "https://ai.google.dev/api/models.md.txt" },
   { file: "gemini-tokens.md", url: "https://ai.google.dev/api/tokens.md.txt" },

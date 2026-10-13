@@ -38,6 +38,17 @@ export const RENEWAL_RETRY_AFTER_MS = 30_000;
 
 export const EMPTY_POOL: AccountPool = { accounts: [] };
 
+/**
+ * Providers that use another provider's accounts (plan P4.6 amendment A, decision K2): one OpenCode Console sign-in or
+ * key serves both `opencode` and `opencode-go`, so Go's accounts are the ones stored for `opencode`.
+ */
+const ACCOUNT_OWNER: Readonly<Partial<Record<ProviderId, ProviderId>>> = { "opencode-go": "opencode" };
+
+/** The provider whose account store `provider` uses. */
+export function accountOwner(provider: ProviderId): ProviderId {
+  return ACCOUNT_OWNER[provider] ?? provider;
+}
+
 /** Insert or replace by id, and make it the active account (a fresh login is the user's explicit choice). */
 export function upsertAccount(pool: AccountPool, account: AccountCredential): AccountPool {
   const others = pool.accounts.filter((a) => a.id !== account.id);

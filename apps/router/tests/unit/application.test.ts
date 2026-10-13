@@ -3,15 +3,18 @@ import { EMPTY_POOL, upsertAccount, type AccountCredential, markNeedsLogin } fro
 import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
-import { ApiKeyLoginPort, SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
+import { ApiKeyLoginPort, ForeignKeySourcePort, SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
+import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
+import { DeviceLoginClientPort, type DevicePoll } from "@inference-router/core/ports/outbound/device.ts";
 import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import { BrowserLauncherPort, HashPort } from "@inference-router/core/ports/outbound/system.ts";
+import { BrowserLauncherPort, HashPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
-import { MemoryCredentialStore, MemoryLogger, SequenceRandom } from "@inference-router/test-support/fakes.ts";
+import { FixedClock, MemoryCredentialStore, MemoryLogger, SequenceRandom } from "@inference-router/test-support/fakes.ts";
 import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
 import { ListModelsService } from "@inference-router/router/application/list-models-service.ts";
 import { LoginService } from "@inference-router/router/application/login-service.ts";
+import type { LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
 
 class FakeClient extends OAuthClientPort {
   readonly callbackPath = "/cb";
@@ -114,33 +117,98 @@ class FakeSecrets extends SecretPromptPort {
   }
 }
 
+class FakeDevice extends DeviceLoginClientPort {
+  polls = 0;
+  constructor(
+    readonly provider: ProviderId,
+    private readonly answers: DevicePoll[],
+    readonly authorization: DeviceAuthorization = { deviceCode: "dc", userCode: "ABCD-EFGH", verificationUrl: "https://opencode.ai/console/device?user_code=ABCD-EFGH", intervalMs: 5000, expiresInMs: 600_000 },
+  ) {
+    super();
+  }
+  async start() {
+    return this.authorization;
+  }
+  async poll(authorization: DeviceAuthorization) {
+    expect(authorization).toBe(this.authorization);
+    this.polls += 1;
+    return this.answers.shift()!;
+  }
+}
+
+class FakeKeySource extends ForeignKeySourcePort {
+  readonly tool = "opencode";
+  entries: ProviderId[] = [];
+  async apiKey(entry: ProviderId) {
+    this.entries.push(entry);
+    return `imported-${entry}`;
+  }
+}
+
+/** Advances the clock by each sleep. */
+class ClockTimer extends TimerPort {
+  readonly sleeps: number[] = [];
+  constructor(private readonly clock: FixedClock) {
+    super();
+  }
+  async sleep(ms: number) {
+    this.sleeps.push(ms);
+    this.clock.time += ms;
+  }
+}
+
 class FixedHash extends HashPort {
   sha256(input: string) {
     return new TextEncoder().encode(`h(${input})`);
   }
 }
 
-function setup(client: FakeClient, query: (state: string) => CallbackQuery = (state) => ({ code: "c0de", state }), keyClients: ApiKeyLoginPort[] = [], secrets = new FakeSecrets([])) {
+function setup(
+  client: FakeClient | undefined,
+  query: (state: string) => CallbackQuery = (state) => ({ code: "c0de", state }),
+  keyClients: ApiKeyLoginPort[] = [],
+  secrets = new FakeSecrets([]),
+  devices: DeviceLoginClientPort[] = [],
+) {
   let state = "";
   const factory = new Factory(() => new FakeServer(query, () => state));
   const browser = new FakeBrowser();
   const store = new MemoryCredentialStore();
   const logger = new MemoryLogger();
   const manual = new FakeManual((url) => `pasted#${new URL(url).searchParams.get("state")}`);
-  const service = new LoginService([client], factory, browser, manual, store, new SequenceRandom(), new FixedHash(), logger, keyClients, secrets);
+  const clock = new FixedClock(0);
+  const timer = new ClockTimer(clock);
+  const keySource = new FakeKeySource();
+  const service = new LoginService({
+    clients: client === undefined ? [] : [client],
+    devices,
+    keyClients,
+    keySources: [keySource],
+    servers: factory,
+    browser,
+    manual,
+    secrets,
+    store,
+    random: new SequenceRandom(),
+    hash: new FixedHash(),
+    clock,
+    timer,
+    logger,
+  });
   const urls: string[] = [];
-  const options = { manual: false, fresh: false, timeoutMs: 1000, onAuthorizeUrl: (u: string) => urls.push(u) };
+  const codes: string[] = [];
+  const options: LoginOptions = { manual: false, fresh: false, key: false, importFrom: undefined, timeoutMs: 1000, onAuthorizeUrl: (u: string) => void urls.push(u), onUserCode: (c) => void codes.push(c) };
   const capture = () => {
-    state = client.authorizations.at(-1)?.state ?? "";
+    state = client?.authorizations.at(-1)?.state ?? "";
   };
-  return { factory, browser, store, logger, service, urls, options, capture };
+  return { factory, browser, store, logger, service, urls, codes, options, capture, timer, keySource };
 }
 
 describe("LoginService", () => {
   test("loopback login with PKCE: announce, open browser, validate state, exchange, store, redirect", async () => {
     const client = new FakeClient("claude", "https://manual/cb");
     const s = setup(client);
-    const run = s.service.login("claude", { ...s.options, onAuthorizeUrl: (u) => (s.capture(), s.urls.push(u)) });
+    const run = s.service.login("claude", { ...s.options, onAuthorizeUrl: (u) => (s.capture(), void s.urls.push(u)) });
     const summary = await run;
     expect(summary).toEqual({ provider: "claude", id: "me@x", label: "Me", active: true });
     const auth = client.authorizations[0]!;
@@ -232,6 +300,51 @@ describe("AccountAdminService and UsageService", () => {
     expect((await s.store.load("cheaper-inference")).accounts).toHaveLength(1);
   });
 
+  test("--key prompts even where a browser login exists; --from-opencode imports instead of prompting; providers without a key login refuse both", async () => {
+    const keyLogin = new FakeKeyLogin("openrouter");
+    const secrets = new FakeSecrets(["sk-or-1"]);
+    const s = setup(new FakeClient("openrouter", undefined), undefined, [keyLogin], secrets);
+    expect((await s.service.login("openrouter", { ...s.options, key: true })).id).toBe("id-sk-or-1");
+    expect(s.factory.last).toBeUndefined();
+    expect((await s.service.login("openrouter", { ...s.options, importFrom: "opencode" })).id).toBe("id-imported-openrouter");
+    expect(s.keySource.entries).toEqual(["openrouter"]);
+    expect(keyLogin.keys).toEqual(["sk-or-1", "imported-openrouter"]);
+    expect(s.logger.lines).toContain("INFO openrouter: API key imported from opencode");
+    await expect(s.service.login("openrouter", { ...s.options, key: true, manual: true })).rejects.toThrow("openrouter signs in with an API key; --manual and --new do not apply");
+    const claude = setup(new FakeClient("claude", undefined));
+    await expect(claude.service.login("claude", { ...claude.options, key: true })).rejects.toThrow("claude has no API-key login");
+    await expect(claude.service.login("claude", { ...claude.options, importFrom: "opencode" })).rejects.toBeInstanceOf(InvalidRequestError);
+  });
+
+  test("device login (amendment A): code and page shown, browser opened, polled every interval (+5 s after slow_down), stored under the owner", async () => {
+    const account = { provider: "opencode" as const, id: "me@x/org_1", label: "me@x (Team)", data: {} };
+    const device = new FakeDevice("opencode-go", [{ kind: "pending" }, { kind: "slow_down" }, { kind: "pending" }, { kind: "approved", account }]);
+    const s = setup(undefined, undefined, [new FakeKeyLogin("opencode-go")], new FakeSecrets([]), [device]);
+    expect(await s.service.login("opencode-go", { ...s.options, timeoutMs: 60_000 })).toEqual({ provider: "opencode-go", id: "me@x/org_1", label: "me@x (Team)", active: true });
+    expect(s.codes).toEqual(["ABCD-EFGH"]);
+    expect(s.urls).toEqual(["https://opencode.ai/console/device?user_code=ABCD-EFGH"]);
+    expect(s.browser.opened).toEqual(s.urls);
+    expect(s.timer.sleeps).toEqual([5000, 5000, 10_000, 10_000]);
+    expect((await s.store.load("opencode")).activeId).toBe("me@x/org_1");
+    expect((await s.store.load("opencode-go")).accounts).toEqual([]);
+  });
+
+  test("device login: the deadline is the shorter of the code's expiry and the login timeout; --manual/--new refused; a browser failure is only warned", async () => {
+    const pending = (): DevicePoll[] => Array.from({ length: 10 }, () => ({ kind: "pending" }));
+    const slow = new FakeDevice("opencode", pending());
+    const s = setup(undefined, undefined, [], new FakeSecrets([]), [slow]);
+    s.browser.fail = true;
+    await expect(s.service.login("opencode", { ...s.options, timeoutMs: 12_000 })).rejects.toThrow("opencode: the device code was not approved in time");
+    expect(slow.polls).toBe(2);
+    expect(s.logger.lines[0]).toBe("WARN opencode: could not open the browser (Error: no browser); open the URL by hand");
+    const expiring = new FakeDevice("opencode", pending(), { deviceCode: "d", userCode: "U", verificationUrl: "https://x/", intervalMs: 5000, expiresInMs: 7000 });
+    const t = setup(undefined, undefined, [], new FakeSecrets([]), [expiring]);
+    await expect(t.service.login("opencode", { ...t.options, timeoutMs: 600_000 })).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+    expect(expiring.polls).toBe(1);
+    await expect(t.service.login("opencode", { ...t.options, manual: true })).rejects.toThrow("opencode signs in with a device code; --manual and --new do not apply");
+    expect(t.store.saves).toBe(0);
+  });
+
   test("list marks the active account; use switches it and persists", async () => {
     const store = new MemoryCredentialStore();
     store.pools.set("antigravity", upsertAccount(upsertAccount(EMPTY_POOL, credential("a")), credential("b")));
@@ -244,6 +357,9 @@ describe("AccountAdminService and UsageService", () => {
     expect((await store.load("antigravity")).activeId).toBe("a");
     await expect(admin.use("antigravity", "zz")).rejects.toBeInstanceOf(UnknownAccountError);
     expect(await admin.list("claude")).toEqual([]);
+    store.seed("opencode", upsertAccount(EMPTY_POOL, { provider: "opencode", id: "k", label: "k", data: {} }));
+    expect(await admin.list("opencode-go")).toEqual([{ provider: "opencode-go", id: "k", label: "k", active: true }]);
+    expect((await admin.use("opencode-go", "k")).id).toBe("k");
     store.seed("antigravity", markNeedsLogin(await store.load("antigravity"), credential("b"), "grant rejected"));
     expect((await admin.list("antigravity"))[1]).toEqual({ provider: "antigravity", id: "b", label: "b", active: false, needsLogin: "grant rejected" });
   });

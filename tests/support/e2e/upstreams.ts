@@ -3,7 +3,8 @@
 // body is a committed capture: the source plugins' fixtures (plugin-6292741, plugin-5c6f7c2) or the router's own
 // redacted P0-LIVE captures (E2/E3 streams, E5 control plane: live catalog, quota, loadCodeAssist, fetchUserInfo), and
 // the gateways' public model lists fetched into docs/reference/specs (plan P4.6), OpenRouter's documented OpenAPI examples
-// (key exchange, key info, Chat / Responses / Messages answers), and the captured OpenCode gateway refusal (probe z0).
+// (key exchange, key info, Chat / Responses / Messages answers), the captured OpenCode gateway refusal (probe z0), and
+// the OpenCode Console's captured answers (amendment A probes c0–c3) and documented config example.
 // Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
 // non-streamed capture exists); count_tokens answers the spec's example (anthropic-count-tokens.md Response 200).
 // Every request is recorded so tests can assert what the daemon really sent.
@@ -22,6 +23,27 @@ export function openRouterExample(path: string, method: "get" | "post", status: 
   openRouterApi ??= Bun.YAML.parse(spec("openrouter-openapi.yaml")) as OpenApi;
   return openRouterApi.paths[path]![method]!.responses[status]!.content![contentType]!.example;
 }
+/**
+ * P4.6 amendment A: the workspace-config example of the OpenCode Console API page (`opencode-console-api.html`,
+ * "Workspace config"), read from the page's text.
+ */
+export function consoleConfigExample(): unknown {
+  const text = spec("opencode-console-api.html")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+  const start = /\{\s*"providers"/.exec(text)!.index;
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < text.length; i += 1) {
+    if (text[i] === '"' && text[i - 1] !== "\\") inString = !inString;
+    if (inString) continue;
+    if (text[i] === "{") depth += 1;
+    if (text[i] === "}" && --depth === 0) return JSON.parse(text.slice(start, i + 1));
+  }
+  throw new Error("no config example in opencode-console-api.html");
+}
 /** The documented SSE example (one event) as a stream frame. */
 function openRouterStream(path: string): string {
   const frame = openRouterExample(path, "post", "200", "text/event-stream") as { event?: string; data: unknown };
@@ -35,6 +57,13 @@ export const captured = (relative: string, index = 0) => {
   const exchange = capture(relative).exchanges[index]!.response;
   return { status: exchange.status, contentType: exchange.headers["content-type"] ?? "text/event-stream", body: exchange.chunks.map((c) => c.text).join("") };
 };
+
+/** A captured OpenCode Console answer with its status, content type and request id. */
+function consoleCapture(relative: string, index = 0): Response {
+  const answer = captured(relative, index);
+  const logId = capture(relative).exchanges[index]!.response.headers["x-opencode-log-id"];
+  return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, ...(logId !== undefined ? { "x-opencode-log-id": logId } : {}) } });
+}
 
 /** A non-streamed Messages response rebuilt from a captured stream: message_start's message + blocks + final delta. */
 export function messageFromStream(sse: string): Record<string, unknown> {
@@ -135,11 +164,23 @@ export class ReplayUpstreams {
 
     const queued = this.scripted.get(url.pathname)?.shift();
     if (queued !== undefined) return queued(parsed, this.requests.at(-1)!);
-    // OpenCode Zen / Go inference: the gateway's captured answer to a request it does not serve (P4.6 probe z0).
-    if (req.method === "POST" && url.pathname.startsWith("/zen/")) {
-      const answer = captured("gateways/z0-opencode-keyless-none.json");
-      const logId = capture("gateways/z0-opencode-keyless-none.json").exchanges[0]!.response.headers["x-opencode-log-id"]!;
-      return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, "x-opencode-log-id": logId } });
+    // OpenCode Console inference (amendment A): the Console's captured answers without an accepted credential (probe
+    // c0/c1): Go without x-opencode-session, the free chat model, and each paid route.
+    if (req.method === "POST" && url.pathname.startsWith("/inference/")) {
+      const name = url.pathname.startsWith("/inference/go/")
+        ? headers["x-opencode-session"] === undefined
+          ? "c0-go-chat"
+          : "c0-openai-chat"
+        : url.pathname.startsWith("/inference/google/")
+          ? "c0-google"
+          : url.pathname === "/inference/anthropic/v1/messages"
+            ? "c0-anthropic-messages"
+            : url.pathname === "/inference/openai/v1/responses"
+              ? "c0-openai-responses"
+              : parsed["model"] === "big-pickle"
+                ? "c1-free-chat"
+                : "c0-openai-chat";
+      return consoleCapture(`console/${name}.json`);
     }
     const orInference = req.method === "POST" ? /^\/api\/v1(\/chat\/completions|\/responses|\/messages)$/.exec(url.pathname)?.[1] : undefined;
     if (orInference !== undefined) {
@@ -178,10 +219,16 @@ export class ReplayUpstreams {
         return this.generate(parsed);
       case "/api/v1/models":
         return json(spec("openrouter-models.json"));
-      case "/zen/v1/models":
+      case "/inference/v1/models":
         return json(spec("opencode-zen-models.json"));
-      case "/zen/go/v1/models":
+      case "/inference/go/v1/models":
         return json(spec("opencode-go-models.json"));
+      case "/console/auth/device/code":
+        return consoleCapture("console/c2-device-flow.json", 0);
+      case "/console/auth/device/token":
+        return consoleCapture("console/c2-device-flow.json", 1);
+      case "/console/api/v2/config":
+        return headers["authorization"] === "Bearer oc_sk_refused" ? consoleCapture("console/c3-config-unauthenticated.json") : json(consoleConfigExample());
       case "/api.json":
         return json(spec("models-dev-gateways.json"));
       case "/public/models":

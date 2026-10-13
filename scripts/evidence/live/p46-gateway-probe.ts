@@ -4,7 +4,8 @@
 //       `public` (what opencode sends without a key) and once with no key (rule Z8)
 //   g1  per enabled gateway with an account: the live model list through the provider's catalog
 //   g2  per enabled gateway with an account: one streamed request per native format of a small model
-//       (INFERENCE_ROUTER_GW_MODEL_<PROVIDER> overrides the model; the defaults are listed below)
+//       (INFERENCE_ROUTER_GW_MODEL_<PROVIDER> overrides the model; the defaults are listed below); every request carries
+//       an `x-opencode-session` (OpenCode Go refuses requests without one, rule Z15; the others do not forward it)
 // Requests are 2 s apart; the first 429 or 402 stops the run.
 // Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/p46-gateway-probe.ts [--only=z0,g1,g2]
 import { readAll } from "@inference-router/core/domain/wire.ts";
@@ -82,7 +83,7 @@ async function main(): Promise<number> {
     const formats = (await gateway.provider.nativeFormats(model)) ?? new Set<WireFormat>(["openai-chat"]);
     for (const format of formats) {
       const stop = await record(`g2-${provider}-${format}`, model, `${format} stream, model \`${model}\``, async () => {
-        const response = await gateway.provider.passthrough(model, { format, path: PATH[format](`${provider}/${model}`), query: format === "gemini" ? { alt: "sse" } : {}, headers: { accept: "text/event-stream", ...(format === "anthropic-messages" ? { "anthropic-version": "2023-06-01" } : {}) }, body: JSON.stringify(BODY[format](`${provider}/${model}`)), lossy: false });
+        const response = await gateway.provider.passthrough(model, { format, path: PATH[format](`${provider}/${model}`), query: format === "gemini" ? { alt: "sse" } : {}, headers: { accept: "text/event-stream", "x-opencode-session": `probe-${capturedAt}`, ...(format === "anthropic-messages" ? { "anthropic-version": "2023-06-01" } : {}) }, body: JSON.stringify(BODY[format](`${provider}/${model}`)), lossy: false });
         return { status: response.status, text: await readAll(response.body) };
       });
       if (stop) {

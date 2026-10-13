@@ -67,11 +67,11 @@ export class GatewayProvider extends ProviderPort {
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {
     const call = upstreamCall(this.spec, model, request);
-    const { key } = await this.session.active();
+    const { key, headers } = await this.session.active();
     const response = await this.transport.send({
       method: "POST",
       url: call.url,
-      headers: { ...call.headers, ...keyHeaders(call.keyHeader, key) },
+      headers: { ...headers, ...call.headers, ...keyHeaders(key) },
       body: call.body,
       signal: request.signal,
     });

@@ -1,0 +1,80 @@
+<main id="docs-content"><article class="prose" data-pagefind-body data-pagefind-meta="title:Inference API"><h1>Inference API<button type="button" aria-label="Copy page as Markdown" data-copy-markdown data-pagefind-ignore><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg></button></h1><p>Console inference serves OpenAI, Anthropic, and Gemini-compatible APIs from <code>https://opencode.ai/inference</code>. Send a
+JSON <code>POST</code> request to the endpoint that matches the model’s API family.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> -X</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> POST</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;https://opencode.ai/inference/openai/v1/chat/completions&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Authorization: Bearer &lt;token&gt;&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Content-Type: application/json&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -d</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &#39;{</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;model&quot;: &quot;kimi-k2.6&quot;,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;messages&quot;: [{ &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Say hi&quot; }]</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">  }&#39;</span></span></code></pre>
+<h2 id="authentication">Authentication</h2>
+<p>Replace <code>&lt;token&gt;</code> with a <a href="/v2/docs/console/api#service-accounts">service account key</a> created in the <a href="https://opencode.ai/console">Console</a>. Paid models
+require the header; free chat models can be called without it.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Authorization: Bearer &lt;token&gt;</span></span></code></pre>
+<h2 id="endpoints">Endpoints</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>API</th><th>Path</th></tr></thead><tbody><tr><td>OpenAI Chat Completions</td><td><code>/inference/openai/v1/chat/completions</code></td></tr><tr><td>OpenAI Responses</td><td><code>/inference/openai/v1/responses</code></td></tr><tr><td>Anthropic Messages</td><td><code>/inference/anthropic/v1/messages</code></td></tr><tr><td>Gemini</td><td><code>/inference/google/v1beta/models/&lt;model&gt;:generateContent</code></td></tr></tbody></table>
+<p>Each model is served by one API family. See the <a href="/v2/docs/console/models#endpoints">model endpoints</a> table, or fetch the live
+list:</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> https://opencode.ai/inference/v1/models</span></span></code></pre>
+<h3 id="openai-chat-completions">OpenAI Chat Completions</h3>
+<p>Open models such as <code>kimi-k2.6</code>, <code>glm-5.1</code>, <code>minimax-m2.7</code>, and the free models use the Chat Completions API.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> -X</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> POST</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;https://opencode.ai/inference/openai/v1/chat/completions&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Authorization: Bearer &lt;token&gt;&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Content-Type: application/json&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -d</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &#39;{</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;model&quot;: &quot;glm-5.1&quot;,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;messages&quot;: [{ &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Say hi&quot; }]</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">  }&#39;</span></span></code></pre>
+<h3 id="openai-responses">OpenAI Responses</h3>
+<p>GPT models use the Responses API.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> -X</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> POST</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;https://opencode.ai/inference/openai/v1/responses&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Authorization: Bearer &lt;token&gt;&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Content-Type: application/json&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -d</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &#39;{</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;model&quot;: &quot;gpt-5.5&quot;,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;input&quot;: &quot;Say hi&quot;</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">  }&#39;</span></span></code></pre>
+<h3 id="anthropic-messages">Anthropic Messages</h3>
+<p>Claude and Qwen models use the Messages API. <code>max_tokens</code> is required.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> -X</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> POST</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;https://opencode.ai/inference/anthropic/v1/messages&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Authorization: Bearer &lt;token&gt;&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Content-Type: application/json&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -d</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &#39;{</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;model&quot;: &quot;claude-sonnet-4-6&quot;,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;max_tokens&quot;: 1024,</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;messages&quot;: [{ &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Say hi&quot; }]</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">  }&#39;</span></span></code></pre>
+<h3 id="gemini">Gemini</h3>
+<p>Gemini models take the model and method in the path. Replace <code>:generateContent</code> with <code>:streamGenerateContent</code> to
+stream the response.</p>
+<pre class="astro-code astro-code-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">curl</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> -X</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> POST</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;https://opencode.ai/inference/google/v1beta/models/gemini-3.1-pro:generateContent&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Authorization: Bearer &lt;token&gt;&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -H</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &quot;Content-Type: application/json&quot;</span><span style="color:#005CC5;--shiki-dark:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#005CC5;--shiki-dark:#79B8FF">  -d</span><span style="color:#032F62;--shiki-dark:#9ECBFF"> &#39;{</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">    &quot;contents&quot;: [{ &quot;parts&quot;: [{ &quot;text&quot;: &quot;Say hi&quot; }] }]</span></span>
+<span class="line"><span style="color:#032F62;--shiki-dark:#9ECBFF">  }&#39;</span></span></code></pre></article></main>

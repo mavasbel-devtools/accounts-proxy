@@ -4,6 +4,7 @@
 import { createInterface } from "node:readline/promises";
 import { Writable, type Readable } from "node:stream";
 import { SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
+import { readLine } from "@inference-router/router/adapters/outbound/read-line.ts";
 
 export class TerminalSecretPrompt extends SecretPromptPort {
   constructor(
@@ -18,7 +19,7 @@ export class TerminalSecretPrompt extends SecretPromptPort {
     const rl = createInterface({ input: this.input, output: silent, terminal: (this.input as { isTTY?: boolean }).isTTY === true });
     try {
       this.output.write(question);
-      const answer = await rl.question("");
+      const answer = await readLine(rl, "");
       this.output.write("\n");
       return answer;
     } finally {

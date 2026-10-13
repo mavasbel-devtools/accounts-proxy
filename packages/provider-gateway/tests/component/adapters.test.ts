@@ -17,7 +17,7 @@ import { collect, FixedClock, MemoryCredentialStore, MemoryKeyValueStore, Memory
 const SPEC: GatewaySpec = {
   provider: "cheaper-inference",
   apiBase: "http://gw/v1",
-  endpoints: { "openai-chat": { path: "/chat/completions", keyHeader: "authorization" }, "anthropic-messages": { path: "/messages", keyHeader: "x-api-key" } },
+  endpoints: { "openai-chat": { path: "/chat/completions" }, "anthropic-messages": { path: "/messages" } },
   requestIdHeader: "x-ci-request-id",
 };
 
@@ -160,7 +160,7 @@ describe("GatewayProvider", () => {
     expect([sent.method, sent.url, sent.headers, sent.body, sent.signal]).toEqual(["POST", "http://gw/v1/chat/completions", { "content-type": "application/json", authorization: "Bearer ci_live_1" }, '{"model":"chat-only"}', signal]);
     expect(logger.lines).toEqual(["INFO cheaper-inference: openai-chat model=chat-only -> HTTP 200"]);
     await provider.passthrough("m", raw({ format: "anthropic-messages", path: "/v1/messages" }));
-    expect(transport.requests[1]!.headers["x-api-key"]).toBe("ci_live_1");
+    expect([transport.requests[1]!.headers["authorization"], transport.requests[1]!.headers["x-api-key"]]).toEqual(["Bearer ci_live_1", undefined]);
   });
 
   test("passthrough without an account needs a login, and nothing is sent", async () => {

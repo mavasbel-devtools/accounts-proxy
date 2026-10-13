@@ -2,7 +2,7 @@
 
 Plan: [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md),
 extended by [plan v4](docs/plans/2026-10-11-22-11-completion-plan.md) and
-[P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md) ·
+[P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md) (with amendment A, the OpenCode Console) ·
 Research: [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md)
 
 ## 1. What this is
@@ -64,7 +64,8 @@ gateway); a request in any other format is a translated cell (P5).
 | Claude thinking is the client's: absent stays absent, `disabled` stays disabled, and the clear-thinking `context_management` edit is sent only with thinking on (deviation F9, user decision Q6) | [P0-LIVE L1–L3](docs/reference/2026-10-10-23-17-p0-live-findings.md), [Q6 probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md) |
 | Antigravity Gemini cell: `functionResponse` parts move to model-role contents (law 7); only `AUTO`/`VALIDATED` function-calling modes | plugin wire law 7; P0-LIVE L6 |
 | Gateway native cells: the body `model` (or Gemini path model) becomes the bare id; upstream headers are only the key header, `content-type`, the client's `accept` and, on Messages, `anthropic-version`/`anthropic-beta`; the answer streams back with `content-type`, `retry-after` and the vendor's request id | [gateway rules G1–G4](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) |
-| Gateway key header per endpoint: OpenRouter and Cheaper Inference `Authorization: Bearer`; OpenCode `x-api-key` on Messages, `x-goog-api-key` on Gemini, bearer elsewhere | rules R1, C1, Z3 |
+| Gateway credential: `Authorization: Bearer` on every endpoint of every gateway (OpenCode since its 2026-10-12 Console migration) | rules R1, C1, Z14 |
+| OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the router's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
 | Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from models.dev `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
 ## 4. Behaviour laws
@@ -77,12 +78,19 @@ gateway); a request in any other format is a translated cell (P5).
   Paste-code exists only as the headless fallback (`--manual`). Evidence:
   [P0-E6](docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md). OpenRouter's PKCE login is a browser
   login too (it yields an API key; `--manual` is its headless page, rules R5–R7).
-- **API keys** (plan P4.6 N4). `login opencode | opencode-go | cheaper-inference` reads the key only at a hidden prompt
-  (never a command argument or an environment variable) and checks it where the vendor documents a way. A key is never
-  renewed; an upstream 401 reaches the client unchanged. OpenCode's keyless free tier is not available to the router
-  (live 403 `FreeTierError`, rule Z8).
+- **API keys** (plan P4.6 N4). A key is read only at a hidden prompt (`login cheaper-inference`, and
+  `login <gateway> --key`), never from a command argument or an environment variable, and checked where the vendor
+  documents a way. A key is never renewed; an upstream 401 reaches the client unchanged. OpenCode's keyless free tier
+  is not available to the router (live 403 `FreeTierError`, rules Z8, Z21).
+- **OpenCode Console** (plan P4.6 amendment A, K1–K6). `login opencode` is the Console's device login (RFC 8628)
+  under the router's own client id `inference-router`: the code is shown, the approval page opened, the token
+  endpoint polled every interval (+5 s after `slow_down`). `opencode` and `opencode-go` share one account, stored as
+  `opencode`. Device tokens renew under the Phase H rules (single-use refresh tokens, Z18); a key never renews. The
+  credential is checked by reading the workspace config (`GET /console/api/v2/config`), whose headers the requests carry.
 - **Own credentials.** The router's credentials live only in `~/.local/share/inference-router/`. The router never
-  writes Claude Code's or the plugins' credential files.
+  writes Claude Code's, OpenCode's or the plugins' credential files, and reads one only for
+  `login <gateway> --from-opencode` (decision K5): OpenCode's `auth.json`, read once, from which an **API key** only is
+  imported, never a sign-in token (rule Z22).
 - **Sessions** (plan v4 Phase H). Every provider session extends `OAuthSessionBase`
   (`packages/core/src/ports/outbound/session.ts`). Account files are written only through
   `CredentialStorePort.update` (a locked read → change → write); there is no blind save. Lock order is always renewal

@@ -1,5 +1,6 @@
 // Command-line inbound adapter: parses argv, drives the inbound ports, renders results. Exit codes: 0 success,
 // 1 the command failed (message on stderr), 2 usage error.
+import type { KeyImportSource } from "@inference-router/core/domain/api-key.ts";
 import { isProviderId, PROVIDER_IDS, type ModelsSource, type ProviderId } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
@@ -28,10 +29,13 @@ export const SHUTDOWN_GRACE_MS = 10_000;
 export const DEFAULT_LOGIN_TIMEOUT_S = 300;
 
 export const USAGE = `usage: inference-router <command>
-  login <provider> [--manual] [--new] [--timeout-seconds N]
-                                                      browser sign-in (default timeout ${DEFAULT_LOGIN_TIMEOUT_S} s); openai:
-                                                      --new registers another ChatGPT account; opencode, opencode-go,
-                                                      cheaper-inference: the API key is asked at a hidden prompt
+  login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]
+                                                      sign in (default timeout ${DEFAULT_LOGIN_TIMEOUT_S} s): browser, or a device
+                                                      code for opencode/opencode-go (one shared Console account);
+                                                      openai: --new registers another ChatGPT account;
+                                                      cheaper-inference: the API key is asked at a hidden prompt;
+                                                      --key: enter an API key at a hidden prompt instead;
+                                                      --from-opencode: import the API key OpenCode stores
   account list <provider>                             accounts stored by the router
   account use <provider> <account-id>                 choose the active account
   quota <provider>                                    remaining provider quota
@@ -140,22 +144,30 @@ export class CliDriver extends Driver {
     const id = provider(args.shift(), true);
     let manual = false;
     let fresh = false;
+    let key = false;
+    let importFrom: KeyImportSource | undefined;
     let timeoutS = DEFAULT_LOGIN_TIMEOUT_S;
     while (args.length > 0) {
       const flag = args.shift();
       if (flag === "--manual") manual = true;
       else if (flag === "--new") fresh = true;
+      else if (flag === "--key") key = true;
+      else if (flag === "--from-opencode") importFrom = "opencode";
       else if (flag === "--timeout-seconds") {
         const value = Number(args.shift());
         if (!Number.isInteger(value) || value < 1) throw new UsageError("--timeout-seconds needs a positive integer");
         timeoutS = value;
       } else throw new UsageError(`unknown login option ${flag}`);
     }
+    if (key && importFrom !== undefined) throw new UsageError("--key and --from-opencode exclude each other");
     const account = await this.ports.login.login(id, {
       manual,
       fresh,
+      key,
+      importFrom,
       timeoutMs: timeoutS * 1000,
       onAuthorizeUrl: (url) => this.out(`${manual ? "Open" : "Opening your browser. If it does not open, visit"}:\n${url}\n`),
+      onUserCode: (code) => this.out(`Confirm this code on the page: ${code}\n`),
     });
     this.out(`signed in to ${account.provider} as ${account.label} (active account)\n`);
   }

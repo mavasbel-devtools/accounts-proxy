@@ -9,11 +9,11 @@ export const CHEAPER_SPEC: GatewaySpec = {
   provider: "cheaper-inference",
   apiBase: `${API_ORIGIN}/v1`,
   endpoints: {
-    "openai-chat": { path: "/chat/completions", keyHeader: "authorization" },
-    "openai-responses": { path: "/responses", keyHeader: "authorization" },
-    "anthropic-messages": { path: "/messages", keyHeader: "authorization" },
+    "openai-chat": { path: "/chat/completions" },
+    "openai-responses": { path: "/responses" },
+    "anthropic-messages": { path: "/messages" },
   },
-  countTokens: { path: "/messages/count_tokens", keyHeader: "authorization" },
+  countTokens: { path: "/messages/count_tokens" },
   requestIdHeader: "x-ci-request-id",
 };
 

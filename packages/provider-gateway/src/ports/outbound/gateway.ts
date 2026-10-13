@@ -1,12 +1,18 @@
 // Gateway-internal abstractions. GatewayProvider and GatewayCatalog depend only on these; vendor packages implement
 // the catalog source and the key login, composition wires them.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import type { ModelsSource } from "@inference-router/core/domain/models.ts";
 import type { GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
 
-export type KeySession = { readonly account: AccountCredential; readonly key: string };
+export type KeySession = {
+  /** The active account's id. */
+  readonly accountId: string;
+  /** Sent as the endpoint's key header. */
+  readonly key: string;
+  /** Further headers the account's requests carry (the OpenCode workspace's headers, Z20). */
+  readonly headers?: Readonly<Record<string, string>>;
+};
 
-/** The active API-key account of one provider (a fixed key: nothing to renew, G6). */
+/** The active account of one gateway provider and the credential its requests carry (G6; OpenCode Console Z18). */
 export abstract class GatewayKeySessionPort {
   /** The active account and its key; ProviderAuthRequiredError when there is none. */
   abstract active(): Promise<KeySession>;

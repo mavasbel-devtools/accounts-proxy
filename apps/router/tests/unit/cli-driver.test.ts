@@ -10,9 +10,10 @@ import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 import { Server, ShutdownSignal, type Listening } from "@inference-router/router/adapters/inbound/server.ts";
 
 class Login extends LoginPort {
-  calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl">][] = [];
+  calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl" | "onUserCode">][] = [];
   async login(provider: ProviderId, options: LoginOptions): Promise<AccountSummary> {
-    this.calls.push([provider, { manual: options.manual, fresh: options.fresh, timeoutMs: options.timeoutMs }]);
+    this.calls.push([provider, { manual: options.manual, fresh: options.fresh, key: options.key, importFrom: options.importFrom, timeoutMs: options.timeoutMs }]);
+    if (provider === "opencode") options.onUserCode("ABCD-EFGH");
     options.onAuthorizeUrl("https://auth.example/");
     return { provider, id: "me@x", label: "Me", active: true };
   }
@@ -110,23 +111,32 @@ describe("CliDriver", () => {
     expect(c.out).toEqual([`${USAGE}\n`, `${USAGE}\n`]);
   });
 
-  test("login: browser by default with the default timeout; --manual, --new and --timeout-seconds", async () => {
+  test("login: browser or device code by default with the default timeout; --manual, --new, --key, --from-opencode and --timeout-seconds", async () => {
     const c = cli();
+    const none = { key: false, importFrom: undefined };
     expect(await c.run("login", "antigravity")).toBe(0);
     expect(await c.run("login", "claude", "--manual", "--timeout-seconds", "60")).toBe(0);
     expect(await c.run("login", "openai", "--new")).toBe(0);
+    expect(await c.run("login", "opencode")).toBe(0);
+    expect(await c.run("login", "openrouter", "--key")).toBe(0);
+    expect(await c.run("login", "opencode-go", "--from-opencode")).toBe(0);
     expect(c.ports.login.calls).toEqual([
-      ["antigravity", { manual: false, fresh: false, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
-      ["claude", { manual: true, fresh: false, timeoutMs: 60_000 }],
-      ["openai", { manual: false, fresh: true, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["antigravity", { manual: false, fresh: false, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["claude", { manual: true, fresh: false, ...none, timeoutMs: 60_000 }],
+      ["openai", { manual: false, fresh: true, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["opencode", { manual: false, fresh: false, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["openrouter", { manual: false, fresh: false, key: true, importFrom: undefined, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["opencode-go", { manual: false, fresh: false, key: false, importFrom: "opencode", timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
     ]);
-    expect(c.out).toEqual([
+    expect(c.out.slice(0, 8)).toEqual([
       "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
       "signed in to antigravity as Me (active account)\n",
       "Open:\nhttps://auth.example/\n",
       "signed in to claude as Me (active account)\n",
       "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
       "signed in to openai as Me (active account)\n",
+      "Confirm this code on the page: ABCD-EFGH\n",
+      "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
     ]);
   });
 
@@ -136,6 +146,7 @@ describe("CliDriver", () => {
     [["login", "antigravity", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer"],
     [["login", "antigravity", "--timeout-seconds"], "--timeout-seconds needs a positive integer"],
     [["login", "antigravity", "--bogus"], "unknown login option --bogus"],
+    [["login", "openrouter", "--key", "--from-opencode"], "--key and --from-opencode exclude each other"],
     [["account"], "account list <provider> | account use <provider> <account-id>"],
     [["account", "list", "antigravity", "extra"], "account list <provider> | account use"],
     [["account", "use", "antigravity"], "account list <provider> | account use"],

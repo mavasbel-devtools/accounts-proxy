@@ -11,6 +11,7 @@ import type { ProviderId } from "@inference-router/core/domain/models.ts";
 import { UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { ApiKeyLoginPort } from "@inference-router/core/ports/outbound/api-key.ts";
+import type { DeviceLoginClientPort } from "@inference-router/core/ports/outbound/device.ts";
 import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import type { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
@@ -62,11 +63,15 @@ import { OpenAISession } from "@inference-router/provider-openai/adapters/outbou
 import { API_BASE as OPENAI_API_BASE, ISSUER as OPENAI_ISSUER, JWKS_PATH as OPENAI_JWKS_PATH } from "@inference-router/provider-openai/domain/constants.ts";
 import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAIOAuthPort, OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
 import { OpencodeCatalogSource } from "@inference-router/provider-opencode/adapters/outbound/opencode-catalog-source.ts";
-import { OpencodeKeyLogin } from "@inference-router/provider-opencode/adapters/outbound/opencode-key-login.ts";
+import { OpencodeConsoleClient } from "@inference-router/provider-opencode/adapters/outbound/opencode-console-client.ts";
+import { OpencodeDeviceLogin, OpencodeKeyLogin } from "@inference-router/provider-opencode/adapters/outbound/opencode-logins.ts";
+import { ConsoleGatewaySession, ConsoleSession } from "@inference-router/provider-opencode/adapters/outbound/opencode-session.ts";
 import { GO_BUILTIN, ZEN_BUILTIN } from "@inference-router/provider-opencode/domain/builtin-models.ts";
-import { GO_SPEC, MODELS_DEV_URL, ZEN_SPEC } from "@inference-router/provider-opencode/domain/opencode.ts";
+import { CONSOLE_URL, GO_SPEC, MODELS_DEV_URL, OPENCODE_PROVIDERS, ZEN_SPEC, type OpencodeProvider } from "@inference-router/provider-opencode/domain/opencode.ts";
+import type { ConsoleApiPort, ConsoleSessionPort } from "@inference-router/provider-opencode/ports/outbound/console.ts";
 import { OpenRouterCatalogSource } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
 import { OpenRouterOAuthClient } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
+import { OpenRouterKeyLogin } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-key-login.ts";
 import { OpenRouterQuota } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-quota.ts";
 import { OPENROUTER_BUILTIN } from "@inference-router/provider-openrouter/domain/builtin-models.ts";
 import { AUTH_URL as OPENROUTER_AUTH_URL, OPENROUTER_SPEC } from "@inference-router/provider-openrouter/domain/openrouter.ts";
@@ -83,6 +88,7 @@ import { FileCredentialStore, FileKeyValueStore, FileRouterTokenStore } from "@i
 import { LoopbackCallbackServerFactory } from "@inference-router/router/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@inference-router/router/adapters/outbound/system.ts";
 import { TerminalManualCode } from "@inference-router/router/adapters/outbound/terminal-manual-code.ts";
+import { OpencodeAuthFile, opencodeDataDir } from "@inference-router/router/adapters/outbound/opencode-auth-file.ts";
 import { TerminalSecretPrompt } from "@inference-router/router/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@inference-router/router/adapters/outbound/yaml-config-file.ts";
 import { AccessService } from "@inference-router/router/application/access-service.ts";
@@ -230,6 +236,8 @@ export type ContainerOptions = {
   readonly seams: UpstreamSeams;
   /** The daemon's bind address: LOOPBACK_HOST (UNASSIGNED_TEST_HOST only through the hermetic hook). */
   readonly listenHost: string;
+  /** OpenCode's data directory, read only by `login <provider> --from-opencode` (amendment A, K5). */
+  readonly opencodeData: string;
 };
 
 export type LockConfig = { readonly options: FileLockOptions; readonly fs: LockFs };
@@ -270,15 +278,20 @@ export type OpenAIGraph = {
   readonly catalog: OpenAICatalogPort;
   readonly provider: ProviderPort;
 };
-/** An API-key gateway (plan P4.6): its login is either a key prompt (`keyLogin`) or a browser login (`oauth`). */
+/**
+ * A gateway (plan P4.6): logins by key (`keyLogin`, every gateway), browser (`oauth`) or device code (`device`, the OpenCode
+ * Console, amendment A); `console`: the OpenCode Console API and the session shared by opencode and opencode-go.
+ */
 export type GatewayGraph = {
   readonly spec: GatewaySpec;
   readonly session: GatewayKeySessionPort;
   readonly catalog: GatewayCatalogPort;
   readonly provider: ProviderPort;
-  readonly keyLogin?: ApiKeyLoginPort;
+  readonly keyLogin: ApiKeyLoginPort;
   readonly oauth?: OAuthClientPort;
+  readonly device?: DeviceLoginClientPort;
   readonly quota?: UsageReporterPort;
+  readonly console?: { readonly api: ConsoleApiPort; readonly session: ConsoleSessionPort };
 };
 export type ProviderGraph = {
   readonly config: RouterConfig;
@@ -342,7 +355,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     };
   }
   const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;
-  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, logger, hash: new NodeHash() });
+  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash() });
   return {
     config,
     enabled,
@@ -389,33 +402,44 @@ type GatewayDeps = {
   readonly store: CredentialStorePort;
   readonly state: FileKeyValueStore;
   readonly clock: ClockPort;
+  readonly lock: FileLock;
   readonly logger: LoggerPort;
   readonly hash: HashPort;
 };
 
 /** The enabled API-key gateways (plan P4.6), each on its production hosts or on the gateways seam. */
 function buildGateways(deps: GatewayDeps): GatewayGraph[] {
-  const { seams, transport, store, state, clock, logger, hash } = deps;
+  const { seams, transport, store, state, clock, lock, logger, hash } = deps;
   const at = (url: string) => onOrigin(url, seams.gateways);
-  const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[]) => {
+  const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[], keySession?: GatewayKeySessionPort) => {
     const spec: GatewaySpec = { ...base, apiBase: at(base.apiBase) };
-    const session = new GatewayKeySession(spec.provider, store);
+    const session = keySession ?? new GatewayKeySession(spec.provider, store);
     const catalog = new GatewayCatalog(spec.provider, source(spec), session, state, clock, logger, builtin);
     return { spec, session, catalog, provider: new GatewayProvider(spec, session, catalog, transport, logger) };
   };
   const out: GatewayGraph[] = [];
   if (deps.enabled.includes("openrouter")) {
     const g = wire(OPENROUTER_SPEC, (spec) => new OpenRouterCatalogSource(transport, spec.apiBase), OPENROUTER_BUILTIN);
-    out.push({ ...g, oauth: new OpenRouterOAuthClient(transport, hash, at(OPENROUTER_AUTH_URL), g.spec.apiBase), quota: new OpenRouterQuota(transport, g.session, clock, g.spec.apiBase) });
+    out.push({
+      ...g,
+      oauth: new OpenRouterOAuthClient(transport, hash, at(OPENROUTER_AUTH_URL), g.spec.apiBase),
+      keyLogin: new OpenRouterKeyLogin(hash, transport, g.spec.apiBase),
+      quota: new OpenRouterQuota(transport, g.session, clock, g.spec.apiBase),
+    });
   }
-  for (const [base, builtin] of [
-    [ZEN_SPEC, ZEN_BUILTIN],
-    [GO_SPEC, GO_BUILTIN],
-  ] as const) {
-    if (!deps.enabled.includes(base.provider)) continue;
-    const provider = base.provider as "opencode" | "opencode-go";
-    const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, logger, spec.apiBase, at(MODELS_DEV_URL)), builtin);
-    out.push({ ...g, keyLogin: new OpencodeKeyLogin(provider, hash, transport, g.spec.apiBase) });
+  // One Console API and one session for opencode and opencode-go (amendment A, K2).
+  if (OPENCODE_PROVIDERS.some((p) => deps.enabled.includes(p))) {
+    const api = new OpencodeConsoleClient(transport, clock, at(CONSOLE_URL));
+    const consoleSession = new ConsoleSession(store, api, lock, clock, logger);
+    for (const [base, builtin] of [
+      [ZEN_SPEC, ZEN_BUILTIN],
+      [GO_SPEC, GO_BUILTIN],
+    ] as const) {
+      if (!deps.enabled.includes(base.provider)) continue;
+      const provider = base.provider as OpencodeProvider;
+      const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, logger, spec.apiBase, at(MODELS_DEV_URL)), builtin, new ConsoleGatewaySession(provider, consoleSession, store));
+      out.push({ ...g, keyLogin: new OpencodeKeyLogin(provider, hash, api), device: new OpencodeDeviceLogin(provider, api), console: { api, session: consoleSession } });
+    }
   }
   if (deps.enabled.includes("cheaper-inference")) {
     const g = wire(CHEAPER_SPEC, (spec) => new CheaperCatalogSource(transport, spec.apiBase, at(CHEAPER_PUBLIC_MODELS_URL)), CHEAPER_BUILTIN);
@@ -436,26 +460,32 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   }
   if (graph.antigravity) reporters.push(graph.antigravity.quota);
   const keyClients: ApiKeyLoginPort[] = [];
+  const devices: DeviceLoginClientPort[] = [];
   for (const gateway of graph.gateways) {
     providers.push(gateway.provider);
     if (gateway.oauth) clients.push(gateway.oauth);
-    if (gateway.keyLogin) keyClients.push(gateway.keyLogin);
+    keyClients.push(gateway.keyLogin);
+    if (gateway.device) devices.push(gateway.device);
     if (gateway.quota) reporters.push(gateway.quota);
   }
 
   const hash = new NodeHash();
-  const login = new LoginService(
+  const login = new LoginService({
     clients,
-    new LoopbackCallbackServerFactory(),
-    options.browser,
-    new TerminalManualCode(options.stdin, options.stdout),
-    graph.store,
-    graph.random,
-    hash,
-    graph.logger,
+    devices,
     keyClients,
-    new TerminalSecretPrompt(options.stdin, options.stdout),
-  );
+    keySources: [new OpencodeAuthFile(options.opencodeData)],
+    servers: new LoopbackCallbackServerFactory(),
+    browser: options.browser,
+    manual: new TerminalManualCode(options.stdin, options.stdout),
+    secrets: new TerminalSecretPrompt(options.stdin, options.stdout),
+    store: graph.store,
+    random: graph.random,
+    hash,
+    clock: graph.clock,
+    timer: graph.timer,
+    logger: graph.logger,
+  });
   const access = new AccessService(new FileRouterTokenStore(options.home), graph.random, hash);
   const models = new ListModelsService(providers);
   const health = new HealthService(graph.enabled);
@@ -509,6 +539,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
   return runCli(argv, {
     home: defaultHome(process.env),
+    opencodeData: opencodeDataDir(process.env),
     out: (text) => process.stdout.write(text),
     err,
     stdin: process.stdin,

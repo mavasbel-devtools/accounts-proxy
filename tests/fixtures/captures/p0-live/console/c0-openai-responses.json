@@ -1,0 +1,46 @@
+{
+  "id": "c0-openai-responses",
+  "target": "opencode",
+  "scenario": "c0-openai-responses",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/responses",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "input": "Reply with the single word OK."
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c01bafc81741a-MIA",
+          "connection": "keep-alive",
+          "content-length": "110",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:39:57 GMT",
+          "server": "cloudflare",
+          "x-opencode-log-id": "6b064253-84d5-4d1e-a22d-42775412d068"
+        },
+        "headersAtMs": 107.9,
+        "doneAtMs": 107.9,
+        "chunks": [
+          {
+            "atMs": 107.9,
+            "text": "{\"error\":{\"type\":\"server_error\",\"message\":\"Upstream request failed: Rate-limited models require a workspace\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

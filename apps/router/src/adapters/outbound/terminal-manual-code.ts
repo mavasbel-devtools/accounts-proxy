@@ -2,6 +2,7 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
 import { ManualCodePort } from "@inference-router/core/ports/outbound/oauth.ts";
+import { readLine } from "@inference-router/router/adapters/outbound/read-line.ts";
 
 export class TerminalManualCode extends ManualCodePort {
   constructor(
@@ -16,7 +17,7 @@ export class TerminalManualCode extends ManualCodePort {
     const rl = createInterface({ input: this.input, output: this.output, terminal: false });
     try {
       this.output.write("Approve in the browser, then paste the code shown on the page.\n");
-      return await rl.question("code> ");
+      return await readLine(rl, "code> ");
     } finally {
       rl.close();
     }

@@ -5,6 +5,7 @@ import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.
 import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
 import { GatewayKeySession } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-session.ts";
 import { OpenRouterCatalogSource } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
+import { OpenRouterKeyLogin } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-key-login.ts";
 import { OpenRouterOAuthClient } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
 import { OpenRouterQuota } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-quota.ts";
 import { HEADLESS_REDIRECT } from "@inference-router/provider-openrouter/domain/openrouter.ts";
@@ -43,6 +44,23 @@ describe("OpenRouterOAuthClient (R5–R7)", () => {
     const client = new OpenRouterOAuthClient(new ScriptedTransport(() => ({ status: 403, body: '{"error":{"code":403,"message":"Invalid code or code_verifier"}}' })), new Hash(), "http://auth/auth", "http://api/api/v1");
     await expect(client.exchange(exchange)).rejects.toThrow(ProviderAuthRequiredError);
     await expect(client.exchange(exchange)).rejects.toThrow("key exchange failed: HTTP 403");
+  });
+});
+
+describe("OpenRouterKeyLogin (amendment A, K3/K5)", () => {
+  test("GET /key with the key: its label names the account (else the key hash); a refused key needs a new login", async () => {
+    const answers = [
+      { status: 200, body: JSON.stringify({ data: { label: "my key", usage: 0 } }) },
+      { status: 200, body: JSON.stringify({ data: {} }) },
+      { status: 401, body: '{"error":{"code":401,"message":"No auth credentials found"}}' },
+    ];
+    const transport = new ScriptedTransport((_, i) => answers[i]!);
+    const login = new OpenRouterKeyLogin(new Hash(), transport, "http://or/api/v1");
+    expect([login.provider, login.question]).toEqual(["openrouter", "OpenRouter API key (https://openrouter.ai/keys): "]);
+    expect(await login.account("sk-or-1")).toEqual({ provider: "openrouter", id: "key-deadbeef", label: "my key", data: { apiKey: "sk-or-1" } });
+    expect([transport.requests[0]!.url, transport.requests[0]!.headers]).toEqual(["http://or/api/v1/key", { authorization: "Bearer sk-or-1", accept: "application/json" }]);
+    expect((await login.account("sk-or-2")).label).toBe("key-deadbeef");
+    await expect(login.account("sk-or-3")).rejects.toThrow('openrouter: the key was refused: HTTP 401 {"error"');
   });
 });
 

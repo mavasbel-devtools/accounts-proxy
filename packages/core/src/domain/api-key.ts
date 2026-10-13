@@ -1,10 +1,15 @@
 // API-key accounts (plan P4.6 §2 item 3): the account's data is `{ apiKey }`. A fixed key is never renewed.
 import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
+import type { JsonObject } from "@inference-router/core/domain/json.ts";
 import type { ProviderId } from "@inference-router/core/domain/models.ts";
 
-export function apiKeyAccount(provider: ProviderId, id: string, label: string, apiKey: string): AccountCredential {
-  return { provider, id, label, data: { apiKey } };
+/** The tools whose stored API keys `login <provider> --from-<tool>` can import (plan P4.6 amendment A, decision K5). */
+export type KeyImportSource = "opencode";
+
+/** `extra`: what the provider's key check reported and its requests need (e.g. the OpenCode workspace headers). */
+export function apiKeyAccount(provider: ProviderId, id: string, label: string, apiKey: string, extra: JsonObject = {}): AccountCredential {
+  return { provider, id, label, data: { ...extra, apiKey } };
 }
 
 /** The stored key of an API-key account. */

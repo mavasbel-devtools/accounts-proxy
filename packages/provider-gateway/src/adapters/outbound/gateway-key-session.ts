@@ -17,7 +17,7 @@ export class GatewayKeySession extends GatewayKeySessionPort {
   async active(): Promise<KeySession> {
     const account = activeAccount(await this.store.load(this.provider));
     if (account === undefined) throw new ProviderAuthRequiredError(this.provider, "no active account");
-    return { account, key: apiKeyOf(account) };
+    return { accountId: account.id, key: apiKeyOf(account) };
   }
 
   async optionalKey(): Promise<string | undefined> {

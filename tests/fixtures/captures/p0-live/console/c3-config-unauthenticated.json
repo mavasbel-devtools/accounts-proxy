@@ -1,0 +1,47 @@
+{
+  "id": "c3-config-unauthenticated",
+  "target": "opencode",
+  "scenario": "c3-config-unauthenticated",
+  "model": "-",
+  "capturedAt": "2026-10-13T05:39:46.271Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://opencode.ai/console/api/v2/config",
+        "headers": {
+          "user-agent": "inference-router/0.1.0",
+          "accept": "application/json"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "access-control-allow-credentials": "true",
+          "access-control-allow-origin": "https://opencode.ai",
+          "access-control-expose-headers": "retry-after,x-request-id,x-opencode-log-id",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49c021d2c13741a-MIA",
+          "connection": "keep-alive",
+          "content-length": "23",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 05:40:13 GMT",
+          "server": "cloudflare",
+          "vary": "Origin",
+          "x-opencode-log-id": "172252f7-348d-4904-9249-53d5da2d7854",
+          "x-request-id": "01M4SWD3JCEHMXRGSJTP0KE1XY"
+        },
+        "headersAtMs": 109.5,
+        "doneAtMs": 109.6,
+        "chunks": [
+          {
+            "atMs": 109.5,
+            "text": "{\"_tag\":\"Unauthorized\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -94,3 +94,46 @@ cites a source for every rule.
   `P4.5-live` (13), P5 (12). `bun run verify`: GATE PASS (646 unit+component, 193 e2e, 100% everywhere).
   Waiting for the user: keys/accounts (N8) for the per-provider live probes
   (`INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/p46-gateway-probe.ts`), and the OpenAI sign-in.
+
+## 5. Amendment A — the 2026-10-12 OpenCode Console (decisions K1–K6, approved 2026-10-12)
+
+On 2026-10-12 OpenCode moved Zen and Go into the new **OpenCode Console**: new inference addresses, service-account
+API keys (`oc_sk_…`, created under *Keys*), and a documented device login that "other CLIs can use"
+(upstream `b9ca4d21b4` removed the legacy key database; `25053bbdc7` replaced the Zen/Go docs). Evidence:
+`docs/reference/specs/opencode-console-{intro,api,inference-api,models,go}.html` (manifest.json),
+[live probe 2026-10-12-23-40](../reference/2026-10-12-23-40-p46a-console-live-probe.md), rules §3a of the
+[rules document](../reference/2026-10-12-15-35-gateway-provider-rules.md). Rules Z1–Z3, Z7, Z10 and Z11 are superseded
+by §3a (kept for the record).
+
+| # | Decision (approved) |
+|---|---|
+| K1 | `login opencode` uses the Console device login (RFC 8628) under the router's own client id `inference-router` |
+| K2 | `opencode` and `opencode-go` share one Console account (stored as `opencode`; `login`/`account` on `opencode-go` act on it) |
+| K3 | `login <gateway> --key` keeps the hidden-prompt key entry (service-account key for OpenCode) |
+| K4 | The credential is checked, and the workspace's request headers are taken, from `GET /console/api/v2/config` |
+| K5 | `login <gateway> --from-opencode`: one-time import of an **API key only** (never a sign-in token) from OpenCode's `auth.json`; the router only reads that file (amends "Own credentials") |
+| K6 | This amendment before P5 |
+
+Steps:
+
+| # | Step | Status |
+|---|---|---|
+| A0 | Evidence: Console docs and new model lists fetched with provenance; keyless live probe; rules §3a | done |
+| A1 | Core: shared-account owner (`opencode-go` → `opencode`), device-login port, login options `--key`/`--from-opencode` | done |
+| A2 | `provider-opencode`: new addresses (bearer everywhere, `User-Agent`, client `x-opencode-session` forwarded), device login client, Console session (device tokens renewed under the Phase H rules; keys fixed), config check | done |
+| A3 | Router: login service (device flow, key, import), CLI flags, composition; `openrouter` gets a key login for `--key`/`--from-opencode` | done |
+| A4 | Tests 100% (unit, component, e2e replaying the Console's documented examples) | done (the approved device sign-in and its renewal are deferred `P4.6-live`) |
+| A5 | Live, after the user's `login opencode`: config, one small request per format (≈10 requests, N9) | waiting for the user's `login opencode` |
+| A6 | Docs: AGENTS.md, README, rules, plan record, session record | done |
+
+Execution record (amendment A):
+
+- 2026-10-13 00:56 A0–A4 and A6 done; A5 waits for the user's `login opencode`. Keyless live probe
+  ([2026-10-12-23-40](../reference/2026-10-12-23-40-p46a-console-live-probe.md)): the new addresses answer (401
+  without a workspace, Go 400 `MissingSessionID` without `x-opencode-session`, the free model still 403
+  `FreeTierError`), the device-code request under client id `inference-router` is accepted, and its first poll answers
+  400 `authorization_pending`. Every gateway key is now a bearer token (`keyHeader` removed from the gateway base).
+  `--key` and `--from-opencode` work for every gateway with a key login (OpenRouter got one). Found and fixed on the
+  way: the paste-code and hidden-key prompts waited forever (and spun) when standard input ended before a line; they
+  now fail with "standard input ended before a line was entered". The e2e daemon starter now waits up to 30 s and
+  stops a daemon that did not start (orphaned daemons from earlier aborted runs were found and stopped).

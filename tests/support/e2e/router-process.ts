@@ -43,7 +43,8 @@ export type Result = { readonly code: number; readonly stdout: string; readonly 
 function environment(home: Home, extra: Record<string, string>): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith("INFERENCE_ROUTER_TEST_")) env[k] = v;
-  const merged: Record<string, string> = { ...env, INFERENCE_ROUTER_HOME: home.dir, INFERENCE_ROUTER_E2E_BROWSER_LOG: home.browserLog, PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
+  // XDG_DATA_HOME: OpenCode's credential file (`login --from-opencode`) is read only from inside the home, never the user's.
+  const merged: Record<string, string> = { ...env, INFERENCE_ROUTER_HOME: home.dir, INFERENCE_ROUTER_E2E_BROWSER_LOG: home.browserLog, XDG_DATA_HOME: join(home.dir, "xdg-data"), PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
   for (const [k, v] of Object.entries(merged)) if (v === "") delete merged[k];
   return merged;
 }
@@ -65,6 +66,8 @@ export async function runRouter(home: Home, argv: readonly string[], env: Record
   return { code, stdout, stderr };
 }
 
+const START_TIMEOUT_MS = 30_000;
+
 export type Daemon = { readonly url: string; readonly output: () => string; stop(): Promise<Result> };
 
 /** `serve` in the background until its listening line appears; stop() sends SIGTERM and waits for the exit. */
@@ -76,11 +79,18 @@ export async function startDaemon(home: Home, env: Record<string, string> = {}):
     for await (const chunk of child.stdout) stdout += new TextDecoder().decode(chunk);
   })();
   const stderr = new Response(child.stderr).text();
-  for (let i = 0; i < 500 && !stdout.includes("listening on"); i++) {
+  // A loaded machine can take several seconds to start the instrumented daemon.
+  const deadline = Date.now() + START_TIMEOUT_MS;
+  while (Date.now() < deadline && !stdout.includes("listening on")) {
     if (child.exitCode !== null) throw new Error(`serve exited ${child.exitCode}: ${await stderr}`);
     await Bun.sleep(10);
   }
-  if (!stdout.includes("listening on")) throw new Error(`serve did not start: ${stdout}`);
+  if (!stdout.includes("listening on")) {
+    // Never leave a daemon behind: it would keep running after the test run.
+    child.kill("SIGTERM");
+    await child.exited;
+    throw new Error(`serve did not start within ${START_TIMEOUT_MS} ms: ${stdout}`);
+  }
   return {
     url: `http://127.0.0.1:${home.port}`,
     output: () => stdout,

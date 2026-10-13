@@ -9,7 +9,7 @@ const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta
 describe("OpenRouter rules", () => {
   test("R1–R3, R11: bearer key, Chat/Responses/Messages for every model, no count_tokens, X-Generation-Id", () => {
     expect(OPENROUTER_SPEC.apiBase).toBe("https://openrouter.ai/api/v1");
-    expect(Object.values(OPENROUTER_SPEC.endpoints).map((e) => e.keyHeader)).toEqual(["authorization", "authorization", "authorization"]);
+    expect(Object.values(OPENROUTER_SPEC.endpoints)).toEqual([{ path: "/chat/completions" }, { path: "/responses" }, { path: "/messages" }]);
     expect(OPENROUTER_SPEC.uniformFormats).toEqual(["openai-chat", "openai-responses", "anthropic-messages"]);
     expect(OPENROUTER_SPEC.countTokens).toBeUndefined();
     expect(OPENROUTER_SPEC.requestIdHeader).toBe("x-generation-id");
