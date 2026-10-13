@@ -1,0 +1,174 @@
+{
+  "id": "openrouter-chat-s4-tool-loop",
+  "target": "openrouter",
+  "scenario": "s4-tool-loop",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbd7b8d5218c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:07 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877687-TJMyOgSgOAIwkn8RfJfv",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 109.2,
+        "doneAtMs": 1531.9,
+        "chunks": [
+          {
+            "atMs": 448.5,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 1531.8,
+            "text": "{\"id\":\"gen-1791877687-TJMyOgSgOAIwkn8RfJfv\",\"object\":\"chat.completion\",\"created\":1791877687,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"native_finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"reasoning\":\"We need to get current local time in Tokyo, IANA timezone \\\"Asia/Tokyo\\\". Use the function get_time.\",\"tool_calls\":[{\"type\":\"function\",\"index\":0,\"id\":\"call-7d664317-a5c5-4f6a-914b-756cf7ad5f2f\",\"function\":{\"name\":\"get_time\",\"arguments\":\"{\\\"timezone\\\":\\\"Asia/Tokyo\\\"}\"}}],\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"We need to get current local time in Tokyo, IANA timezone \\\"Asia/Tokyo\\\". Use the function get_time.\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":307,\"completion_tokens\":54,\"total_tokens\":361,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":25,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "type": "function",
+                  "index": 0,
+                  "id": "call-7d664317-a5c5-4f6a-914b-756cf7ad5f2f",
+                  "function": {
+                    "name": "get_time",
+                    "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call-7d664317-a5c5-4f6a-914b-756cf7ad5f2f",
+              "content": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbd9198e318c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:11 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877691-de7XNzBrvvIr8LR8Zaqp",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 112.5,
+        "doneAtMs": 864,
+        "chunks": [
+          {
+            "atMs": 555.8,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 863.9,
+            "text": "{\"id\":\"gen-1791877691-de7XNzBrvvIr8LR8Zaqp\",\"object\":\"chat.completion\",\"created\":1791877691,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"The current time in Tokyo is **16:05** (4:05 PM) in the Asia/Tokyo time zone.\",\"refusal\":null,\"reasoning\":\"The tool returned time 16:05 in Tokyo. So answer accordingly.\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"The tool returned time 16:05 in Tokyo. So answer accordingly.\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":368,\"completion_tokens\":49,\"total_tokens\":417,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":17,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

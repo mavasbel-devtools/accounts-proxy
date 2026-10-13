@@ -1,0 +1,56 @@
+{
+  "id": "openrouter-chat-s6-unknown-model",
+  "target": "openrouter",
+  "scenario": "s6-unknown-model",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "no-such-model-l1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbdc50ceb18c2-QRO",
+          "connection": "keep-alive",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:19 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877699-OxMhpDaCqtGYKoFtq70K",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 20.5,
+        "doneAtMs": 20.9,
+        "chunks": [
+          {
+            "atMs": 20.8,
+            "text": "{\"error\":{\"message\":\"no-such-model-l1 is not a valid model ID\",\"code\":400},\"user_id\":\"user_3D8SYh8Lqqnlzv3Rsmo94pWvulQ\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

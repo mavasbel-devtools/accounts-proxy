@@ -1,0 +1,309 @@
+{
+  "id": "openai-resp-s4-tool-loop",
+  "target": "openai",
+  "scenario": "s4-tool-loop",
+  "model": "gpt-5.6-luna",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "user-agent": "inference-router/0.1.0",
+          "session-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "thread-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "x-client-request-id": "f1e358f5-f490-468e-9e34-3787e7efba93"
+        },
+        "body": {
+          "model": "gpt-5.6-luna",
+          "tools": [
+            {
+              "type": "function",
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string",
+                    "description": "IANA timezone, e.g. Asia/Tokyo"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              },
+              "strict": false
+            }
+          ],
+          "input": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ],
+          "store": false,
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-expose-headers": "CF-Ray, CF-Ray",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49ccd057ac3f949-QRO",
+          "connection": "keep-alive",
+          "date": "Tue, 13 Oct 2026 07:58:44 GMT",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "transfer-encoding": "chunked",
+          "x-codex-turn-state": "gAAAAABqzeS0OwZOjCtyrcIhPEjpBRaINgm5Yaj7DXrBRFadxqX27NlZsbbRpSwFd23VCLlvv9U7hGCdoKzs-g61sRCdASkQYpMNk0LWiFMbr1NROoTyMcJrqxPOux-3bC2NHWpsJzAWObghVOTcBdcG6cTwdE3ZGZO0MomsdjQ0-EFZlSe9K4KlpwrSaoKNZSOuALt6LcxzurvoY9gpKQsXmt41aWp8OwYiowbTd9H1hwdqq2eYxE3_Pzos-KG5xiZL6xPllnG5axwoB45KkgKmxFst3EfN30-zTaMuBJCS771y7-D61J2kP4098kLkvGtW4DdMhlFawJ9KFeNvfg10zU--UDCXxGVXay9vqoSz-qthjILcfPVZhscdnl-BQhLXaInlW_jsHuf8pFiCT2WdOZr7FmcxYOEZQIIDUKqP3w3hD3cjwR26bXzR25OiPDctCjY0zVbl73b8tmD0H1G15TtDp48lpu3dY-bVHk8DJag5FwhThhOkxfKrhOeMyS5izfbeYxXkE_RRQZ24WpIdEgoMQtL1vVOgwTvg0O3ylOtGbKi_fi1vCL2Cf8UdIbYuG2IhFn69R3kAn1qsIB8F75yBOQzu86NEP2UjVMzze-6ZwCz-qytGKd0cu1-BYZW6gGwYDY3_gO2B1Np9Ka4qpu7m1pN9DRQf5Kk2ndn9p_6rQaUD5woKZ7-DFn_wki8ZRFfG-zYZkFKFrUSfDyZyhAFUQMQLKig_hb8l0fdpQHfcBB8vmatA21btxct-UDmTr8qHf0OA",
+          "x-content-type-options": "nosniff",
+          "x-models-etag": "W/\"8c738ab04e48347ae79447c852c6adb5\"",
+          "x-oai-request-id": "req_29860577e6b74a73b95ed8d90aa046d0",
+          "x-openai-proxy-wasm": "v0.1",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 857.7,
+        "doneAtMs": 1602.5,
+        "chunks": [
+          {
+            "atMs": 857.8,
+            "text": "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_0b915a8d3bc55321016acde4b4998087d2835a8f6913f76390\",\"object\":\"response\",\"created_at\":1791878324,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g. Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":0}\n\nevent: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"resp_0b915a8d3bc55321016acde4b4998087d2835a8f6913f76390\",\"object\":\"response\",\"created_at\":1791878324,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g. Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":1}\n\n"
+          },
+          {
+            "atMs": 1273.9,
+            "text": "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"item\":{\"id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"type\":\"function_call\",\"status\":\"in_progress\",\"arguments\":\"\",\"call_id\":\"call_hA0gkiKSvaWfsT6ZvjCWJ3UN\",\"name\":\"get_time\"},\"output_index\":0,\"sequence_number\":2}\n\nevent: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"{\\\"\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"IIcu3KpZVySDM4\",\"output_index\":0,\"sequence_number\":3}\n\n"
+          },
+          {
+            "atMs": 1292,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"timezone\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"OSXL6Em8\",\"output_index\":0,\"sequence_number\":4}\n\n"
+          },
+          {
+            "atMs": 1317.2,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"\\\":\\\"\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"B7M2G5TqVxYUb\",\"output_index\":0,\"sequence_number\":5}\n\nevent: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"Asia\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"gU2V74HsGBcr\",\"output_index\":0,\"sequence_number\":6}\n\n"
+          },
+          {
+            "atMs": 1338.3,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"/T\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"ItdpT9MHNwfy3d\",\"output_index\":0,\"sequence_number\":7}\n\n"
+          },
+          {
+            "atMs": 1358,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"ok\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"0A7O7IdWdWAs1G\",\"output_index\":0,\"sequence_number\":8}\n\n"
+          },
+          {
+            "atMs": 1379.1,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"yo\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"4tOz1xXu2GnUVk\",\"output_index\":0,\"sequence_number\":9}\n\n"
+          },
+          {
+            "atMs": 1404,
+            "text": "event: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"\\\"}\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"obfuscation\":\"5KhrKln5YiGxjh\",\"output_index\":0,\"sequence_number\":10}\n\n"
+          },
+          {
+            "atMs": 1523.1,
+            "text": "event: response.function_call_arguments.done\ndata: {\"type\":\"response.function_call_arguments.done\",\"arguments\":\"{\\\"timezone\\\":\\\"Asia/Tokyo\\\"}\",\"item_id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"output_index\":0,\"sequence_number\":11}\n\n"
+          },
+          {
+            "atMs": 1525.1,
+            "text": "event: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"id\":\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\",\"type\":\"function_call\",\"status\":\"completed\",\"arguments\":\"{\\\"timezone\\\":\\\"Asia/Tokyo\\\"}\",\"call_id\":\"call_hA0gkiKSvaWfsT6ZvjCWJ3UN\",\"name\":\"get_time\"},\"output_index\":0,\"sequence_number\":12}\n\n"
+          },
+          {
+            "atMs": 1525.8,
+            "text": "event: response.completed\n"
+          },
+          {
+            "atMs": 1527.8,
+            "text": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_0b915a8d3bc55321016acde4b4998087d2835a8f6913f76390\",\"object\":\"response\",\"created_at\":1791878324,\"status\":\"completed\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":1791878325,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"default\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g. Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":{\"attribution\":{\"items\":{\"msg_0b915a8d3bc55321016acde4b4a0f087d2bf71bc6b39441fff\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":23,\"output_tokens\":0}],\"input_tokens\":23,\"output_tokens\":0},\"fc_0b915a8d3bc55321016acde4b54bec87d2b1edc4035a398a48\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":2,\"output_tokens\":21}},\"request_fields\":{\"tools\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":52,\"output_tokens\":0}}},\"input_tokens\":77,\"input_tokens_details\":{\"cache_write_tokens\":0,\"cached_tokens\":0},\"output_tokens\":21,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":98},\"user\":null,\"metadata\":{}},\"sequence_number\":13}\n\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "user-agent": "inference-router/0.1.0",
+          "session-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "thread-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "x-client-request-id": "f1e358f5-f490-468e-9e34-3787e7efba93"
+        },
+        "body": {
+          "model": "gpt-5.6-luna",
+          "tools": [
+            {
+              "type": "function",
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string",
+                    "description": "IANA timezone, e.g. Asia/Tokyo"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              },
+              "strict": false
+            }
+          ],
+          "input": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "type": "function_call",
+              "call_id": "call_hA0gkiKSvaWfsT6ZvjCWJ3UN",
+              "name": "get_time",
+              "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+            },
+            {
+              "type": "function_call_output",
+              "call_id": "call_hA0gkiKSvaWfsT6ZvjCWJ3UN",
+              "output": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+            }
+          ],
+          "store": false,
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-expose-headers": "CF-Ray, CF-Ray",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49ccd1bffeff949-QRO",
+          "connection": "keep-alive",
+          "date": "Tue, 13 Oct 2026 07:58:48 GMT",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "transfer-encoding": "chunked",
+          "x-codex-turn-state": "gAAAAABqzeS4WCbiQQIgSwPvOOikTmgAIVWDv8MSQ7SUAZDSORxw8DxG0ojzrHNNzfk2X3iPrK82hdYAMLHhGHuMci7SNwCzhuUJ2o4pDdgBidD9PNVg1e2ALbf6XEcmetyhdSVc919HEhwA7MIsdvHwtTqxSpwUUHluPJJ_gV7iToiK9FQhhgozqlnD4ywaleoAxa5f1Gt6OFCkcjE_G4Oc8Av0p2z3vHpLzbgoPAerYKzXglhoR09lyrh8yeIugj-jfyjWlQ2QxUEOAd5BaLUB6eYcnrf4B3GY1Xlsb0VI2Qs6HyJ7L1FTrp6xZdXnzw0FSqLAYz95k7ee-WsfWrvS0UDh8mXamDW7sIrjGexxMWmeFGexV11WOeRfZ7LHjQ0jFaZLVHQcKWGuMXKV4yHxXmjWq0ixgOI3fGuPxgal-vPWzXETyh6jfAC0BelkMqW8SzMZ4UCXRN5cE9ZhqSRufnh1R_-a6GcQ-XYT0Hvv0mwqgkzKQWyW-eGZeH2-sTiSpceOepfCIA9-GsdJYqO7pSPxNWPyphJYh7V4DscgK5RQ2AmXzJ4BKl7YdPyOxYp-HSHnTTIyLJOBGNZD-43MDiFAqMHkl_QHSok1S06rElPIVDw1VdKIphik5bEIeVKzWmJzsAES6rc3eESE-E-SEeWxq6O1mzCLrfKp-KSmeoRbHX3Q0bF6rBzpq6D46QkbkjTp806f2dRVHJpzj95TyNlnhTuaUxq8O8JuHXsFPngjoiTvunvYyTtE352eiFfEmlXd0N0o",
+          "x-content-type-options": "nosniff",
+          "x-models-etag": "W/\"8c738ab04e48347ae79447c852c6adb5\"",
+          "x-oai-request-id": "req_3fbd5bbf7af94e53988539d88ed60173",
+          "x-openai-proxy-wasm": "v0.1",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 1174.6,
+        "doneAtMs": 1830.9,
+        "chunks": [
+          {
+            "atMs": 1174.8,
+            "text": "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_0c8378336cd5e8a8016acde4b87ca487d28af0b4e26be16b6a\",\"object\":\"response\",\"created_at\":1791878328,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g. Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":0}\n\nevent: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"resp_0c8378336cd5e8a8016acde4b87ca487d28af0b4e26be16b6a\",\"object\":\"response\",\"created_at\":1791878328,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g"
+          },
+          {
+            "atMs": 1175.5,
+            "text": ". Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":1}\n\n"
+          },
+          {
+            "atMs": 1345.4,
+            "text": "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"item\":{\"id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"type\":\"message\",\"status\":\"in_progress\",\"content\":[],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":2}\n\nevent: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"content_index\":0,\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"\"},\"sequence_number\":3}\n\n"
+          },
+          {
+            "atMs": 1345.8,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"It\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"x4CElbpZjy8RYc\",\"output_index\":0,\"sequence_number\":4}\n\n"
+          },
+          {
+            "atMs": 1368.9,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"’s\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"vOAVLSywk4TCXD\",\"output_index\":0,\"sequence_number\":5}\n\n"
+          },
+          {
+            "atMs": 1413.7,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" \",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"cEYjTXh3arDf20Z\",\"output_index\":0,\"sequence_number\":6}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"16\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"lzkrz8hZO6dTp9\",\"output_index\":0,\"sequence_number\":7}\n\n"
+          },
+          {
+            "atMs": 1424.4,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\":\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"wosopALHsZneMTH\",\"output_index\":0,\"sequence_number\":8}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"05\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"5CxzvQanvn45Wr\",\"output_index\":0,\"sequence_number\":9}\n\n"
+          },
+          {
+            "atMs": 1446.3,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" (\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"BfpRgPFem32yFx\",\"output_index\":0,\"sequence_number\":10}\n\n"
+          },
+          {
+            "atMs": 1473.6,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"4\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"5IuAvm78YIco3j7\",\"output_index\":0,\"sequence_number\":11}\n\n"
+          },
+          {
+            "atMs": 1489.5,
+            "text": "event: response.output_text"
+          },
+          {
+            "atMs": 1489.5,
+            "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\":\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"P6bMLJAdWW8lIiB\",\"output_index\":0,\"sequence_number\":12}\n\n"
+          },
+          {
+            "atMs": 1515.1,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"05\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"GzaaxDDqu66iwe\",\"output_index\":0,\"sequence_number\":13}\n\n"
+          },
+          {
+            "atMs": 1541,
+            "text": "event: response.output_text"
+          },
+          {
+            "atMs": 1541.9,
+            "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" PM\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"FkEbBK2LWPL3k\",\"output_index\":0,\"sequence_number\":14}\n\n"
+          },
+          {
+            "atMs": 1548.1,
+            "text": "event: response.output_text"
+          },
+          {
+            "atMs": 1548.4,
+            "text": ".delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\")\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"Phaof3oWWNNpVjQ\",\"output_index\":0,\"sequence_number\":15}\n\n"
+          },
+          {
+            "atMs": 1563,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" in\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"0RJwoE4aGEfZp\",\"output_index\":0,\"sequence_number\":16}\n\n"
+          },
+          {
+            "atMs": 1581.9,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\" Tokyo\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"9USzcH1d1b\",\"output_index\":0,\"sequence_number\":17}\n\n"
+          },
+          {
+            "atMs": 1602.9,
+            "text": "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\".\",\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"obfuscation\":\"ewHaBRmPbvcerjN\",\"output_index\":0,\"sequence_number\":18}\n\n"
+          },
+          {
+            "atMs": 1766.8,
+            "text": "event: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"content_index\":0,\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"logprobs\":[],\"output_index\":0,\"sequence_number\":19,\"text\":\"It’s 16:05 (4:05 PM) in Tokyo.\"}\n\n"
+          },
+          {
+            "atMs": 1767.1,
+            "text": "event: response.content_par"
+          },
+          {
+            "atMs": 1767.1,
+            "text": "t.done\ndata: {\"type\":\"response.content_part.done\",\"content_index\":0,\"item_id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"It’s 16:05 (4:05 PM) in Tokyo.\"},\"sequence_number\":20}\n\n"
+          },
+          {
+            "atMs": 1770.6,
+            "text": "event: response.output_item"
+          },
+          {
+            "atMs": 1770.6,
+            "text": ".done\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"id\":\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\",\"type\":\"message\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"It’s 16:05 (4:05 PM) in Tokyo.\"}],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":21}\n\n"
+          },
+          {
+            "atMs": 1799,
+            "text": "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_0c8378336cd5e8a8016acde4b87ca487d28af0b4e26be16b6a\",\"object\":\"response\",\"created_at\":1791878328,\"status\":\"completed\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":1791878329,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"f1e358f5-f490-468e-9e34-3787e7efba93\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"user-tDYfwQmCxHT61kPY9umQed7J\",\"service_tier\":\"default\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[{\"type\":\"function\",\"description\":\"Current local time in an IANA timezone.\",\"name\":\"get_time\",\"output_schema\":null,\"parameters\":{\"type\":\"object\",\"properties\":{\"timezone\":{\"type\":\"string\",\"description\":\"IANA timezone, e.g. Asia/Tokyo\"}},\"required\":[\"timezone\"]},\"strict\":false}],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":{\"attribution\":{\"items\":{\"msg_0c8378336cd5e8a8016acde4b883ec87d2a0bddf31f6734de3\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":23,\"output_tokens\":0}],\"input_tokens\":23,\"output_tokens\":0},\"fc_0c8378336cd5e8a8016acde4b8840c87d2b0177770988d8181\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":23,\"output_tokens\":0},\"fc_0c8378336cd5e8a8016acde4b8842c87d29feda1a460ad812c\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":23,\"output_tokens\":0}],\"input_tokens\":23,\"output_tokens\":0},\"msg_0c8378336cd5e8a8016acde4b8f5f887d2bcdbc6ce75b4cb55\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":2,\"output_tokens\":19}],\"input_tokens\":2,\"output_tokens\":19}},\"request_fields\":{\"tools\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":52,\"output_tokens\":0}}},\"input_tokens\":123,\"input_tokens_details\":{\"cache_write_tokens\":0,\"cached_tokens\":0},\"output_tokens\":19,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":142},\"user\":null,\"metadata\":{}},\"sequence_number\":22}\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

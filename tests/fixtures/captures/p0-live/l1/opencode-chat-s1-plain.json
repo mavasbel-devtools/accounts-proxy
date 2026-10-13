@@ -1,0 +1,58 @@
+{
+  "id": "opencode-chat-s1-plain",
+  "target": "opencode",
+  "scenario": "s1-plain",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccd754c23c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:03 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "52eedd36-9750-477a-9ad3-faba4d623595",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 2054.2,
+        "doneAtMs": 2054.9,
+        "chunks": [
+          {
+            "atMs": 2054.7,
+            "text": "{\"id\":\"chatcmpl-19d3ebc485184f5cb1e183e7ad8fa609\",\"object\":\"chat.completion\",\"created\":1791878342,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"OK\",\"reasoning_content\":\"The user has asked me to reply with the single word \\\"OK.\\\" This is a simple, unambiguous instruction. There's nothing harmful or problematic about this request - it's just asking for a minimal acknowledgment response.\\n\\nThe appropriate response is simply \\\"OK\\\" - nothing more, nothing less. No need to add explanation, no need to be verbose. The user was explicit about wanting a single word.\"}}],\"usage\":{\"prompt_tokens\":19,\"completion_tokens\":83,\"total_tokens\":102,\"prompt_tokens_details\":{\"cached_tokens\":10},\"completion_tokens_details\":{\"reasoning_tokens\":80}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

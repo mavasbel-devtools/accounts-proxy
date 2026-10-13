@@ -2,7 +2,7 @@
 // documented local credential record, openai-siwc-sign-in.md §5) and T1–T5 (token lifetimes and refresh).
 // One account per issued client id (a registration): its id is the issued client id, its label the email.
 import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
+import type { JsonObject } from "@inference-router/core/domain/json.ts";
 import { DEFAULT_EXPIRES_IN_S, PLAN_USAGE_SCOPE } from "@inference-router/provider-openai/domain/constants.ts";
 
 export type OpenAITokens = {
@@ -74,9 +74,8 @@ export function toAccount(tokens: OpenAITokens): AccountCredential {
 
 /** Read tokens back from a stored account; undefined when the stored shape is not an OpenAI credential. */
 export function fromAccount(account: AccountCredential): OpenAITokens | undefined {
-  const d = account.data;
-  if (!isJsonObject(d)) return undefined;
-  const { accessToken, refreshToken, expiresAt, scopes, clientId, subject, idToken, email } = d;
+  // `data` is a JSON object: the credential store accepts no other account record.
+  const { accessToken, refreshToken, expiresAt, scopes, clientId, subject, idToken, email } = account.data;
   if (typeof accessToken !== "string" || typeof refreshToken !== "string" || typeof expiresAt !== "number" || typeof scopes !== "string") return undefined;
   if (typeof clientId !== "string" || typeof subject !== "string" || typeof idToken !== "string") return undefined;
   return { accessToken, refreshToken, expiresAt, scopes, clientId, subject, idToken, ...(typeof email === "string" ? { email } : {}) };

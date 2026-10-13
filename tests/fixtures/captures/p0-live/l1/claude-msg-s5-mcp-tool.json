@@ -1,0 +1,137 @@
+{
+  "id": "claude-msg-s5-mcp-tool",
+  "target": "claude",
+  "scenario": "s5-mcp-tool",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "e34a2c79-cbed-4557-a661-e3ca5f7bb489",
+          "x-client-request-id": "d6812ab1-bb8c-4b9f-99f2-53f86e0a76e3",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "max_tokens": 1024,
+          "model": "claude-haiku-4-5-20251001",
+          "tools": [
+            {
+              "name": "read_file",
+              "description": "Read a text file.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Absolute path of the file"
+                  },
+                  "limit": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Maximum number of lines"
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "additionalProperties": false,
+                "$schema": "http://json-schema.org/draft-07/schema#"
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "Read the file /etc/hostname with the read_file tool."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=7dc5584d-ddd2-4247-8d67-03f6522df87b;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "diagnostics": {
+            "previous_message_id": "msg_011Cfys8SivWPyAphreTYFRK"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"e34a2c79-cbed-4557-a661-e3ca5f7bb489\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791891600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.28",
+          "anthropic-ratelimit-unified-7d-reset": "1792087200",
+          "anthropic-ratelimit-unified-7d-status": "allowed_warning",
+          "anthropic-ratelimit-unified-7d-surpassed-threshold": "0.75",
+          "anthropic-ratelimit-unified-7d-utilization": "0.76",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "org_level_disabled",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "seven_day",
+          "anthropic-ratelimit-unified-reset": "1792087200",
+          "anthropic-ratelimit-unified-status": "allowed_warning",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49cbaee389bbd7a-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:46:24 GMT",
+          "request-id": "req_011Cfys9sWDRqwsREEKAiAt1",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-0019fbc4b464b47361ae90f6b44ddb15-79792e2bc87a7ff3-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 971,
+        "doneAtMs": 971.4,
+        "chunks": [
+          {
+            "atMs": 971.3,
+            "text": "{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011Cfys9sjMHZc1daF3rw3at\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"toolu_014uj2uHdXEZzQLrm7M5C2vX\",\"name\":\"read_file\",\"input\":{\"path\":\"/etc/hostname\"},\"caller\":{\"type\":\"direct\"}}],\"container\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":671,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"iterations\":[{\"input_tokens\":671,\"output_tokens\":57,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}],\"output_tokens\":57,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":{\"applied_edits\":[]}}"
+          }
+        ]
+      }
+    }
+  ]
+}

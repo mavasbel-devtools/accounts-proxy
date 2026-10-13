@@ -41,6 +41,7 @@ export const ZEN_SPEC: GatewaySpec = {
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
   forwardHeaders: [SESSION_HEADER],
+  sessionHeader: SESSION_HEADER,
 };
 
 /** Z13, Z14: Go serves Chat, Responses and Messages (no Gemini route). */
@@ -55,6 +56,7 @@ export const GO_SPEC: GatewaySpec = {
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
   forwardHeaders: [SESSION_HEADER],
+  sessionHeader: SESSION_HEADER,
 };
 
 /** Z12, Z13: under each spec's apiBase. */

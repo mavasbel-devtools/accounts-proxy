@@ -1,0 +1,106 @@
+{
+  "id": "antigravity-gem-s2-plain-stream",
+  "target": "antigravity",
+  "scenario": "s2-plain-stream",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877594577/d49e234d-8946-4dba-8235-864a5ea2a989/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "73349f2d-8e69-4421-9a8f-8e812ab15122",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "d49e234d-8946-4dba-8235-864a5ea2a989",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:35 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=724",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 738.8,
+        "doneAtMs": 980.2,
+        "chunks": [
+          {
+            "atMs": 738.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Thinking Process:\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"totalTokenCount\": 11,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 806.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n\\n1.  **Analyze the input:** The user said \\\"Reply with the single word\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"totalTokenCount\": 29,\"thoughtsTokenCount\": 21},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 895.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" OK.\\\"\\n2.  **Identify the constraint:** The reply must be *the single word* \\\"OK\\\".\\n3.  **Form\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"totalTokenCount\": 58,\"thoughtsTokenCount\": 50},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 922.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"ulate the output:** OK.\\n4.  **Check against constraints:** Is it a single word? Yes. Is\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"totalTokenCount\": 82,\"thoughtsTokenCount\": 74},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 940.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" it \\\"OK\\\"? Yes.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"totalTokenCount\": 88,\"thoughtsTokenCount\": 80},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 959.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 169,\"thoughtsTokenCount\": 160},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 963.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EsMDCsADAWkUfRO+b8pjpji1IQyQYOC01lyCrjtuOxLKBIHhyCyfMouC2Y3ozFmElNXOZ03IUPTWGJ9xUPs7QkZzsZGniIST6KEamUdLBb0NWE3KbWecXzqhTbaFk6k3tfWmx7YO54gbTwdaRWJFwhqWiQJD9LZlQbGc1z75lJ6Uxh7Y1DUR8fMOux36/Zeo0IFlx79jAYopKKxrlitn5sQvIgPFMC7FdxTkB1Jiv4MXVBBzAOH5PT8fI3gLESvuTtSy5q6GUJfiO/DnIDoeJXtV37pGdifVpIfgvr2BpBo0nxXvx+AISvSHx+sccshpD4C31fBlEsRTPR1eytP4uBTSGzrgbC+7l8YyVWCjNW1xJkwFoYeDYbyru5CYT5j1RQ9d/TlpE5B5RDWyeQXDFX58EbGCgP3el9LpjmCvyBP0NEPsICVa9gZUGhVl43cUu5QPC14Drx77VczadJuzzobVG6ocbEcJ/bbtJemrF7rQcPa7Pcopi4rBM9j54ICYGkWU4Cl3AQbUHcoBD4zyyaducB7m4vZ5gT2tUHXs1VGJQfveBDA5tjYTTP+xcYAGLJyJKP5sg5TKXOgQli0NF11cIgN1WA==\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 8,\"candidatesTokenCount\": 1,\"totalTokenCount\": 89,\"thoughtsTokenCount\": 80},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2uHNas_qO8Ksz7IPvtunqAc\"},\"traceId\": \"a5a164340a15f110\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

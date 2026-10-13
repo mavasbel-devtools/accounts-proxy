@@ -1,0 +1,94 @@
+{
+  "id": "opencode-chat-s5b-mcp-tool-lossy",
+  "target": "opencode",
+  "scenario": "s5b-mcp-tool-lossy",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "read_file",
+                "description": "Read a text file.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Absolute path of the file"
+                    },
+                    "limit": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Maximum number of lines"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "Read the file /etc/hostname with the read_file tool."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cce20f9a9c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:30 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "4655bae6-c546-454b-8e90-9ab5920749b3",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 915.8,
+        "doneAtMs": 916.1,
+        "chunks": [
+          {
+            "atMs": 916,
+            "text": "{\"id\":\"chatcmpl-b5eb0297b5a1403e8af35c85bec10b8b\",\"object\":\"chat.completion\",\"created\":1791878370,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"reasoning_content\":\"The user wants me to read /etc/hostname. Let me use the read_file tool.\",\"tool_calls\":[{\"index\":0,\"id\":\"chatcmpl-tool-9e1c0a4b08df44b7\",\"type\":\"function\",\"function\":{\"name\":\"read_file\",\"arguments\":\"{\\\"path\\\": \\\"/etc/hostname\\\"}\"}}]}}],\"usage\":{\"prompt_tokens\":238,\"completion_tokens\":33,\"total_tokens\":271,\"prompt_tokens_details\":{\"cached_tokens\":237},\"completion_tokens_details\":{\"reasoning_tokens\":19}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

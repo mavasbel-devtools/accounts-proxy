@@ -13,12 +13,13 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 | **`opencode-go`** | the `opencode` account (Go subscription of the same workspace) | `opencode.ai/inference/go/v1` | per model: Responses, Messages, Chat |
 | **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
-> **Status: P4.6 with amendment A (OpenCode Console).** Every provider serves its native formats; a request in another
-> format is a translated cell (P5) and answers 400 `unsupported_feature` until then. `openai` and the gateways are built
-> and tested against documented and captured answers; their live checks wait for the user's sign-ins (OpenAI, OpenCode
-> Console) and keys (gateways). Plans:
+> **Status: P4.6 with amendment A (OpenCode Console), live-validated.** Every provider serves its native formats; a
+> request in another format is a translated cell (P5) and answers 400 `unsupported_feature` until then. All seven
+> providers were validated live on 2026-10-13 with the official SDKs, Claude Code and opencode, MCP tools included
+> ([findings](docs/reference/2026-10-13-02-52-live-validation-findings.md)). Plans:
 > [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
-> [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md).
+> [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md),
+> [live validation](docs/plans/2026-10-13-01-42-live-validation-plan.md).
 
 > **Terms risk.** The subscription providers' terms restrict third-party clients. The verbatim quotes are in
 > [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md) §3
@@ -69,13 +70,25 @@ await claude.messages.create({ model: "claude/claude-haiku-4-5-20251001", max_to
 
 import { GoogleGenAI } from "@google/genai";
 const gemini = new GoogleGenAI({ apiKey: TOKEN, httpOptions: { baseUrl: "http://127.0.0.1:4141/gemini" } });
-await gemini.models.generateContent({ model: "antigravity/gemini-3.6-flash-low", contents: "hi" });
+await gemini.models.generateContent({ model: "antigravity/gemini-3.5-flash-lite", contents: "hi" });
 
 import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: TOKEN, baseURL: "http://127.0.0.1:4141/openai/v1" });
-await openai.chat.completions.create({ model: "openrouter/openai/gpt-oss-20b:free", messages: [{ role: "user", content: "hi" }] });
-await openai.responses.create({ model: "openai/gpt-5.5", input: "hi" });
+await openai.chat.completions.create({ model: "openrouter/nvidia/nemotron-3.5-lightning:free", messages: [{ role: "user", content: "hi" }] });
+await openai.responses.create({ model: "openai/gpt-5.6-luna", input: "hi" });
 ```
+
+Coding agents work the same way (both measured live, L3 of the
+[live validation](docs/reference/2026-10-13-02-52-live-validation-findings.md), MCP tools included):
+
+- **Claude Code** (Anthropic Messages): `ANTHROPIC_BASE_URL=http://127.0.0.1:4141/anthropic`, `ANTHROPIC_API_KEY=<token>`,
+  `--model claude/claude-haiku-4-5-20251001` (or any Messages model: `openrouter/…`, `opencode/claude-haiku-4-5`,
+  `opencode-go/qwen3.8-flash`, `cheaper-inference/…`; set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to a routable model too).
+- **opencode**: one custom provider per format, `options.baseURL` at the router and `options.apiKey` the token:
+  `@ai-sdk/openai-compatible` → `http://127.0.0.1:4141/openai/v1` (Chat), `@ai-sdk/openai` → the same URL (Responses;
+  for `openai/*` add `options.headers: {"x-router-lossy": "1"}`, because the AI SDK sends `max_output_tokens`, which
+  ChatGPT plan usage refuses), `@ai-sdk/anthropic` → `http://127.0.0.1:4141/anthropic/v1`, `@ai-sdk/google` →
+  `http://127.0.0.1:4141/gemini/v1beta`. Model ids are `<provider>/<model>`.
 
 | Route | Format | Served natively by |
 |---|---|---|
@@ -128,8 +141,9 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
   sequences also match inside thinking text (L4).
 - **antigravity:** `thinkingBudget` must be the catalog's value (it is injected when absent); `maxOutputTokens` may
   not exceed the catalog's. Function-calling modes other than `AUTO`/`VALIDATED` are 400 (the upstream ignores or
-  rejects them, L6). Tool schemas may use only `type, format, description, nullable, enum, items, properties,
-  required, propertyOrdering`. The model list is the upstream catalog minus its tab/deprecated ids and can include IDE
+  rejects them, L6). Tool schemas in `parameters` may use only `type, format, description, nullable, enum, items,
+  properties, required, propertyOrdering`; a full JSON Schema in `parametersJsonSchema` (how the Gen AI SDK sends MCP
+  tools) travels unchanged (live F2). The model list is the upstream catalog minus its tab/deprecated ids and can include IDE
   helper models such as `tab_*` (L13).
 - **API-key gateways** ([rules](docs/reference/2026-10-12-15-35-gateway-provider-rules.md)): the body `model` (or the
   Gemini path model) becomes the vendor's bare id; only the key (`Authorization: Bearer`), `content-type`, `accept`
@@ -140,7 +154,11 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
   client, so `opencode` needs a sign-in or a key.
 - **OpenCode Console** (rules §3a): requests also carry the router's `User-Agent`, the workspace's headers from the
   Console config (`x-opencode-org-id`) and the client's `x-opencode-session`. OpenCode Go refuses a request without
-  `x-opencode-session` (400 `MissingSessionID`), so a Go client must send a stable one per conversation.
+  it (400 `MissingSessionID`); when a client sends none (Claude Code does not), the router sends the conversation's own
+  id (Claude Code's session, the Responses `prompt_cache_key`) or a stable `rtr_…` id derived from the conversation's
+  first user turn (rule Z24, live F3).
+- **openai:** ChatGPT plan usage ends a stream with an empty `response.output`; the router fills it with the streamed
+  items, so non-streamed answers and the SDKs' `finalResponse()` carry the output (rule I6, live F1).
 - **Model-list fields the catalogs do not have** are neutral markers, never invented values: Antigravity models list
   `created_at: 1970-01-01T00:00:00Z` (Anthropic shape) and `created: 0` (OpenAI shape); Gemini-shape `version` is the
   provider id and `baseModelId` the routable `<provider>/<model>` (decision Q5).
@@ -227,8 +245,9 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run typecheck` | `tsc --noEmit` over every workspace, test and script |
 | `bun run test` | unit + component + architecture + support tests |
 | `bun run coverage` | same set under istanbul; fails below 100% lines/statements/functions/branches or if a source file is never loaded |
-| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; P5-only code and code waiting for the user's live captures deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md), [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md)) |
+| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; only P5-only code is deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
+| `INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts` | the live matrix: every provider's native cells through the daemon with the official SDKs (about 80 small requests; `--only=`, `--scenarios=`) |
 | `bun run verify` | the full release gate |
 | `bun run fetch:specs` | re-fetch the official wire specs into `docs/reference/specs/` |
 | `bun scripts/evidence/gateway-snapshots.ts` | regenerate the gateways' built-in model lists from the committed vendor lists |
@@ -247,3 +266,4 @@ also inside one workspace. Relative imports are rejected by the architecture gat
   [OpenAI ChatGPT plan rules](docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md)
 - [Gateway provider rules](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) ·
   [P4.6 gateway live probe](docs/reference/2026-10-12-16-09-p46-gateway-live-probe.md)
+- [Live validation of all seven providers (L0–L4)](docs/reference/2026-10-13-02-52-live-validation-findings.md)

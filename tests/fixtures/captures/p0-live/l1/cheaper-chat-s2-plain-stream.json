@@ -1,0 +1,66 @@
+{
+  "id": "cheaper-chat-s2-plain-stream",
+  "target": "cheaper-inference",
+  "scenario": "s2-plain-stream",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "text/event-stream; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:49:48 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-accel-buffering": "no",
+          "x-ci-cache": "miss",
+          "x-ci-prompt-cache-affinity": "hit",
+          "x-ci-request-id": "8ce0dc33-8cc7-4bbb-963d-c429f1f88095",
+          "x-ci-routing-overhead-ms": "1037",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::97wbr-1791877787147-16ff0284478c"
+        },
+        "headersAtMs": 1797.8,
+        "chunks": [
+          {
+            "atMs": 1804.4,
+            "text": "data: {\"id\":\"chatcmpl-EYRYa28KpM0rRhwGCbhjI8dBmDDCr\",\"object\":\"chat.completion.chunk\",\"created\":1791877788,\"model\":\"gpt-5.4-nano\",\"service_tier\":\"default\",\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\",\"refusal\":null},\"finish_reason\":null}],\"usage\":null,\"obfuscation\":\"Eua\"}\n\ndata: {\"id\":\"chatcmpl-EYRYa28KpM0rRhwGCbhjI8dBmDDCr\",\"object\":\"chat.completion.chunk\",\"created\":1791877788,\"model\":\"gpt-5.4-nano\",\"service_tier\":\"default\",\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{\"content\":\"OK\"},\"finish_reason\":null}],\"usage\":null,\"obfuscation\":\"4Dj\"}\n\n:x-ci-model-ttft-ms=636\n\ndata: {\"id\":\"chatcmpl-EYRYa28KpM0rRhwGCbhjI8dBmDDCr\",\"object\":\"chat.completion.chunk\",\"created\":1791877788,\"model\":\"gpt-5.4-nano\",\"service_tier\":\"default\",\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":null,\"obfuscation\":\"8GRWTmamrqlNNBE\"}\n\ndata: [DONE]\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

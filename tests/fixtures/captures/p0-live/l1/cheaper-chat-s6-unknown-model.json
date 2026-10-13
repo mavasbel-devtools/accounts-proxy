@@ -1,0 +1,61 @@
+{
+  "id": "cheaper-chat-s6-unknown-model",
+  "target": "cheaper-inference",
+  "scenario": "s6-unknown-model",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "no-such-model-l1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:50:30 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-cheaper-inference-request-id": "a4cf3466-e85c-4404-b562-050e4dd476c8",
+          "x-ci-request-id": "a4cf3466-e85c-4404-b562-050e4dd476c8",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::9qfvr-1791877829565-54284b6b2527"
+        },
+        "headersAtMs": 690.9,
+        "doneAtMs": 691.2,
+        "chunks": [
+          {
+            "atMs": 691,
+            "text": "{\"error\":{\"message\":\"Model 'no-such-model-l1' is not currently available.\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":\"not_found\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

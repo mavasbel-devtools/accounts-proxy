@@ -1,0 +1,54 @@
+{
+  "id": "cheaper-balance",
+  "target": "cheaper-inference",
+  "scenario": "cheaper-balance",
+  "model": "-",
+  "capturedAt": "2026-10-13T08:13:12.526Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://api.cheaperinference.com/v1/account/balance",
+        "headers": {
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-headers": "Authorization, X-Api-Key, Content-Type, Anthropic-Version, Anthropic-Beta",
+          "access-control-allow-methods": "GET, HEAD, OPTIONS",
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "Retry-After, WWW-Authenticate, X-Cheaper-Inference-Request-Id, x-ci-request-id",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 08:13:25 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/account/balance",
+          "x-nextjs-rewritten-path": "/api/v1/account/balance",
+          "x-vercel-cache": "BYPASS",
+          "x-vercel-id": "sfo1::pdx1::v8d8s-1791879204623-55b55cc63f11"
+        },
+        "headersAtMs": 565.6,
+        "doneAtMs": 565.8,
+        "chunks": [
+          {
+            "atMs": 565.7,
+            "text": "{\"object\":\"account.balance\",\"currency\":\"USD\",\"balance_usd\":13.772105,\"available_usd\":13.772105,\"reserved_usd\":0,\"auto_recharge_enabled\":false,\"threshold_usd\":5,\"recharge_amount_usd\":25,\"card\":null,\"workspace_name\":null,\"funded_by_owner\":false}"
+          }
+        ]
+      }
+    }
+  ]
+}

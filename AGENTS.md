@@ -63,9 +63,12 @@ gateway); a request in any other format is a translated cell (P5).
 | Claude identity envelope (billing block, identity block, `metadata.user_id`, `context_management`, betas) | `RequestTransformService.ts:187-298`, `ModelEnvelope.ts:49-190` |
 | Claude thinking is the client's: absent stays absent, `disabled` stays disabled, and the clear-thinking `context_management` edit is sent only with thinking on (deviation F9, user decision Q6) | [P0-LIVE L1–L3](docs/reference/2026-10-10-23-17-p0-live-findings.md), [Q6 probe](docs/reference/2026-10-10-23-20-q6-thinking-probe.md) |
 | Antigravity Gemini cell: `functionResponse` parts move to model-role contents (law 7); only `AUTO`/`VALIDATED` function-calling modes | plugin wire law 7; P0-LIVE L6 |
+| Antigravity Gemini cell: `parametersJsonSchema` (the Gen AI SDK's form of every `$schema` / MCP tool) travels unchanged; `parameters` keeps the law-5 whitelist | [live validation F2](docs/reference/2026-10-13-02-52-live-validation-findings.md) (j1–j4) |
+| OpenAI Responses cell: the terminal `response` gets the items of `response.output_item.done` when it arrives with an empty `output`, in the aggregated answer and in the stream (rule I6) | [live validation F1](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | Gateway native cells: the body `model` (or Gemini path model) becomes the bare id; upstream headers are only the key header, `content-type`, the client's `accept` and, on Messages, `anthropic-version`/`anthropic-beta`; the answer streams back with `content-type`, `retry-after` and the vendor's request id | [gateway rules G1–G4](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) |
 | Gateway credential: `Authorization: Bearer` on every endpoint of every gateway (OpenCode since its 2026-10-12 Console migration) | rules R1, C1, Z14 |
 | OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the router's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
+| OpenCode Console cells without a client `x-opencode-session`: the conversation's own id (Claude Code's `metadata.user_id` session, the Responses `prompt_cache_key`), else `rtr_` + a 64-bit FNV-1a hash of the first user turn (rule Z24) | [live validation F3](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from models.dev `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
 ## 4. Behaviour laws
@@ -121,8 +124,10 @@ gateway); a request in any other format is a translated cell (P5).
   or branch, each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate). The list
   must be empty when P5 is done ([R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)). Plan P4.6 adds
   the phases `P4.5-live` and `P4.6-live`: code whose replay needs a live capture only the user's own sign-in or key can
-  produce; such an entry leaves the list when its capture is committed and replayed. Replayed answers come from
-  committed captures or from the vendors' documented examples (`docs/reference/specs/`).
+  produce; such an entry leaves the list when its capture is committed and replayed (none is left since the live
+  validation of 2026-10-13). Replayed answers come from committed captures or from the vendors' documented examples
+  (`docs/reference/specs/`). Grants are never recorded: a replayed token answer carries the fields the router reads,
+  and the OpenAI ID token is signed by the replay's own key (`tests/support/e2e/openai-signing.ts`).
 - **Hermetic test hooks** (only with every upstream seam set; validated; read only by `main()`):
   `INFERENCE_ROUTER_TEST_PLATFORM`, `INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS`, `INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS`,
   `INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES=1`, `INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
@@ -139,7 +144,8 @@ gateway); a request in any other format is a translated cell (P5).
 - @babel/core 8.0.1, @babel/plugin-transform-typescript 8.0.1, babel-plugin-istanbul 8.0.0
 - istanbul-lib-coverage 3.2.2, istanbul-lib-report 3.0.1, istanbul-reports 3.2.0
 - @types/istanbul-lib-coverage 2.0.6, @types/istanbul-lib-report 3.0.3, @types/istanbul-reports 3.0.4
-- e2e clients (devDependencies of `apps/router`): @anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0
+- e2e clients (devDependencies of `apps/router`, and of `@inference-router/scripts` for the live matrix):
+  @anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0
 
 ## 7. Docs
 - Files under `docs/{plans,research,issues,reference,temp}` are named `YYYY-MM-DD-HH-MM-<name>.md`, using the system clock.

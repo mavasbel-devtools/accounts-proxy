@@ -73,7 +73,7 @@ export async function openLive(): Promise<Live> {
 /** Every string leaf of an account record that names or authenticates the user is a secret. */
 function collectStrings(value: unknown, key: string, redactor: Redactor): void {
   if (typeof value === "string") {
-    if (/token|email|uuid|project|label|subject|id$/i.test(key) && !/scope/i.test(key)) redactor.add(key.replace(/[^a-z0-9]+/gi, "_").toLowerCase(), value);
+    if (/token|email|uuid|project|label|subject|key$|id$/i.test(key) && !/scope/i.test(key)) redactor.add(key.replace(/[^a-z0-9]+/gi, "_").toLowerCase(), value);
     return;
   }
   if (Array.isArray(value)) {
@@ -226,7 +226,7 @@ const round = (n: number | undefined) => (n === undefined ? undefined : Math.rou
 
 /** Token-endpoint exchanges are never persisted, only counted (they carry grants). */
 export function isTokenEndpoint(url: string): boolean {
-  return url.startsWith("https://oauth2.googleapis.com/token") || url.includes("/v1/oauth/token") || url.includes("/api/accounts/oauth/token");
+  return url.startsWith("https://oauth2.googleapis.com/token") || url.includes("/v1/oauth/token") || url.includes("/api/accounts/oauth/token") || url.includes("/auth/device/token");
 }
 
 export function writeCapture(live: Live, relativePath: string, record: CaptureRecord): string {

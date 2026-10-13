@@ -1,0 +1,9 @@
+{
+  "id": "opencode-chat-l2-force-renew",
+  "target": "opencode",
+  "scenario": "l2-force-renew",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 1,
+  "exchanges": []
+}

@@ -86,6 +86,11 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   of plan P4.6 (K1–K6 approved): device login under client id `inference-router`, one Console account for opencode and
   opencode-go, `--key` (service-account key), `--from-opencode` (API keys only), config from /console/api/v2/config, new
   /inference addresses with bearer keys. Built and tested; waiting: the user's `login opencode` (A5 live probe).
+- 2026-10-13 User signed in to every provider; asked to test everything (tokens, errors, renewal, turns, MCP).
+  Live validation L0–L4 (docs/plans/2026-10-13-01-42-live-validation-plan.md, findings
+  docs/reference/2026-10-13-02-52-live-validation-findings.md): every native cell of the seven providers works through
+  the daemon with the official SDKs, Claude Code and opencode (MCP tools, multi-turn); OpenAI and Console refresh tokens
+  rotate (L2). Fixes I6, F2 (parametersJsonSchema), Z24, F6–F9; live-only e2e deferrals cleared.
 
 ## Progress map
 | Phase | State |
@@ -99,7 +104,8 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | Linux migration + rename to `claude` | done 2026-10-10 |
 | P4 | done 2026-10-11; R1 resolved (option B), `bun run verify` GATE: PASS |
 | Phase H (plan v4) | done 2026-10-11 |
-| P4.5 openai | part 1 done (code + unit/component); waiting for the user's OpenAI sign-in, then live probe + e2e |
-| P4.6 API-key gateways | built, verify GATE PASS; per-provider live probes wait for the user's keys |
-| P4.6 amendment A (OpenCode Console) | built and tested; live probe A5 waits for the user's `login opencode` |
+| P4.5 openai | done; live-validated and e2e-covered 2026-10-13 |
+| P4.6 API-key gateways | done; live-validated 2026-10-13 |
+| P4.6 amendment A (OpenCode Console) | done; live-validated 2026-10-13 |
+| Live validation L0–L4 (all seven providers) | done 2026-10-13 |
 | P5–P9 | not started |

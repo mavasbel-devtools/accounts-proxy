@@ -9,6 +9,9 @@
 //   - maxOutputTokens defaults to the catalog value and may not exceed it.
 //   - tool schemas: keywords outside the law-5 whitelist are unsupported (user decision Q2); with lossy they are
 //     sanitized. `type` values are upper-cased (law 5) — the same Gemini Type, not a removal.
+//   - `parametersJsonSchema` (a full JSON Schema; the Gen AI SDK sends every `$schema` tool and every MCP tool this
+//     way) is carried unchanged: Antigravity accepts it on Gemini and Claude models (live L1 j1/j2, 2026-10-13), while
+//     the same schema as `parameters` is a 400 upstream (j3/j4).
 //   - functionCallingConfig.mode only AUTO / VALIDATED; ANY, NONE and allowedFunctionNames are ignored or rejected
 //     upstream (P0-LIVE L6, plan amendment B1). With tools and no mode, VALIDATED (the IDE's captured value).
 //   - law 7: functionResponse parts ride in MODEL-role contents (a user-role run of them is moved).
@@ -48,7 +51,7 @@ const TOP_LEVEL = new Set(["contents", "systemInstruction", "tools", "toolConfig
 const GENERATION = new Set(["maxOutputTokens", "thinkingConfig", "temperature", "topP", "topK", "stopSequences"]);
 const THINKING = new Set(["includeThoughts", "thinkingBudget"]);
 const PART = new Set(["text", "thought", "thoughtSignature", "inlineData", "functionCall", "functionResponse"]);
-const DECLARATION = new Set(["name", "description", "parameters"]);
+const DECLARATION = new Set(["name", "description", "parameters", "parametersJsonSchema"]);
 const MODES = new Set(["AUTO", "VALIDATED"]);
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -208,6 +211,7 @@ function checkTools(raw: unknown, findings: Findings): PreparedGemini["tools"] {
         for (const keyword of foreign) findings.refuse(`tools.parameters.${keyword}`);
         out["parameters"] = sanitizeSchema(declaration["parameters"]);
       }
+      if (declaration["parametersJsonSchema"] !== undefined) out["parametersJsonSchema"] = declaration["parametersJsonSchema"];
       declarations.push(out);
     });
   });

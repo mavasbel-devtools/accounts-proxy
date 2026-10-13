@@ -1,0 +1,58 @@
+{
+  "id": "go-chat-s1-plain",
+  "target": "opencode-go",
+  "scenario": "s1-plain",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbea6383a839b-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:56 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "perplexity-glm5.3flash",
+          "x-opencode-log-id": "b859c1da-e7a3-4b86-85dc-6834557225db",
+          "x-opencode-upstream-model-id": "perplexity/glm-5.3-flash",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 678.5,
+        "doneAtMs": 678.8,
+        "chunks": [
+          {
+            "atMs": 678.7,
+            "text": "{\"id\":\"chatcmpl-ZOO6BKv2rAlojF40T2smzw8NdEVHB\",\"object\":\"chat.completion\",\"created\":1791877735,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"OK\",\"refusal\":null,\"reasoning_content\":\"The user has instructed me to reply with the single word \\\"OK\\\". This is a simple, clear instruction with no ethical concerns or ambiguity. I should comply exactly as requested.\",\"annotations\":[]}}],\"usage\":{\"prompt_tokens\":19,\"completion_tokens\":38,\"total_tokens\":57,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":0,\"cache_write_tokens\":0},\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

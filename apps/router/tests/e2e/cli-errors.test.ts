@@ -150,6 +150,8 @@ describe("serve and status", () => {
     expect([notFound.code, notFound.stdout]).toEqual([1, `not running at ${upstreams.origin} (GET /health answered HTTP 404)\n`]);
     upstreams.script("/health", () => jsonResponse({ status: "down" }));
     expect((await run(["status"])).stdout).toBe(`not running at ${upstreams.origin} (GET /health is not an inference-router health answer)\n`);
+    upstreams.script("/health", () => new Response("<html>", { headers: { "content-type": "text/html" } }));
+    expect((await run(["status"])).stdout).toStartWith(`not running at ${upstreams.origin} (JSON Parse error`);
   });
 
   test("a daemon with no provider enabled serves health and says so", async () => {

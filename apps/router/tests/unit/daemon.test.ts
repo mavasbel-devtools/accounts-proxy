@@ -1,5 +1,6 @@
 // The daemon's application services, route table and shutdown signal (P4 plan §2.1), against fake ports and the
 // real dialect codecs.
+import { UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
 import { describe, expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
 import {
@@ -150,6 +151,8 @@ describe("DaemonStatusService", () => {
 
   test("a refused connection is not running, with the reason", async () => {
     expect(await status(() => Promise.reject(new Error("Unable to connect"))).service.status()).toEqual({ running: false, url: "http://127.0.0.1:4141", reason: "Unable to connect" });
+    const refused = await status(() => Promise.reject(new UpstreamUnreachableError("127.0.0.1:4141", "TypeError: Unable to connect"))).service.status();
+    expect(refused).toEqual({ running: false, url: "http://127.0.0.1:4141", reason: "nothing is listening: TypeError: Unable to connect" });
   });
 });
 
@@ -339,6 +342,15 @@ describe("RouteHandler", () => {
     const internal = await json(await handler.handle(request("POST", "/gemini/v1beta/models/antigravity%2Fg:generateContent")));
     expect(internal).toEqual({ status: 500, body: { error: { code: 500, message: "internal router error (details are in the router log)", status: "INTERNAL" } } });
     expect(logger.lines).toEqual(["ERROR POST /gemini/v1beta/models/antigravity%2Fg:generateContent failed TypeError: boom"]);
+  });
+
+  test("a request the client abandoned is not reported as a router failure", async () => {
+    const { handler, passthrough, logger } = make();
+    const controller = new AbortController();
+    controller.abort();
+    passthrough.next = () => Promise.reject(new DOMException("The operation was aborted.", "AbortError"));
+    expect((await handler.handle(request("POST", "/anthropic/v1/messages", { signal: controller.signal }))).status).toBe(500);
+    expect(logger.lines).toEqual([]);
   });
 
   test("a body past the limit is a 413 in the dialect", async () => {

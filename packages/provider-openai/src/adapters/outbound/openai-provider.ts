@@ -1,12 +1,13 @@
 // openai provider (ChatGPT plan usage). Native cell: OpenAI Responses (`POST /openai/v1/responses`). The client body is
 // checked against the route's documented limits and always sent with `store: false`, `stream: true` (I2–I4, O7); the
-// upstream stream goes back unchanged to a streaming client, and is aggregated into one response for the others (O8).
+// upstream stream goes back to a streaming client unchanged except the terminal response's missing output items (I6),
+// and is aggregated into one response for the others (O8).
 // The request carries opencode's session headers `session-id`, `thread-id`, `x-client-request-id` (I5, decision O9).
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
 // status, body and request id (E1–E2). Translated cells (Anthropic/Chat/Gemini → OpenAI) arrive in P5.
 import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
 import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
@@ -17,11 +18,10 @@ import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts"
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
 import { USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { aggregate, prepareRequest } from "@inference-router/provider-openai/domain/responses.ts";
+import { aggregate, prepareRequest, StreamRepair } from "@inference-router/provider-openai/domain/responses.ts";
 import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
 
 export const NATIVE_PATH = "/v1/responses";
-const TERMINAL = ["response.completed", "response.incomplete", "response.failed", "error"];
 
 /** E1–E2: the status, body type, retry hint and request id reach the client. */
 export function forwardedResponseHeaders(headers: Readonly<Record<string, string>>): Record<string, string> {
@@ -93,10 +93,8 @@ export class OpenAIProvider extends ProviderPort {
   }
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {
-    if (request.path !== NATIVE_PATH) throw new InvalidRequestError(`${this.id} has no native route ${request.path}`);
-    const parsed = parseJsonBody(request.body);
-    if (!isJsonObject(parsed)) throw new InvalidRequestError("request body must be a JSON object");
-    const prepared = prepareRequest(parsed, model, request.lossy);
+    // The route table gives this provider only `POST /v1/responses` with a JSON-object body that names a model.
+    const prepared = prepareRequest(parseJsonBody(request.body) as JsonObject, model, request.lossy);
     const { accessToken } = (await this.session.active()).account;
     const session = request.headers["session-id"] ?? this.identity.sessionId;
     const thread = request.headers["thread-id"] ?? session;
@@ -129,15 +127,23 @@ export class OpenAIProvider extends ProviderPort {
     return { status: 200, headers: json, body: bodyOf(JSON.stringify(result.response)) };
   }
 
-  /** Yields every upstream chunk unchanged while tracking the terminal event (I2) for the log. */
+  /** Yields the upstream frames as they complete (I6 fills the terminal response) and logs the terminal event (I2). */
   private async *observe(body: AsyncIterable<Uint8Array>, model: string): AsyncIterable<Uint8Array> {
     const decoder = new TextDecoder();
-    let text = "";
-    for await (const chunk of body) {
-      text += decoder.decode(chunk, { stream: true });
-      yield chunk;
+    const encoder = new TextEncoder();
+    const repair = new StreamRepair();
+    let finished = false;
+    try {
+      for await (const chunk of body) {
+        const frames = repair.push(decoder.decode(chunk, { stream: true }));
+        if (frames !== "") yield encoder.encode(frames);
+      }
+      const rest = repair.push(decoder.decode()) + repair.flush();
+      if (rest !== "") yield encoder.encode(rest);
+      finished = true;
+    } finally {
+      // A client that stops reading after the terminal event (the AI SDK, live L3) still gets its line in the log.
+      this.logger.info(`${this.id}: stream ${finished ? "end" : "closed by the client"} model=${model} terminal=${repair.terminal}`);
     }
-    const terminal = sseEvents(text).findLast((e) => TERMINAL.includes(e["type"] as string))?.["type"] ?? "none";
-    this.logger.info(`${this.id}: stream end model=${model} terminal=${terminal}`);
   }
 }

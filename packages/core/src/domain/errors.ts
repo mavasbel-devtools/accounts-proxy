@@ -132,7 +132,7 @@ export class UpstreamUnreachableError extends ProviderError {
   readonly httpStatus = 502;
   constructor(
     readonly host: string,
-    detail: string,
+    readonly detail: string,
   ) {
     super(`upstream ${host} could not be reached: ${detail}`);
   }

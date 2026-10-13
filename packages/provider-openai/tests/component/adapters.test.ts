@@ -1,7 +1,7 @@
 // provider-openai adapters over the shared test doubles; ID tokens are signed with a real RSA key (IdTokenSigner).
 import { describe, expect, test } from "bun:test";
 import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@inference-router/core/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { DROPPED_HEADER, readAll, type HttpRequest, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, RecordingLock, ScriptedTransport, SequenceRandom, type ScriptedResponse } from "@inference-router/test-support/fakes.ts";
 import { IdTokenSigner } from "@inference-router/test-support/openai-id-token.ts";
@@ -67,12 +67,16 @@ describe("JwksIdTokenVerifier (S12)", () => {
     return { transport, verifier: new JwksIdTokenVerifier(transport, new FixedClock(NOW), "http://auth/.well-known/jwks.json") };
   };
 
-  test("a valid token verifies; the key set is fetched once and refetched when the kid is unknown", async () => {
-    const { transport, verifier } = make(json(signer.jwks([{ kty: "EC", kid: "ec" }, { kty: "RSA", kid: "enc", use: "enc" }])));
+  test("a valid token verifies; the key set is fetched for each verification and once more when the kid is unknown", async () => {
+    const keys = json(signer.jwks([{ kty: "EC", kid: "ec" }, { kty: "RSA", kid: "enc", use: "enc" }]));
+    const { transport, verifier } = make(keys, keys);
     const token = signer.sign(IdTokenSigner.claims("oaiapp_1", "n", NOW));
     expect(await verifier.verify(token, expected)).toEqual({ subject: "user-e2e-subject", email: "e2e@example.com" });
     expect(await verifier.verify(token, expected)).toEqual({ subject: "user-e2e-subject", email: "e2e@example.com" });
-    expect(transport.requests.map((r) => [r.method, r.url, r.headers["user-agent"]])).toEqual([["GET", "http://auth/.well-known/jwks.json", "inference-router/0.1.0"]]);
+    expect(transport.requests.map((r) => [r.method, r.url, r.headers["user-agent"]])).toEqual([
+      ["GET", "http://auth/.well-known/jwks.json", "inference-router/0.1.0"],
+      ["GET", "http://auth/.well-known/jwks.json", "inference-router/0.1.0"],
+    ]);
     const rotated = new IdTokenSigner("k2");
     const second = make(json(signer.jwks()), json(rotated.jwks()));
     expect((await second.verifier.verify(rotated.sign(IdTokenSigner.claims("oaiapp_1", "n", NOW)), expected)).subject).toBe("user-e2e-subject");
@@ -172,7 +176,7 @@ describe("OpenAIOAuthClient (S1–S16, T2–T4)", () => {
   });
 
   test.each([
-    ["an unknown attempt", false, {}, "no sign-in attempt is waiting for this callback", "other"],
+    ["an unknown attempt with a saved registration (never re-authorized)", true, {}, "ChatGPT sign-in did not return an issued client id (registration incomplete); sign in again", "other"],
     ["a different client on re-authorization", true, { client_id: "oaiapp_other" }, "ChatGPT returned a different client than this registration; sign in again", "st"],
     ["a registration without an issued client id", false, {}, "ChatGPT sign-in did not return an issued client id (registration incomplete); sign in again", "st"],
     ["the registration entry point as client id", false, { client_id: "dynamic_agent_client" }, "registration incomplete", "st"],
@@ -361,6 +365,25 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     expect(logger.lines).toEqual(["INFO openai: /v1/responses model=gpt-6.1-sol (stream) -> HTTP 200", "INFO openai: stream end model=gpt-6.1-sol terminal=response.completed"]);
   });
 
+  test("I6: the terminal response gets the streamed output items (stream and aggregated), split across chunks", async () => {
+    const item = { type: "message", content: [{ type: "output_text", text: "OK" }] };
+    const upstream = sse({ type: "response.output_item.done", output_index: 0, item }, { type: "response.completed", response: { id: "r", output: [] } });
+    const answer = () => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: [upstream.slice(0, 50), upstream.slice(50, 51), upstream.slice(51)] });
+    const streamed = await readAll((await make(answer).provider.passthrough("m", raw({ input: [], stream: true }))).body);
+    expect(streamed).toBe(sse({ type: "response.output_item.done", output_index: 0, item }, { type: "response.completed", response: { id: "r", output: [item] } }));
+    expect(JSON.parse(await readAll((await make(answer).provider.passthrough("m", raw({ input: [] }))).body))).toEqual({ id: "r", output: [item] });
+    const unterminated = await readAll((await make(() => ({ status: 200, headers: {}, body: "data: 1" })).provider.passthrough("m", raw({ input: [], stream: true }))).body);
+    expect(unterminated).toBe("data: 1");
+  });
+
+  test("a client that stops reading after the terminal event still gets the log line", async () => {
+    const { provider, logger } = make();
+    const body = (await provider.passthrough("m", raw({ input: [], stream: true }))).body[Symbol.asyncIterator]();
+    await body.next();
+    await body.return!();
+    expect(logger.lines.at(-1)).toBe("INFO openai: stream closed by the client model=m terminal=response.completed");
+  });
+
   test("a stream without a terminal event is passed on and logged as such", async () => {
     const { provider, logger } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: sse({ type: "response.created", response: {} }) }));
     await readAll((await provider.passthrough("m", raw({ input: [], stream: true }))).body);
@@ -400,10 +423,8 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     expect(await readAll(res.body)).toBe('{"detail":"Unauthorized"}');
   });
 
-  test("invalid requests: another path, a non-object body, strict unsupported fields", async () => {
+  test("invalid requests: strict unsupported fields", async () => {
     const { provider, transport } = make();
-    await expect(provider.passthrough("m", raw({}, {}, false, "/v1/chat/completions"))).rejects.toThrow(new InvalidRequestError("openai has no native route /v1/chat/completions"));
-    await expect(provider.passthrough("m", raw("[1]"))).rejects.toThrow(new InvalidRequestError("request body must be a JSON object"));
     await expect(provider.passthrough("m", raw({ input: [], user: "u" }))).rejects.toBeInstanceOf(UnsupportedFeatureError);
     expect(transport.requests).toHaveLength(0);
   });

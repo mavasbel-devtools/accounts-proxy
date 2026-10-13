@@ -1,0 +1,178 @@
+{
+  "id": "opencode-chat-s3-three-turns",
+  "target": "opencode",
+  "scenario": "s3-three-turns",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccd9f4bd0c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:09 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "eb2946ab-1657-4fb3-be70-6e1732d4d934",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 1186.6,
+        "doneAtMs": 1187,
+        "chunks": [
+          {
+            "atMs": 1186.9,
+            "text": "{\"id\":\"chatcmpl-ffa1b6139ccd45b094bb856f2d9bc51f\",\"object\":\"chat.completion\",\"created\":1791878349,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"OK\",\"reasoning_content\":\"The user is telling me their code word is PLUM and asking me to reply with just \\\"OK\\\". This seems like a simple instruction. The user might want me to remember this code word for later in the conversation. I should just reply with \\\"OK\\\" as requested.\"}}],\"usage\":{\"prompt_tokens\":26,\"completion_tokens\":58,\"total_tokens\":84,\"prompt_tokens_details\":{\"cached_tokens\":10},\"completion_tokens_details\":{\"reasoning_tokens\":55}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccdb33cd8c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:13 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "c3967be2-0758-488e-81ec-d54de6da7d47",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 1586.1,
+        "doneAtMs": 1586.4,
+        "chunks": [
+          {
+            "atMs": 1586.3,
+            "text": "{\"id\":\"chatcmpl-135aa718a38249f895412f847a618801\",\"object\":\"chat.completion\",\"created\":1791878352,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"5\",\"reasoning_content\":\"The user has established a code word \\\"PLUM\\\" and asked me to reply with \\\"OK\\\" earlier, which I did. Now they're asking a simple math question: 2 + 3 = 5.\\n\\nThe instruction is clear: reply with the number only. So the answer is just \\\"5\\\".\"}}],\"usage\":{\"prompt_tokens\":45,\"completion_tokens\":66,\"total_tokens\":111,\"prompt_tokens_details\":{\"cached_tokens\":25},\"completion_tokens_details\":{\"reasoning_tokens\":63}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            },
+            {
+              "role": "assistant",
+              "content": "5"
+            },
+            {
+              "role": "user",
+              "content": "What was my code word? Reply with the word only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccdc9a9f9c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:16 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "8bd871e3-901a-4a4a-8987-5d4e64b7d85f",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 857.4,
+        "doneAtMs": 857.7,
+        "chunks": [
+          {
+            "atMs": 857.6,
+            "text": "{\"id\":\"chatcmpl-af66ebdfaf4647bba3f344fe68bb25e7\",\"object\":\"chat.completion\",\"created\":1791878356,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"PLUM\",\"reasoning_content\":\"The user's code word was PLUM. They asked me to reply with the word only.\"}}],\"usage\":{\"prompt_tokens\":62,\"completion_tokens\":23,\"total_tokens\":85,\"prompt_tokens_details\":{\"cached_tokens\":44},\"completion_tokens_details\":{\"reasoning_tokens\":19}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

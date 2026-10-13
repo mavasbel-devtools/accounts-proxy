@@ -1,0 +1,221 @@
+{
+  "id": "openrouter-resp-s2-plain-stream",
+  "target": "openrouter",
+  "scenario": "s2-plain-stream",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/responses",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "input": "Reply with the single word OK.",
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cache-control": "no-cache",
+          "cf-ray": "a49cbdf36b5818c2-QRO",
+          "connection": "keep-alive",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:48:26 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877706-9IC178D9B9piL40SirRa",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 111.5,
+        "doneAtMs": 1453.8,
+        "chunks": [
+          {
+            "atMs": 171.8,
+            "text": "data: {\"type\":\"response.created\",\"response\":{\"id\":\"gen-1791877706-9IC178D9B9piL40SirRa\",\"object\":\"response\",\"created_at\":1791877706,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"format\":{\"type\":\"text\"}},\"reasoning\":null,\"safety_identifier\":null,\"prompt_cache_key\":null,\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":0}\n\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"gen-1791877706-9IC178D9B9piL40SirRa\",\"object\":\"response\",\"created_at\":1791877706,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"status\":\"in_progress\",\"completed_at\":null,\"output\":[],\"error\":null,\"incomplete_details\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"format\":{\"type\":\"text\"}},\"reasoning\":null,\"safety_identifier\":null,\"prompt_cache_key\":null,\"prompt_cache_options\":null,\"usage\":null},\"sequence_number\":1}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"rs_tmp_wni3eqsu4og\",\"type\":\"reasoning\",\"status\":\"in_progress\",\"summary\":[]},\"sequence_number\":2}\n\ndata: {\"type\":\"response.content_part.added\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"part\":{\"type\":\"reasoning_text\",\"text\":\"\"},\"sequence_number\":3}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Here\",\"sequence_number\":4}\n\n"
+          },
+          {
+            "atMs": 203.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"'s\",\"sequence_number\":5}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" a\",\"sequence_number\":6}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" thinking\",\"sequence_number\":7}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" process\",\"sequence_number\":8}\n\n"
+          },
+          {
+            "atMs": 246.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\":\",\"sequence_number\":9}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\n\\n1\",\"sequence_number\":10}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\",\"sequence_number\":11}\n\n"
+          },
+          {
+            "atMs": 267.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"  **\",\"sequence_number\":12}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Anal\",\"sequence_number\":13}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"yze\",\"sequence_number\":14}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" User\",\"sequence_number\":15}\n\n"
+          },
+          {
+            "atMs": 300.7,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" Input\",\"sequence_number\":16}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\":**\",\"sequence_number\":17}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" The\",\"sequence_number\":18}\n\n"
+          },
+          {
+            "atMs": 324.6,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" user\",\"sequence_number\":19}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" says\",\"sequence_number\":20}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":21}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Reply\",\"sequence_number\":22}\n\n"
+          },
+          {
+            "atMs": 347.1,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" with\",\"sequence_number\":23}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" the\",\"sequence_number\":24}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" single\",\"sequence_number\":25}\n\n"
+          },
+          {
+            "atMs": 380.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" word\",\"sequence_number\":26}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" OK\",\"sequence_number\":27}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\\\"\",\"sequence_number\":28}\n\n"
+          },
+          {
+            "atMs": 420.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\n2\",\"sequence_number\":29}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\",\"sequence_number\":30}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"  **\",\"sequence_number\":31}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Ident\",\"sequence_number\":32}\n\n"
+          },
+          {
+            "atMs": 462.7,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"ify\",\"sequence_number\":33}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" Intent\",\"sequence_number\":34}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\":**\",\"sequence_number\":35}\n\n"
+          },
+          {
+            "atMs": 588.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" The\",\"sequence_number\":36}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" user\",\"sequence_number\":37}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" wants\",\"sequence_number\":38}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" a\",\"sequence_number\":39}\n\n"
+          },
+          {
+            "atMs": 618.1,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" specific\",\"sequence_number\":40}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\",\",\"sequence_number\":41}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" simple\",\"sequence_number\":42}\n\n"
+          },
+          {
+            "atMs": 650.5,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" response\",\"sequence_number\":43}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" -\",\"sequence_number\":44}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" just\",\"sequence_number\":45}\n\n"
+          },
+          {
+            "atMs": 685.9,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" the\",\"sequence_number\":46}\n\n"
+          },
+          {
+            "atMs": 686,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" word\",\"sequence_number\":47}\n\n"
+          },
+          {
+            "atMs": 686.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":48}\n\n"
+          },
+          {
+            "atMs": 714,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"OK\",\"sequence_number\":49}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\\".\",\"sequence_number\":50}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\n3\",\"sequence_number\":51}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\",\"sequence_number\":52}\n\n"
+          },
+          {
+            "atMs": 763.4,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"  **\",\"sequence_number\":53}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Determ\",\"sequence_number\":54}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"ine\",\"sequence_number\":55}\n\n"
+          },
+          {
+            "atMs": 790.8,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" Response\",\"sequence_number\":56}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\":**\",\"sequence_number\":57}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" I\",\"sequence_number\":58}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" need\",\"sequence_number\":59}\n\n"
+          },
+          {
+            "atMs": 819.9,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" to\",\"sequence_number\":60}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" output\",\"sequence_number\":61}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" exactly\",\"sequence_number\":62}\n\n"
+          },
+          {
+            "atMs": 897.8,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":63}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"OK\",\"sequence_number\":64}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\\"\",\"sequence_number\":65}\n\n"
+          },
+          {
+            "atMs": 925.9,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" and\",\"sequence_number\":66}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" nothing\",\"sequence_number\":67}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" else\",\"sequence_number\":68}\n\n"
+          },
+          {
+            "atMs": 957.5,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" (\",\"sequence_number\":69}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"or\",\"sequence_number\":70}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" at\",\"sequence_number\":71}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" least\",\"sequence_number\":72}\n\n"
+          },
+          {
+            "atMs": 991.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" make\",\"sequence_number\":73}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" sure\",\"sequence_number\":74}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" the\",\"sequence_number\":75}\n\n"
+          },
+          {
+            "atMs": 1026.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" core\",\"sequence_number\":76}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" response\",\"sequence_number\":77}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" is\",\"sequence_number\":78}\n\n"
+          },
+          {
+            "atMs": 1056,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" just\",\"sequence_number\":79}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":80}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"OK\",\"sequence_number\":81}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\\").\",\"sequence_number\":82}\n\n"
+          },
+          {
+            "atMs": 1083.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" The\",\"sequence_number\":83}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" prompt\",\"sequence_number\":84}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" says\",\"sequence_number\":85}\n\n"
+          },
+          {
+            "atMs": 1119.9,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":86}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Reply\",\"sequence_number\":87}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" with\",\"sequence_number\":88}\n\n"
+          },
+          {
+            "atMs": 1147.9,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" the\",\"sequence_number\":89}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" single\",\"sequence_number\":90}\n\n"
+          },
+          {
+            "atMs": 1148.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" word\",\"sequence_number\":91}\n\n"
+          },
+          {
+            "atMs": 1176.5,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" OK\",\"sequence_number\":92}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\\\"\",\"sequence_number\":93}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" So\",\"sequence_number\":94}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" I\",\"sequence_number\":95}\n\n"
+          },
+          {
+            "atMs": 1206.5,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" should\",\"sequence_number\":96}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" just\",\"sequence_number\":97}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" output\",\"sequence_number\":98}\n\n"
+          },
+          {
+            "atMs": 1245.7,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" OK\",\"sequence_number\":99}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\",\"sequence_number\":100}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\n4\",\"sequence_number\":101}\n\n"
+          },
+          {
+            "atMs": 1282.8,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\".\",\"sequence_number\":102}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"  **\",\"sequence_number\":103}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"Form\",\"sequence_number\":104}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"ulate\",\"sequence_number\":105}\n\n"
+          },
+          {
+            "atMs": 1323.2,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" Output\",\"sequence_number\":106}\n\n"
+          },
+          {
+            "atMs": 1325.8,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\":**\",\"sequence_number\":107}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" OK\",\"sequence_number\":108}\n\n"
+          },
+          {
+            "atMs": 1356.7,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\n\\nI\",\"sequence_number\":109}\n\n"
+          },
+          {
+            "atMs": 1359.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"'ll\",\"sequence_number\":110}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" output\",\"sequence_number\":111}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" just\",\"sequence_number\":112}\n\n"
+          },
+          {
+            "atMs": 1399.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\" \\\"\",\"sequence_number\":113}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"OK\",\"sequence_number\":114}\n\ndata: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"\\\".\",\"sequence_number\":115}\n\n"
+          },
+          {
+            "atMs": 1434.3,
+            "text": "data: {\"type\":\"response.reasoning_text.delta\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"delta\":\"✅\",\"sequence_number\":116}\n\n"
+          },
+          {
+            "atMs": 1435,
+            "text": "data: {\"type\":\"response.reasoning_text.done\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user says \\\"Reply with the single word OK.\\\"\\n2.  **Identify Intent:** The user wants a specific, simple response - just the word \\\"OK\\\".\\n3.  **Determine Response:** I need to output exactly \\\"OK\\\" and nothing else (or at least make sure the core response is just \\\"OK\\\"). The prompt says \\\"Reply with the single word OK.\\\" So I should just output OK.\\n4.  **Formulate Output:** OK\\n\\nI'll output just \\\"OK\\\".✅\",\"sequence_number\":117}\n\ndata: {\"type\":\"response.content_part.done\",\"output_index\":0,\"item_id\":\"rs_tmp_wni3eqsu4og\",\"content_index\":0,\"part\":{\"type\":\"reasoning_text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user says \\\"Reply with the single word OK.\\\"\\n2.  **Identify Intent:** The user wants a specific, simple response - just the word \\\"OK\\\".\\n3.  **Determine Response:** I need to output exactly \\\"OK\\\" and nothing else (or at least make sure the core response is just \\\"OK\\\"). The prompt says \\\"Reply with the single word OK.\\\" So I should just output OK.\\n4.  **Formulate Output:** OK\\n\\nI'll output just \\\"OK\\\".✅\"},\"sequence_number\":118}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"rs_tmp_wni3eqsu4og\",\"type\":\"reasoning\",\"status\":\"completed\",\"content\":[{\"type\":\"reasoning_text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user says \\\"Reply with the single word OK.\\\"\\n2.  **Identify Intent:** The user wants a specific, simple response - just the word \\\"OK\\\".\\n3.  **Determine Response:** I need to output exactly \\\"OK\\\" and nothing else (or at least make sure the core response is just \\\"OK\\\"). The prompt says \\\"Reply with the single word OK.\\\" So I should just output OK.\\n4.  **Formulate Output:** OK\\n\\nI'll output just \\\"OK\\\".✅\"}],\"summary\":[],\"format\":\"unknown\"},\"sequence_number\":119}\n\ndata: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_ruhbgwv2m8\",\"type\":\"message\",\"status\":\"in_progress\",\"role\":\"assistant\",\"content\":[]},\"sequence_number\":120}\n\ndata: {\"type\":\"response.content_part.added\",\"output_index\":1,\"item_id\":\"msg_tmp_ruhbgwv2m8\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":121}\n\n"
+          },
+          {
+            "atMs": 1449.1,
+            "text": "data: {\"type\":\"response.output_text.delta\",\"output_index\":1,\"item_id\":\"msg_tmp_ruhbgwv2m8\",\"content_index\":0,\"delta\":\"OK\",\"logprobs\":[],\"sequence_number\":122}\n\ndata: {\"type\":\"response.output_text.done\",\"output_index\":1,\"item_id\":\"msg_tmp_ruhbgwv2m8\",\"content_index\":0,\"text\":\"OK\",\"logprobs\":[],\"sequence_number\":123}\n\ndata: {\"type\":\"response.content_part.done\",\"output_index\":1,\"item_id\":\"msg_tmp_ruhbgwv2m8\",\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"OK\",\"annotations\":[],\"logprobs\":[]},\"sequence_number\":124}\n\ndata: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"msg_tmp_ruhbgwv2m8\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"OK\",\"annotations\":[],\"logprobs\":[]}]},\"sequence_number\":125}\n\n"
+          },
+          {
+            "atMs": 1453.8,
+            "text": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"gen-1791877706-9IC178D9B9piL40SirRa\",\"object\":\"response\",\"created_at\":1791877706,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"status\":\"completed\",\"completed_at\":1791877708,\"output\":[{\"id\":\"rs_tmp_wni3eqsu4og\",\"type\":\"reasoning\",\"status\":\"completed\",\"content\":[{\"type\":\"reasoning_text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user says \\\"Reply with the single word OK.\\\"\\n2.  **Identify Intent:** The user wants a specific, simple response - just the word \\\"OK\\\".\\n3.  **Determine Response:** I need to output exactly \\\"OK\\\" and nothing else (or at least make sure the core response is just \\\"OK\\\"). The prompt says \\\"Reply with the single word OK.\\\" So I should just output OK.\\n4.  **Formulate Output:** OK\\n\\nI'll output just \\\"OK\\\".✅\"}],\"summary\":[],\"format\":\"unknown\"},{\"id\":\"msg_tmp_ruhbgwv2m8\",\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"OK\",\"annotations\":[],\"logprobs\":[]}]}],\"error\":null,\"incomplete_details\":null,\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"max_output_tokens\":null,\"temperature\":1,\"top_p\":1,\"presence_penalty\":0,\"frequency_penalty\":0,\"top_logprobs\":0,\"max_tool_calls\":null,\"metadata\":{},\"background\":false,\"previous_response_id\":null,\"service_tier\":\"auto\",\"truncation\":\"disabled\",\"store\":false,\"instructions\":null,\"text\":{\"format\":{\"type\":\"text\"}},\"reasoning\":null,\"safety_identifier\":null,\"prompt_cache_key\":null,\"prompt_cache_options\":null,\"usage\":{\"input_tokens\":23,\"input_tokens_details\":{\"cached_tokens\":0},\"output_tokens\":124,\"output_tokens_details\":{\"reasoning_tokens\":121},\"total_tokens\":147,\"cost\":0,\"is_byok\":false,\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_input_cost\":0,\"upstream_inference_output_cost\":0}}},\"sequence_number\":126}\n\ndata: [DONE]\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

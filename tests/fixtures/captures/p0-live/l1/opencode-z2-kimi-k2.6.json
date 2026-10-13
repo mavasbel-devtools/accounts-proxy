@@ -1,0 +1,53 @@
+{
+  "id": "z2-kimi-k2.6",
+  "target": "opencode",
+  "scenario": "z2-kimi-k2.6",
+  "model": "kimi-k2.6",
+  "capturedAt": "2026-10-13T07:53:10.775Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "user-agent": "inference-router/0.1.0",
+          "x-opencode-session": "ses_l1_2026-10-13T07:53:10.775Z",
+          "x-opencode-org-id": "<REDACTED:orgid>"
+        },
+        "body": {
+          "model": "kimi-k2.6",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 410,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cc4f21a6bf24d-IAH",
+          "connection": "keep-alive",
+          "content-length": "95",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:53:14 GMT",
+          "server": "cloudflare",
+          "x-opencode-log-id": "e1a7206c-d91f-402f-9e16-c72d2f3e0aa1"
+        },
+        "headersAtMs": 803.4,
+        "doneAtMs": 803.5,
+        "chunks": [
+          {
+            "atMs": 803.5,
+            "text": "{\"error\":{\"type\":\"server_error\",\"message\":\"Upstream request failed: Endpoint is unavailable.\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "id": "go-chat-s4-tool-loop",
+  "target": "opencode-go",
+  "scenario": "s4-tool-loop",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbf4fee77839b-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:49:23 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "perplexity-glm5.3flash",
+          "x-opencode-log-id": "fbfbf085-9df0-4e56-a8a7-5bdf895ec8b9",
+          "x-opencode-upstream-model-id": "perplexity/glm-5.3-flash",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 701,
+        "doneAtMs": 701.3,
+        "chunks": [
+          {
+            "atMs": 701.2,
+            "text": "{\"id\":\"chatcmpl-jaePOABM21VIhlpc62LccoDzzv6mD\",\"object\":\"chat.completion\",\"created\":1791877762,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"tool_calls\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"tool_calls\":[{\"id\":\"ce76512d-132c-4947-a79f-04e7cb5bcf90\",\"type\":\"function\",\"function\":{\"name\":\"get_time\",\"arguments\":\"{\\\"timezone\\\":\\\"Asia/Tokyo\\\"}\"}}],\"annotations\":[]}}],\"usage\":{\"prompt_tokens\":197,\"completion_tokens\":15,\"total_tokens\":212,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":0,\"cache_write_tokens\":0},\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "id": "ce76512d-132c-4947-a79f-04e7cb5bcf90",
+                  "type": "function",
+                  "function": {
+                    "name": "get_time",
+                    "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "ce76512d-132c-4947-a79f-04e7cb5bcf90",
+              "content": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbf60dbcb839b-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:49:25 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "perplexity-glm5.3flash",
+          "x-opencode-log-id": "eb2739f9-6def-45c2-aa2a-c20d4224d272",
+          "x-opencode-upstream-model-id": "perplexity/glm-5.3-flash",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 735.2,
+        "doneAtMs": 735.5,
+        "chunks": [
+          {
+            "atMs": 735.3,
+            "text": "{\"id\":\"chatcmpl-0mZ6yFdMimNDj4OXk7kNvOzOWk61h\",\"object\":\"chat.completion\",\"created\":1791877765,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"It is currently **16:05 (4:05 PM)** in Tokyo.\",\"refusal\":null,\"reasoning_content\":\"The tool returned 16:05 in Asia/Tokyo. I'll answer with that.\",\"annotations\":[]}}],\"usage\":{\"prompt_tokens\":230,\"completion_tokens\":37,\"total_tokens\":267,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":0,\"cache_write_tokens\":0},\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":0,\"rejected_prediction_tokens\":0}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

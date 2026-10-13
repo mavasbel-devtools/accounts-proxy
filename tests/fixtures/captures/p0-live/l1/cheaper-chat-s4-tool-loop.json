@@ -1,0 +1,185 @@
+{
+  "id": "cheaper-chat-s4-tool-loop",
+  "target": "cheaper-inference",
+  "scenario": "s4-tool-loop",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:50:10 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "1512",
+          "x-ci-prompt-cache-affinity": "new",
+          "x-ci-request-id": "fb613c13-fa58-4c8d-bc26-2071303b8e14",
+          "x-ci-routing-overhead-ms": "1118",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::xjff8-1791877807510-8e907c8d86fd"
+        },
+        "headersAtMs": 3023.3,
+        "doneAtMs": 3023.8,
+        "chunks": [
+          {
+            "atMs": 3023.6,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"5\",\"id\":\"chatcmpl-EYRYvP3twUt6yA66FpA3lOvO0CdMG\",\"object\":\"chat.completion\",\"created\":1791877809,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call_uneKRhU2JC0NauXs2tN995vz\",\"type\":\"function\",\"function\":{\"name\":\"get_time\",\"arguments\":\"{\\\"timezone\\\":\\\"Asia/Tokyo\\\"}\"}}]},\"finish_reason\":\"tool_calls\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":159,\"completion_tokens\":20,\"total_tokens\":179,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000048,\"cost_details\":{\"upstream_inference_cost\":0.000048}},\"cheaper_inference\":{\"request_id\":\"fb613c13-fa58-4c8d-bc26-2071303b8e14\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000048\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":15.492957746478863}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "id": "call_uneKRhU2JC0NauXs2tN995vz",
+                  "type": "function",
+                  "function": {
+                    "name": "get_time",
+                    "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_uneKRhU2JC0NauXs2tN995vz",
+              "content": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:50:16 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "2746",
+          "x-ci-prompt-cache-affinity": "hit",
+          "x-ci-request-id": "ebf029b9-b0b8-40b7-80b1-4fa95f09b70e",
+          "x-ci-routing-overhead-ms": "1212",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::d84tq-1791877812546-f914a3b0a799"
+        },
+        "headersAtMs": 4326.5,
+        "doneAtMs": 4326.9,
+        "chunks": [
+          {
+            "atMs": 4326.8,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"13B\",\"id\":\"chatcmpl-EYRZ1zBrxXc2nsNKLHBBrXWumwVgN\",\"object\":\"chat.completion\",\"created\":1791877815,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"In Tokyo, it is **16:05**.\"},\"finish_reason\":\"stop\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":204,\"completion_tokens\":14,\"total_tokens\":218,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000049,\"cost_details\":{\"upstream_inference_cost\":0.000049}},\"cheaper_inference\":{\"request_id\":\"ebf029b9-b0b8-40b7-80b1-4fa95f09b70e\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000049\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":15.951972555746142}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -93,6 +93,6 @@ describe("inference-router CLI (e2e)", () => {
     expect(statSync(join(home.dir, "token.json")).mode & 0o777).toBe(0o600);
     const status = await run(["status"]);
     expect(status.code).toBe(1);
-    expect(status.stdout).toStartWith(`not running at http://127.0.0.1:${home.port} (`);
+    expect(status.stdout).toStartWith(`not running at http://127.0.0.1:${home.port} (nothing is listening: `);
   });
 });

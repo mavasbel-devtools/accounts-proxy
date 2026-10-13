@@ -1,0 +1,205 @@
+{
+  "id": "cheaper-chat-s3-three-turns",
+  "target": "cheaper-inference",
+  "scenario": "s3-three-turns",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:49:54 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "1541",
+          "x-ci-prompt-cache-affinity": "new",
+          "x-ci-request-id": "f97fc707-ef7a-47d9-ac80-c23c754e7172",
+          "x-ci-routing-overhead-ms": "1419",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::kx22p-1791877791133-d820d4d76dad"
+        },
+        "headersAtMs": 3545.9,
+        "doneAtMs": 3546.4,
+        "chunks": [
+          {
+            "atMs": 3546.2,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"Td9\",\"id\":\"chatcmpl-EYRYfse9AVDMAT32ToosRELmDH51Q\",\"object\":\"chat.completion\",\"created\":1791877793,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"OK\"},\"finish_reason\":\"stop\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":4,\"total_tokens\":24,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000007,\"cost_details\":{\"upstream_inference_cost\":0.000007}},\"cheaper_inference\":{\"request_id\":\"f97fc707-ef7a-47d9-ac80-c23c754e7172\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000007\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":22.22222222222222}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:49:58 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "1094",
+          "x-ci-prompt-cache-affinity": "hit",
+          "x-ci-request-id": "deb18d20-13ab-4ba3-aca6-44e8a4289f00",
+          "x-ci-routing-overhead-ms": "978",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::kwfkc-1791877796515-151fc0ed79ed"
+        },
+        "headersAtMs": 2417.6,
+        "doneAtMs": 2418.4,
+        "chunks": [
+          {
+            "atMs": 2418,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"XsO\",\"id\":\"chatcmpl-EYRYk8oKMXxJkjC2OdDI9JniLwlXR\",\"object\":\"chat.completion\",\"created\":1791877798,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"5\"},\"finish_reason\":\"stop\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":45,\"completion_tokens\":4,\"total_tokens\":49,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000011,\"cost_details\":{\"upstream_inference_cost\":0.000011}},\"cheaper_inference\":{\"request_id\":\"deb18d20-13ab-4ba3-aca6-44e8a4289f00\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000011\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":21.42857142857143}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            },
+            {
+              "role": "assistant",
+              "content": "5"
+            },
+            {
+              "role": "user",
+              "content": "What was my code word? Reply with the word only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:50:03 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "1181",
+          "x-ci-prompt-cache-affinity": "hit",
+          "x-ci-request-id": "4e8e1aa5-50e5-410d-8927-351771be2736",
+          "x-ci-routing-overhead-ms": "1001",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::tws7p-1791877800944-0441664a4dc6"
+        },
+        "headersAtMs": 2548.2,
+        "doneAtMs": 2550.9,
+        "chunks": [
+          {
+            "atMs": 2548.4,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"yoP\",\"id\":\"chatcmpl-EYRYouMUXcU5MJ2AYnS3jGEwFhTeM\",\"object\":\"chat.completion\",\"created\":1791877802,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"PLUM\"},\"finish_reason\":\"stop\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":68,\"completion_tokens\":5,\"total_tokens\":73,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000016,\"cost_details\":{\"upstream_inference_cost\":0.000016}},\"cheaper_inference\":{\"request_id\":\"4e8e1aa5-50e5-410d-8927-351771be2736\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000016\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":19.395465994962223}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

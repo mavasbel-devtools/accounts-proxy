@@ -1,0 +1,187 @@
+{
+  "id": "openrouter-chat-s3-three-turns",
+  "target": "openrouter",
+  "scenario": "s3-three-turns",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbd24a9b718c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:47:53 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877673-qhvI3uPOruCpFEUGM96M",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 111.4,
+        "doneAtMs": 1390.8,
+        "chunks": [
+          {
+            "atMs": 469.8,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 1390.5,
+            "text": "{\"id\":\"gen-1791877673-qhvI3uPOruCpFEUGM96M\",\"object\":\"chat.completion\",\"created\":1791877673,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"OK\",\"refusal\":null,\"reasoning\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:**\\n   - User says: \\\"My code word is PLUM.\\\"\\n   - User instruction: \\\"Reply with the single word OK.\\\"\\n\\n2.  **Identify Task:**\\n   - The task is simply to output the single word \\\"OK\\\" as requested.\\n\\n3.  **Check Constraints:**\\n   - Output must be a single word: \\\"OK\\\"\\n   - No additional text, explanations, or deviations.\\n\\n4.  **Formulate Output:**\\n   - Just \\\"OK\\\"\\n\\n5.  **Final Output Generation:**\\n   - OK\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:**\\n   - User says: \\\"My code word is PLUM.\\\"\\n   - User instruction: \\\"Reply with the single word OK.\\\"\\n\\n2.  **Identify Task:**\\n   - The task is simply to output the single word \\\"OK\\\" as requested.\\n\\n3.  **Check Constraints:**\\n   - Output must be a single word: \\\"OK\\\"\\n   - No additional text, explanations, or deviations.\\n\\n4.  **Formulate Output:**\\n   - Just \\\"OK\\\"\\n\\n5.  **Final Output Generation:**\\n   - OK\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":30,\"completion_tokens\":125,\"total_tokens\":155,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":122,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbd39eb3218c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:47:57 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877677-onCkeMygptoMALYZ1ZPm",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 102.3,
+        "doneAtMs": 1657.5,
+        "chunks": [
+          {
+            "atMs": 444.5,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 1657.4,
+            "text": "{\"id\":\"gen-1791877677-onCkeMygptoMALYZ1ZPm\",\"object\":\"chat.completion\",\"created\":1791877677,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"5\",\"refusal\":null,\"reasoning\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user asks \\\"What is 2 + 3? Reply with the number only.\\\"\\n2.  **Identify Task:** Simple arithmetic problem. The constraint is to reply with the number only.\\n3.  **Calculate:** 2 + 3 = 5\\n4.  **Format Output:** Output just the number \\\"5\\\", no extra text, no punctuation beyond the number if required, but \\\"number only\\\" means just `5`.\\n\\nI will output `5`.✅\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** The user asks \\\"What is 2 + 3? Reply with the number only.\\\"\\n2.  **Identify Task:** Simple arithmetic problem. The constraint is to reply with the number only.\\n3.  **Calculate:** 2 + 3 = 5\\n4.  **Format Output:** Output just the number \\\"5\\\", no extra text, no punctuation beyond the number if required, but \\\"number only\\\" means just `5`.\\n\\nI will output `5`.✅\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":58,\"completion_tokens\":120,\"total_tokens\":178,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":117,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "messages": [
+            {
+              "role": "user",
+              "content": "My code word is PLUM. Reply with the single word OK."
+            },
+            {
+              "role": "assistant",
+              "content": "OK"
+            },
+            {
+              "role": "user",
+              "content": "What is 2 + 3? Reply with the number only."
+            },
+            {
+              "role": "assistant",
+              "content": "5"
+            },
+            {
+              "role": "user",
+              "content": "What was my code word? Reply with the word only."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbd50c98118c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:00 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877680-KTok8jO5GAih4taip5HF",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 107.5,
+        "doneAtMs": 2812.1,
+        "chunks": [
+          {
+            "atMs": 445.9,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 2811.4,
+            "text": "{\"id\":\"gen-1791877680-KTok8jO5GAih4taip5HF\",\"object\":\"chat.completion\",\"created\":1791877680,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"PLUM\",\"refusal\":null,\"reasoning\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** User asks \\\"What was my code word? Reply with the word only.\\\"\\n2.  **Recall Context:** Looking at the conversation history:\\n   - First message: \\\"My code word is PLUM. Reply with the single word OK.\\\"\\n   - My response: \\\"OK\\\"\\n   - Second message: \\\"What is 2 + 3? Reply with the number only.\\\"\\n   - My response: \\\"5\\\"\\n   - Third message: \\\"What was my code word? Reply with the word only.\\\"\\n3.  **Identify the Code Word:** The user explicitly stated in the first message: \\\"My code word is PLUM.\\\"\\n4.  **Formulate Response:** The user wants only the word, so I should reply with \\\"PLUM\\\".\\n5.  **Check Constraints:** \\\"Reply with the word only.\\\" → Output must be just the word, no extra text.\\n\\nResponse: PLUM\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"Here's a thinking process:\\n\\n1.  **Analyze User Input:** User asks \\\"What was my code word? Reply with the word only.\\\"\\n2.  **Recall Context:** Looking at the conversation history:\\n   - First message: \\\"My code word is PLUM. Reply with the single word OK.\\\"\\n   - My response: \\\"OK\\\"\\n   - Second message: \\\"What is 2 + 3? Reply with the number only.\\\"\\n   - My response: \\\"5\\\"\\n   - Third message: \\\"What was my code word? Reply with the word only.\\\"\\n3.  **Identify the Code Word:** The user explicitly stated in the first message: \\\"My code word is PLUM.\\\"\\n4.  **Formulate Response:** The user wants only the word, so I should reply with \\\"PLUM\\\".\\n5.  **Check Constraints:** \\\"Reply with the word only.\\\" → Output must be just the word, no extra text.\\n\\nResponse: PLUM\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":84,\"completion_tokens\":204,\"total_tokens\":288,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":200,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

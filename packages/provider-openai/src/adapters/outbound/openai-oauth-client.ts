@@ -64,11 +64,12 @@ export class OpenAIOAuthClient extends OpenAIOAuthPort {
   }
 
   async exchange(input: ExchangeInput): Promise<AccountCredential> {
-    const pending = this.pending.get(input.state);
+    // The login service exchanges only the state it started (an unknown one is refused before the exchange); a missing
+    // entry is therefore never a registration to re-authorize, and a new one still needs its issued client id below.
+    const previous = this.pending.get(input.state)?.previous;
     this.pending.delete(input.state);
-    if (pending === undefined) throw new ProviderAuthRequiredError(PROVIDER, "no sign-in attempt is waiting for this callback");
     const returned = input.callback["client_id"];
-    const saved = pending.previous?.clientId;
+    const saved = previous?.clientId;
     if (saved !== undefined && returned !== undefined && returned !== saved) {
       throw new ProviderAuthRequiredError(PROVIDER, "ChatGPT returned a different client than this registration; sign in again");
     }
@@ -86,7 +87,7 @@ export class OpenAIOAuthClient extends OpenAIOAuthPort {
     }
     if (granted.idToken === undefined) throw new ProviderAuthRequiredError(PROVIDER, "ChatGPT sign-in did not return an ID token");
     const identity = await this.verifier.verify(granted.idToken, { clientId, nonce: input.nonce, now: this.clock.now() });
-    if (pending.previous !== undefined && pending.previous.subject !== identity.subject) {
+    if (previous !== undefined && previous.subject !== identity.subject) {
       throw new ProviderAuthRequiredError(PROVIDER, "the sign-in returned a different ChatGPT account than this registration; use `login openai --new` to add it");
     }
     return toAccount({

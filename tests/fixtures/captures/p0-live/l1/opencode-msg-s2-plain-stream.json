@@ -1,0 +1,73 @@
+{
+  "id": "opencode-msg-s2-plain-stream",
+  "target": "opencode",
+  "scenario": "s2-plain-stream",
+  "model": "claude-haiku-4-5",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/anthropic/v1/messages",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "anthropic-version": "2023-06-01",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "claude-haiku-4-5",
+          "max_tokens": 1024,
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-cache",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbe709ef5839b-DFW",
+          "connection": "keep-alive",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:48:47 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "anthropic",
+          "x-opencode-log-id": "2b882f08-c718-4c64-b09b-9dd88a664274",
+          "x-opencode-upstream-model-id": "claude-haiku-4-5-20251001",
+          "x-zen-model": "claude-haiku-4-5"
+        },
+        "headersAtMs": 957.8,
+        "doneAtMs": 993.1,
+        "chunks": [
+          {
+            "atMs": 958,
+            "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_011CfysLWJ4T4RDgjzXtgjs3\",\"type\":\"message\",\"role\":\"assistant\",\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"model\":\"claude-haiku-4-5\",\"content\":[],\"usage\":{\"input_tokens\":14,\"output_tokens\":1,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0}}}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: ping\ndata: {\"type\":\"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"OK\"}}\n\n"
+          },
+          {
+            "atMs": 980.2,
+            "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
+          },
+          {
+            "atMs": 990.4,
+            "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":14,\"output_tokens\":4,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0}}\n\n"
+          },
+          {
+            "atMs": 993.1,
+            "text": "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

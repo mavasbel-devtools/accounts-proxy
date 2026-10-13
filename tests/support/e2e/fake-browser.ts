@@ -7,6 +7,8 @@
 //   no-code            a callback with the right state and no code
 //   wrong-path-twice   first a request to another path (404), then approves twice (the second gets 409)
 //   ignore             never calls back (the login times out)
+//   approve-registration  approves a new ChatGPT registration: the callback also carries the issued client id
+//                      (INFERENCE_ROUTER_E2E_ISSUED_CLIENT, default oaiapp_e2e; Sign in with ChatGPT S2, S9)
 import { appendFileSync } from "node:fs";
 
 const authorize = new URL(process.argv[2]!);
@@ -36,6 +38,9 @@ switch (process.env["INFERENCE_ROUTER_E2E_BROWSER_MODE"] ?? "approve") {
     break;
   }
   case "ignore":
+    break;
+  case "approve-registration":
+    await visit(`${redirect}?code=e2e-code&state=${state}&client_id=${encodeURIComponent(process.env["INFERENCE_ROUTER_E2E_ISSUED_CLIENT"] ?? "oaiapp_e2e")}`);
     break;
   default:
     await visit(`${redirect}?code=e2e-code&state=${state}`);

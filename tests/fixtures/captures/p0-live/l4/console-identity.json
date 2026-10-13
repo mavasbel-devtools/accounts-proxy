@@ -1,0 +1,88 @@
+{
+  "id": "console-identity",
+  "target": "opencode",
+  "scenario": "console-identity",
+  "model": "-",
+  "capturedAt": "2026-10-13T08:13:12.526Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://opencode.ai/console/api/user",
+        "headers": {
+          "accept": "application/json",
+          "user-agent": "inference-router/0.1.0",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-credentials": "true",
+          "access-control-allow-origin": "https://opencode.ai",
+          "access-control-expose-headers": "retry-after,x-request-id,x-opencode-log-id",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ce2587cd64612-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 08:13:17 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "vary": "Origin",
+          "x-opencode-log-id": "ea7dd6d4-b9cd-428b-910c-d6e12368137f",
+          "x-request-id": "01M4T55CV33QGM85Q3751DDDGM"
+        },
+        "headersAtMs": 284.2,
+        "doneAtMs": 284.3,
+        "chunks": [
+          {
+            "atMs": 284.3,
+            "text": "{\"id\":\"<REDACTED:answer_id>\",\"email\":\"<REDACTED:account_id>\",\"name\":null,\"role\":\"user\"}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://opencode.ai/console/api/orgs",
+        "headers": {
+          "accept": "application/json",
+          "user-agent": "inference-router/0.1.0",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-credentials": "true",
+          "access-control-allow-origin": "https://opencode.ai",
+          "access-control-expose-headers": "retry-after,x-request-id,x-opencode-log-id",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ce2587ace2d45-DFW",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 08:13:17 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "vary": "Origin",
+          "x-opencode-log-id": "00e59f68-f9e1-402d-9b0c-0f97d7de5a21",
+          "x-request-id": "01M4T55CV0S6REVCSB0A5SYV6M"
+        },
+        "headersAtMs": 281.4,
+        "doneAtMs": 281.5,
+        "chunks": [
+          {
+            "atMs": 281.5,
+            "text": "[{\"id\":\"<REDACTED:orgid>\",\"name\":\"<REDACTED:answer_name>\",\"avatarUrl\":null}]"
+          }
+        ]
+      }
+    }
+  ]
+}

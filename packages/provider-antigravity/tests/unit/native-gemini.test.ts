@@ -244,6 +244,12 @@ describe("prepareGeminiRequest: tools and toolConfig", () => {
     expect(p.tools![0]!.functionDeclarations[0]).toEqual({ name: "get_time", description: "time", parameters: { type: "OBJECT", properties: { timezone: { type: "STRING" } }, required: ["timezone"] } });
   });
 
+  test("parametersJsonSchema (the Gen AI SDK's form for $schema and MCP tools) travels unchanged (live L1 j1/j2)", () => {
+    const schema = { type: "object", properties: { path: { type: "string" }, limit: { anyOf: [{ type: "integer", exclusiveMinimum: 0 }, { type: "null" }], default: null } }, required: ["path"], additionalProperties: false, $schema: "http://json-schema.org/draft-07/schema#" };
+    const p = prepareGeminiRequest({ ...hello, tools: [{ functionDeclarations: [{ name: "read_file", description: "Read a text file.", parametersJsonSchema: schema }] }] }, GEMINI, strict);
+    expect([p.tools, p.dropped]).toEqual([[{ functionDeclarations: [{ name: "read_file", description: "Read a text file.", parametersJsonSchema: schema }] }], []]);
+  });
+
   test("functionCallingConfig: AUTO and VALIDATED pass; other modes and allowedFunctionNames are unsupported (B1)", () => {
     const withConfig = (functionCallingConfig: unknown) => ({ ...hello, tools: [{ functionDeclarations: [getTime] }], toolConfig: { functionCallingConfig } });
     expect(prepareGeminiRequest(withConfig({ mode: "AUTO" }), GEMINI, strict).toolConfig).toEqual({ functionCallingConfig: { mode: "AUTO" } });

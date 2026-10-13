@@ -1,0 +1,260 @@
+{
+  "id": "claude-msg-s4-tool-loop",
+  "target": "claude",
+  "scenario": "s4-tool-loop",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "e34a2c79-cbed-4557-a661-e3ca5f7bb489",
+          "x-client-request-id": "b74fb64b-d53d-49ac-959f-6481d8d61c4d",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "max_tokens": 1024,
+          "model": "claude-haiku-4-5-20251001",
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string",
+                    "description": "IANA timezone, e.g. Asia/Tokyo"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=32d331b5-f3a1-405d-93a6-e0fa8515fab3;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "diagnostics": {
+            "previous_message_id": "msg_011Cfys8SivWPyAphreTYFRK"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"e34a2c79-cbed-4557-a661-e3ca5f7bb489\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791891600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.28",
+          "anthropic-ratelimit-unified-7d-reset": "1792087200",
+          "anthropic-ratelimit-unified-7d-status": "allowed_warning",
+          "anthropic-ratelimit-unified-7d-surpassed-threshold": "0.75",
+          "anthropic-ratelimit-unified-7d-utilization": "0.76",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "org_level_disabled",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "seven_day",
+          "anthropic-ratelimit-unified-reset": "1792087200",
+          "anthropic-ratelimit-unified-status": "allowed_warning",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49cbac8aa99bd7a-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:46:17 GMT",
+          "request-id": "req_011Cfys9RjfgbTdoszYcJYw1",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-138f03107da6c21e07562070ee6d3418-58b5975343d9eba1-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 762,
+        "doneAtMs": 762.5,
+        "chunks": [
+          {
+            "atMs": 762.3,
+            "text": "{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011Cfys9RxKXwa2EtTmoHK5L\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"toolu_011arWfrgyG6mXkVLpHgDjkD\",\"name\":\"get_time\",\"input\":{\"timezone\":\"Asia/Tokyo\"},\"caller\":{\"type\":\"direct\"}}],\"container\":null,\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":614,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"iterations\":[{\"input_tokens\":614,\"output_tokens\":56,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}],\"output_tokens\":56,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":{\"applied_edits\":[]}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "e34a2c79-cbed-4557-a661-e3ca5f7bb489",
+          "x-client-request-id": "ad7d229f-e209-4e1e-9fb6-12d80c3a5d2f",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "max_tokens": 1024,
+          "model": "claude-haiku-4-5-20251001",
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string",
+                    "description": "IANA timezone, e.g. Asia/Tokyo"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_011arWfrgyG6mXkVLpHgDjkD",
+                  "name": "get_time",
+                  "input": {
+                    "timezone": "Asia/Tokyo"
+                  },
+                  "caller": {
+                    "type": "direct"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "toolu_011arWfrgyG6mXkVLpHgDjkD",
+                  "content": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+                }
+              ]
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b; cc_prompt_id=50dd735b-a385-46ac-8a89-60954bf3bcc0;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "diagnostics": {
+            "previous_message_id": "msg_011Cfys8SivWPyAphreTYFRK"
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:claude_device_id>\",\"account_uuid\":\"<REDACTED:accountuuid>\",\"session_id\":\"e34a2c79-cbed-4557-a661-e3ca5f7bb489\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1791891600",
+          "anthropic-ratelimit-unified-5h-status": "allowed",
+          "anthropic-ratelimit-unified-5h-utilization": "0.28",
+          "anthropic-ratelimit-unified-7d-reset": "1792087200",
+          "anthropic-ratelimit-unified-7d-status": "allowed_warning",
+          "anthropic-ratelimit-unified-7d-surpassed-threshold": "0.75",
+          "anthropic-ratelimit-unified-7d-utilization": "0.76",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "org_level_disabled",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "seven_day",
+          "anthropic-ratelimit-unified-reset": "1792087200",
+          "anthropic-ratelimit-unified-status": "allowed_warning",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49cbad9ee76bd7a-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:46:21 GMT",
+          "request-id": "req_011Cfys9dZZTk4A7Gfa8pmQU",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-ef2fdff48563929032da755119a4f2cc-0ed6a442adf4c394-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1245.4,
+        "doneAtMs": 1245.8,
+        "chunks": [
+          {
+            "atMs": 1245.6,
+            "text": "{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011Cfys9doCuJdvfR3p58wqR\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"The current time in Tokyo is **16:05** (4:05 PM).\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":695,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"iterations\":[{\"input_tokens\":695,\"output_tokens\":21,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}],\"output_tokens\":21,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\"},\"diagnostics\":null,\"context_management\":{\"applied_edits\":[]}}"
+          }
+        ]
+      }
+    }
+  ]
+}

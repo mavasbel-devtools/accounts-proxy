@@ -195,6 +195,43 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     expect([goGemini.status, ((await goGemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "opencode-go (no native endpoint; translated cells arrive in P5) cannot carry: gemini_format"]);
   });
 
+  test("Z24: a client without x-opencode-session gets its conversation's own id or one derived from the first user turn", async () => {
+    home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");
+    writeKeyAccount("opencode", { apiKey: "oc_sk_e2e" });
+    const s = await serve();
+    const session = (path: string) => upstreams.find(path).at(-1)!.headers["x-opencode-session"];
+    const turn = { role: "user", content: "hi" };
+    await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: [{ role: "system", content: "s" }, turn] });
+    const first = session("/inference/go/v1/chat/completions");
+    expect(first).toMatch(/^rtr_[0-9a-f]{16}$/);
+    // The next request of the same conversation (history resent) carries the same id; Go then answers as with a session.
+    const next = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: [{ role: "system", content: "s" }, turn, { role: "assistant", content: "yo" }, { role: "user", content: "more" }] });
+    expect([next.status, session("/inference/go/v1/chat/completions")]).toEqual([401, first]);
+    // Claude Code: the session of metadata.user_id (as captured from claude-cli 2.1.29).
+    await post(`${s.url}/anthropic/v1/messages`, { "x-api-key": s.token }, { model: "opencode-go/qwen3.8-flash", max_tokens: 8, metadata: { user_id: "user_ab12_account__session_0fae6fcb-7a48-4def-941f-6e06af96c972" }, messages: [turn] });
+    expect(session("/inference/go/v1/messages")).toBe("0fae6fcb-7a48-4def-941f-6e06af96c972");
+    // Responses: the client's prompt_cache_key (opencode sets its session affinity there); without one, the first user item.
+    await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", prompt_cache_key: "ses_affinity", input: "hi" });
+    expect(session("/inference/go/v1/responses")).toBe("ses_affinity");
+    await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", input: [{ type: "function_call_output", call_id: "c", output: "o" }, { role: "user", content: "hi" }] });
+    expect(session("/inference/go/v1/responses")).toMatch(/^rtr_[0-9a-f]{16}$/);
+    // Gemini (Zen): the first role-less content; a body that is not a JSON object gets no id (the upstream decides).
+    await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { "x-goog-api-key": s.token }, { contents: [{ parts: [{ text: "hi" }] }] });
+    expect(session("/inference/google/v1beta/models/gemini-3.6-flash:generateContent")).toMatch(/^rtr_[0-9a-f]{16}$/);
+    // Bodies without a usable first turn get no id either (the upstream answers them).
+    await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: "hi" });
+    await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", input: 1 });
+    await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { "x-goog-api-key": s.token }, { contents: "hi" });
+    expect([session("/inference/go/v1/chat/completions"), session("/inference/go/v1/responses"), session("/inference/google/v1beta/models/gemini-3.6-flash:generateContent")]).toEqual([undefined, undefined, undefined]);
+    for (const body of ["[1]", "{"]) {
+      await fetch(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { method: "POST", headers: { "x-goog-api-key": s.token, "content-type": "application/json" }, body });
+    }
+    expect(upstreams.find("/inference/google/v1beta/models/gemini-3.6-flash:generateContent").slice(-2).map((r) => [r.body, r.headers["x-opencode-session"]])).toEqual([
+      ["[1]", undefined],
+      ["{", undefined],
+    ]);
+  });
+
   test("a stored device sign-in (Z18): its access token as the bearer credential and its workspace headers; no account needs a login", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");
     const renewals = upstreams.find("/console/auth/device/token").length;

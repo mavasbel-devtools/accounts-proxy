@@ -301,6 +301,9 @@ describe("process environment", () => {
     mkdirSync(join(scratch, ".local", "share", "inference-router"), { recursive: true });
     writeFileSync(join(scratch, ".local", "share", "inference-router", "router.yaml"), BOTH_PROVIDERS);
     expect((await runRouter(home, ["account", "list", "claude"], { INFERENCE_ROUTER_HOME: "", HOME: scratch })).code).toBe(0);
+    // The openai provider on its production hosts (no seam set; listing accounts calls no host).
+    writeFileSync(join(scratch, ".local", "share", "inference-router", "router.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
+    expect(await runRouter(home, ["account", "list", "openai"], { INFERENCE_ROUTER_HOME: "", HOME: scratch })).toMatchObject({ code: 0, stdout: "no openai accounts; run: inference-router login openai\n" });
     for (const seam of ["INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API", "INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API"]) {
       const partial = await runRouter(home, ["help"], { [seam]: upstreams.origin });
       expect([partial.code, partial.stderr]).toEqual([0, ""]);

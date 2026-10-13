@@ -123,7 +123,7 @@ Steps:
 | A2 | `provider-opencode`: new addresses (bearer everywhere, `User-Agent`, client `x-opencode-session` forwarded), device login client, Console session (device tokens renewed under the Phase H rules; keys fixed), config check | done |
 | A3 | Router: login service (device flow, key, import), CLI flags, composition; `openrouter` gets a key login for `--key`/`--from-opencode` | done |
 | A4 | Tests 100% (unit, component, e2e replaying the Console's documented examples) | done (the approved device sign-in and its renewal are deferred `P4.6-live`) |
-| A5 | Live, after the user's `login opencode`: config, one small request per format (≈10 requests, N9) | waiting for the user's `login opencode` |
+| A5 | Live, after the user's `login opencode`: config, one small request per format (≈10 requests, N9) | done 2026-10-13 in the [live validation](2026-10-13-01-42-live-validation-plan.md) |
 | A6 | Docs: AGENTS.md, README, rules, plan record, session record | done |
 
 Execution record (amendment A):
@@ -137,3 +137,7 @@ Execution record (amendment A):
   way: the paste-code and hidden-key prompts waited forever (and spun) when standard input ended before a line; they
   now fail with "standard input ended before a line was entered". The e2e daemon starter now waits up to 30 s and
   stops a daemon that did not start (orphaned daemons from earlier aborted runs were found and stopped).
+
+- 2026-10-13 02:52 A5 done in the [live validation](2026-10-13-01-42-live-validation-plan.md): the device sign-in,
+  its renewal (refresh token rotated, workspace kept), every format on Zen and Go; Go needs a session id (rule Z24
+  added). Step 5 (per-gateway live checks) done for all four gateways in the same run.

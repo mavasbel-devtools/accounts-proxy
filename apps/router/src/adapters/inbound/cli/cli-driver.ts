@@ -96,8 +96,9 @@ export class CliDriver extends Driver {
         for (const catalog of catalogs) {
           this.out(`# ${catalog.provider}: ${catalog.models.length} models (${SOURCE_TEXT[catalog.source]})\n`);
           for (const m of catalog.models) {
-            const limits = m.contextWindow !== undefined ? `  context ${m.contextWindow} / output ${m.maxOutputTokens}` : "";
-            this.out(`${m.address.provider}/${m.address.model}  ${m.displayName}${limits}\n`);
+            // Each limit only when the catalog states it (OpenAI's list names the context window only, live L0).
+            const limits = [m.contextWindow !== undefined ? `context ${m.contextWindow}` : "", m.maxOutputTokens !== undefined ? `output ${m.maxOutputTokens}` : ""].filter((x) => x !== "").join(" / ");
+            this.out(`${m.address.provider}/${m.address.model}  ${m.displayName}${limits === "" ? "" : `  ${limits}`}\n`);
           }
         }
         return;

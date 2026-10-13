@@ -104,6 +104,8 @@ manifest.json); opencode `packages/console/app/src/lib/inference-proxy.ts` @ `b9
 | Z21 | Z8 still holds at the new address: a free model without a key answered **403** `FreeTierError` (the docs' "free chat models can be called without it" does not hold for the router) | live c1 |
 | Z22 | OpenCode's legacy credential file `${XDG_DATA_HOME:-~/.local/share}/opencode/auth.json`: an object keyed by provider id; an API key is `{"type": "api", "key", "metadata"?}`, a sign-in `{"type": "oauth", …}` | `global-roots.ts`; `import_legacy_credentials.ts` (`LegacyKey`, `LegacyOAuth`) |
 | Z23 | Upstream error bodies of the inference routes keep each format's own shape (OpenAI `{"error":{…}}`, Anthropic `{"type":"error",…}`, Gemini `{"error":{"code","status","message"}}`) | live c0 |
+| Z24 | Go refuses a request without `x-opencode-session` (400 `MissingSessionID`); Claude Code sends none, only `metadata.user_id` ending in `_session_<uuid>`. Router rule: without a client header the router sends the conversation's own id (that session, or the Responses `prompt_cache_key`), else `rtr_` + a 64-bit FNV-1a hash of the first user turn. | live 2026-10-13 L3: [findings F3](2026-10-13-02-52-live-validation-findings.md); `opencode-console-go.html` "Where can I use it?" |
+| Z25 | Zen `deepseek-v4-flash` and `kimi-k2.6` answer 404/410 "Upstream request failed: Endpoint is unavailable." on the documented Chat path and on models.dev's base while `glm-5.1` answers 200: a model's availability is the vendor's, passed through unchanged. | live 2026-10-13: `tests/fixtures/captures/p0-live/l1/opencode-z*.json` |
 
 Router rules added by amendment A:
 

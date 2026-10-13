@@ -28,6 +28,11 @@ export type GatewaySpec = {
   readonly headers?: Readonly<Record<string, string>>;
   /** Client request headers forwarded as they are, when present (OpenCode's `x-opencode-session`, Z15). */
   readonly forwardHeaders?: readonly string[];
+  /**
+   * The vendor's per-conversation session header (OpenCode's `x-opencode-session`, Z24): when the client did not send it,
+   * the router sends the conversation's own id, else a stable id derived from the conversation's first user turn.
+   */
+  readonly sessionHeader?: string;
 };
 
 /** One model of a gateway catalog. `formats` absent: not known (the request is forwarded as sent, Z6). */
@@ -58,6 +63,10 @@ export function upstreamCall(spec: GatewaySpec, model: string, request: RawReque
   for (const name of [...forwarded, ...(spec.forwardHeaders ?? [])]) {
     const value = request.headers[name];
     if (value !== undefined) headers[name] = value;
+  }
+  if (spec.sessionHeader !== undefined && headers[spec.sessionHeader] === undefined) {
+    const id = conversationId(request.format, request.body);
+    if (id !== undefined) headers[spec.sessionHeader] = id;
   }
   if (request.format === "gemini") {
     const method = GEMINI_ROUTE.exec(request.path)![1]!;
@@ -184,4 +193,48 @@ export function rowsWithId(list: unknown): readonly JsonObject[] {
 /** A report of the `fields` the vendor answered, one `name: JSON value` line each (quota reports). */
 export function fieldsText(title: string, data: JsonObject, fields: readonly string[]): string {
   return [title, ...fields.filter((f) => f in data).map((f) => `  ${f}: ${JSON.stringify(data[f])}`)].join("\n");
+}
+
+/**
+ * Z24: a stable id for the conversation a request belongs to (clients resend the whole history, so its first user turn is
+ * the same on every request of a conversation). The client's own conversation id wins: Claude Code's session in
+ * `metadata.user_id` (`…_session_<uuid>`, L3 capture 2026-10-13) and the Responses `prompt_cache_key` (opencode sets it
+ * to its session affinity, model-request.ts). Otherwise `rtr_` + a 64-bit FNV-1a hash of the first user turn; undefined
+ * when the body has none.
+ */
+export function conversationId(format: WireFormat, body: string): string | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return undefined;
+  }
+  if (!isJsonObject(parsed)) return undefined;
+  const userId = isJsonObject(parsed["metadata"]) ? parsed["metadata"]["user_id"] : undefined;
+  const session = typeof userId === "string" ? /_session_([0-9A-Za-z-]+)$/.exec(userId)?.[1] : undefined;
+  if (format === "anthropic-messages" && session !== undefined) return session;
+  const cacheKey = parsed["prompt_cache_key"];
+  if (format === "openai-responses" && typeof cacheKey === "string" && cacheKey !== "") return cacheKey;
+  const first = firstUserTurn(format, parsed);
+  return first === undefined ? undefined : `rtr_${fnv1a64(JSON.stringify(first))}`;
+}
+
+/** A user turn: role `user`, or (Gemini contents) neither role nor item type. */
+const isUser = (item: unknown) => isJsonObject(item) && (item["role"] === "user" || (item["role"] === undefined && item["type"] === undefined));
+
+function firstUserTurn(format: WireFormat, body: JsonObject): unknown {
+  if (format === "gemini") return Array.isArray(body["contents"]) ? body["contents"].find(isUser) : undefined;
+  if (format === "openai-responses") {
+    const input = body["input"];
+    return typeof input === "string" ? input : Array.isArray(input) ? input.find(isUser) : undefined;
+  }
+  const messages = body["messages"];
+  return Array.isArray(messages) ? messages.find((m) => isJsonObject(m) && m["role"] === "user") : undefined;
+}
+
+/** 64-bit FNV-1a over the UTF-16 code units, as 16 hex digits (an id, not a secret). */
+function fnv1a64(text: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (let i = 0; i < text.length; i++) hash = BigInt.asUintN(64, (hash ^ BigInt(text.charCodeAt(i))) * 0x100000001b3n);
+  return hash.toString(16).padStart(16, "0");
 }

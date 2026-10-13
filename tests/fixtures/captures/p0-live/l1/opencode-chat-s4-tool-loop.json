@@ -1,0 +1,168 @@
+{
+  "id": "opencode-chat-s4-tool-loop",
+  "target": "opencode",
+  "scenario": "s4-tool-loop",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccde81991c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:21 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "97ab7bb3-3ffa-435b-808d-90ffbefd50e2",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 1041.8,
+        "doneAtMs": 1042.2,
+        "chunks": [
+          {
+            "atMs": 1042,
+            "text": "{\"id\":\"chatcmpl-460635498cdd4568b55193c9f86eb881\",\"object\":\"chat.completion\",\"created\":1791878361,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"reasoning_content\":\"The user wants to know the current time in Tokyo. I'll use the get_time tool with the Asia/Tokyo timezone.\",\"tool_calls\":[{\"index\":0,\"id\":\"chatcmpl-tool-a266c63d717b51ab\",\"type\":\"function\",\"function\":{\"name\":\"get_time\",\"arguments\":\"{\\\"timezone\\\": \\\"Asia/Tokyo\\\"}\"}}]}}],\"usage\":{\"prompt_tokens\":192,\"completion_tokens\":41,\"total_tokens\":233,\"prompt_tokens_details\":{\"cached_tokens\":50},\"completion_tokens_details\":{\"reasoning_tokens\":26}}}"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_time",
+                "description": "Current local time in an IANA timezone.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "timezone": {
+                      "type": "string",
+                      "description": "IANA timezone, e.g. Asia/Tokyo"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ]
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "index": 0,
+                  "id": "chatcmpl-tool-a266c63d717b51ab",
+                  "type": "function",
+                  "function": {
+                    "name": "get_time",
+                    "arguments": "{\"timezone\": \"Asia/Tokyo\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "chatcmpl-tool-a266c63d717b51ab",
+              "content": "{\"time\":\"16:05\",\"timezone\":\"Asia/Tokyo\"}"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49ccdfb19b9c308-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:24 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "3d521797-2f9b-4ab9-be3d-32463af54159",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 1061.3,
+        "doneAtMs": 1061.7,
+        "chunks": [
+          {
+            "atMs": 1061.6,
+            "text": "{\"id\":\"chatcmpl-66a6fbf5177742c68e78e73da5a20fda\",\"object\":\"chat.completion\",\"created\":1791878364,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"It is currently **16:05** (4:05 PM) in Tokyo.\",\"reasoning_content\":\"The current time in Tokyo is 16:05.\"}}],\"usage\":{\"prompt_tokens\":225,\"completion_tokens\":30,\"total_tokens\":255,\"prompt_tokens_details\":{\"cached_tokens\":191},\"completion_tokens_details\":{\"reasoning_tokens\":11}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

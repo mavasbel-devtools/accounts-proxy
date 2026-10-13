@@ -1,0 +1,271 @@
+{
+  "id": "antigravity-gem-s4-tool-loop",
+  "target": "antigravity",
+  "scenario": "s4-tool-loop",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877607823/fac970f7-1bf3-44bb-8f4a-76673b64983f/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "get_time",
+                    "description": "Current local time in an IANA timezone.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "timezone": {
+                          "type": "STRING",
+                          "description": "IANA timezone, e.g. Asia/Tokyo"
+                        }
+                      },
+                      "required": [
+                        "timezone"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "VALIDATED"
+              }
+            },
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "fac970f7-1bf3-44bb-8f4a-76673b64983f",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:48 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=318",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 462.8,
+        "doneAtMs": 717.1,
+        "chunks": [
+          {
+            "atMs": 462.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Thinking Process:\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"totalTokenCount\": 85,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 490.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n\\n1.  **Understand the Goal**: The user wants to know the current\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"totalTokenCount\": 101,\"thoughtsTokenCount\": 19},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 543.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" time in Tokyo. They explicitly requested to use the `get_time` tool and then answer with the time.\\n2.  **Identify\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"totalTokenCount\": 130,\"thoughtsTokenCount\": 48},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 679.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" the Tool**: `get_time`.\\n3.  **Identify the Parameters**: `timezone = \\\"Asia/Tokyo\\\"`.\\n4\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"totalTokenCount\": 158,\"thoughtsTokenCount\": 76},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \".  **Execute the Tool**: Call `default_api:get_time(timezone=\\\"Asia/Tokyo\\\")`.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"totalTokenCount\": 182,\"thoughtsTokenCount\": 100},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 679.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EpMECpAEAWkUfRMqS+fnZhIcdpv0CbAJJxIu17mEUiC83NawSbcfLDAFOIB036mxBJaiHrKRLRIg/2zwYU8yLOwaqdF18xnQuiv9LeC12rOjYa3+eEyC31A7NyWFxXwQLCG8VB16UZQLAs1s5vQPTzZySXndTOXvxLU5cjxzGTrzbtQuexgzPQ1hDUeyMuT4tPar8B7Xo+7e0arhSa2okQv9TY1viHaBpJSvnEk8nLR7mXadzqPMDx8f3WmqJY4UneuNm+iUTn3HA+OTgguy+hgKFAzPewM/vZdpNf0Q4FpPtmNyS0pNDjaekSaPWq5ucwNDySC0ETZvA6LEFQRgH/H+/msfiQ+3Uwf4XISyb7gSXvFZc6ktreT0IX4ZX15Oleuo7yl5GrybV3O15Lnzxc/XD1R/2raGcWLqU4xcddXJewZYcdLbOb33eZVd2Moq4zS7OxPrWx6GsFtS87dULujpY8dnAUu+FW2wAF3ZP4FCDi6zekh/5s4PR6J0QOm+Qs/AND1TgNfGak+ONjM2cLWy8YI+2TF2dgz4yhgjD2TJNCF8oY7ooYB4n2Md9HexHWvYnbca6P4Y4Dqx7s7SMp2YcEs5MVPBtZoNxZaNUGgD2eG2Aj6glH9a5me0eV2/3VW/V14ckD80mSLaxSXFZVc6R2usC43NQkFRLPtSPGrHBrU2DNbaaULI0eyJsWjte5JeYOvv\",\"functionCall\": {\"name\": \"get_time\",\"args\": {\"timezone\": \"Asia/Tokyo\"},\"id\": \"call_15892\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 82,\"candidatesTokenCount\": 18,\"totalTokenCount\": 300,\"thoughtsTokenCount\": 200},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 688.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 82,\"candidatesTokenCount\": 18,\"totalTokenCount\": 200,\"thoughtsTokenCount\": 100},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"5-HNaqSqONqtz7IPi_uM-AY\"},\"traceId\": \"3919349d42768568\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877610542/fac970f7-1bf3-44bb-8f4a-76673b64983f/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What time is it in Tokyo? Use the get_time tool, then answer with the time."
+                  }
+                ]
+              },
+              {
+                "role": "model",
+                "parts": [
+                  {
+                    "text": "Thinking Process:\n\n1.  **Understand the Goal**: The user wants to know the current time in Tokyo. They explicitly requested to use the `get_time` tool and then answer with the time.\n2.  **Identify the Tool**: `get_time`.\n3.  **Identify the Parameters**: `timezone = \"Asia/Tokyo\"`.\n4.  **Execute the Tool**: Call `default_api:get_time(timezone=\"Asia/Tokyo\")`.",
+                    "thought": true
+                  },
+                  {
+                    "functionCall": {
+                      "args": {
+                        "timezone": "Asia/Tokyo"
+                      },
+                      "id": "call_15892",
+                      "name": "get_time"
+                    },
+                    "thoughtSignature": "EpMECpAEAWkUfRMqS+fnZhIcdpv0CbAJJxIu17mEUiC83NawSbcfLDAFOIB036mxBJaiHrKRLRIg/2zwYU8yLOwaqdF18xnQuiv9LeC12rOjYa3+eEyC31A7NyWFxXwQLCG8VB16UZQLAs1s5vQPTzZySXndTOXvxLU5cjxzGTrzbtQuexgzPQ1hDUeyMuT4tPar8B7Xo+7e0arhSa2okQv9TY1viHaBpJSvnEk8nLR7mXadzqPMDx8f3WmqJY4UneuNm+iUTn3HA+OTgguy+hgKFAzPewM/vZdpNf0Q4FpPtmNyS0pNDjaekSaPWq5ucwNDySC0ETZvA6LEFQRgH/H+/msfiQ+3Uwf4XISyb7gSXvFZc6ktreT0IX4ZX15Oleuo7yl5GrybV3O15Lnzxc/XD1R/2raGcWLqU4xcddXJewZYcdLbOb33eZVd2Moq4zS7OxPrWx6GsFtS87dULujpY8dnAUu+FW2wAF3ZP4FCDi6zekh/5s4PR6J0QOm+Qs/AND1TgNfGak+ONjM2cLWy8YI+2TF2dgz4yhgjD2TJNCF8oY7ooYB4n2Md9HexHWvYnbca6P4Y4Dqx7s7SMp2YcEs5MVPBtZoNxZaNUGgD2eG2Aj6glH9a5me0eV2/3VW/V14ckD80mSLaxSXFZVc6R2usC43NQkFRLPtSPGrHBrU2DNbaaULI0eyJsWjte5JeYOvv"
+                  },
+                  {
+                    "text": ""
+                  }
+                ]
+              },
+              {
+                "role": "model",
+                "parts": [
+                  {
+                    "functionResponse": {
+                      "name": "get_time",
+                      "id": "call_15892",
+                      "response": {
+                        "time": "16:05",
+                        "timezone": "Asia/Tokyo"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "get_time",
+                    "description": "Current local time in an IANA timezone.",
+                    "parameters": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "timezone": {
+                          "type": "STRING",
+                          "description": "IANA timezone, e.g. Asia/Tokyo"
+                        }
+                      },
+                      "required": [
+                        "timezone"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "VALIDATED"
+              }
+            },
+            "labels": {
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "fac970f7-1bf3-44bb-8f4a-76673b64983f",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:50 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=412",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 427.7,
+        "doneAtMs": 491.2,
+        "chunks": [
+          {
+            "atMs": 427.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 226,\"totalTokenCount\": 226},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6uHNavCvI8Toz7IPtaK-sQ8\"},\"traceId\": \"de5a6eac4427a0dd\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 453,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"The current\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 226,\"candidatesTokenCount\": 2,\"totalTokenCount\": 228},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6uHNavCvI8Toz7IPtaK-sQ8\"},\"traceId\": \"de5a6eac4427a0dd\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 476.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" time in Tokyo is 16:05.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 226,\"candidatesTokenCount\": 13,\"totalTokenCount\": 239},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6uHNavCvI8Toz7IPtaK-sQ8\"},\"traceId\": \"de5a6eac4427a0dd\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EmcKZQFpFH0TdzCwWHEN9Qiau12Xnh/rTRkqrGP2HokJzFLYvbtBoaMnAjW0PbtKHxjTf/CGoVi/AeCb8I16lJ/OmQgHObaTTAs+BvARKwn/FBLrn21TRalNAiF1rMFZe08CX6Nm61Hh\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 326,\"candidatesTokenCount\": 13,\"totalTokenCount\": 339},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6uHNavCvI8Toz7IPtaK-sQ8\"},\"traceId\": \"de5a6eac4427a0dd\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

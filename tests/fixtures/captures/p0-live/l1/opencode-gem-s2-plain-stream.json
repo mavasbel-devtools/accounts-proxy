@@ -1,0 +1,65 @@
+{
+  "id": "opencode-gem-s2-plain-stream",
+  "target": "opencode",
+  "scenario": "s2-plain-stream",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "*/*",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "contents": [
+            {
+              "parts": [
+                {
+                  "text": "Reply with the single word OK."
+                }
+              ],
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-cache",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbe834ce9839b-DFW",
+          "connection": "keep-alive",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:48:50 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "google-vertex",
+          "x-opencode-log-id": "bac8a87d-a589-4f00-bbe1-de4bc0b76b37",
+          "x-opencode-upstream-model-id": "gemini-3.5-flash-lite",
+          "x-zen-model": "gemini-3.5-flash-lite"
+        },
+        "headersAtMs": 776.2,
+        "doneAtMs": 785.7,
+        "chunks": [
+          {
+            "atMs": 776.4,
+            "text": "data: {\"createTime\":\"2026-10-13T07:48:50.086084Z\",\"responseId\":\"YuLNasSgBb6YotQP8bu-6Q4\",\"modelVersion\":\"gemini-3.5-flash-lite\",\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"OK\"}]}}],\"usageMetadata\":{}}\n\n"
+          },
+          {
+            "atMs": 785.6,
+            "text": "data: {\"createTime\":\"2026-10-13T07:48:50.086084Z\",\"responseId\":\"YuLNasSgBb6YotQP8bu-6Q4\",\"modelVersion\":\"gemini-3.5-flash-lite\",\"candidates\":[{\"finishReason\":\"STOP\",\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"\",\"thoughtSignature\":\"AY89a1+YfrmgVK7N9WN8ML2hBcDuxcbRM3wuNgEo7tg9vhTOqZFm/uoP2EELa2DmuRSVhu4sNbWytoPz7OSkQPp6Mu+7hOZTV26UpuRSJnfr+IpnteeLze8A90Y=\"}]}}],\"usageMetadata\":{\"candidatesTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":1}],\"promptTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":7}],\"candidatesTokenCount\":1,\"promptTokenCount\":7,\"totalTokenCount\":8}}\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "id": "cheaper-chat-s5-mcp-tool",
+  "target": "cheaper-inference",
+  "scenario": "s5-mcp-tool",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "read_file",
+                "description": "Read a text file.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Absolute path of the file"
+                    },
+                    "limit": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Maximum number of lines"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "Read the file /etc/hostname with the read_file tool."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:50:22 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "2637",
+          "x-ci-prompt-cache-affinity": "new",
+          "x-ci-request-id": "f5d87774-142b-48fe-89f0-e0e37b27638a",
+          "x-ci-routing-overhead-ms": "1042",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::w7c6g-1791877818897-e21d7c9b8f71"
+        },
+        "headersAtMs": 4021.9,
+        "doneAtMs": 4023.9,
+        "chunks": [
+          {
+            "atMs": 4022.2,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"\",\"id\":\"chatcmpl-EYRZ7ekVSk3pnutS3KBfJOKobhzpz\",\"object\":\"chat.completion\",\"created\":1791877821,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call_xqZo0JcybXASRk9NPyagpdKf\",\"type\":\"function\",\"function\":{\"name\":\"read_file\",\"arguments\":\"{\\\"path\\\":\\\"/etc/hostname\\\"}\"}}]},\"finish_reason\":\"tool_calls\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":169,\"completion_tokens\":20,\"total_tokens\":189,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000049,\"cost_details\":{\"upstream_inference_cost\":0.000049}},\"cheaper_inference\":{\"request_id\":\"f5d87774-142b-48fe-89f0-e0e37b27638a\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000049\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":16.666666666666675}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

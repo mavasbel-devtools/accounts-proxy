@@ -1,0 +1,113 @@
+{
+  "id": "go-msg-s2-plain-stream",
+  "target": "opencode-go",
+  "scenario": "s2-plain-stream",
+  "model": "qwen3.8-flash",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/v1/messages",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "anthropic-version": "2023-06-01",
+          "x-opencode-session": "ses_l1_1791877560383",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "qwen3.8-flash",
+          "max_tokens": 1024,
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-cache",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cbfa2bc59839b-DFW",
+          "connection": "keep-alive",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:49:36 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "alibaba-us.an",
+          "x-opencode-log-id": "c6c3e5ed-1fd7-4da1-9037-16e5c5023f7e",
+          "x-opencode-upstream-model-id": "qwen3.8-flash",
+          "x-zen-model": "qwen3.8-flash"
+        },
+        "headersAtMs": 1025.3,
+        "doneAtMs": 1493,
+        "chunks": [
+          {
+            "atMs": 1025.5,
+            "text": "event: ping\ndata: {\"type\":\"ping\"}\n\nevent: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_81e6af75-8406-49ec-b7af-8efc8ec88c04\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"qwen3.8-flash\",\"content\":[],\"usage\":{\"input_tokens\":7,\"output_tokens\":0}}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\n"
+          },
+          {
+            "atMs": 1026.7,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"We\"}}\n\n"
+          },
+          {
+            "atMs": 1119.5,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" need to respond to\"}}\n\n"
+          },
+          {
+            "atMs": 1121,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" user: \\\"Reply\"}}\n\n"
+          },
+          {
+            "atMs": 1152.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" with the single word\"}}\n\n"
+          },
+          {
+            "atMs": 1238.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" OK.\\\" Need final\"}}\n\n"
+          },
+          {
+            "atMs": 1239.4,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" single\"}}\n\n"
+          },
+          {
+            "atMs": 1339.1,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" word OK. Ensure\"}}\n\n"
+          },
+          {
+            "atMs": 1420.2,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\" only OK.\\n\"}}\n\n"
+          },
+          {
+            "atMs": 1469.8,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
+          },
+          {
+            "atMs": 1470,
+            "text": "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n"
+          },
+          {
+            "atMs": 1470.6,
+            "text": "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"OK\"}}\n\n"
+          },
+          {
+            "atMs": 1492.7,
+            "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"input_tokens\":68,\"output_tokens\":29,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0}}\n\n"
+          },
+          {
+            "atMs": 1493,
+            "text": "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

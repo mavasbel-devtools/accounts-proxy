@@ -1,0 +1,63 @@
+{
+  "id": "openai-resp-s6-unknown-model",
+  "target": "openai",
+  "scenario": "s6-unknown-model",
+  "model": "gpt-5.6-luna",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "user-agent": "inference-router/0.1.0",
+          "session-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "thread-id": "f1e358f5-f490-468e-9e34-3787e7efba93",
+          "x-client-request-id": "f1e358f5-f490-468e-9e34-3787e7efba93"
+        },
+        "body": {
+          "model": "no-such-model-l1",
+          "input": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ],
+          "store": false,
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "access-control-expose-headers": "CF-Ray, CF-Ray",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a49ccd656b36f949-QRO",
+          "connection": "keep-alive",
+          "content-length": "99",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:58:59 GMT",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-oai-request-id": "req_093da1e1aba048efb5a5f7e6fabb5513",
+          "x-openai-proxy-wasm": "v0.1",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 447.5,
+        "doneAtMs": 447.9,
+        "chunks": [
+          {
+            "atMs": 447.8,
+            "text": "{\"detail\":\"The 'no-such-model-l1' model is not supported when using Codex with a ChatGPT account.\"}"
+          }
+        ]
+      }
+    }
+  ]
+}

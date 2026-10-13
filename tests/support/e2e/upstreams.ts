@@ -7,9 +7,12 @@
 // the OpenCode Console's captured answers (amendment A probes c0–c3) and documented config example.
 // Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
 // non-streamed capture exists); count_tokens answers the spec's example (anthropic-count-tokens.md Response 200).
+// OpenAI (live validation L4): the live model list (l4/openai-models) for an e2e access token, the live Responses streams
+// (L1 openai-resp-*), and the key set of the replay's signing key (openai-signing.ts; OpenAI's own private key cannot sign).
 // Every request is recorded so tests can assert what the daemon really sent.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { jwks } from "@inference-router/test-support/e2e/openai-signing.ts";
 
 export type Recorded = { readonly method: string; readonly path: string; readonly search: string; readonly headers: Record<string, string>; readonly body: string };
 
@@ -193,7 +196,18 @@ export class ReplayUpstreams {
       case "/v1/oauth/token":
         return json(claudeFixture("refresh-response.json"));
       case "/v1/models":
-        return json(claudeFixture("catalog-api-response.json"));
+        return headers["authorization"]?.startsWith("Bearer e2e-openai") ? json(captured("l4/openai-models.json").body) : json(claudeFixture("catalog-api-response.json"));
+      case "/v1/responses": {
+        const input = Array.isArray(parsed["input"]) ? (parsed["input"] as Record<string, unknown>[]) : [];
+        const answer = input.some((i) => i["type"] === "function_call_output")
+          ? captured("l1/openai-resp-s4-tool-loop.json", 1)
+          : Array.isArray(parsed["tools"])
+            ? captured("l1/openai-resp-s4-tool-loop.json", 0)
+            : captured("l1/openai-resp-s2-plain-stream.json");
+        return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, "x-request-id": "req_e2e" } });
+      }
+      case "/.well-known/jwks.json":
+        return json(jwks());
       case "/v1/messages/count_tokens":
         return json({ input_tokens: 2095 });
       case "/v1/messages": {

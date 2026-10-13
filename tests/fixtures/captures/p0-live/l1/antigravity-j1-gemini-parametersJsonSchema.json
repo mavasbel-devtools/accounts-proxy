@@ -1,0 +1,142 @@
+{
+  "id": "j1-gemini-parametersJsonSchema",
+  "target": "antigravity",
+  "scenario": "j1-gemini-parametersJsonSchema",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T07:54:14.884Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/36d42a86-1ad6-4477-84fa-3263ba115fa0/1791878055119/830aacd6-4f70-497c-8fdd-3487a37610a3/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Read the file /etc/hostname with the read_file tool."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "read_file",
+                    "description": "Read a text file.",
+                    "parametersJsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "description": "Absolute path of the file"
+                        },
+                        "limit": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "Maximum number of lines"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false,
+                      "$schema": "http://json-schema.org/draft-07/schema#"
+                    }
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "830aacd6-4f70-497c-8fdd-3487a37610a3",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:54:15 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=712",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 720.4,
+        "doneAtMs": 983.7,
+        "chunks": [
+          {
+            "atMs": 720.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"The\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 99,\"thoughtsTokenCount\": 1},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 782.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" user wants to read the file `/etc/hostname` using the `read_file\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 116,\"thoughtsTokenCount\": 18},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 835.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"` tool.\\nLet's check the available tools: `default_api:read_file`.\\nParameters for\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 140,\"thoughtsTokenCount\": 42},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 894.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" `read_file`: `path` (STRING), `limit` (INTEGER or NULL).\\n\\nLet's call \"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 164,\"thoughtsTokenCount\": 66},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 944.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"`default_api:read_file` with `path: \\\"/etc/hostname\\\"`.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 183,\"thoughtsTokenCount\": 85},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 968.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"ErsDCrgDAWkUfRMOTvBifs1D+pMSZUnr1I3I4dK6tGKZAqBcNfcbKQaWLufr0IQSeHzVoSVsY6BQ4OOsxEyzmeroTZ7/nRx3QV0Sy4u5xXV1gCRephlae7cv5l9CbUhR1K8Gz7InhnFKjHCmcXoe6Mhs/POvpbXjDMrmLpAvC0UtlyRT00Lhht4l4EpT1WWC2if7xwJLH1yORmnHyxAk1h0BMzlemRa9pnci+sjJTPrZf1l5hnAR3ASGULmX7uih4V6RvUjpFWILopgBHnDLDe5xTqZa3XFPiw7MqEoU+ytXaJqA88eoK9Aw8LXfEenV0oRHlTLr1UKpxalYynUaYExhKE6xTSJ6kCrz9x+02lcOmjoJNEIZW6inE1+ceaEeQPBU6ucBrDmlsb5/1Era7hQjPN83qHwNmIY1w+z48UJC88QXhS93g7JkIRtzv3/PuUn6zuqTaV4o5uKhhI+t38q+GN0gIgLkBqJxoPvb8YQl7IVBBt4pYq3aGkUcu2bLFRlFB5U2S/Xx9nMszOkOvPScpIt9WG21OsM4yuK1VjU/2JbmNNyEyp6ZWO0LLXVzoVfo1Z0wmM2nSlFsVFY=\",\"functionCall\": {\"name\": \"read_file\",\"args\": {\"path\": \"/etc/hostname\"},\"id\": \"call_45401\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"candidatesTokenCount\": 19,\"totalTokenCount\": 287,\"thoughtsTokenCount\": 170},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 968.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 98,\"candidatesTokenCount\": 19,\"totalTokenCount\": 202,\"thoughtsTokenCount\": 85},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"p-PNapOAGOTtz7IPvrWLKA\"},\"traceId\": \"941d3c4d4cebb1bf\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

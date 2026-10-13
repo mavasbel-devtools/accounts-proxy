@@ -1,0 +1,114 @@
+{
+  "id": "j4-claude-raw-parameters",
+  "target": "antigravity",
+  "scenario": "j4-claude-raw-parameters",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-13T07:54:14.884Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/36d42a86-1ad6-4477-84fa-3263ba115fa0/1791878063047/830aacd6-4f70-497c-8fdd-3487a37610a3/8",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Read the file /etc/hostname with the read_file tool."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "read_file",
+                    "description": "Read a text file.",
+                    "parameters": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "description": "Absolute path of the file"
+                        },
+                        "limit": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "Maximum number of lines"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false,
+                      "$schema": "http://json-schema.org/draft-07/schema#"
+                    }
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "e414a542-5b3f-46eb-b7e0-7122217185c6",
+              "last_step_index": "7",
+              "model_enum": "MODEL_PLACEHOLDER_M403",
+              "trajectory_id": "830aacd6-4f70-497c-8fdd-3487a37610a3",
+              "used_claude": "true",
+              "used_claude_conservative": "true",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "claude-sonnet-5-5-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-length": "1136",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:54:23 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=27",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 37.4,
+        "doneAtMs": 37.5,
+        "chunks": [
+          {
+            "atMs": 37.4,
+            "text": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Invalid JSON payload received. Unknown name \\\"exclusiveMinimum\\\" at 'request.tools[0].function_declarations[0].parameters.properties[1].value.any_of[0]': Cannot find field.\\nInvalid JSON payload received. Unknown name \\\"$schema\\\" at 'request.tools[0].function_declarations[0].parameters': Cannot find field.\",\n    \"status\": \"INVALID_ARGUMENT\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.BadRequest\",\n        \"fieldViolations\": [\n          {\n            \"field\": \"request.tools[0].function_declarations[0].parameters.properties[1].value.any_of[0]\",\n            \"description\": \"Invalid JSON payload received. Unknown name \\\"exclusiveMinimum\\\" at 'request.tools[0].function_declarations[0].parameters.properties[1].value.any_of[0]': Cannot find field.\"\n          },\n          {\n            \"field\": \"request.tools[0].function_declarations[0].parameters\",\n            \"description\": \"Invalid JSON payload received. Unknown name \\\"$schema\\\" at 'request.tools[0].function_declarations[0].parameters': Cannot find field.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+          }
+        ]
+      }
+    }
+  ]
+}

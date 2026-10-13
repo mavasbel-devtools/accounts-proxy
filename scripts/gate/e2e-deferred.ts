@@ -5,7 +5,8 @@
 // must be empty when P5 ends (P5 wires the translated cells that call all of it).
 // Plan P4.6 (2026-10-12) adds two phases of the same kind: code whose e2e replay needs a committed live capture that
 // only the user's own sign-in or key can produce (`P4.5-live`: the OpenAI ChatGPT sign-in; `P4.6-live`: a gateway API
-// key, decision N8). Those entries leave the list when the capture is committed and replayed.
+// key, decision N8). Those entries leave the list when the capture is committed and replayed: since the live validation
+// of 2026-10-13 (L4) none is left — the OpenAI, OpenCode Console and Cheaper Inference replays cover that code.
 import { createCoverageMap, type CoverageMap, type FileCoverageData, type Range } from "istanbul-lib-coverage";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -23,9 +24,6 @@ export type Deferral = {
 };
 
 const TRANSLATED = "only the translated cells (P5) call it; no P4 route or command reaches it";
-const GATEWAY_LIVE = (provider: string) => `needs the replay of a live ${provider} answer to an accepted key (plan P4.6 step 5; decision N8: the user's \`login ${provider}\`); no committed capture yet`;
-const CONSOLE_LIVE = "needs the replay of a live OpenCode Console device sign-in (approved tokens, identity, renewal; plan P4.6 amendment A step A5: the user's `login opencode`); no committed capture yet";
-const OPENAI_LIVE = "needs the replay of a live ChatGPT sign-in (plan v4 P4.5 step 2: the user's `login openai`); no committed capture yet";
 
 export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/core/src/domain/services/feature-support.ts", phase: "P5", reason: `capability matrix of the translated cells: ${TRANSLATED}` },
@@ -40,41 +38,7 @@ export const E2E_DEFERRED: readonly Deferral[] = [
   { file: "packages/dialect-openai/src/adapters/inbound/openai-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
   { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-runner.ts", branches: ["if (out === undefined) continue;"], phase: "P5", reason: `only the chat mapper skips content-free envelopes (the native mapper forwards every response): ${TRANSLATED}` },
   { file: "packages/provider-gateway/src/adapters/outbound/gateway-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `translated cells of the API-key gateways: ${TRANSLATED}` },
-  { file: "packages/provider-openai/src/domain/id-token.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/domain/catalog.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/domain/credential.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/domain/responses.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/jwks-id-token-verifier.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-catalog.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-identity.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-oauth-client.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-provider.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-session.ts", phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/core/src/domain/services/base64url.ts", functions: ["base64UrlDecode"], phase: "P4.5-live", reason: `only the OpenAI ID-token check decodes base64url; ${OPENAI_LIVE}` },
-  { file: "apps/router/src/composition/container.ts", functions: ["wireOpenAI"], branches: ['const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;', "...(openai ? { openai } : {}),"], phase: "P4.5-live", reason: OPENAI_LIVE },
-  { file: "packages/provider-cheaper-inference/src/domain/cheaper-inference.ts", functions: ["parseAccount", "balanceText"], phase: "P4.6-live", reason: GATEWAY_LIVE("cheaper-inference") },
-  { file: "packages/provider-cheaper-inference/src/adapters/outbound/cheaper-inference-adapters.ts", functions: ["identify", "usage"], phase: "P4.6-live", reason: GATEWAY_LIVE("cheaper-inference") },
-  { file: "packages/provider-opencode/src/domain/opencode.ts", functions: ["parseTokens", "isInvalidGrant", "consoleIdentity", "encodeDevice", "pollError"], phase: "P4.6-live", reason: CONSOLE_LIVE },
-  {
-    file: "packages/provider-opencode/src/adapters/outbound/opencode-console-client.ts",
-    functions: ["refresh", "identity"],
-    branches: [
-      'if (answer.status === 200) return { kind: "tokens", tokens: parseTokens(answer.json, this.clock.now()) };',
-      'const headers: Record<string, string> = { accept: "application/json", "user-agent": USER_AGENT, authorization: `Bearer ${auth.kind === "key" ? auth.key : auth.accessToken}` };',
-      'const orgId = auth.kind === "user" ? auth.orgId : undefined;',
-      'if (orgId !== undefined) headers["x-org-id"] = orgId;',
-    ],
-    phase: "P4.6-live",
-    reason: CONSOLE_LIVE,
-  },
-  { file: "packages/provider-opencode/src/adapters/outbound/opencode-logins.ts", functions: ["signedIn"], branches: ['return answer.kind === "tokens" ? this.signedIn(answer.tokens) : answer;'], phase: "P4.6-live", reason: CONSOLE_LIVE },
-  { file: "packages/provider-opencode/src/adapters/outbound/opencode-session.ts", functions: ["encode", "renew"], phase: "P4.6-live", reason: CONSOLE_LIVE },
-  {
-    file: "apps/router/src/application/login-service.ts",
-    branches: ['if (answer.kind === "approved") return answer.account;', 'if (answer.kind === "slow_down") interval += SLOW_DOWN_STEP_MS;'],
-    phase: "P4.6-live",
-    reason: `an approved or slowed-down device login; ${CONSOLE_LIVE}`,
-  },
+  { file: "packages/provider-openai/src/adapters/outbound/openai-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
 ];
 
 export type DeferralResult = { readonly map: CoverageMap; readonly exemptFiles: ReadonlySet<string>; readonly notes: readonly string[]; readonly problems: readonly string[] };

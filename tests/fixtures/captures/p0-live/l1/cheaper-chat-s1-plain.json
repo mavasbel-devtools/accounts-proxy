@@ -1,0 +1,67 @@
+{
+  "id": "cheaper-chat-s1-plain",
+  "target": "cheaper-inference",
+  "scenario": "s1-plain",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Tue, 13 Oct 2026 07:49:45 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "1244",
+          "x-ci-prompt-cache-affinity": "new",
+          "x-ci-request-id": "8c21df2a-35dc-496c-9bd1-d916a8d140ef",
+          "x-ci-routing-overhead-ms": "1063",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/chat/completions",
+          "x-nextjs-rewritten-path": "/api/v1/chat/completions",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sfo1::pdx1::72dzm-1791877782488-768bd5b2b452"
+        },
+        "headersAtMs": 2838.1,
+        "doneAtMs": 2838.7,
+        "chunks": [
+          {
+            "atMs": 2838.4,
+            "text": "{\"service_tier\":\"default\",\"system_fingerprint\":null,\"obfuscation\":\"HjF\",\"id\":\"chatcmpl-EYRYWvRKgJon8vvw6J8kNVt88Xejt\",\"object\":\"chat.completion\",\"created\":1791877784,\"model\":\"gpt-5.4-nano\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"OK\"},\"finish_reason\":\"stop\",\"logprobs\":null}],\"usage\":{\"prompt_tokens\":13,\"completion_tokens\":4,\"total_tokens\":17,\"prompt_tokens_details\":{\"cached_tokens\":0,\"audio_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0,\"audio_tokens\":0,\"accepted_prediction_tokens\":0,\"rejected_prediction_tokens\":0},\"cost\":0.000006,\"cost_details\":{\"upstream_inference_cost\":0.000006}},\"cheaper_inference\":{\"request_id\":\"8c21df2a-35dc-496c-9bd1-d916a8d140ef\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000006\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":21.052631578947366}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

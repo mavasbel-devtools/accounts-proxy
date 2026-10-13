@@ -1,0 +1,136 @@
+{
+  "id": "antigravity-gem-s5b-mcp-tool-lossy",
+  "target": "antigravity",
+  "scenario": "s5b-mcp-tool-lossy",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T08:00:40.053Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/483c7a78-5bd8-4e4d-8b24-343135e9e334/1791878443146/10503d4b-0e39-4077-bd6e-624a20f473f8/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Read the file /etc/hostname with the read_file tool."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "read_file",
+                    "description": "Read a text file.",
+                    "parametersJsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "description": "Absolute path of the file"
+                        },
+                        "limit": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "Maximum number of lines"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false,
+                      "$schema": "http://json-schema.org/draft-07/schema#"
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "VALIDATED"
+              }
+            },
+            "labels": {
+              "last_execution_id": "a920b8c5-1618-484b-93ed-703249756c2e",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "10503d4b-0e39-4077-bd6e-624a20f473f8",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 08:00:43 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=550",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 558.9,
+        "doneAtMs": 695.1,
+        "chunks": [
+          {
+            "atMs": 558.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"The user wants\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 101,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"K-XNavSeEL2fz7IPr-b9mAc\"},\"traceId\": \"d1093132d2bd82a3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 612.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" to read the file `/etc/hostname` using the `read_file` tool.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 119,\"thoughtsTokenCount\": 21},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"K-XNavSeEL2fz7IPr-b9mAc\"},\"traceId\": \"d1093132d2bd82a3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 655,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\nI should invoke the `read_file` tool with path `/etc/hostname`.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"totalTokenCount\": 137,\"thoughtsTokenCount\": 39},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"K-XNavSeEL2fz7IPr-b9mAc\"},\"traceId\": \"d1093132d2bd82a3\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 675.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EpUCCpICAWkUfROdWZ/W4OEtGFBZlDGth34tnc46bV+xaBL8bM8z8jnzkvy1Ms/JIbZ+17SbwDgSNggsQjV9W7YEKoitUbNETvf+riGJeAaaBxUtyKSCbxBPpQaNS5S14Kz+zYwnAlZpQLAo63X25wJZJp+huMlfOUAsD1ia5gR1PAD4KQS3g8DElyIPtzqNsCC37XggeONFxJcPB7pUyIYkqZZug7Q/K7qeHrlFeemUHgkhQm+wCi/oWm4vxeNlG3+1EFfvBmEA6NgqSobnDXl9rHkUpCAbDAR8OkX5m7RDQkmX6zslwYrYXGbutmMmT2aTG+zzexhapfHTlWjMRbo2aRPP5mpxbpATVBE1OOZoM/+07gvcOg==\",\"functionCall\": {\"name\": \"read_file\",\"args\": {\"path\": \"/etc/hostname\"},\"id\": \"call_36152\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 98,\"candidatesTokenCount\": 19,\"totalTokenCount\": 195,\"thoughtsTokenCount\": 78},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"K-XNavSeEL2fz7IPr-b9mAc\"},\"traceId\": \"d1093132d2bd82a3\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 98,\"candidatesTokenCount\": 19,\"totalTokenCount\": 156,\"thoughtsTokenCount\": 39},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"K-XNavSeEL2fz7IPr-b9mAc\"},\"traceId\": \"d1093132d2bd82a3\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

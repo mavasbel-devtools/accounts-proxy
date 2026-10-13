@@ -1,0 +1,55 @@
+{
+  "id": "cheaper-account",
+  "target": "cheaper-inference",
+  "scenario": "cheaper-account",
+  "model": "-",
+  "capturedAt": "2026-10-13T08:13:12.526Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://api.cheaperinference.com/v1/account",
+        "headers": {
+          "accept": "application/json",
+          "user-agent": "inference-router/0.1.0",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-headers": "Authorization, X-Api-Key, Content-Type, Anthropic-Version, Anthropic-Beta",
+          "access-control-allow-methods": "GET, HEAD, OPTIONS",
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "Retry-After, WWW-Authenticate, X-Cheaper-Inference-Request-Id, x-ci-request-id",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 08:13:22 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/account",
+          "x-nextjs-rewritten-path": "/api/v1/account",
+          "x-vercel-cache": "BYPASS",
+          "x-vercel-id": "sfo1::pdx1::hmjft-1791879202014-f312c09091d4"
+        },
+        "headersAtMs": 819.9,
+        "doneAtMs": 820,
+        "chunks": [
+          {
+            "atMs": 820,
+            "text": "{\"object\":\"account\",\"email\":\"<REDACTED:account_id>\",\"workspace_name\":null,\"role\":null,\"funded_by_owner\":false,\"active_key_count\":2,\"last_key_use_at\":\"2026-10-13T08:09:04.250068+00:00\",\"auto_recharge_enabled\":false,\"enabled_technique_count\":0}"
+          }
+        ]
+      }
+    }
+  ]
+}

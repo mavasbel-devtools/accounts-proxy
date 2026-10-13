@@ -1,0 +1,57 @@
+{
+  "id": "z2-glm-5.1",
+  "target": "opencode",
+  "scenario": "z2-glm-5.1",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:53:10.775Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "user-agent": "inference-router/0.1.0",
+          "x-opencode-session": "ses_l1_2026-10-13T07:53:10.775Z",
+          "x-opencode-org-id": "<REDACTED:orgid>"
+        },
+        "body": {
+          "model": "glm-5.1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cc503a8dbf24d-IAH",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:53:17 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-endpoint-id": "fireworks",
+          "x-opencode-log-id": "356fbfb7-6876-4e68-8685-4525a0a3213f",
+          "x-opencode-upstream-model-id": "accounts/fireworks/models/glm-5p3",
+          "x-zen-model": "glm-5.1"
+        },
+        "headersAtMs": 1070.1,
+        "doneAtMs": 1070.2,
+        "chunks": [
+          {
+            "atMs": 1070.2,
+            "text": "{\"id\":\"chatcmpl-998eaf7f\",\"object\":\"chat.completion\",\"created\":1791877996,\"model\":\"glm-5.1\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"OK\",\"reasoning_content\":\"The user wants me to reply with the single word \\\"OK\\\".\"}}],\"usage\":{\"prompt_tokens\":19,\"completion_tokens\":16,\"total_tokens\":35,\"prompt_tokens_details\":{\"cached_tokens\":10}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

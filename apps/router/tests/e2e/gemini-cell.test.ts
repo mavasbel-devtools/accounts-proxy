@@ -150,6 +150,14 @@ describe("mapping onto the upstream request", () => {
     expect(request["generationConfig"]).toEqual({ maxOutputTokens: 64, thinkingConfig: { includeThoughts: false, thinkingBudget: 1000 }, temperature: 0, topP: 0.5, topK: 5, stopSequences: ["5"] });
   });
 
+  test("an MCP tool as the Gen AI SDK sends it (parametersJsonSchema) travels unchanged (live L1 j1/j2)", async () => {
+    const schema = { type: "object", properties: { path: { type: "string" }, limit: { anyOf: [{ type: "integer", exclusiveMinimum: 0 }, { type: "null" }], default: null } }, required: ["path"], additionalProperties: false, $schema: "http://json-schema.org/draft-07/schema#" };
+    const declaration = { name: "read_file", description: "Read a text file.", parametersJsonSchema: schema };
+    const response = await call({ contents: [{ parts: [{ text: "read /etc/hostname" }] }], tools: [{ functionDeclarations: [declaration] }] });
+    expect([response.status, response.headers.get("x-router-dropped")]).toEqual([200, null]);
+    expect(sent()["tools"]).toEqual([{ functionDeclarations: [declaration] }]);
+  });
+
   test("an empty system instruction and empty tools are omitted; toolConfig alone gets VALIDATED", async () => {
     await call({ ...hello, systemInstruction: { parts: [] }, tools: [], toolConfig: {} });
     const request = sent();

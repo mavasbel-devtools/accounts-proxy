@@ -1,0 +1,372 @@
+{
+  "id": "antigravity-gem-s3-three-turns",
+  "target": "antigravity",
+  "scenario": "s3-three-turns",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877597560/9814bcb0-bbc9-4834-bb0c-b513adc02add/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "My code word is PLUM. Reply with the single word OK."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "9814bcb0-bbc9-4834-bb0c-b513adc02add",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:37 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=384",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 393.9,
+        "doneAtMs": 726.4,
+        "chunks": [
+          {
+            "atMs": 393.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Thinking Process:\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 18,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 434.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n\\n1.  **Analyze the input:**\\n    *   User statement: \\\"My code word is\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 39,\"thoughtsTokenCount\": 24},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 485.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" PLUM.\\\"\\n    *   User instruction: \\\"Reply with the single word OK.\\\"\\n\\n2.  **Analyze\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 63,\"thoughtsTokenCount\": 48},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 588.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" the constraints:**\\n    *   Response must be *only* the single word \\\"OK\\\".\\n    *   No punctuation\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 88,\"thoughtsTokenCount\": 73},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 638,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" other than possibly the word itself (standard capitalization preferred, or matching the prompt's \\\"OK\\\").\\n\\n3.  \"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 112,\"thoughtsTokenCount\": 97},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 657.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"**Formulate the response:**\\n    *   \\\"OK\\\"\\n\\n4.  **Final check:** Does it meet the \\\"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 138,\"thoughtsTokenCount\": 123},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 686.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"single word OK\\\" requirement? Yes.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"totalTokenCount\": 146,\"thoughtsTokenCount\": 131},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 702,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"OK\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15,\"candidatesTokenCount\": 1,\"totalTokenCount\": 278,\"thoughtsTokenCount\": 262},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 707.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"ErUFCrIFAWkUfRPvW9aD6G7OOvhnnCIf3jJAUhvc5oPJSYwVqKWS9GHbF+AwIrXad4qsDvlxsc7rLX3zyWQFm6dS3eSt4NhJ9Eg0AsM2GkGhF4iU0nAV5XfRfAKvPR1NeuAudbtjRhwN8BLWtNT7grbBZLjNJGczA/5zG9B5N6GSfO3pRabiD5v65Fr3pmifKL/k+78DIe68OL/+x5EDKURB03ph5yXkU7DwPvphCz31KruRDJr12S2TQG4ahvazVsewglQ46dzX8m9henqiojb3iGoo5iUpIMzliYi3B8b7MK3BmDAf7hwI5NsFlDfHYqbB8uJ9ap0YMQqrbWfEOULdD3+sEw/QINuIADNL8xz8u0caBp7wcVJgiJm6OOvh9GYSezV394LE0k29InsUS8tMY9oLxfkD1vVe2x2sH+YD/XGWlBG97Lcg5Kgk4H62c2D0e2IlyHfb01b7wNwu2rxAmAe3f/5JQuwjCccaJglIjNq71Z3y9eu5hlG6c4PQa6w+MigK1LBQ45/jk+LMfQiHancVXRzFUNM/QAD7rxA91hWV+hGNn43B7fyGNlZB2BXnUhPkDezZytKdyXFsMBR6+Gw5eH89t056Sjm9cru+jgU63XyYw+Qnuza5FmKsVBCD1Yd4BNPIOWyvd8X8s37E/o35CgzcKX+Ezk2Zd+ysK5cmY5sSBDD9aG/R0Q650+rDwCPzMrW6N7gF1Jvr2yJuZj3HqTwWtk/lysqhYEGdp+b/ucU/aMHoTnhojbMhWWBTF6OEN6VmRPzA5kydaoFM7xDT/Ha9ywRdkrxtqHpgovV6mjkRZbJhA8J3+fgDMHPtyeK72dju8e7BLaa03NVu4FnFiWyR+qBg/nWfA4NdYIixRFfHu+5RF47pjeVNlMsPuHBDT9X1tWG1PhiJhhk+Vq54kl2x\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 15,\"candidatesTokenCount\": 1,\"totalTokenCount\": 147,\"thoughtsTokenCount\": 131},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"3eHNavjXJ_Prz7IPlq72wAc\"},\"traceId\": \"969e8ef9beedeb0c\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877600289/9814bcb0-bbc9-4834-bb0c-b513adc02add/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "My code word is PLUM. Reply with the single word OK."
+                  }
+                ]
+              },
+              {
+                "role": "model",
+                "parts": [
+                  {
+                    "text": "Thinking Process:\n\n1.  **Analyze the input:**\n    *   User statement: \"My code word is PLUM.\"\n    *   User instruction: \"Reply with the single word OK.\"\n\n2.  **Analyze the constraints:**\n    *   Response must be *only* the single word \"OK\".\n    *   No punctuation other than possibly the word itself (standard capitalization preferred, or matching the prompt's \"OK\").\n\n3.  **Formulate the response:**\n    *   \"OK\"\n\n4.  **Final check:** Does it meet the \"single word OK\" requirement? Yes.",
+                    "thought": true
+                  },
+                  {
+                    "text": "OK",
+                    "thoughtSignature": "ErUFCrIFAWkUfRPvW9aD6G7OOvhnnCIf3jJAUhvc5oPJSYwVqKWS9GHbF+AwIrXad4qsDvlxsc7rLX3zyWQFm6dS3eSt4NhJ9Eg0AsM2GkGhF4iU0nAV5XfRfAKvPR1NeuAudbtjRhwN8BLWtNT7grbBZLjNJGczA/5zG9B5N6GSfO3pRabiD5v65Fr3pmifKL/k+78DIe68OL/+x5EDKURB03ph5yXkU7DwPvphCz31KruRDJr12S2TQG4ahvazVsewglQ46dzX8m9henqiojb3iGoo5iUpIMzliYi3B8b7MK3BmDAf7hwI5NsFlDfHYqbB8uJ9ap0YMQqrbWfEOULdD3+sEw/QINuIADNL8xz8u0caBp7wcVJgiJm6OOvh9GYSezV394LE0k29InsUS8tMY9oLxfkD1vVe2x2sH+YD/XGWlBG97Lcg5Kgk4H62c2D0e2IlyHfb01b7wNwu2rxAmAe3f/5JQuwjCccaJglIjNq71Z3y9eu5hlG6c4PQa6w+MigK1LBQ45/jk+LMfQiHancVXRzFUNM/QAD7rxA91hWV+hGNn43B7fyGNlZB2BXnUhPkDezZytKdyXFsMBR6+Gw5eH89t056Sjm9cru+jgU63XyYw+Qnuza5FmKsVBCD1Yd4BNPIOWyvd8X8s37E/o35CgzcKX+Ezk2Zd+ysK5cmY5sSBDD9aG/R0Q650+rDwCPzMrW6N7gF1Jvr2yJuZj3HqTwWtk/lysqhYEGdp+b/ucU/aMHoTnhojbMhWWBTF6OEN6VmRPzA5kydaoFM7xDT/Ha9ywRdkrxtqHpgovV6mjkRZbJhA8J3+fgDMHPtyeK72dju8e7BLaa03NVu4FnFiWyR+qBg/nWfA4NdYIixRFfHu+5RF47pjeVNlMsPuHBDT9X1tWG1PhiJhhk+Vq54kl2x"
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What is 2 + 3? Reply with the number only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "2972e5fd-7046-41a7-8426-4bf045480433",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "9814bcb0-bbc9-4834-bb0c-b513adc02add",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:40 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=494",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 505.1,
+        "doneAtMs": 752.6,
+        "chunks": [
+          {
+            "atMs": 505.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Thinking Process:\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 166,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 545.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n\\n1.  **Analyze the input:**\\n    *   Math question: \\\"What\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 184,\"thoughtsTokenCount\": 21},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 587.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" is 2 + 3?\\\"\\n    *   Constraint: \\\"Reply with the number only.\\\"\\n\\n2.  \"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 208,\"thoughtsTokenCount\": 45},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 642.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"**Calculate the answer:**\\n    *   2 + 3 = 5\\n\\n3.  **Apply constraints:**\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 232,\"thoughtsTokenCount\": 69},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 690.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n    *   Number only (no punctuation, no words like \\\"The answer is\\\").\\n\\n4.  **Form\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 256,\"thoughtsTokenCount\": 93},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 708.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"ulate the response:**\\n    *   5\\n\\n5.  **Final check:** Is it just the number? Yes.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"totalTokenCount\": 281,\"thoughtsTokenCount\": 118},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 733.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"5\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 163,\"candidatesTokenCount\": 1,\"totalTokenCount\": 400,\"thoughtsTokenCount\": 236},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"ErMECrAEAWkUfRMLwewE+HAZk9iMm0pWG0z49jmmwVpk9Y7POsepSrz8xKhE0zrdArKEEGvIFLBZ4jjiL1Z6puNTJpp3JfvHP4gQydAdoSUv5P+Oy4b7O8lnFz0IDDViXxFJad7BsifVUMTpfg6Sit6wePspRz4PWdPfpukpuG58mqnVP+ZS3/ea+aJ1aqT38vC5aOTSWLUK2UUcbAhhzrTVD2UfIlgR/6BqVpJesUIa3SGFNyoIPf1Up4FzCSCdD3h1cCsIOS0mKh25vsEmaqGmbYaInYQntlU0zSZKRqbv3eV/kiLnIEteuR+f/4ebGzlOgM09PnKkfuOpES1JvywFGGm+va6W/9L/zicPWb5EGC2GlRtWuxOCKYykLR2/SZwWTBJu+vMjO2/LWQcBBOmg1DlAuvw5lxU5X2ZFbfIDkBNB1tTJErXCtUQaKaSV2dtLtaU6slj1PYi2U0uAIc5IbBlHZmkvyFrl2ALcBb27GbmvKAjIlM9tUwenrMmD1lfoC6bARjfrPR9nhsYeEjdYQHeDU+SHu6hvIxU9+DU2TN3lSolHkhGtl5vQlWHGFbXeRaWrduP3lZAP0veTSKBZJ+0jkRnrdlAyO/wHgMZ2aoSsuxx8I4v6e5UgPOyCveHbwQox+PQTNmf+9RJMeaka4Y2sgmU6BWuuK5qo33v9KOZMAxZnVO+oPzNH9MaJC+MR9q6rIhUA594MxUZIl69/OvK3hlPniy692sdlXIc9NiBunF8=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 294,\"candidatesTokenCount\": 1,\"totalTokenCount\": 413,\"thoughtsTokenCount\": 118},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4OHNapWNFPmcz7IPwcKmuAI\"},\"traceId\": \"27148f1c09f446ac\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1c68eb2e-fdd7-46ec-988b-7631a7261312/1791877603044/9814bcb0-bbc9-4834-bb0c-b513adc02add/8",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "My code word is PLUM. Reply with the single word OK."
+                  }
+                ]
+              },
+              {
+                "role": "model",
+                "parts": [
+                  {
+                    "text": "Thinking Process:\n\n1.  **Analyze the input:**\n    *   User statement: \"My code word is PLUM.\"\n    *   User instruction: \"Reply with the single word OK.\"\n\n2.  **Analyze the constraints:**\n    *   Response must be *only* the single word \"OK\".\n    *   No punctuation other than possibly the word itself (standard capitalization preferred, or matching the prompt's \"OK\").\n\n3.  **Formulate the response:**\n    *   \"OK\"\n\n4.  **Final check:** Does it meet the \"single word OK\" requirement? Yes.",
+                    "thought": true
+                  },
+                  {
+                    "text": "OK",
+                    "thoughtSignature": "ErUFCrIFAWkUfRPvW9aD6G7OOvhnnCIf3jJAUhvc5oPJSYwVqKWS9GHbF+AwIrXad4qsDvlxsc7rLX3zyWQFm6dS3eSt4NhJ9Eg0AsM2GkGhF4iU0nAV5XfRfAKvPR1NeuAudbtjRhwN8BLWtNT7grbBZLjNJGczA/5zG9B5N6GSfO3pRabiD5v65Fr3pmifKL/k+78DIe68OL/+x5EDKURB03ph5yXkU7DwPvphCz31KruRDJr12S2TQG4ahvazVsewglQ46dzX8m9henqiojb3iGoo5iUpIMzliYi3B8b7MK3BmDAf7hwI5NsFlDfHYqbB8uJ9ap0YMQqrbWfEOULdD3+sEw/QINuIADNL8xz8u0caBp7wcVJgiJm6OOvh9GYSezV394LE0k29InsUS8tMY9oLxfkD1vVe2x2sH+YD/XGWlBG97Lcg5Kgk4H62c2D0e2IlyHfb01b7wNwu2rxAmAe3f/5JQuwjCccaJglIjNq71Z3y9eu5hlG6c4PQa6w+MigK1LBQ45/jk+LMfQiHancVXRzFUNM/QAD7rxA91hWV+hGNn43B7fyGNlZB2BXnUhPkDezZytKdyXFsMBR6+Gw5eH89t056Sjm9cru+jgU63XyYw+Qnuza5FmKsVBCD1Yd4BNPIOWyvd8X8s37E/o35CgzcKX+Ezk2Zd+ysK5cmY5sSBDD9aG/R0Q650+rDwCPzMrW6N7gF1Jvr2yJuZj3HqTwWtk/lysqhYEGdp+b/ucU/aMHoTnhojbMhWWBTF6OEN6VmRPzA5kydaoFM7xDT/Ha9ywRdkrxtqHpgovV6mjkRZbJhA8J3+fgDMHPtyeK72dju8e7BLaa03NVu4FnFiWyR+qBg/nWfA4NdYIixRFfHu+5RF47pjeVNlMsPuHBDT9X1tWG1PhiJhhk+Vq54kl2x"
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What is 2 + 3? Reply with the number only."
+                  }
+                ]
+              },
+              {
+                "role": "model",
+                "parts": [
+                  {
+                    "text": "Thinking Process:\n\n1.  **Analyze the input:**\n    *   Math question: \"What is 2 + 3?\"\n    *   Constraint: \"Reply with the number only.\"\n\n2.  **Calculate the answer:**\n    *   2 + 3 = 5\n\n3.  **Apply constraints:**\n    *   Number only (no punctuation, no words like \"The answer is\").\n\n4.  **Formulate the response:**\n    *   5\n\n5.  **Final check:** Is it just the number? Yes.",
+                    "thought": true
+                  },
+                  {
+                    "text": "5",
+                    "thoughtSignature": "ErMECrAEAWkUfRMLwewE+HAZk9iMm0pWG0z49jmmwVpk9Y7POsepSrz8xKhE0zrdArKEEGvIFLBZ4jjiL1Z6puNTJpp3JfvHP4gQydAdoSUv5P+Oy4b7O8lnFz0IDDViXxFJad7BsifVUMTpfg6Sit6wePspRz4PWdPfpukpuG58mqnVP+ZS3/ea+aJ1aqT38vC5aOTSWLUK2UUcbAhhzrTVD2UfIlgR/6BqVpJesUIa3SGFNyoIPf1Up4FzCSCdD3h1cCsIOS0mKh25vsEmaqGmbYaInYQntlU0zSZKRqbv3eV/kiLnIEteuR+f/4ebGzlOgM09PnKkfuOpES1JvywFGGm+va6W/9L/zicPWb5EGC2GlRtWuxOCKYykLR2/SZwWTBJu+vMjO2/LWQcBBOmg1DlAuvw5lxU5X2ZFbfIDkBNB1tTJErXCtUQaKaSV2dtLtaU6slj1PYi2U0uAIc5IbBlHZmkvyFrl2ALcBb27GbmvKAjIlM9tUwenrMmD1lfoC6bARjfrPR9nhsYeEjdYQHeDU+SHu6hvIxU9+DU2TN3lSolHkhGtl5vQlWHGFbXeRaWrduP3lZAP0veTSKBZJ+0jkRnrdlAyO/wHgMZ2aoSsuxx8I4v6e5UgPOyCveHbwQox+PQTNmf+9RJMeaka4Y2sgmU6BWuuK5qo33v9KOZMAxZnVO+oPzNH9MaJC+MR9q6rIhUA594MxUZIl69/OvK3hlPniy692sdlXIc9NiBunF8="
+                  }
+                ]
+              },
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "What was my code word? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "1021f397-8165-4754-9fe9-b45bf5705367",
+              "last_step_index": "7",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "9814bcb0-bbc9-4834-bb0c-b513adc02add",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535,
+              "thinkingConfig": {
+                "includeThoughts": true,
+                "thinkingBudget": -1
+              }
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 07:46:43 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=461",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 471.6,
+        "doneAtMs": 770,
+        "chunks": [
+          {
+            "atMs": 471.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"Thinking Process:\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 299,\"thoughtsTokenCount\": 3},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 524.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\\n\\n1.  **Analyze the input:**\\n    *   Question: \\\"What was\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 317,\"thoughtsTokenCount\": 21},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 575.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" my code word?\\\"\\n    *   Constraint: \\\"Reply with the word only.\\\"\\n\\n2.  **Retrieve from context\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 342,\"thoughtsTokenCount\": 46},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 629.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" (conversation history):**\\n    *   User's first prompt: \\\"My code word is PLUM.\\\"\\n    *\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 368,\"thoughtsTokenCount\": 72},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 678.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"   The code word is \\\"PLUM\\\".\\n\\n3.  **Apply constraints:**\\n    *   Word only (no punctuation\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 394,\"thoughtsTokenCount\": 98},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 706.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \", no extra text).\\n\\n4.  **Formulate the response:**\\n    *   PLUM\\n\\n5.  **Final check:**\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 423,\"thoughtsTokenCount\": 127},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 725.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \" Is it just the word? Yes.\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"totalTokenCount\": 431,\"thoughtsTokenCount\": 135},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 751.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"PLUM\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 296,\"candidatesTokenCount\": 2,\"totalTokenCount\": 568,\"thoughtsTokenCount\": 270},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EpAFCo0FAWkUfRO8x9SaMDfBxrUavQ2d03kiOMIXxfd/hXULf0G3bA64XJTa+ypTBd/CT8gVsKvfXseZQ/+8fZCos0L3hc0u+x+Jk0pOSSD90nejsQ2nMI9MDSHLN8DBwnb5Z51l32AnUVrEdsSF7c92bwPDAk680BwinW6UoHXUl+LtTo5yMzeLQ952acDn7awu0MelZaCANXgCE5nSsJwbcfz6UxTjrJbMxznXYSZHXsDDQUw9y8QqxEaT5oljPA0KXvYi81zbA6JvQNuX6aR1ARB19dr0NB9e7XLhe9/GiosCeH67LJmaLJhqgCNY06PnuleqIooENSDbOKR3ELQQuluOJAFHqYCI5bV2V6bM8WDsgPc905QNJe5byCoU82kOEGLsVrQqgTR1QFiHd/orhOERwx2A4eLjdUm1FDOTgpI2QJUUz/t2XhrqDOdgjaR2Czp2l051FTsVitjoRlId1qB6mxDWVjFa2nqtzHf01Groc5aGlOcChNlXnfQlTgYq6PJZzas384t/LBmKro1bq2CIeUoL/O5KM4PdTUm0oM2gBPRvPFb5zeh7GW/PLwkofDf4vf0/U5RnmvQQBF2AxO1Pci+x8CZn1389IN+YpsN7oysvE4MUR34FLh9EtdazqeG83uD42XW8ZgS9CGL8FH4b9j0V0Nm3Cy+T+sz1CMdDa1RkytoXpm4Nhl3l0BAyoBeSnYUYLWC7Az6sgMnZz6E4dVNTR4PMXiT/CzNVrrMNqihRjg4gsrfsHSgehOnxzZwo6H6ONgaUJszgc01D1zx9VIX83eGghSlyN8AyyFGk9XS2sg4UMx0HLgD5K3Jy0WkjIajkNZ60Hv43G2YNcnGvO2kh5U/thhO83MvEKXQ=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 545,\"candidatesTokenCount\": 2,\"totalTokenCount\": 682,\"thoughtsTokenCount\": 135},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"4-HNavuPBbqgz7IPmqyj0QM\"},\"traceId\": \"489272aad0810172\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

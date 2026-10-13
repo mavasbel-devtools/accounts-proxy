@@ -1,0 +1,54 @@
+{
+  "id": "opencode-chat-s6-unknown-model",
+  "target": "opencode",
+  "scenario": "s6-unknown-model",
+  "model": "glm-5.1",
+  "capturedAt": "2026-10-13T07:58:20.587Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "inference-router/0.1.0",
+          "content-type": "application/json",
+          "accept": "application/json",
+          "x-opencode-session": "ses_l1_1791878300587",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "no-such-model-l1",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Reply with the single word OK."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a49cce333880c308-IAH",
+          "connection": "keep-alive",
+          "content-length": "92",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:59:32 GMT",
+          "server": "cloudflare",
+          "x-opencode-log-id": "a75db9b6-3d08-4e50-be3d-2158536d709d"
+        },
+        "headersAtMs": 98.2,
+        "doneAtMs": 98.6,
+        "chunks": [
+          {
+            "atMs": 98.4,
+            "text": "{\"error\":{\"type\":\"server_error\",\"message\":\"Upstream request failed: Model is unavailable.\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

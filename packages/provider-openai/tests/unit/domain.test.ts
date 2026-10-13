@@ -6,7 +6,7 @@ import { isSnapshot, parseModelList, STATIC_CATALOG } from "@inference-router/pr
 import { FALLBACK_MODELS, SCOPES, SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@inference-router/provider-openai/domain/constants.ts";
 import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens } from "@inference-router/provider-openai/domain/credential.ts";
 import { checkClaims, IdTokenError, parseCompactJws } from "@inference-router/provider-openai/domain/id-token.ts";
-import { aggregate, prepareRequest } from "@inference-router/provider-openai/domain/responses.ts";
+import { aggregate, OutputItems, prepareRequest, StreamRepair } from "@inference-router/provider-openai/domain/responses.ts";
 
 const enc = (value: unknown) => base64UrlEncode(new TextEncoder().encode(typeof value === "string" ? value : JSON.stringify(value)));
 
@@ -198,6 +198,49 @@ describe("aggregation (O8, E2–E3)", () => {
     });
     expect(aggregate([{ type: "error", code: null }])).toMatchObject({ status: 502, body: { error: { message: "the stream reported an error" } } });
     expect(aggregate([])).toEqual({ kind: "error", status: 502, body: { error: { message: "upstream stream ended without response.completed", type: "upstream_error", param: null, code: null } } });
+  });
+
+  test("I6: a terminal response without output gets the output_item.done items in output_index order", () => {
+    const message = { type: "message", role: "assistant", content: [{ type: "output_text", text: "OK" }] };
+    const call = { type: "function_call", call_id: "c1", name: "get_time", arguments: "{}" };
+    const events = [
+      { type: "response.output_item.done", output_index: 1, item: call },
+      { type: "response.output_item.done", output_index: 0, item: message },
+      { type: "response.output_item.done", item: { ignored: true } },
+      { type: "response.completed", response: { id: "r", output: [] } },
+    ];
+    expect(aggregate(events)).toEqual({ kind: "response", response: { id: "r", output: [message, call] } });
+    expect(aggregate([events[0]!, { type: "response.incomplete", response: { id: "r" } }])).toEqual({ kind: "response", response: { id: "r", output: [call] } });
+    const own = { id: "r", output: [message] };
+    expect(aggregate([events[0]!, { type: "response.completed", response: own }])).toEqual({ kind: "response", response: own });
+    expect(new OutputItems().complete({ id: "r", output: [] })).toEqual({ id: "r", output: [] });
+  });
+
+  test("I6: StreamRepair passes frames unchanged, holds a partial frame and fills the terminal response", () => {
+    const item = { type: "message", content: [{ type: "output_text", text: "OK" }] };
+    const frame = (e: Record<string, unknown>, end = "\n\n") => `event: ${String(e["type"])}\ndata: ${JSON.stringify(e)}${end}`;
+    const done = frame({ type: "response.output_item.done", output_index: 0, item });
+    const completed = { type: "response.completed", response: { id: "r", output: [] } };
+    const repair = new StreamRepair();
+    expect(repair.push(done.slice(0, 20))).toBe("");
+    expect(repair.push(`${done.slice(20)}: keep-alive\n\ndata: [DONE]\r\n\r\n`)).toBe(`${done}: keep-alive\n\ndata: [DONE]\r\n\r\n`);
+    expect(repair.push(frame(completed))).toBe(frame({ ...completed, response: { id: "r", output: [item] } }));
+    expect(repair.terminal).toBe("response.completed");
+    expect(repair.flush()).toBe("");
+    // A terminal frame without its blank line arrives through flush; one that already has output is unchanged.
+    const tail = new StreamRepair();
+    expect(tail.push(done)).toBe(done);
+    expect(tail.push(frame(completed, ""))).toBe("");
+    expect(tail.flush()).toBe(frame({ ...completed, response: { id: "r", output: [item] } }, ""));
+    const own = frame({ type: "response.completed", response: { id: "r", output: [item] } });
+    expect(new StreamRepair().push(own)).toBe(own);
+    const failed = new StreamRepair();
+    expect(failed.push(frame({ type: "response.failed", response: { error: {} } }))).toContain("response.failed");
+    expect([failed.terminal, failed.push(frame({ type: "response.completed" }))]).toEqual(["response.failed", frame({ type: "response.completed" })]);
+    expect(failed.push("data: 1\n\n")).toBe("data: 1\n\n");
+    const compact = new StreamRepair();
+    compact.push(`data:${JSON.stringify({ type: "response.output_item.done", output_index: 0, item })}\n\n`);
+    expect(compact.push(`data:${JSON.stringify(completed)}\n\n`)).toBe(`data: ${JSON.stringify({ ...completed, response: { id: "r", output: [item] } })}\n\n`);
     expect(Object.keys(SHARING_ERROR_STATUS)).toHaveLength(9);
   });
 });

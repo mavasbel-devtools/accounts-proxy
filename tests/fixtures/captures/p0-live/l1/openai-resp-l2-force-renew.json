@@ -1,0 +1,9 @@
+{
+  "id": "openai-resp-l2-force-renew",
+  "target": "openai",
+  "scenario": "l2-force-renew",
+  "model": "gpt-5.6-luna",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 1,
+  "exchanges": []
+}

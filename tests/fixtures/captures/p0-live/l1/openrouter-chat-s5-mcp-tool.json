@@ -1,0 +1,97 @@
+{
+  "id": "openrouter-chat-s5-mcp-tool",
+  "target": "openrouter",
+  "scenario": "s5-mcp-tool",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "capturedAt": "2026-10-13T07:46:00.383Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "read_file",
+                "description": "Read a text file.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Absolute path of the file"
+                    },
+                    "limit": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Maximum number of lines"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "additionalProperties": false,
+                  "$schema": "http://json-schema.org/draft-07/schema#"
+                }
+              }
+            }
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "content": "Read the file /etc/hostname with the read_file tool."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a49cbda38d1618c2-QRO",
+          "connection": "keep-alive",
+          "content-encoding": "gzip",
+          "content-type": "application/json",
+          "date": "Tue, 13 Oct 2026 07:48:14 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1791877694-M2LlFgKOcgWZYP4jhf1J",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 107.1,
+        "doneAtMs": 698.3,
+        "chunks": [
+          {
+            "atMs": 451.6,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 698.2,
+            "text": "{\"id\":\"gen-1791877694-M2LlFgKOcgWZYP4jhf1J\",\"object\":\"chat.completion\",\"created\":1791877694,\"model\":\"nvidia/nemotron-3.5-lightning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"native_finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"reasoning\":\"We need to read file /etc/hostname using read_file tool. Use function read_file with path \\\"/etc/hostname\\\".\",\"tool_calls\":[{\"type\":\"function\",\"index\":0,\"id\":\"call-b839565e-42b2-4975-b116-a91e2fbee628\",\"function\":{\"name\":\"read_file\",\"arguments\":\"{\\\"path\\\":\\\"/etc/hostname\\\"}\"}}],\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"We need to read file /etc/hostname using read_file tool. Use function read_file with path \\\"/etc/hostname\\\".\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":375,\"completion_tokens\":54,\"total_tokens\":429,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":25,\"image_tokens\":0,\"audio_tokens\":0}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

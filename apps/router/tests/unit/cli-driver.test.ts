@@ -46,6 +46,8 @@ class Models extends ListModelsPort {
         models: [
           { address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80000, maxOutputTokens: 65536 },
           { address: { provider: "antigravity", model: "c" }, displayName: "C" },
+          { address: { provider: "antigravity", model: "w" }, displayName: "W", contextWindow: 272000 },
+          { address: { provider: "antigravity", model: "o" }, displayName: "O", maxOutputTokens: 4096 },
         ],
       },
       { provider: "claude", formats: ["anthropic-messages"], source: "static", models: [] },
@@ -185,11 +187,13 @@ describe("CliDriver", () => {
     expect(await c.run("models")).toBe(0);
     expect(await c.run("models", "antigravity")).toBe(0);
     expect(c.ports.models.seen).toEqual([undefined, "antigravity"]);
-    expect(c.out.slice(0, 6)).toEqual([
+    expect(c.out.slice(0, 8)).toEqual([
       "Antigravity usage:\n",
-      "# antigravity: 2 models (live catalog)\n",
+      "# antigravity: 4 models (live catalog)\n",
       "antigravity/g  G  context 80000 / output 65536\n",
       "antigravity/c  C\n",
+      "antigravity/w  W  context 272000\n",
+      "antigravity/o  O  output 4096\n",
       "# claude: 0 models (built-in list: the live catalog was unavailable)\n",
       "# claude: 0 models (stored copy of the live catalog)\n",
     ]);

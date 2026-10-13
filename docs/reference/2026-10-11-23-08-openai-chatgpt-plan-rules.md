@@ -49,6 +49,7 @@ choice open, the row says "design" and gives the reason.
 | I3 | Unsupported fields: `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user`; and `previous_response_id` over HTTP; and `input` items `{type: "message", role: "system"}` | preview-limitations "Responses API requirements" |
 | I4 | Unsupported tools: image generation, file search, Code Interpreter, computer use, hosted MCP/connectors, `tool_search`; `programmatic_tool_calling` not in top-level `tools` | preview-limitations |
 | I5 | Request headers `session-id`, `thread-id`, `x-client-request-id` (opencode's, decision O9). Value: the client's own `session-id` header when it sends one, else the daemon's per-process session uuid (design: the router has no session of its own; the Claude identity uses the same per-process scheme) | `chatgpt.ts:276-279` |
+| I6 | The stream ends with a terminal `response` whose `output` is empty; the items arrive only in `response.output_item.done`. The router fills the terminal response with those items (by `output_index`) for an aggregated answer and in the forwarded stream, every other frame unchanged. | live 2026-10-13: [findings F1](2026-10-13-02-52-live-validation-findings.md), `tests/fixtures/captures/p0-live/l1/openai-resp-*.json` |
 
 ## Errors
 

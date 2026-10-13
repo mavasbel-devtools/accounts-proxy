@@ -151,3 +151,8 @@ seven providers (main plan "Changes v4 → v4.1").
   Claude rotates and rejects the previous refresh token (`invalid_grant`), reuse does not revoke the new one; Google
   keeps the same refresh token; no re-login needed. `bun run verify`: GATE PASS (524 unit+component, 182 e2e, 100%
   everywhere).
+
+- 2026-10-13 02:52 P4.5 live part and P6 (live validation) brought forward for the native cells: all seven providers
+  validated live ([plan](2026-10-13-01-42-live-validation-plan.md),
+  [findings](../reference/2026-10-13-02-52-live-validation-findings.md)); the live-only e2e deferrals are cleared. P6
+  is still due for the translated cells after P5.

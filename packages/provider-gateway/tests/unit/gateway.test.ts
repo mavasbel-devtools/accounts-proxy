@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
 import {
+  conversationId,
   asArray,
   asObject,
   fieldsText,
@@ -61,6 +62,35 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
     const own = { ...SPEC, headers: { "user-agent": "inference-router/0.1.0" }, forwardHeaders: ["x-opencode-session"] };
     expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { "x-opencode-session": "ses_1", "user-agent": "client/1" } })).headers).toEqual({ "user-agent": "inference-router/0.1.0", "content-type": "application/json", "x-opencode-session": "ses_1" });
     expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions" })).headers).toEqual({ "user-agent": "inference-router/0.1.0", "content-type": "application/json" });
+  });
+
+  test("Z24: the session header is the client's, else the conversation's own id, else a hash of the first user turn", () => {
+    const own = { ...SPEC, forwardHeaders: ["x-opencode-session"], sessionHeader: "x-opencode-session" };
+    const chat = (headers: Record<string, string>, body: unknown) => upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers, body: JSON.stringify(body) })).headers["x-opencode-session"];
+    const first = { model: "opencode/m", messages: [{ role: "system", content: "s" }, { role: "user", content: "hi" }] };
+    const later = { ...first, messages: [...first.messages, { role: "assistant", content: "yo" }, { role: "user", content: "again" }] };
+    expect(chat({ "x-opencode-session": "ses_client" }, first)).toBe("ses_client");
+    expect(chat({}, first)).toMatch(/^rtr_[0-9a-f]{16}$/);
+    expect(chat({}, later)).toBe(chat({}, first)!);
+    expect(chat({}, { ...first, messages: [{ role: "user", content: "other" }] })).not.toBe(chat({}, first)!);
+    expect(chat({}, { model: "opencode/m", messages: [] })).toBeUndefined();
+    expect(upstreamCall(SPEC, "m", raw({ format: "openai-chat", path: "/v1/chat/completions" })).headers["x-opencode-session"]).toBeUndefined();
+  });
+
+  test("Z24: conversationId per format", () => {
+    const claudeCode = JSON.stringify({ metadata: { user_id: "user_ab12_account__session_0fae6fcb-7a48-4def-941f-6e06af96c972" }, messages: [{ role: "user", content: "x" }] });
+    expect(conversationId("anthropic-messages", claudeCode)).toBe("0fae6fcb-7a48-4def-941f-6e06af96c972");
+    expect(conversationId("anthropic-messages", JSON.stringify({ metadata: { user_id: "u" }, messages: [{ role: "user", content: "x" }] }))).toMatch(/^rtr_/);
+    expect(conversationId("anthropic-messages", JSON.stringify({ metadata: 1, messages: "x" }))).toBeUndefined();
+    expect(conversationId("openai-responses", JSON.stringify({ prompt_cache_key: "ses_aff", input: "x" }))).toBe("ses_aff");
+    expect(conversationId("openai-responses", JSON.stringify({ prompt_cache_key: "", input: "x" }))).toBe(conversationId("openai-responses", JSON.stringify({ input: "x" }))!);
+    const items = [{ type: "function_call_output", call_id: "c", output: "o" }, { role: "user", content: "x" }];
+    expect(conversationId("openai-responses", JSON.stringify({ input: items }))).toBe(conversationId("openai-responses", JSON.stringify({ input: [items[1]] }))!);
+    expect(conversationId("openai-responses", JSON.stringify({ input: 1 }))).toBeUndefined();
+    expect(conversationId("gemini", JSON.stringify({ contents: [{ parts: [{ text: "x" }] }] }))).toMatch(/^rtr_[0-9a-f]{16}$/);
+    expect(conversationId("gemini", JSON.stringify({}))).toBeUndefined();
+    expect(conversationId("openai-chat", "[1]")).toBeUndefined();
+    expect(conversationId("openai-chat", "{")).toBeUndefined();
   });
 
   test("a format without a vendor endpoint is a translated cell", () => {

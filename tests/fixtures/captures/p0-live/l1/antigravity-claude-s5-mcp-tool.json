@@ -1,0 +1,124 @@
+{
+  "id": "antigravity-claude-s5-mcp-tool",
+  "target": "antigravity",
+  "scenario": "s5-mcp-tool",
+  "model": "claude-sonnet-5-5-low",
+  "capturedAt": "2026-10-13T08:00:40.053Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "content-type": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/483c7a78-5bd8-4e4d-8b24-343135e9e334/1791878445846/10503d4b-0e39-4077-bd6e-624a20f473f8/8",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Read the file /etc/hostname with the read_file tool."
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "functionDeclarations": [
+                  {
+                    "name": "read_file",
+                    "description": "Read a text file.",
+                    "parametersJsonSchema": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "description": "Absolute path of the file"
+                        },
+                        "limit": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "exclusiveMinimum": 0
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "Maximum number of lines"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false,
+                      "$schema": "http://json-schema.org/draft-07/schema#"
+                    }
+                  }
+                ]
+              }
+            ],
+            "toolConfig": {
+              "functionCallingConfig": {
+                "mode": "VALIDATED"
+              }
+            },
+            "labels": {
+              "last_execution_id": "64c42428-56c6-45b9-b06f-5867cd16d104",
+              "last_step_index": "7",
+              "model_enum": "MODEL_PLACEHOLDER_M403",
+              "trajectory_id": "10503d4b-0e39-4077-bd6e-624a20f473f8",
+              "used_claude": "true",
+              "used_claude_conservative": "true",
+              "used_non_gemini_model": "true"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 128000
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "claude-sonnet-5-5-low",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Tue, 13 Oct 2026 08:00:46 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=819",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 831.4,
+        "doneAtMs": 1011.5,
+        "chunks": [
+          {
+            "atMs": 831.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 492,\"candidatesTokenCount\": 16,\"totalTokenCount\": 508},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfytFUXsWugwvKetpUJZk\"},\"traceId\": \"2bfbc2fb52a7c952\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 993.5,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"functionCall\": {\"name\": \"read_file\",\"args\": {\"path\": \"/etc/hostname\"},\"id\": \"toolu_vrtx_01Krrg2dM1GZ4TcSBqpnYUux\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 492,\"candidatesTokenCount\": 16,\"totalTokenCount\": 508},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfytFUXsWugwvKetpUJZk\"},\"traceId\": \"2bfbc2fb52a7c952\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 492,\"candidatesTokenCount\": 53,\"totalTokenCount\": 545},\"modelVersion\": \"claude-sonnet-5-5-low\",\"responseId\": \"req_vrtx_011CfytFUXsWugwvKetpUJZk\"},\"traceId\": \"2bfbc2fb52a7c952\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

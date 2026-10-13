@@ -72,7 +72,9 @@ export class RouteHandler extends HttpHandler {
       if (!(await this.ports.access.authorize(presentedToken(request.headers, request.query)))) throw new UnauthorizedError();
       return await this.route(codec, request, request.path.slice(codec.prefix.length));
     } catch (error) {
-      if (!(error instanceof RouterError)) this.errors.report(`${request.method} ${request.path} failed`, error);
+      // A request the client abandoned fails with the abort of its upstream call: nothing went wrong in the router, and
+      // the answer below reaches no one (live L3, 2026-10-13: opencode cancels its side requests).
+      if (!(error instanceof RouterError) && !request.signal.aborted) this.errors.report(`${request.method} ${request.path} failed`, error);
       return encoded(codec.error(asRouterError(error)));
     }
   }
