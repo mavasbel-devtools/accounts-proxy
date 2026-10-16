@@ -328,9 +328,9 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
   };
   const raw = (body: unknown, headers: Record<string, string> = {}, lossy = false, path = NATIVE_PATH): RawRequest => ({ format: "openai-responses", path, query: {}, headers, body: typeof body === "string" ? body : JSON.stringify(body), lossy });
 
-  test("identity, models, and the translated cells (P5)", async () => {
+  test("identity and models", async () => {
     const { provider } = make();
-    expect([provider.id, [...(await provider.nativeFormats("any"))], provider.capabilities().size]).toEqual(["openai", ["openai-responses"], 0]);
+    expect([provider.id, [...(await provider.nativeFormats("any"))]]).toEqual(["openai", ["openai-responses"]]);
     expect(await provider.models()).toEqual({
       provider: "openai",
       formats: ["openai-responses"],
@@ -340,8 +340,6 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
         { address: { provider: "openai", model: "gpt-5.5" }, displayName: "gpt-5.5" },
       ],
     });
-    await expect(provider.countTokens({} as never)).rejects.toBeInstanceOf(UnsupportedFeatureError);
-    await expect(provider.stream({} as never)[Symbol.asyncIterator]().next()).rejects.toBeInstanceOf(UnsupportedFeatureError);
   });
 
   test("a streaming client gets the upstream stream unchanged; the request is store false / stream true with opencode's session headers", async () => {

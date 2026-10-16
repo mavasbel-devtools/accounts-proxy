@@ -14,7 +14,9 @@ Gemini `generateContent` formats and routes each request to one of seven provide
   `openrouter`, `opencode` (OpenCode Zen), `opencode-go`, `cheaper-inference`.
 
 A model accepts some formats natively (one fixed format per subscription provider; per model, or uniformly, on a
-gateway); a request in any other format is a translated cell (P5).
+gateway); a request in any other format answers 400 `unsupported_feature`. The router does not translate between
+formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (decision D1-A,
+[plan](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md)).
 
 ## 2. Architecture law (enforced by `tests/arch/architecture.test.ts`; part of `verify`)
 - **Workspaces.**
@@ -120,9 +122,10 @@ gateway); a request in any other format is a translated cell (P5).
   a normal exit path (SIGTERM is handled), never a hard kill, or its coverage is lost. Upstreams are the replay server
   `tests/support/e2e/upstreams.ts`, answering only from committed captures; browser logins use the fake `xdg-open`.
   The built bundle is run separately (`apps/router/tests/e2e/bundle.test.ts`); it cannot carry coverage.
-  Code that only the translated cells (P5) reach is deferred by name in `scripts/gate/e2e-deferred.ts` (file, function
-  or branch, each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate). The list
-  must be empty when P5 is done ([R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)). Plan P4.6 adds
+  Code no e2e route can reach yet is deferred by name in `scripts/gate/e2e-deferred.ts` (file, function or branch,
+  each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate;
+  [R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)). The list is empty: the P5-only code left with
+  P5 (D1-A). Plan P4.6 adds
   the phases `P4.5-live` and `P4.6-live`: code whose replay needs a live capture only the user's own sign-in or key can
   produce; such an entry leaves the list when its capture is committed and replayed (none is left since the live
   validation of 2026-10-13). Replayed answers come from committed captures or from the vendors' documented examples

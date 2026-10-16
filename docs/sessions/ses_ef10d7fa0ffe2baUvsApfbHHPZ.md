@@ -108,4 +108,6 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P4.6 API-key gateways | done; live-validated 2026-10-13 |
 | P4.6 amendment A (OpenCode Console) | done; live-validated 2026-10-13 |
 | Live validation L0–L4 (all seven providers) | done 2026-10-13 |
-| P5–P9 | not started |
+| P5 (translation) | cancelled 2026-10-14 (D1-A); translation-only code removed 2026-10-16 (C1) |
+| Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0 evidence and C1 done 2026-10-16; C2–C7 in progress |
+| P6–P9 | not started |

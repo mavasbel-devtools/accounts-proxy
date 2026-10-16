@@ -69,6 +69,13 @@
         "@inference-router/core": "workspace:*",
       },
     },
+    "packages/dialect-opencode": {
+      "name": "@inference-router/dialect-opencode",
+      "version": "0.1.0",
+      "dependencies": {
+        "@inference-router/core": "workspace:*",
+      },
+    },
     "packages/provider-antigravity": {
       "name": "@inference-router/provider-antigravity",
       "version": "0.1.0",
@@ -235,6 +242,8 @@
     "@inference-router/dialect-gemini": ["@inference-router/dialect-gemini@workspace:packages/dialect-gemini"],
 
     "@inference-router/dialect-openai": ["@inference-router/dialect-openai@workspace:packages/dialect-openai"],
+
+    "@inference-router/dialect-opencode": ["@inference-router/dialect-opencode@workspace:packages/dialect-opencode"],
 
     "@inference-router/provider-antigravity": ["@inference-router/provider-antigravity@workspace:packages/provider-antigravity"],
 

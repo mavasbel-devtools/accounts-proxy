@@ -18,7 +18,6 @@ import {
 } from "@inference-router/test-support/fakes.ts";
 import { AntigravityApiClient } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
 import { AntigravityCatalog } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
-import { AntigravityChat } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-chat.ts";
 import { AntigravityNative, unwrapEnvelope } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-native.ts";
 import { AntigravityRunner } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-runner.ts";
 import { AntigravityProvider } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-provider.ts";
@@ -30,7 +29,7 @@ import { withActive } from "@inference-router/provider-antigravity/adapters/outb
 import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
 import { CLIENT_ID, CLIENT_SECRET, DAILY_HOST, SCOPES, SUCCESS_REDIRECT, USER_AGENT, USERINFO_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
 import { toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatChunk, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { prepareGeminiRequest } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
 import { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
@@ -460,8 +459,8 @@ class MemoryState extends AntigravityStatePort {
   }
 }
 
-describe("AntigravityChat", () => {
-  const request: ChatRequest = { modelWireId: "gemini-3.6-flash-low", modelEnum: "MODEL_PLACEHOLDER_M73", messages: [{ role: "user", text: "hi" }] };
+describe("AntigravityRunner", () => {
+  const turns = [{ role: "user" as const, text: "hi" }];
   const capture = (): StreamEnvelope[] =>
     text("stream-generate.sample.sse")
       .split("\n")
@@ -473,17 +472,24 @@ describe("AntigravityChat", () => {
     const timer = new InstantTimer();
     const logger = new MemoryLogger();
     const runner = new AntigravityRunner(api, session, state, new SequenceRandom(), new FixedClock(77), timer, logger);
-    return { api, timer, logger, session, state, chat: new AntigravityChat(runner, state, logger) };
+    const run = (input: { turns?: typeof turns } = {}) =>
+      runner.run({
+        modelWireId: "gemini-3.6-flash-low",
+        modelEnum: "MODEL_PLACEHOLDER_M73",
+        turns: input.turns ?? turns,
+        build: (snapshot) => ({ labels: snapshot.labels, sessionId: snapshot.sessionId }),
+        map: (envelope) => envelope,
+      });
+    return { api, timer, logger, session, state, run };
   };
   async function* from(envelopes: StreamEnvelope[]) {
     for (const e of envelopes) yield e;
   }
 
-  test("captured stream → chunks; trajectory envelope; step counter advances after completion", async () => {
-    const { chat, api } = make(() => from(capture()));
-    const chunks = await drain(chat.stream(request));
-    expect(chunks.map((c) => c.deltaText ?? c.finishReason)).toEqual(["Hello, world", "!", "STOP"]);
-    await drain(chat.stream({ ...request, messages: [...request.messages, { role: "assistant", text: "Hello, world!" }, { role: "user", text: "again" }] }));
+  test("every envelope is mapped; trajectory envelope; step counter advances after completion", async () => {
+    const { run, api } = make(() => from(capture()));
+    expect(await drain(run())).toEqual(capture());
+    await drain(run({ turns: [...turns, { role: "assistant", text: "Hello, world!" }, { role: "user", text: "again" }] as typeof turns }));
     expect(api.streams.map((p) => [p.project, p.modelWireId, p.requestId])).toEqual([
       ["proj-1", "gemini-3.6-flash-low", "agent/uuid-1/77/uuid-2/3"],
       ["proj-1", "gemini-3.6-flash-low", "agent/uuid-1/77/uuid-2/6"],
@@ -493,59 +499,35 @@ describe("AntigravityChat", () => {
     expect(body.labels.model_enum).toBe("MODEL_PLACEHOLDER_M73");
   });
 
-  test("a clean end without finishReason yields STOP; content-free envelopes are skipped", async () => {
-    const { chat } = make(() => from([{}, { response: { candidates: [{ content: { parts: [{ text: "x" }] } }] } }]));
-    expect(await drain(chat.stream({ ...request, modelEnum: undefined } as never))).toEqual([{ deltaText: "x" }, { finishReason: "STOP" }]);
-  });
-
-  test("captured signatures are persisted; a persist failure is only warned", async () => {
-    const env: StreamEnvelope = { response: { candidates: [{ content: { parts: [{ functionCall: { id: "f1", name: "ls" }, thoughtSignature: "SIG-1" }] }, finishReason: "STOP" }] } };
-    const ok = make(() => from([env]));
-    await drain(ok.chat.stream(request));
-    expect(ok.state.saved).toEqual({ f1: "SIG-1" });
-    const failing = new MemoryState();
-    failing.fail = true;
-    const bad = make(() => from([env]), new FixedSession(), failing);
-    await drain(bad.chat.stream(request));
-    await Bun.sleep(1);
-    expect(bad.logger.lines.some((l) => l.includes("signature persist failed (Error: disk full)"))).toBe(true);
-  });
-
-  test("an unsigned replayed Gemini call is dropped and the warning reaches the logger", async () => {
-    const { chat, logger, api } = make(() => from(capture()));
-    await drain(chat.stream({ ...request, messages: [{ role: "user", text: "q" }, { role: "assistant", text: "", toolCalls: [{ id: "lost", name: "ls", arguments: "{}" }] }, { role: "tool", text: "r", toolCallId: "lost", toolName: "ls" }, { role: "user", text: "next" }] }));
-    expect(logger.lines.some((l) => l.startsWith("WARN antigravity: dropping replayed function call lost (ls)"))).toBe(true);
-    expect(JSON.stringify(api.streams[0]!.body)).not.toContain("lost");
-  });
-
   test("an account without a project is an auth error", async () => {
-    const { chat } = make(() => from([]), new FixedSession({ id: "x", account: acct({ projectIds: [], activeProjectId: undefined } as never) }));
-    await expect(drain(chat.stream(request))).rejects.toThrow("account x has no project assigned");
+    const { run } = make(() => from([]), new FixedSession({ id: "x", account: acct({ projectIds: [], activeProjectId: undefined } as never) }));
+    await expect(drain(run())).rejects.toThrow("account x has no project assigned");
   });
 
   test("401 → one forced rotation then success; a second 401 propagates", async () => {
     const once = make((_p, _t, call) => (call === 1 ? (async function* () { throw new UpstreamError("antigravity", 401, ""); })() : from(capture())));
-    expect((await drain(once.chat.stream(request))).length).toBe(3);
+    expect((await drain(once.run())).length).toBe(capture().length);
     expect(once.session.rotations).toBe(1);
     expect(once.api.streams[0]!.requestId).toBe(once.api.streams[1]!.requestId);
     const twice = make(() => (async function* () { throw new UpstreamError("antigravity", 401, ""); })());
-    await expect(drain(twice.chat.stream(request))).rejects.toBeInstanceOf(UpstreamError);
+    await expect(drain(twice.run())).rejects.toBeInstanceOf(UpstreamError);
     expect(twice.session.rotations).toBe(1);
   });
 
-  test("geo gate retried twice with 2 s / 8 s backoff, then propagated; never retried after a chunk", async () => {
+  test("geo gate retried twice with 2 s / 8 s backoff, then propagated; never retried after an envelope", async () => {
     const gate = () => (async function* () { throw new UpstreamError("antigravity", 400, "User location is not supported for the API use"); })();
-    const { chat, timer, logger } = make(gate);
-    await expect(drain(chat.stream(request))).rejects.toBeInstanceOf(UpstreamError);
+    const { run, timer, logger } = make(gate);
+    await expect(drain(run())).rejects.toBeInstanceOf(UpstreamError);
     expect(timer.waits).toEqual([2000, 8000]);
     expect(logger.lines.filter((l) => l.includes("geo gate"))).toHaveLength(2);
+    const first = { response: { candidates: [{ content: { parts: [{ text: "x" }] } }] } } as StreamEnvelope;
     const late = make(() => (async function* () {
-      yield { response: { candidates: [{ content: { parts: [{ text: "x" }] } }] } } as StreamEnvelope;
+      yield first;
       throw new UpstreamError("antigravity", 400, "User location is not supported");
     })());
-    const seen: ChatChunk[] = [];
-    await expect((async () => { for await (const c of late.chat.stream(request)) seen.push(c); })()).rejects.toBeInstanceOf(UpstreamError);
-    expect(seen).toEqual([{ deltaText: "x" }]);
+    const seen: StreamEnvelope[] = [];
+    await expect((async () => { for await (const c of late.run()) seen.push(c); })()).rejects.toBeInstanceOf(UpstreamError);
+    expect(seen).toEqual([first]);
     expect(late.timer.waits).toEqual([]);
   });
 });
@@ -616,16 +598,13 @@ describe("AntigravityProvider", () => {
   const hello = { contents: [{ role: "user", parts: [{ text: "hi" }] }] };
   const decode = async (body: AsyncIterable<Uint8Array>) => (await drain(body)).map((c) => new TextDecoder().decode(c));
 
-  test("identity, models (live, advertised limits, 80k clamp; limits omitted when output is unknown), translated cells pending", async () => {
+  test("identity, models (live, advertised limits, 80k clamp; limits omitted when output is unknown)", async () => {
     const { provider } = make();
-    expect([provider.id, [...(await provider.nativeFormats("any"))], provider.capabilities().size]).toEqual(["antigravity", ["gemini"], 0]);
+    expect([provider.id, [...(await provider.nativeFormats("any"))]]).toEqual(["antigravity", ["gemini"]]);
     const catalog = await provider.models();
     expect([catalog.provider, catalog.source]).toEqual(["antigravity", "live"]);
     expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });
     expect(catalog.models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)" });
-    const canonical = { model: { provider: "antigravity" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
-    await expect(provider.countTokens(canonical)).rejects.toBeInstanceOf(UnsupportedFeatureError);
-    await expect(drain(provider.stream(canonical))).rejects.toBeInstanceOf(UnsupportedFeatureError);
   });
 
   test("route, method, model and body checks happen before any upstream call", async () => {

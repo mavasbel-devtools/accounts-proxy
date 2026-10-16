@@ -1,0 +1,83 @@
+{
+  "commit": "9b4ec5714d",
+  "alias": "@opencode/",
+  "prefix": "packages/",
+  "byteIdentical": true,
+  "files": [
+    {
+      "file": "core/src/variant.ts",
+      "blob": "4f3cb4e3cefba911c5cdeb4279d28d6c7a4e675b",
+      "bytes": 26560
+    },
+    {
+      "file": "core/src/aisdk-native.ts",
+      "blob": "51d1b509c405f65e75d22e87a08cc7856838fb2f",
+      "bytes": 14902
+    },
+    {
+      "file": "core/src/models-dev.ts",
+      "blob": "ce0c1963ca4a3d54a4a8de75b9cfdc4e673248bb",
+      "bytes": 16510
+    },
+    {
+      "file": "core/src/model.ts",
+      "blob": "88c0821800b8e24c53f7fe2fa21c296875d77437",
+      "bytes": 12673
+    },
+    {
+      "file": "core/src/config/plugin/provider.ts",
+      "blob": "a3f6265b94391cd1dbb1618435f2a8705e033b11",
+      "bytes": 8443
+    },
+    {
+      "file": "core/src/config/normalize.ts",
+      "blob": "f400b59ae2d85e211c70eaa635ac9665f5e420bc",
+      "bytes": 31073
+    },
+    {
+      "file": "core/src/wellknown.ts",
+      "blob": "34b651296e62e8b2735cbdefc406bd7b932aa99b",
+      "bytes": 9209
+    },
+    {
+      "file": "core/src/wellknown/plugin.ts",
+      "blob": "23b2e4052e779878ac046cd450205364954b6f4a",
+      "bytes": 1179
+    },
+    {
+      "file": "core/src/integration.ts",
+      "blob": "177666127b028713f52b50ec685c20040e0d2c9c",
+      "bytes": 37023
+    },
+    {
+      "file": "core/src/provider.ts",
+      "blob": "18608bd435e69668866a165e9533154bbe55d0ba",
+      "bytes": 22357
+    },
+    {
+      "file": "core/test/variant.test.ts",
+      "blob": "8f2367bc7acfaf80c2d8f325fd4dd32f0a7d48c8",
+      "bytes": 21244
+    },
+    {
+      "file": "schema/src/config/provider.ts",
+      "blob": "98211cc2021ceee8d7c42580d85e1a7f3165e4b4",
+      "bytes": 3542
+    },
+    {
+      "file": "schema/src/model.ts",
+      "blob": "743cfc61fef080b0fd03ac8c24edeef3909d0691",
+      "bytes": 6028
+    },
+    {
+      "file": "schema/src/provider.ts",
+      "blob": "9e5ced387652118c3faa7771c9cc78160d89ad08",
+      "bytes": 3231
+    },
+    {
+      "file": "cli/src/commands/handlers/auth/login.ts",
+      "blob": "fcc3c19b780bfb1a56ebcbacaed2f2ebba27a766",
+      "bytes": 11562
+    }
+  ]
+}

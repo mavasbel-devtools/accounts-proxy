@@ -19,6 +19,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
   { dir: "packages/dialect-anthropic", name: "@inference-router/dialect-anthropic", description: "Anthropic Messages dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/dialect-openai", name: "@inference-router/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
   { dir: "packages/dialect-gemini", name: "@inference-router/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
+  { dir: "packages/dialect-opencode", name: "@inference-router/dialect-opencode", description: "opencode v2 provider configuration and well-known manifest (inbound adapters).", dependencies: ["@inference-router/core"] },
   {
     dir: "apps/router",
     name: "@inference-router/router",
@@ -35,6 +36,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
       "@inference-router/dialect-anthropic",
       "@inference-router/dialect-openai",
       "@inference-router/dialect-gemini",
+      "@inference-router/dialect-opencode",
     ],
   },
 ];

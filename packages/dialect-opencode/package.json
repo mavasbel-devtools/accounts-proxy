@@ -1,0 +1,14 @@
+{
+  "name": "@inference-router/dialect-opencode",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "opencode v2 provider configuration and well-known manifest (inbound adapters).",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@inference-router/core": "workspace:*"
+  }
+}

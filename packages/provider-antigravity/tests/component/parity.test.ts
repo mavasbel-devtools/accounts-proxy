@@ -4,7 +4,6 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { GenerateCodec, toWireTools, type ChatRequest, type StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import { sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
 import { extractProjectIds } from "@inference-router/provider-antigravity/domain/project.ts";
 import { formatUsage, parseGroupModels, toQuotaSnapshot } from "@inference-router/provider-antigravity/domain/quota.ts";
@@ -25,11 +24,6 @@ const R = {
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const models = JSON.parse(readFileSync(join(fixtures, "fetch-available-models.sample.json"), "utf8")) as Record<string, unknown>;
 const quota = JSON.parse(readFileSync(join(fixtures, "retrieve-user-quota-summary.sample.json"), "utf8")) as Record<string, unknown>;
-const sse = readFileSync(join(fixtures, "stream-generate.sample.sse"), "utf8");
-const envelopes = sse
-  .split("\n")
-  .filter((l) => l.startsWith("data:"))
-  .map((l) => JSON.parse(l.slice(5)) as StreamEnvelope);
 
 const counter = () => {
   let n = 0;
@@ -112,88 +106,13 @@ describe("trajectory parity", () => {
   });
 });
 
-describe("generate parity", () => {
+describe("tool schema parity (law 5)", () => {
   const tools = [
     { name: "ls", description: "list", parameters: { $schema: "x", type: "object", additionalProperties: false, properties: { path: { type: "string", exclusiveMinimum: 1 }, n: { type: ["integer", "null"], nullable: true } }, required: ["path"] } },
     { name: "noop" },
   ];
-  const requests: [string, ChatRequest][] = [
-    ["plain", { modelWireId: "gemini-3.6-flash-low", messages: [{ role: "user", text: "hi" }] }],
-    [
-      "system, images, tools, thinking, max tokens",
-      {
-        modelWireId: "claude-sonnet-5",
-        maxOutputTokens: 64000,
-        thinkingBudget: 1024,
-        tools,
-        modelEnum: "MODEL_X",
-        messages: [
-          { role: "system", text: "be brief" },
-          { role: "system", text: "   " },
-          { role: "user", text: "look", images: [{ mimeType: "image/png", base64: "AA" }] },
-          { role: "assistant", text: "", toolCalls: [{ id: "c1", name: "ls", arguments: '{"path":"."}' }, { id: "c2", name: "noop", arguments: "" }, { id: "c3", name: "ls", arguments: "{bad" }] },
-          { role: "tool", text: "out", toolCallId: "c1", toolName: "ls" },
-          { role: "tool", text: "out2", toolCallId: "c2" },
-          { role: "tool", text: "out3" },
-          { role: "assistant", text: "trailing" },
-        ],
-      },
-    ],
-    [
-      "gemini: signed call kept, unsigned calls dropped with their results, then trailing model turn stripped",
-      {
-        modelWireId: "gemini-3.7-flash-tiered",
-        messages: [
-          { role: "user", text: "go" },
-          { role: "assistant", text: "", toolCalls: [{ id: "signed", name: "ls", arguments: "{}" }] },
-          { role: "tool", text: "r1", toolCallId: "signed", toolName: "ls" },
-          { role: "assistant", text: "partly", toolCalls: [{ id: "signed", name: "ls", arguments: "{}" }, { id: "lost", name: "ls", arguments: "{}" }] },
-          { role: "tool", text: "r2", toolCallId: "lost", toolName: "ls" },
-          { role: "assistant", text: "", toolCalls: [{ id: "gone", name: "ls", arguments: "{}" }] },
-          { role: "assistant", text: "keeps text", toolCalls: [{ id: "gone2", name: "ls", arguments: "{}" }] },
-          { role: "tool", text: "r3", toolCallId: "gone2" },
-        ],
-      },
-    ],
-  ];
 
-  for (const [name, request] of requests) {
-    test(name, () => {
-      const refWarnings: string[] = [];
-      const ourWarnings: string[] = [];
-      const reference = new R.transform.RequestTransformService({ signaturesStore: { readAll: () => ({ signed: "sig-1" }), upsert: () => {} }, logger: { warn: (m: string) => refWarnings.push(m) } });
-      const ours = new GenerateCodec({ signed: "sig-1" }, { warn: (m) => ourWarnings.push(m) });
-      const opts = { labels: { last_step_index: "2", model_enum: "M", trajectory_id: "t", used_claude: "false", used_claude_conservative: "false", used_non_gemini_model: "false" }, sessionId: "-1" };
-      expect(JSON.stringify(ours.toGenerateBody(request, opts))).toBe(JSON.stringify(reference.toGenerateBody(request, opts)));
-      expect(JSON.stringify(ours.toGenerateBody(request, { labels: opts.labels }))).toBe(JSON.stringify(reference.toGenerateBody(request, { labels: opts.labels })));
-      expect(ourWarnings).toEqual(refWarnings);
-    });
-  }
-
-  test("schema sanitizer and wire tools", () => {
-    expect(toWireTools(tools)).toEqual(R.transform.toWireTools(tools));
-    expect(toWireTools([])).toEqual(R.transform.toWireTools([]));
-    expect(sanitizeSchema(tools[0]!.parameters)).toEqual(toWireTools([tools[0]!])[0]!.functionDeclarations[0]!["parameters"] as never);
-  });
-
-  test("envelopeToChunk over the captured stream and synthetic envelopes; captured signatures are replayed", () => {
-    const refStored: Record<string, string> = {};
-    const ourStored: Record<string, string> = {};
-    const reference = new R.transform.RequestTransformService({ signaturesStore: { readAll: () => ({}), upsert: (k: string, v: string) => (refStored[k] = v) } });
-    const ours = new GenerateCodec({}, { onSignature: (k, v) => (ourStored[k] = v) });
-    const synthetic: StreamEnvelope[] = [
-      {},
-      { response: {} },
-      { response: { candidates: [{ content: { parts: [{ functionCall: { id: "f1", name: "ls", args: { p: 1 } }, thoughtSignature: "S1" }, { functionCall: { name: "noid" } }, { thought: true, text: "think" }, { thought: true, text: "" }, { text: "" }, { text: "out" }] }, finishReason: "STOP" }], usageMetadata: { cachedContentTokenCount: 3 } } },
-      { response: { candidates: [], usageMetadata: {} } },
-      { response: { candidates: [{ content: { parts: [{ functionCall: { name: "first-without-id" } }] } }] } },
-    ];
-    expect(new GenerateCodec().envelopeToChunk(synthetic[4]!)).toEqual(reference.envelopeToChunk(synthetic[4]!));
-    for (const env of [...envelopes, ...synthetic]) expect(ours.envelopeToChunk(env)).toEqual(reference.envelopeToChunk(env));
-    expect(ourStored).toEqual(refStored);
-    const replay: ChatRequest = { modelWireId: "gemini-x", messages: [{ role: "user", text: "q" }, { role: "assistant", text: "", toolCalls: [{ id: "f1", name: "ls", arguments: "{}" }] }, { role: "tool", text: "r", toolCallId: "f1", toolName: "ls" }] };
-    const labels = { last_step_index: "2", model_enum: "M", trajectory_id: "t", used_claude: "false", used_claude_conservative: "false", used_non_gemini_model: "false" };
-    expect(JSON.stringify(ours.toGenerateBody(replay, { labels }))).toBe(JSON.stringify(reference.toGenerateBody(replay, { labels })));
-    expect(JSON.stringify(ours.toGenerateBody(replay, { labels }))).toContain('"thoughtSignature":"S1"');
+  test("the sanitized schema is the plugin's wire tool parameters", () => {
+    expect(sanitizeSchema(tools[0]!.parameters)).toEqual(R.transform.toWireTools([tools[0]!])[0].functionDeclarations[0].parameters);
   });
 });

@@ -5,7 +5,7 @@ import type { OAuthSessionPort, Session } from "@inference-router/core/ports/out
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import type { AntigravityAccount, AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
 import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatChunk, ChatMessage, ChatRequest, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { ChatMessage, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
 import type { GeminiResponse, PreparedGemini } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { UsageView } from "@inference-router/provider-antigravity/domain/quota.ts";
 import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
@@ -51,15 +51,15 @@ export type RunInput<T> = {
   readonly turns: readonly ChatMessage[];
   /** The inner request for the trajectory snapshot (labels, requestId, sessionId) of this logical request. */
   readonly build: (snapshot: TrajectorySnapshot) => Readonly<Record<string, unknown>>;
-  /** Maps each upstream envelope; `undefined` is neither yielded nor counted as output (retry safety). */
-  readonly map: (envelope: StreamEnvelope) => T | undefined;
+  /** Maps each upstream envelope; every mapped envelope is yielded and counts as output (retry safety). */
+  readonly map: (envelope: StreamEnvelope) => T;
   readonly signal?: AbortSignal | undefined;
 };
 
 /**
  * One logical generation through cloudcode-pa: the trajectory snapshot once, proactive refresh, one 401 rotation and
  * the transient geo-gate retries (law 14) — both only before anything was yielded — and the step counter after a
- * completed stream. Shared by the chat cell and the native Gemini cell.
+ * completed stream. Used by the native Gemini cell.
  */
 export abstract class AntigravityRunnerPort {
   abstract run<T>(input: RunInput<T>): AsyncIterable<T>;
@@ -72,10 +72,6 @@ export abstract class AntigravityNativePort {
   /** The cached thoughtSignature per function-call id. */
   abstract signatures(): Promise<Readonly<Record<string, string>>>;
   abstract generate(input: NativeInput): AsyncIterable<GeminiResponse>;
-}
-
-export abstract class AntigravityChatPort {
-  abstract stream(request: ChatRequest): AsyncIterable<ChatChunk>;
 }
 
 /** A usage reporter whose report also carries the structured per-group view. */

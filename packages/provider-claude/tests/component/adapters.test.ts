@@ -398,11 +398,10 @@ describe("ClaudeSubscriptionProvider", () => {
     expect([session.renewals, transport.requests.length]).toEqual([0, 1]);
   });
 
-  test("identity and capabilities", async () => {
+  test("identity and native formats", async () => {
     const { provider } = make(ok({}));
     expect(provider.id).toBe("claude");
     expect([...(await provider.nativeFormats("any"))]).toEqual(["anthropic-messages"]);
-    expect(provider.capabilities().size).toBe(0);
   });
 
   test("models come from the catalog with limits", async () => {
@@ -427,15 +426,6 @@ describe("ClaudeSubscriptionProvider", () => {
     }
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger(), API_BASE);
     expect(await provider.models()).toEqual({ provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "x" }, displayName: "X" }] });
-  });
-
-  test("translated cells are not available before P5", async () => {
-    const { provider } = make(ok({}));
-    const request = { model: { provider: "claude" as const, model: "m" }, system: [], messages: [], tools: [], params: {}, stream: true };
-    await expect(provider.countTokens(request)).rejects.toBeInstanceOf(UnsupportedFeatureError);
-    await expect((async () => {
-      for await (const _ of provider.stream(request)) void _;
-    })()).rejects.toBeInstanceOf(UnsupportedFeatureError);
   });
 
   test.each([

@@ -95,7 +95,7 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
 
   test("a format without a vendor endpoint is a translated cell", () => {
     expect(() => upstreamCall(SPEC, "m", raw({ format: "openai-responses", path: "/v1/responses" }))).toThrow(UnsupportedFeatureError);
-    expect(() => upstreamCall(SPEC, "m", raw({ format: "openai-responses", path: "/v1/responses" }))).toThrow("opencode (no native endpoint; translated cells arrive in P5) cannot carry: openai-responses_format");
+    expect(() => upstreamCall(SPEC, "m", raw({ format: "openai-responses", path: "/v1/responses" }))).toThrow("opencode (no native endpoint for this format; the router does not translate between formats) cannot carry: openai-responses_format");
   });
 });
 

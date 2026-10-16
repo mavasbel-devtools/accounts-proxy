@@ -1,5 +1,4 @@
-// One logical generation through cloudcode-pa, factored out of AntigravityChat (P4 plan §2.3) so the chat cell and
-// the native Gemini cell share it. Port of opencode-antigravity-auth @ 5c6f7c2 StreamChatUseCase.ts: trajectory
+// One logical generation through cloudcode-pa (P4 plan §2.3), used by the native Gemini cell. Port of opencode-antigravity-auth @ 5c6f7c2 StreamChatUseCase.ts: trajectory
 // snapshot computed ONCE per logical request and reused across retries; one 401 force-rotation; transient geo-gate
 // retries (2 s, 8 s) only before anything was yielded; the step counter advances only after a completed stream.
 // Difference G5: the account is refreshed proactively before the call (source used bare loadActive); the 401 retry
@@ -51,10 +50,8 @@ export class AntigravityRunner extends AntigravityRunnerPort {
       try {
         const envelopes = this.api.streamGenerate({ project, requestId: snapshot.requestId, body, modelWireId: input.modelWireId }, active.account.tokens, input.signal);
         for await (const envelope of envelopes) {
-          const out = input.map(envelope);
-          if (out === undefined) continue;
           yielded = true;
-          yield out;
+          yield input.map(envelope);
         }
         trajectory.complete();
         return;

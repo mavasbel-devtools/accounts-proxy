@@ -106,7 +106,7 @@ describe("daemon: Anthropic SDK → claude (native cell)", () => {
     expect((limited as InstanceType<typeof Anthropic.RateLimitError>).headers.get("retry-after")).toBe("17");
     expect(await failure(anthropic().messages.create({ model: "nope", max_tokens: 8, messages: [{ role: "user", content: "hi" }] }))).toBeInstanceOf(Anthropic.NotFoundError);
     const translated = await anthropic().messages.create({ model: GEMINI, max_tokens: 8, messages: [{ role: "user", content: "hi" }] }).catch((e: unknown) => e);
-    expect((translated as InstanceType<typeof Anthropic.BadRequestError>).message).toContain("translated cells arrive in P5");
+    expect((translated as InstanceType<typeof Anthropic.BadRequestError>).message).toContain("the router does not translate between formats");
   });
 });
 

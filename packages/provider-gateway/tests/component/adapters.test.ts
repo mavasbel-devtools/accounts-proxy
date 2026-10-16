@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { upsertAccount, EMPTY_POOL } from "@inference-router/core/domain/accounts.ts";
 import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
+import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
 import type { JsonValue } from "@inference-router/core/domain/json.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
 import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -145,9 +144,6 @@ describe("GatewayProvider", () => {
       ],
     });
     expect((await make({ ...SPEC, uniformFormats: ["openai-chat"] }).provider.models()).formats).toEqual(["openai-chat"]);
-    expect(provider.capabilities().size).toBe(0);
-    await expect(provider.countTokens({} as CanonicalRequest)).rejects.toBeInstanceOf(UnsupportedFeatureError);
-    await expect(collect(provider.stream({} as CanonicalRequest) as unknown as AsyncIterable<Uint8Array>)).rejects.toThrow("cheaper-inference (translated cells arrive in P5)");
   });
 
   test("passthrough: the vendor endpoint, the bare model, the key header, the client's signal; the stream unchanged (G1–G3)", async () => {

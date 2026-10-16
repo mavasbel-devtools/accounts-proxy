@@ -14,7 +14,8 @@ export type Dialect = "anthropic" | "openai" | "gemini";
 /**
  * The request format of one route (plan P4.6 §2): `/anthropic/v1/messages*` → anthropic-messages,
  * `/openai/v1/chat/completions` → openai-chat, `/openai/v1/responses` → openai-responses, `/gemini/v1beta/models/*` →
- * gemini. A model serves some formats natively; any other format is a translated cell (P5).
+ * gemini. A model serves some formats natively; a request in any other format answers unsupported_feature (the router
+ * does not translate between formats: P5 cancelled, plan 2026-10-16 D1-A).
  */
 export type WireFormat = "anthropic-messages" | "openai-chat" | "openai-responses" | "gemini";
 

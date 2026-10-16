@@ -79,7 +79,7 @@ describe("PassthroughService and HealthService", () => {
     const service = new PassthroughService([new Provider("antigravity", ["gemini"])], {});
     expect(service.forward("anthropic-messages", "nope", raw)).rejects.toBeInstanceOf(UnknownModelError);
     expect(service.forward("anthropic-messages", "claude/x", raw)).rejects.toBeInstanceOf(ProviderDisabledError);
-    expect(service.forward("anthropic-messages", "antigravity/g", raw)).rejects.toThrow("antigravity/g (it accepts gemini; translated cells arrive in P5) cannot carry: anthropic-messages_format");
+    expect(service.forward("anthropic-messages", "antigravity/g", raw)).rejects.toThrow("antigravity/g (it accepts gemini; the router does not translate between formats) cannot carry: anthropic-messages_format");
   });
 
   test("health lists the enabled providers", () => {

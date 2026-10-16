@@ -2,13 +2,10 @@
 // cell (P4): public Gemini `:streamGenerateContent` (SSE with `alt=sse`, else a JSON array written incrementally) and
 // `:generateContent` (the stream merged, decision Q4) through AntigravityNativePort. `:countTokens` is unsupported:
 // cloudcode-pa has no token-count endpoint (SPEC.md §2). Errors before the first byte are thrown (the HTTP adapter
-// renders them in the Gemini shape); after it, a final error element closes the stream. Translated cells: P5.
-import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
-import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
+// renders them in the Gemini shape); after it, a final error element closes the stream.
 import { asRouterError, InvalidRequestError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
@@ -17,8 +14,6 @@ import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts
 import { advertisedLimits } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { AntigravityCatalogPort, AntigravityNativePort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
-
-const PENDING = "antigravity (translated cells arrive in P5)";
 
 /** Law 11 for the native cell: a stream that ends without any response is an upstream failure, never an empty 200. */
 const emptyStream = () => new UpstreamError("antigravity", 502, "empty stream: the upstream ended without any response");
@@ -40,10 +35,6 @@ export class AntigravityProvider extends ProviderPort {
     return new Set(this.formats);
   }
 
-  capabilities(): ReadonlySet<Feature> {
-    return new Set<Feature>();
-  }
-
   async models(): Promise<ModelCatalog> {
     const descriptors = await this.catalog.descriptors();
     return {
@@ -59,14 +50,6 @@ export class AntigravityProvider extends ProviderPort {
         };
       }),
     };
-  }
-
-  async *stream(_request: CanonicalRequest): AsyncIterable<CanonicalEvent> {
-    throw new UnsupportedFeatureError(["translated_request"], PENDING);
-  }
-
-  async countTokens(_request: CanonicalRequest): Promise<number> {
-    throw new UnsupportedFeatureError(["translated_request"], PENDING);
   }
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {

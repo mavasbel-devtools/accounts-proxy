@@ -81,7 +81,7 @@ export function upstreamCall(spec: GatewaySpec, model: string, request: RawReque
 
 function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
   const endpoint = spec.endpoints[request.format];
-  if (endpoint === undefined) throw new UnsupportedFeatureError([`${request.format}_format`], `${spec.provider} (no native endpoint; translated cells arrive in P5)`);
+  if (endpoint === undefined) throw new UnsupportedFeatureError([`${request.format}_format`], `${spec.provider} (no native endpoint for this format; the router does not translate between formats)`);
   if (request.format === "anthropic-messages") {
     if (request.path === "/v1/messages") return endpoint;
     if (request.path === "/v1/messages/count_tokens") {

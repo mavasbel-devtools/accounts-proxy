@@ -4,14 +4,10 @@
 // and is aggregated into one response for the others (O8).
 // The request carries opencode's session headers `session-id`, `thread-id`, `x-client-request-id` (I5, decision O9).
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
-// status, body and request id (E1–E2). Translated cells (Anthropic/Chat/Gemini → OpenAI) arrive in P5.
-import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
-import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
-import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+// status, body and request id (E1–E2).
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { bodyOf, DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
@@ -65,13 +61,8 @@ export class OpenAIProvider extends ProviderPort {
     super();
   }
 
-  /** Translated-cell features: none until P5. */
   async nativeFormats(_model: string): Promise<ReadonlySet<WireFormat>> {
     return new Set(this.formats);
-  }
-
-  capabilities(): ReadonlySet<Feature> {
-    return new Set<Feature>();
   }
 
   async models(): Promise<ModelCatalog> {
@@ -82,14 +73,6 @@ export class OpenAIProvider extends ProviderPort {
       source,
       models: entries.map((e) => ({ address: { provider: this.id, model: e.id }, displayName: e.displayName, ...(e.contextWindow !== undefined ? { contextWindow: e.contextWindow } : {}) })),
     };
-  }
-
-  async *stream(_request: CanonicalRequest): AsyncIterable<CanonicalEvent> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
-  }
-
-  async countTokens(_request: CanonicalRequest): Promise<number> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
   }
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {

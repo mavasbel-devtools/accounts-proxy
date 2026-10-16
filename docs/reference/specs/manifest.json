@@ -273,6 +273,26 @@
     "fetchedAt": "2026-10-13T05:13:26.136Z"
   },
   {
+    "file": "models-opencode-reference.json",
+    "url": "https://models.opencode.ai/api.json",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 5676881,
+    "sha256": "3e8067a6e807ddb72704ab41e767dda3d041612134097261d18df10aa98bd6f8",
+    "extractBytes": 610660,
+    "extractSha256": "6792a0eb490aebb7b64c5969ababd4bb9e7d7aae2c35346c867280da473f899b",
+    "fetchedAt": "2026-10-16T06:17:03.179Z"
+  },
+  {
+    "file": "opencode-config-schema.json",
+    "url": "https://opencode.ai/config.json",
+    "status": 200,
+    "contentType": "application/json",
+    "bytes": 63387,
+    "sha256": "27ff090b2e7397510fd3572b6d2c2b72620f7d4935de0edfacf8bd6cbd517814",
+    "fetchedAt": "2026-10-16T06:17:03.530Z"
+  },
+  {
     "file": "opencode-zen-models.json",
     "url": "https://opencode.ai/inference/v1/models",
     "status": 200,

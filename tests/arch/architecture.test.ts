@@ -209,6 +209,7 @@ describe("architecture law", () => {
       "@inference-router/dialect-anthropic",
       "@inference-router/dialect-gemini",
       "@inference-router/dialect-openai",
+      "@inference-router/dialect-opencode",
       "@inference-router/provider-antigravity",
       "@inference-router/provider-cheaper-inference",
       "@inference-router/provider-claude",

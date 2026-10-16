@@ -100,11 +100,3 @@ export function toModelDescriptors(raw: Readonly<Record<string, unknown>>): Mode
 export function advertisedLimits(m: ModelDescriptor): { readonly context: number; readonly output: number } | undefined {
   return m.maxTokens > 0 && m.maxOutputTokens > 0 ? { context: advertisedContextWindow(m), output: m.maxOutputTokens } : undefined;
 }
-
-export type WireModelDefaults = { readonly modelEnum: string; readonly maxOutputTokens: number; readonly thinkingBudget?: number };
-
-/** Source wireDefaults: per-model envelope defaults the relay injects (model_enum, maxOutputTokens, thinking budget). */
-export function wireDefaultsFor(m: ModelDescriptor): WireModelDefaults {
-  const thinkingBudget = thinkingDefaultFor(m);
-  return { modelEnum: m.enumPlaceholder, maxOutputTokens: m.maxOutputTokens, ...(thinkingBudget !== undefined ? { thinkingBudget } : {}) };
-}

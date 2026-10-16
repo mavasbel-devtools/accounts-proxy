@@ -1,18 +1,12 @@
-// Server-sent events framing (WHATWG HTML §9.2 "Server-sent events", the format every dialect and both
-// upstreams use). EventStreamCodec is the general abstraction; SseCodec is the only framing in use.
+// Server-sent events decoding (WHATWG HTML §9.2 "Server-sent events", the format every streaming upstream uses).
+// EventStreamCodec is the general abstraction; SseCodec is the only framing in use. The router forwards each
+// upstream's own bytes, so nothing encodes frames (the encoder of the translated cells left with P5, plan 2026-10-16 C1).
 
 export type StreamFrame = { readonly event?: string; readonly data: string };
 
 export abstract class EventStreamCodec {
   /** Feed decoded text; returns every frame completed by this chunk. */
   abstract push(chunk: string): StreamFrame[];
-  /**
-   * End of stream. Per WHATWG ("once the end of the file is reached, any pending data must be discarded") an
-   * unterminated frame is NOT dispatched; `discarded` reports whether one was pending so callers can surface a
-   * truncated upstream instead of silently losing it.
-   */
-  abstract end(): { readonly discarded: boolean };
-  abstract encode(frame: StreamFrame): string;
 }
 
 export class SseCodec extends EventStreamCodec {
@@ -33,19 +27,6 @@ export class SseCodec extends EventStreamCodec {
       if (frame) frames.push(frame);
     }
     return frames;
-  }
-
-  end(): { readonly discarded: boolean } {
-    const discarded = this.buffer !== "" || this.data.length > 0 || this.event !== undefined;
-    this.buffer = "";
-    this.event = undefined;
-    this.data = [];
-    return { discarded };
-  }
-
-  encode(frame: StreamFrame): string {
-    const head = frame.event === undefined ? "" : `event: ${frame.event}\n`;
-    return `${head}${frame.data.split(/\r\n|\r|\n/).map((l) => `data: ${l}`).join("\n")}\n\n`;
   }
 
   private line(line: string): StreamFrame | undefined {

@@ -19,6 +19,14 @@ const modelsDevGateways = (body: string): string => {
   return JSON.stringify(kept, null, 1) + "\n";
 };
 
+/** models.opencode.ai entries of the providers the router matches its models against (5.6 MB in full; plan
+ * 2026-10-16 C0, decision E3): anthropic (claude), google (antigravity), openai, openrouter, opencode, opencode-go. */
+const modelsOpencodeReference = (body: string): string => {
+  const all = JSON.parse(body) as Record<string, unknown>;
+  const kept = Object.fromEntries(["anthropic", "google", "openai", "openrouter", "opencode", "opencode-go"].map((id) => [id, all[id]]));
+  return JSON.stringify(kept, null, 1) + "\n";
+};
+
 /** The `<main>` element of a documentation page that has no Markdown variant (the site chrome is left out). */
 const mainElement = (body: string): string => {
   const match = /<main[\s\S]*<\/main>/.exec(body);
@@ -62,6 +70,9 @@ const sources: Source[] = [
   { file: "cheaper-inference-openapi.json", url: "https://api.cheaperinference.com/openapi.json" },
   { file: "cheaper-inference-public-models.json", url: "https://api.cheaperinference.com/public/models" },
   { file: "models-dev-gateways.json", url: "https://models.dev/api.json", extract: modelsDevGateways },
+  // Plan 2026-10-16 (detailed model catalog, opencode configuration): opencode v2's model catalog and config schema.
+  { file: "models-opencode-reference.json", url: "https://models.opencode.ai/api.json", extract: modelsOpencodeReference },
+  { file: "opencode-config-schema.json", url: "https://opencode.ai/config.json" },
   // Plan P4.6 amendment A: the 2026-10-12 OpenCode Console (new inference addresses, device login, service-account keys).
   { file: "opencode-zen-models.json", url: "https://opencode.ai/inference/v1/models" },
   { file: "opencode-go-models.json", url: "https://opencode.ai/inference/go/v1/models" },

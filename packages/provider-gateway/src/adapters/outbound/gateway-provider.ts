@@ -1,12 +1,8 @@
 // An API-key gateway provider (plan P4.6 §2 item 6). Native cells: every format the model accepts (per model from the
 // catalog, or uniform for the vendor); the client's request goes to the vendor's endpoint with the bare model id and the
 // key in the endpoint's header, and the response streams back unchanged (rules G1–G4). A fixed key is never renewed;
-// an upstream 401 reaches the client as it is (G6). Translated cells arrive in P5.
-import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
-import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
-import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+// an upstream 401 reaches the client as it is (G6).
 import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -35,11 +31,6 @@ export class GatewayProvider extends ProviderPort {
     return formats === undefined ? undefined : new Set(servedFormats(this.spec, formats));
   }
 
-  /** Translated-cell features: none until P5. */
-  capabilities(): ReadonlySet<Feature> {
-    return new Set<Feature>();
-  }
-
   async models(): Promise<ModelCatalog> {
     const { source, models } = await this.catalog.listing();
     return {
@@ -55,14 +46,6 @@ export class GatewayProvider extends ProviderPort {
         ...(m.formats !== undefined ? { formats: servedFormats(this.spec, m.formats) } : {}),
       })),
     };
-  }
-
-  async *stream(_request: CanonicalRequest): AsyncIterable<CanonicalEvent> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
-  }
-
-  async countTokens(_request: CanonicalRequest): Promise<number> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
   }
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {

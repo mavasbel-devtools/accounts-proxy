@@ -14,7 +14,8 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 | **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
 > **Status: P4.6 with amendment A (OpenCode Console), live-validated.** Every provider serves its native formats; a
-> request in another format is a translated cell (P5) and answers 400 `unsupported_feature` until then. All seven
+> request in another format answers 400 `unsupported_feature`: the router does not translate between formats (P5
+> cancelled 2026-10-14, [plan](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md)). All seven
 > providers were validated live on 2026-10-13 with the official SDKs, Claude Code and opencode, MCP tools included
 > ([findings](docs/reference/2026-10-13-02-52-live-validation-findings.md)). Plans:
 > [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
@@ -99,7 +100,7 @@ Coding agents work the same way (both measured live, L3 of the
 | `POST /gemini/v1beta/models/{model}:streamGenerateContent` (`?alt=sse` or a JSON array), `:generateContent` | Gemini | `antigravity/*` (near-native cell); the Gemini models of `opencode`; `:countTokens`: 400 |
 | `GET /anthropic/v1/models`, `GET /openai/v1/models`, `GET /gemini/v1beta/models` | | every enabled provider's models in that dialect's shape |
 
-Any other provider × format pair is a translated cell (P5): 400 `unsupported_feature` until then. A gateway model whose
+Any other provider × format pair answers 400 `unsupported_feature` (no translation between formats). A gateway model whose
 formats the vendor's list does not state is forwarded in the client's format, and the gateway answers it.
 
 The token is accepted as `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=`. Errors use each dialect's
@@ -167,12 +168,12 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
 
 | Inbound format \ Provider | claude | antigravity | openai | openrouter | opencode | opencode-go | cheaper-inference |
 |---|---|---|---|---|---|---|---|
-| Anthropic Messages | native | P5 | P5 | native | native per model | native per model | native per model |
-| OpenAI Chat Completions | P5 | P5 | P5 | native | native per model | native per model | native per model |
-| OpenAI Responses | P5 | P5 | native | native | native per model | native per model | native per model |
-| Gemini generateContent | P5 | near-native | P5 | P5 | native per model | P5 | P5 |
+| Anthropic Messages | native | — | — | native | native per model | native per model | native per model |
+| OpenAI Chat Completions | — | — | — | native | native per model | native per model | native per model |
+| OpenAI Responses | — | — | native | native | native per model | native per model | native per model |
+| Gemini generateContent | — | near-native | — | — | native per model | — | — |
 
-"Native per model": the models whose list entry names that format; the others are P5 for that format.
+"Native per model": the models whose list entry names that format. "—": 400 `unsupported_feature`.
 
 ## Architecture
 
@@ -194,7 +195,7 @@ flowchart LR
     DG[gemini]
   end
   subgraph core[packages/core]
-    D[canonical domain]
+    D[core domain]
     P[ports]
   end
   subgraph providers[packages/provider-*  outbound adapters]
@@ -223,13 +224,13 @@ Workspaces:
 
 | Workspace | Directory | Role |
 |---|---|---|
-| `@inference-router/core` | `packages/core` | canonical domain and ports |
+| `@inference-router/core` | `packages/core` | domain and ports |
 | `@inference-router/provider-claude` | `packages/provider-claude` | Claude subscription provider |
 | `@inference-router/provider-antigravity` | `packages/provider-antigravity` | Antigravity provider |
 | `@inference-router/provider-openai` | `packages/provider-openai` | OpenAI provider (Sign in with ChatGPT plan usage) |
 | `@inference-router/provider-gateway` | `packages/provider-gateway` | shared base of the API-key gateways (native cells, catalogs, key sessions and logins) |
 | `@inference-router/provider-{openrouter,opencode,cheaper-inference}` | `packages/provider-*` | the gateway vendors' rules, logins, catalogs and quota |
-| `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: router errors and model lists (P4), translation (P5) |
+| `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: router errors and model lists |
 | `@inference-router/router` | `apps/router` | application, adapters, composition, CLI |
 | `@inference-router/test-support` | `tests/support` | shared test doubles, guarded temp directories, e2e replay upstreams and process runner |
 | `@inference-router/scripts` | `scripts` | release gate and evidence scripts |
@@ -245,7 +246,7 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run typecheck` | `tsc --noEmit` over every workspace, test and script |
 | `bun run test` | unit + component + architecture + support tests |
 | `bun run coverage` | same set under istanbul; fails below 100% lines/statements/functions/branches or if a source file is never loaded |
-| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; only P5-only code is deferred by name: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
+| `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; the deferral list is empty: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
 | `INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts` | the live matrix: every provider's native cells through the daemon with the official SDKs (about 80 small requests; `--only=`, `--scenarios=`) |
 | `bun run verify` | the full release gate |

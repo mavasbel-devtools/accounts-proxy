@@ -1,5 +1,6 @@
 // Native cells (P4, P4.6): a client request in a format the model accepts natively goes to its provider unchanged in
-// shape. Any other format is a translated cell (P5) and answers unsupported_feature until then. A model whose formats
+// shape. Any other format answers unsupported_feature: the router does not translate between formats (P5 cancelled,
+// plan 2026-10-16 D1-A). A model whose formats
 // the provider does not know is forwarded as sent (plan P4.6 rule Z6).
 import { ProviderDisabledError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
@@ -22,7 +23,7 @@ export class PassthroughService extends PassthroughPort {
     if (provider === undefined) throw new ProviderDisabledError(address.provider);
     const formats = await provider.nativeFormats(address.model);
     if (formats !== undefined && !formats.has(format)) {
-      throw new UnsupportedFeatureError([`${format}_format`], `${provider.id}/${address.model} (it accepts ${[...formats].join(", ")}; translated cells arrive in P5)`);
+      throw new UnsupportedFeatureError([`${format}_format`], `${provider.id}/${address.model} (it accepts ${[...formats].join(", ")}; the router does not translate between formats)`);
     }
     return provider.passthrough(address.model, request);
   }

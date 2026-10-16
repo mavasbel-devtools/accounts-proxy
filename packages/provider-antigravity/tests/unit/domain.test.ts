@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { accountId, activeProject, fromCredential, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
-import { advertisedLimits, wireDefaultsFor, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { chunkHasContent, usageFrom } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { advertisedLimits, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
 import { formatUsage } from "@inference-router/provider-antigravity/domain/quota.ts";
 import { defaultFamilyOf, isContinuation, isSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
@@ -49,21 +48,6 @@ describe("catalog helpers", () => {
     expect(advertisedLimits({ ...d, maxOutputTokens: 0 })).toBeUndefined();
     expect(advertisedLimits({ ...d, maxTokens: 0 })).toBeUndefined();
     expect(advertisedLimits({ ...d, maxTokens: 16_384 })).toEqual({ context: 16_384, output: 65_536 });
-  });
-  test("wire defaults", () => {
-    expect(wireDefaultsFor(d)).toEqual({ modelEnum: "MODEL_W", maxOutputTokens: 65_536, thinkingBudget: 1000 });
-    expect(wireDefaultsFor({ ...d, supportsThinking: false })).toEqual({ modelEnum: "MODEL_W", maxOutputTokens: 65_536 });
-  });
-});
-
-describe("generate helpers", () => {
-  test("usageFrom and chunkHasContent", () => {
-    expect(usageFrom({})).toEqual({});
-    expect(usageFrom({ usageMetadata: {} })).toEqual({ usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } });
-    expect(chunkHasContent({})).toBe(false);
-    for (const c of [{ deltaText: "" }, { thoughtText: "" }, { finishReason: "STOP" }, { usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }, { toolCalls: [] }]) {
-      expect(chunkHasContent(c)).toBe(true);
-    }
   });
 });
 

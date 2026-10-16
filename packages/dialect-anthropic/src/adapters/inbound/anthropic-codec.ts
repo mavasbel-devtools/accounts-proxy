@@ -5,7 +5,7 @@
 //   models  ListModels (anthropic-models-list.md §Returns): data[] of ModelInfo, first_id, has_more, last_id.
 //           `created_at` is required; a catalog without dates (Antigravity) gets the neutral marker
 //           1970-01-01T00:00:00Z, never an invented date (decision Q5).
-import type { RouterError } from "@inference-router/core/domain/errors.ts";
+import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
 import { formatModelAddress, type ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
@@ -38,7 +38,7 @@ export class AnthropicCodec extends DialectCodecPort {
   error(error: RouterError): EncodedResponse {
     return {
       status: error.httpStatus,
-      headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },
+      headers: errorHeaders(error),
       body: JSON.stringify({ type: "error", error: { type: anthropicErrorType(error.httpStatus), message: error.message } }),
     };
   }

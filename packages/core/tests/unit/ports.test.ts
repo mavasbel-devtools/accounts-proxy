@@ -2,7 +2,7 @@
 // each one is abstract-extensible and that a conforming implementation type-checks against it.
 import { describe, expect, test } from "bun:test";
 import { AccountAdminPort, LoginPort } from "@inference-router/core/ports/inbound/accounts.ts";
-import { ChatPort, CountTokensPort, ListModelsPort, PassthroughPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { ListModelsPort, PassthroughPort } from "@inference-router/core/ports/inbound/routing.ts";
 import { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
 import { CallbackServerPort, ManualCodePort, OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
@@ -31,8 +31,6 @@ describe("ports", () => {
     const ports = [
       AccountAdminPort,
       LoginPort,
-      ChatPort,
-      CountTokensPort,
       ListModelsPort,
       PassthroughPort,
       CredentialStorePort,

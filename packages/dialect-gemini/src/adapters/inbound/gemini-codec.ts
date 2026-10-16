@@ -5,8 +5,8 @@
 //           the routable `<provider>/<model>` (baseModelId is documented as "pass this to the generation request");
 //           `version` is required and no catalog has one, so it is the provider id — a neutral marker, never an
 //           invented version (decision Q5). Only Gemini-native providers (antigravity) list generateContent and
-//           streamGenerateContent in P4; the others list none until the translated cells (P5).
-import type { RouterError } from "@inference-router/core/domain/errors.ts";
+//           streamGenerateContent; the others list none (the router does not translate between formats).
+import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
 import { formatModelAddress, modelFormats, type ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
@@ -20,7 +20,7 @@ export class GeminiCodec extends DialectCodecPort {
   error(error: RouterError): EncodedResponse {
     return {
       status: error.httpStatus,
-      headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },
+      headers: errorHeaders(error),
       body: JSON.stringify(googleErrorEnvelope(error)),
     };
   }

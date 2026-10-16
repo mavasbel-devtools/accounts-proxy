@@ -43,26 +43,7 @@ describe("SseCodec (WHATWG server-sent events)", () => {
     expect(new SseCodec().push("data:\n\n")).toEqual([{ data: "" }]);
   });
 
-  test("end() discards an unterminated frame and reports it", () => {
-    const pendingData = new SseCodec();
-    pendingData.push("data: half\n");
-    expect(pendingData.end()).toEqual({ discarded: true });
-    const pendingLine = new SseCodec();
-    pendingLine.push("data: no newline");
-    expect(pendingLine.end()).toEqual({ discarded: true });
-    const pendingEvent = new SseCodec();
-    pendingEvent.push("event: x\n");
-    expect(pendingEvent.end()).toEqual({ discarded: true });
-    const clean = new SseCodec();
-    clean.push("data: done\n\n");
-    expect(clean.end()).toEqual({ discarded: false });
-    expect(clean.push("data: after\n\n")).toEqual([{ data: "after" }]);
-  });
-
-  test("encode round-trips through push, including multi-line data", () => {
-    const codec = new SseCodec();
-    const encoded = codec.encode({ event: "content_block_delta", data: "line1\nline2" }) + codec.encode({ data: "[DONE]" });
-    expect(encoded).toBe("event: content_block_delta\ndata: line1\ndata: line2\n\ndata: [DONE]\n\n");
-    expect(new SseCodec().push(encoded)).toEqual([{ event: "content_block_delta", data: "line1\nline2" }, { data: "[DONE]" }]);
+  test("multi-line data frames and a terminal [DONE]", () => {
+    expect(new SseCodec().push("event: content_block_delta\ndata: line1\ndata: line2\n\ndata: [DONE]\n\n")).toEqual([{ event: "content_block_delta", data: "line1\nline2" }, { data: "[DONE]" }]);
   });
 });

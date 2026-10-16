@@ -98,7 +98,7 @@ describe("openrouter (rules R1–R11, OpenRouter's documented examples)", () => 
     const count = await post(`${s.url}/anthropic/v1/messages/count_tokens`, { "x-api-key": s.token }, { model: "openrouter/a/b", messages: [] });
     expect([count.status, ((await count.json()) as { error: { message: string } }).error.message]).toEqual([400, "openrouter cannot carry: count_tokens"]);
     const translated = await post(`${s.url}/gemini/v1beta/models/openrouter%2Fa%2Fb:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
-    expect([translated.status, ((await translated.json()) as { error: { message: string } }).error.message]).toEqual([400, "openrouter/a/b (it accepts openai-chat, openai-responses, anthropic-messages; translated cells arrive in P5) cannot carry: gemini_format"]);
+    expect([translated.status, ((await translated.json()) as { error: { message: string } }).error.message]).toEqual([400, "openrouter/a/b (it accepts openai-chat, openai-responses, anthropic-messages; the router does not translate between formats) cannot carry: gemini_format"]);
   });
 
   test("headless login (--manual): no callback, the pasted code is exchanged", async () => {
@@ -192,7 +192,7 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     const goSent = upstreams.find("/inference/go/v1/chat/completions").at(-1)!;
     expect([goSent.headers["x-opencode-session"], goSent.headers["x-opencode-org-id"], goSent.headers["authorization"]]).toEqual(["ses_go", undefined, "Bearer oc_sk_e2e"]);
     const goGemini = await post(`${s.url}/gemini/v1beta/models/opencode-go%2Fnew-model:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
-    expect([goGemini.status, ((await goGemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "opencode-go (no native endpoint; translated cells arrive in P5) cannot carry: gemini_format"]);
+    expect([goGemini.status, ((await goGemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "opencode-go (no native endpoint for this format; the router does not translate between formats) cannot carry: gemini_format"]);
   });
 
   test("Z24: a client without x-opencode-session gets its conversation's own id or one derived from the first user turn", async () => {

@@ -23,7 +23,6 @@ import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import { formatModelAddress, isProviderId, modelFormats, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS } from "@inference-router/core/domain/models.ts";
 import { base64UrlDecode, base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
 import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
-import { mergeUsage, ZERO_USAGE } from "@inference-router/core/domain/services/usage.ts";
 import { bodyOf, readAll } from "@inference-router/core/domain/wire.ts";
 
 describe("json", () => {
@@ -197,13 +196,5 @@ describe("wire bodies", () => {
     for await (const c of bodyOf("añ€")) chunks.push(c);
     expect(chunks).toHaveLength(1);
     expect(await readAll(bodyOf("añ€"))).toBe("añ€");
-  });
-});
-
-describe("usage", () => {
-  test("later defined values replace earlier ones; absent and undefined keep earlier", () => {
-    const start = mergeUsage(ZERO_USAGE, { inputTokens: 10, cacheReadTokens: 4 });
-    const end = mergeUsage(start, { outputTokens: 7, cacheReadTokens: undefined });
-    expect(end).toEqual({ inputTokens: 10, outputTokens: 7, cacheReadTokens: 4 });
   });
 });

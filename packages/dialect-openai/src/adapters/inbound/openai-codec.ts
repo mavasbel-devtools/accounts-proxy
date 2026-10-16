@@ -3,7 +3,7 @@
 //           `type`/`code`, so both carry the router's own error code; `param` is null.
 //   models  ListModelsResponse `{object:"list", data:[Model]}`, Model `{id, object:"model", created, owned_by}`.
 //           `created` is Unix seconds; a catalog without dates (Antigravity) gets 0, never an invented date (Q5).
-import type { RouterError } from "@inference-router/core/domain/errors.ts";
+import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
 import { formatModelAddress, type ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
@@ -21,7 +21,7 @@ export class OpenAiCodec extends DialectCodecPort {
   error(error: RouterError): EncodedResponse {
     return {
       status: error.httpStatus,
-      headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },
+      headers: errorHeaders(error),
       body: JSON.stringify({ error: { message: error.message, type: error.code, param: null, code: error.code } }),
     };
   }

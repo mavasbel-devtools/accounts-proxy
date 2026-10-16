@@ -205,3 +205,8 @@ export function isTransientUpstream(error: unknown): boolean {
 export function asRouterError(error: unknown): RouterError {
   return error instanceof RouterError ? error : new InternalError();
 }
+
+/** The headers of a router error answer in every dialect: JSON, and `retry-after` when the error carries one. */
+export function errorHeaders(error: RouterError): Readonly<Record<string, string>> {
+  return { "content-type": "application/json", ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) };
+}

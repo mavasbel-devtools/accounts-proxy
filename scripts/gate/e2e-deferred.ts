@@ -2,7 +2,8 @@
 // e2e-alone gate until the phase that wires it — never from the unit+component or merged gates. Every deferral names
 // its phase and reason, is printed on every e2e gate run, and fails the gate when it is stale (the file or function no
 // longer exists, the name is ambiguous, or the e2e tier already covers it fully, so it must leave the list). The list
-// must be empty when P5 ends (P5 wires the translated cells that call all of it).
+// must be empty when P5 ends (P5 wires the translated cells that call all of it). P5 was cancelled on 2026-10-14
+// (plan 2026-10-16 D1-A) and its translation-only code removed, so the list is empty; the gate keeps checking it.
 // Plan P4.6 (2026-10-12) adds two phases of the same kind: code whose e2e replay needs a committed live capture that
 // only the user's own sign-in or key can produce (`P4.5-live`: the OpenAI ChatGPT sign-in; `P4.6-live`: a gateway API
 // key, decision N8). Those entries leave the list when the capture is committed and replayed: since the live validation
@@ -23,23 +24,7 @@ export type Deferral = {
   readonly reason: string;
 };
 
-const TRANSLATED = "only the translated cells (P5) call it; no P4 route or command reaches it";
-
-export const E2E_DEFERRED: readonly Deferral[] = [
-  { file: "packages/core/src/domain/services/feature-support.ts", phase: "P5", reason: `capability matrix of the translated cells: ${TRANSLATED}` },
-  { file: "packages/core/src/domain/services/usage.ts", phase: "P5", reason: `canonical usage merging: ${TRANSLATED}` },
-  { file: "packages/core/src/domain/services/event-stream.ts", functions: ["end", "encode"], phase: "P5", reason: `SSE encoding and truncation report of the dialect encoders: ${TRANSLATED}` },
-  { file: "packages/provider-antigravity/src/domain/generate.ts", phase: "P5", reason: `ChatRequest → generateContent codec: ${TRANSLATED}` },
-  { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-chat.ts", phase: "P5", reason: `chat over the runner: ${TRANSLATED}` },
-  { file: "packages/provider-antigravity/src/domain/catalog.ts", functions: ["wireDefaultsFor"], phase: "P5", reason: `per-model defaults of the translated requests: ${TRANSLATED}` },
-  { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
-  { file: "packages/provider-claude/src/adapters/outbound/claude-subscription-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
-  { file: "packages/dialect-anthropic/src/adapters/inbound/anthropic-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
-  { file: "packages/dialect-openai/src/adapters/inbound/openai-codec.ts", branches: ['headers: { ...JSON_HEADERS, ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) },'], phase: "P5", reason: `a router error with retry-after comes only from antigravity, which this dialect reaches only through a translated cell: ${TRANSLATED}` },
-  { file: "packages/provider-antigravity/src/adapters/outbound/antigravity-runner.ts", branches: ["if (out === undefined) continue;"], phase: "P5", reason: `only the chat mapper skips content-free envelopes (the native mapper forwards every response): ${TRANSLATED}` },
-  { file: "packages/provider-gateway/src/adapters/outbound/gateway-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `translated cells of the API-key gateways: ${TRANSLATED}` },
-  { file: "packages/provider-openai/src/adapters/outbound/openai-provider.ts", functions: ["capabilities", "stream", "countTokens"], phase: "P5", reason: `canonical ProviderPort methods: ${TRANSLATED}` },
-];
+export const E2E_DEFERRED: readonly Deferral[] = [];
 
 export type DeferralResult = { readonly map: CoverageMap; readonly exemptFiles: ReadonlySet<string>; readonly notes: readonly string[]; readonly problems: readonly string[] };
 

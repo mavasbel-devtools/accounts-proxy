@@ -3,14 +3,10 @@
 // chunk by chunk — fix F1 for the source relay, which awaited res.text() before answering
 // (AnthropicApiClientAdapter.ts:45). F4: the client's anthropic-beta is honoured within the model's captured set and a
 // client anthropic-version must be the captured one. A client disconnect aborts the upstream exchange (signal).
-// Translated cells (OpenAI/Gemini → Claude) arrive in P5.
-import type { CanonicalEvent } from "@inference-router/core/domain/canonical/events.ts";
-import type { CanonicalRequest } from "@inference-router/core/domain/canonical/request.ts";
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import type { Feature } from "@inference-router/core/domain/services/feature-support.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import { DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
@@ -59,10 +55,6 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
     return new Set(this.formats);
   }
 
-  capabilities(): ReadonlySet<Feature> {
-    return new Set<Feature>();
-  }
-
   async models(): Promise<ModelCatalog> {
     const { source, entries } = await this.catalog.listing();
     return {
@@ -77,14 +69,6 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
         ...(e.createdAt !== "" ? { createdAt: e.createdAt } : {}),
       })),
     };
-  }
-
-  async *stream(_request: CanonicalRequest): AsyncIterable<CanonicalEvent> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
-  }
-
-  async countTokens(_request: CanonicalRequest): Promise<number> {
-    throw new UnsupportedFeatureError(["translated_request"], `${this.id} (translated cells arrive in P5)`);
   }
 
   async passthrough(model: string, request: RawRequest): Promise<HttpResponse> {
