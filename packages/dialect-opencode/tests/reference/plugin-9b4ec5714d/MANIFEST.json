@@ -88,6 +88,26 @@
       "file": "cli/src/commands/handlers/auth/login.ts",
       "blob": "fcc3c19b780bfb1a56ebcbacaed2f2ebba27a766",
       "bytes": 11562
+    },
+    {
+      "file": "ai/src/protocols/anthropic-messages.ts",
+      "blob": "5bb2d27d24d332decfa79e6a3ac5cdd8c7a42840",
+      "bytes": 70235
+    },
+    {
+      "file": "ai/src/protocols/utils/claude-model.ts",
+      "blob": "244b3bd8fbad565454bd3971d350ec9082fd4bce",
+      "bytes": 894
+    },
+    {
+      "file": "ai/src/effort-updates.ts",
+      "blob": "8d97699192e8cddf419147eac8c0cd4897342ab2",
+      "bytes": 1471
+    },
+    {
+      "file": "ai/src/protocols/openai-responses.ts",
+      "blob": "b711db7805b9610e538b9eb7fa02415569a824c3",
+      "bytes": 13384
     }
   ]
 }

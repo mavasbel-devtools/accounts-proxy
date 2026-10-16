@@ -111,7 +111,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
   Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
   opencode v2's `providers` schema, one `ir-<provider>` each, variants from opencode's own rules (none for
-  Antigravity). [Rules M1–M6, O1–O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md).
+  Antigravity). `claude` and `openai` models carry opencode `compatibility` overrides that switch off what those cells
+  refuse (thinking-prefix controls, per-message effort updates; rule O6, live C6).
+  [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md).
 - **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
   OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
   origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference)

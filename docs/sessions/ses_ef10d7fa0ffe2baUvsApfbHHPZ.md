@@ -109,5 +109,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P4.6 amendment A (OpenCode Console) | done; live-validated 2026-10-13 |
 | Live validation L0–L4 (all seven providers) | done 2026-10-13 |
 | P5 (translation) | cancelled 2026-10-14 (D1-A); translation-only code removed 2026-10-16 (C1) |
-| Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0–C4 done 2026-10-16 (detailed catalog, provider details, opencode configuration and well-known routes; rules M1–M6, O1–O5); C5 (tests) in the release check; C6 live and C7 documentation next |
+| Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0–C6 done 2026-10-16 (C2–C5 commit 98f610f; C6 live with opencode v2.0.26, rule O6); C7 documentation next |
 | P6–P9 | not started |

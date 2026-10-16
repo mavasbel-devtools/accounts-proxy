@@ -1,4 +1,4 @@
-// The opencode v2 configuration and well-known manifest (plan 2026-10-16 rules O1–O5), checked against opencode's
+// The opencode v2 configuration and well-known manifest (plan 2026-10-16 rules O1–O6), checked against opencode's
 // published configuration schema (docs/reference/specs/opencode-config-schema.json).
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -59,6 +59,8 @@ describe("OpencodeConfigCodec.config", () => {
       settings: { baseURL: "http://127.0.0.1:4141/anthropic/v1" },
       capabilities: { tools: true, input: ["text", "image", "pdf"], output: ["text"] },
       limit: { context: 1_000_000, output: 128_000 },
+      // Rule O6 (live C6): the thinking-prefix controls and per-message effort updates the claude cell refuses.
+      compatibility: { supportsThinkingBlockBinding: false, supportsEffortUpdates: false },
       variants: [
         { id: "low", settings: { effort: "low", thinking: { type: "adaptive", display: "summarized" } } },
         { id: "high", settings: { effort: "high", thinking: { type: "adaptive", display: "summarized" } } },
@@ -81,6 +83,8 @@ describe("OpencodeConfigCodec.config", () => {
     // Plugin law 1: the Antigravity thinking budget is the catalog's, so no variant.
     expect(providers["ir-antigravity"]!.models["gemini-x"]!["variants"]).toEqual([]);
     expect(providers["ir-openai"]!.headers).toEqual({ "x-router-lossy": "1" });
+    expect(providers["ir-openai"]!.models["gpt-x"]!["compatibility"]).toEqual({ supportsEffortUpdates: false });
+    expect(opencode["chat"]!["compatibility"]).toBeUndefined();
     expect((providers["ir-openai"]!.models["gpt-x"]!["variants"] as { id: string }[]).map((v) => v.id)).toEqual(["low"]);
     expect(doc["$schema"]).toBe("https://opencode.ai/config.json");
   });

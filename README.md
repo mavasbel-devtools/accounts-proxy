@@ -88,13 +88,16 @@ Coding agents work the same way (both measured live, L3 of the
   `opencode-go/qwen3.8-flash`, `cheaper-inference/…`; set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to a routable model too).
 - **opencode** (v2): `opencode auth login http://127.0.0.1:4141` reads the router's `/.well-known/opencode`, runs
   `inference-router token` for the key and loads `GET /opencode/config.json`: one provider `ir-<provider>` per router
-  provider, every model with its route, limits, media, price and opencode's own variants
-  ([rules O1–O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)). `bun run router opencode-config` prints the
+  provider, every model with its route, limits, media, price and opencode's own variants; `claude` and `openai` models
+  also switch off the opencode features those providers refuse (`compatibility.supportsThinkingBlockBinding`,
+  `supportsEffortUpdates`), so changing a variant mid-session works
+  ([rules O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md)). `bun run router opencode-config` prints the
   same document for a config file. By hand: one custom provider per format, `options.baseURL` at the router and
   `options.apiKey` the token:
   `@ai-sdk/openai-compatible` → `http://127.0.0.1:4141/openai/v1` (Chat), `@ai-sdk/openai` → the same URL (Responses;
   for `openai/*` add `options.headers: {"x-router-lossy": "1"}`, because the AI SDK sends `max_output_tokens`, which
-  ChatGPT plan usage refuses), `@ai-sdk/anthropic` → `http://127.0.0.1:4141/anthropic/v1`, `@ai-sdk/google` →
+  ChatGPT plan usage refuses), `@ai-sdk/anthropic` → `http://127.0.0.1:4141/anthropic/v1` (for `claude/*` set the
+  model's `compatibility` as rule O6 does, or Claude 5.1+ requests answer 400 `unsupported_feature`), `@ai-sdk/google` →
   `http://127.0.0.1:4141/gemini/v1beta`. Model ids are `<provider>/<model>`.
 
 | Route | Format | Served natively by |

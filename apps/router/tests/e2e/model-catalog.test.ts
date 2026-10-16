@@ -76,10 +76,14 @@ describe("detailed model list and opencode configuration", () => {
 
     const generated = await run(["opencode-config"]);
     expect(generated.code).toBe(0);
-    const config = JSON.parse(generated.stdout) as { providers: Record<string, { models: Record<string, { modelID: string; settings: { baseURL: string } }> }> };
+    const config = JSON.parse(generated.stdout) as { providers: Record<string, { models: Record<string, { modelID: string; settings: { baseURL: string }; compatibility?: object }> }> };
     expect(validate(schema, config)).toEqual([]);
     expect(Object.keys(config.providers)).toEqual(["ir-claude", "ir-openai", "ir-openrouter", "ir-opencode", "ir-opencode-go", "ir-cheaper-inference"]);
     expect(config.providers["ir-claude"]!.models["claude-haiku-4-5-20251001"]!.settings.baseURL).toBe(`http://127.0.0.1:${home.port}/anthropic/v1`);
+    // Rule O6 (live C6): opencode features the subscription cells refuse are switched off per model.
+    const compatibilities = (provider: string) => [...new Set(Object.values(config.providers[provider]!.models).map((m) => JSON.stringify(m.compatibility)))];
+    expect(compatibilities("ir-claude")).toEqual([JSON.stringify({ supportsThinkingBlockBinding: false, supportsEffortUpdates: false })]);
+    expect(compatibilities("ir-openai")).toEqual([JSON.stringify({ supportsEffortUpdates: false })]);
     expect((await run(["opencode-config", "x"])).code).toBe(2);
     expect((await run(["models", "--json", "--json"])).code).toBe(2);
   });

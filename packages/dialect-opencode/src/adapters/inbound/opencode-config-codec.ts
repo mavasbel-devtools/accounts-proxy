@@ -54,6 +54,27 @@ function connection(model: DetailedModel): { readonly package: OpencodePackage; 
   return format === undefined ? undefined : { package: FORMAT_PACKAGE[format].package, format };
 }
 
+/**
+ * Rule O6: opencode features the subscription cells refuse, switched off with opencode's own `compatibility` overrides
+ * (live C6). On `claude`, opencode's thinking-prefix controls send `thinking.block_binding` with the beta
+ * `thinking-binding-controls-2026-08-01`, and a per-message effort change sends a system message with `output_config`
+ * and the beta `mid-conversation-output-config-2026-07-01`; neither beta is in the captured set (F4) and the upstream
+ * refuses the message field. On `openai`, the per-message effort change (`configuration_update`) is refused by plan
+ * usage. With the overrides opencode changes the top-level effort instead.
+ */
+const COMPATIBILITY: Partial<Readonly<Record<ProviderId, JsonObject>>> = {
+  claude: { supportsThinkingBlockBinding: false, supportsEffortUpdates: false },
+  openai: { supportsEffortUpdates: false },
+};
+
+function compatibility(model: DetailedModel): JsonObject | undefined {
+  const entry: JsonObject = {
+    ...(model.interleavedField !== undefined ? { reasoningField: model.interleavedField } : {}),
+    ...COMPATIBILITY[model.provider],
+  };
+  return Object.keys(entry).length > 0 ? entry : undefined;
+}
+
 const costEntry = (c: ModelCost): JsonObject => ({
   ...(c.tier !== undefined ? { tier: { type: c.tier.type, size: c.tier.size } } : {}),
   input: c.input,
@@ -76,6 +97,7 @@ function modelConfig(model: DetailedModel, providerId: string, origin: string): 
   };
   // Rule O4 / plugin law 1: an Antigravity thinking budget is the catalog's, so no variant can change it.
   const variants = model.provider === "antigravity" ? [] : resolveVariants({ modelID: model.model, package: via.package, outputLimit: model.maxOutputTokens ?? DEFAULT_OUTPUT_LIMIT }, model.reasoningOptions ?? []);
+  const compat = compatibility(model);
   return {
     modelID: model.id,
     name: model.name,
@@ -85,7 +107,7 @@ function modelConfig(model: DetailedModel, providerId: string, origin: string): 
     ...(Object.keys(capabilities).length > 0 ? { capabilities } : {}),
     ...(Object.keys(limit).length > 0 ? { limit } : {}),
     ...(model.cost !== undefined ? { cost: model.cost.map(costEntry) } : {}),
-    ...(model.interleavedField !== undefined ? { compatibility: { reasoningField: model.interleavedField } } : {}),
+    ...(compat !== undefined ? { compatibility: compat } : {}),
     // Always written: an absent list makes opencode guess effort variants (config/plugin/provider.ts).
     variants: variants as unknown as JsonValue[],
   };
