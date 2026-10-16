@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
+import { describeCatalog, type DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
 import type { ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
+import { OpencodeConfigPort, type OpencodeOrigin } from "@inference-router/core/ports/inbound/opencode.ts";
 import { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
 import { DaemonStatusPort, type DaemonStatus } from "@inference-router/core/ports/inbound/daemon.ts";
-import { HealthPort, ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { HealthPort, DescribeModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
 import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, SHUTDOWN_GRACE_MS, USAGE } from "@inference-router/router/adapters/inbound/cli/cli-driver.ts";
 import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 import { Server, ShutdownSignal, type Listening } from "@inference-router/router/adapters/inbound/server.ts";
@@ -34,11 +36,11 @@ class Usage extends UsagePort {
     return { capturedAt: 1, text: "Antigravity usage:" };
   }
 }
-class Models extends ListModelsPort {
+class Models extends DescribeModelsPort {
   seen: (ProviderId | undefined)[] = [];
-  async listModels(provider?: ProviderId): Promise<readonly ModelCatalog[]> {
+  async describeModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]> {
     this.seen.push(provider);
-    return [
+    const catalogs: ModelCatalog[] = [
       {
         provider: "antigravity",
         formats: ["gemini"],
@@ -52,7 +54,17 @@ class Models extends ListModelsPort {
       },
       { provider: "claude", formats: ["anthropic-messages"], source: "static", models: [] },
       { provider: "claude", formats: ["anthropic-messages"], source: "cache", models: [] },
+      { provider: "openai", formats: ["openai-responses"], source: "unavailable", models: [], error: { code: "provider_auth_required", message: "openai: no active account" } },
     ];
+    return catalogs.map((c) => describeCatalog(c, undefined, undefined));
+  }
+}
+class OpencodeConfig extends OpencodeConfigPort {
+  config(catalogs: readonly DetailedCatalog[], at: OpencodeOrigin) {
+    return { providers: catalogs.length, origin: at.origin };
+  }
+  manifest() {
+    return {};
   }
 }
 class Access extends AccessPort {
@@ -98,7 +110,7 @@ class FakeSignal extends ShutdownSignal {
 function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
-  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), access: new Access(), health: new Health(), status: new Status() };
+  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
   const daemon = { server: new FakeServer(), shutdown: new FakeSignal() };
   const driver = new CliDriver(ports, daemon, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
@@ -156,6 +168,8 @@ describe("CliDriver", () => {
     [["quota"], "missing or extra arguments"],
     [["quota", "antigravity", "x"], "missing or extra arguments"],
     [["models", "a", "b"], "models takes at most one provider"],
+    [["models", "--json", "--json"], "models takes at most one provider"],
+    [["opencode-config", "x"], "opencode-config takes no arguments"],
     [["serve", "x"], "serve takes no arguments"],
     [["token", "x"], "token takes no arguments"],
     [["status", "x"], "status takes no arguments"],
@@ -187,7 +201,7 @@ describe("CliDriver", () => {
     expect(await c.run("models")).toBe(0);
     expect(await c.run("models", "antigravity")).toBe(0);
     expect(c.ports.models.seen).toEqual([undefined, "antigravity"]);
-    expect(c.out.slice(0, 8)).toEqual([
+    expect(c.out.slice(0, 9)).toEqual([
       "Antigravity usage:\n",
       "# antigravity: 4 models (live catalog)\n",
       "antigravity/g  G  context 80000 / output 65536\n",
@@ -196,7 +210,18 @@ describe("CliDriver", () => {
       "antigravity/o  O  output 4096\n",
       "# claude: 0 models (built-in list: the live catalog was unavailable)\n",
       "# claude: 0 models (stored copy of the live catalog)\n",
+      "# openai: 0 models (unavailable: openai: no active account)\n",
     ]);
+  });
+
+  test("models --json: every detail with its sources; opencode-config: the configuration of every model", async () => {
+    const c = cli();
+    expect(await c.run("models", "--json", "antigravity")).toBe(0);
+    expect(c.ports.models.seen).toEqual(["antigravity"]);
+    const listed = JSON.parse(c.out[0]!);
+    expect(listed.catalogs[0].models[0]).toEqual({ id: "antigravity/g", provider: "antigravity", model: "g", name: "G", formats: ["gemini"], contextWindow: 80000, maxOutputTokens: 65536, sources: { name: "provider:antigravity", contextWindow: "provider:antigravity", maxOutputTokens: "provider:antigravity" } });
+    expect(await c.run("opencode-config")).toBe(0);
+    expect(JSON.parse(c.out[1]!)).toEqual({ providers: 4, origin: "http://127.0.0.1:4141" });
   });
 
   test("serve: token first, listen, wait for the shutdown signal, stop with the grace period", async () => {

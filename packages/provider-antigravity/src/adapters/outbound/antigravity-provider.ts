@@ -11,7 +11,7 @@ import { parseJsonBody } from "@inference-router/core/domain/services/json-body.
 import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { advertisedLimits } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { advertisedLimits, descriptorDetails } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
 import type { AntigravityCatalogPort, AntigravityNativePort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
 
@@ -47,6 +47,7 @@ export class AntigravityProvider extends ProviderPort {
           address: { provider: this.id, model: d.wireId },
           displayName: d.displayName,
           ...(limits !== undefined ? { contextWindow: limits.context, maxOutputTokens: limits.output } : {}),
+          details: descriptorDetails(d),
         };
       }),
     };

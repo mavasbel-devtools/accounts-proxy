@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { QuotaExhaustedError, UnauthorizedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { GeminiCodec } from "@inference-router/dialect-gemini/adapters/inbound/gemini-codec.ts";
+import { describeCatalog } from "@inference-router/core/domain/model-details.ts";
+import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+
+const described = (catalogs: readonly ModelCatalog[]) => catalogs.map((c) => describeCatalog(c, undefined, undefined));
 
 const codec = new GeminiCodec();
 
@@ -23,10 +27,10 @@ describe("GeminiCodec", () => {
   });
 
   test("models: name models/<provider>/<model>, limits when known, generation methods only for Gemini-native providers", () => {
-    const encoded = codec.models([
+    const encoded = codec.models(described([
       { provider: "antigravity", formats: ["gemini"], source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G", contextWindow: 80_000, maxOutputTokens: 65_536 }] },
       { provider: "claude", formats: ["anthropic-messages"], source: "static", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
-    ]);
+    ]));
     expect(encoded.status).toBe(200);
     expect(JSON.parse(encoded.body)).toEqual({
       models: [

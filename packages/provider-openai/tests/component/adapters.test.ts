@@ -275,7 +275,7 @@ describe("OpenAICatalog (M1–M2)", () => {
     expect(await m.catalog.listing()).toEqual({ source: "live", entries: [{ id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol", contextWindow: 500_000 }] });
     expect(m.transport.requests[0]).toMatchObject({ method: "GET", url: "http://api/v1/models", headers: { authorization: "Bearer at", accept: "application/json", "user-agent": "inference-router/0.1.0" } });
     expect((await m.catalog.listing()).source).toBe("live");
-    expect(m.store.values.get(CATALOG_KEY)).toMatchObject({ version: 1, clientId: "oaiapp_saved", fetchedAt: NOW });
+    expect(m.store.values.get(CATALOG_KEY)).toMatchObject({ version: 2, clientId: "oaiapp_saved", fetchedAt: NOW });
     const restarted = new OpenAICatalog(m.transport, m.session, m.store, m.clock, m.logger, "http://api");
     expect((await restarted.listing()).source).toBe("cache");
     m.clock.time += 24 * 60 * 60 * 1000;
@@ -294,7 +294,7 @@ describe("OpenAICatalog (M1–M2)", () => {
 
     const failing = make(() => ({ status: 500, body: "x" }));
     expect((await failing.catalog.listing()).source).toBe("static");
-    failing.store.values.set(CATALOG_KEY, { version: 1, clientId: "oaiapp_saved", fetchedAt: 0, models: [{ id: "old", displayName: "Old" }] });
+    failing.store.values.set(CATALOG_KEY, { version: 2, clientId: "oaiapp_saved", fetchedAt: 0, models: [{ id: "old", displayName: "Old" }] });
     expect(await failing.catalog.listing()).toEqual({ source: "cache", entries: [{ id: "old", displayName: "Old" }] });
     expect(failing.logger.lines).toContain("WARN openai: live model list unavailable (model list HTTP 500)");
 

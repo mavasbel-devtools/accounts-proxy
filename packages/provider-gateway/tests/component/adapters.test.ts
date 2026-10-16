@@ -65,7 +65,7 @@ describe("GatewayCatalog (rule G5)", () => {
     const { catalog, clock, source, store } = make(() => LIVE);
     expect(await catalog.listing()).toEqual({ source: "live", models: LIVE });
     expect(source.keys).toEqual(["ci_live_1"]);
-    expect(store.values.get("cheaper-inference/model-catalog") as unknown).toEqual({ version: 1, fetchedAt: clock.time, models: LIVE });
+    expect(store.values.get("cheaper-inference/model-catalog") as unknown).toEqual({ version: 2, fetchedAt: clock.time, models: LIVE });
     expect(await catalog.listing()).toEqual({ source: "live", models: LIVE });
     expect(source.keys).toHaveLength(1);
     clock.time += CATALOG_TTL_MS;
@@ -75,9 +75,9 @@ describe("GatewayCatalog (rule G5)", () => {
 
   test("a fresh stored copy is used without a fetch; a stale one is the fallback when the live list fails", async () => {
     const store = new MemoryKeyValueStore();
-    store.values.set("cheaper-inference/model-catalog", { version: 1, fetchedAt: 1_800_000_000_000, models: LIVE_JSON });
+    store.values.set("cheaper-inference/model-catalog", { version: 2, fetchedAt: 1_800_000_000_000, models: LIVE_JSON });
     expect(await make(() => [], store).catalog.listing()).toEqual({ source: "cache", models: LIVE });
-    store.values.set("cheaper-inference/model-catalog", { version: 1, fetchedAt: 1, models: LIVE_JSON });
+    store.values.set("cheaper-inference/model-catalog", { version: 2, fetchedAt: 1, models: LIVE_JSON });
     const failing = make(() => {
       throw new Error("down");
     }, store);

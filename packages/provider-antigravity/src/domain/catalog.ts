@@ -1,5 +1,6 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 domain/services/ModelCatalogService.ts (blob 722ede31) and the pure
 // parts of application/use-cases/ResolveModelsUseCase.ts (descriptorToEntry limit rule, wireDefaults).
+import type { Modality, ModelDetails } from "@inference-router/core/domain/model-details.ts";
 import { IDE_WORKING_SET_CONTEXT_CAP } from "@inference-router/provider-antigravity/domain/constants.ts";
 
 export type ModelDescriptor = {
@@ -17,6 +18,8 @@ export type ModelDescriptor = {
   /** `labels.model_enum` placeholder (MODEL_PLACEHOLDER_Mxx) required by every stream request. */
   readonly enumPlaceholder: string;
   readonly quota?: { readonly remainingFraction: number; readonly resetTime: string };
+  /** Router addition (plan 2026-10-16 C3): the `supportedMimeTypes` the catalog marks true. */
+  readonly mimeTypes?: readonly string[];
 };
 
 export type ExcludedModel = { readonly wireId: string; readonly reason: "tab-completion" | "deprecated"; readonly replacement?: string };
@@ -34,6 +37,7 @@ type RawModel = {
   tagTitle?: string;
   model?: string;
   quotaInfo?: { remainingFraction?: number; resetTime?: string };
+  supportedMimeTypes?: Record<string, unknown>;
 };
 
 export function excludedModelIds(raw: Readonly<Record<string, unknown>>): ExcludedModel[] {
@@ -64,6 +68,26 @@ export function thinkingDefaultFor(m: ModelDescriptor): number | undefined {
   return m.thinkingBudget;
 }
 
+function mimeTypesOf(value: Record<string, unknown> | undefined): { readonly mimeTypes?: readonly string[] } {
+  const types = Object.entries(value ?? {}).flatMap(([type, on]) => (on === true ? [type] : []));
+  return types.length > 0 ? { mimeTypes: types } : {};
+}
+
+/**
+ * Plan 2026-10-16 C3: text input, plus image (`supportsImages` or an `image/*` type), video (`supportsVideo` or a
+ * `video/*` type), audio (an `audio/*` type) and pdf (`application/pdf`); reasoning is `supportsThinking`.
+ */
+export function descriptorDetails(m: ModelDescriptor): ModelDetails {
+  const types = m.mimeTypes ?? [];
+  const any = (prefix: string) => types.some((t) => t.startsWith(prefix));
+  const input: Modality[] = ["text"];
+  if (m.supportsImages || any("image/")) input.push("image");
+  if (any("audio/")) input.push("audio");
+  if (m.supportsVideo || any("video/")) input.push("video");
+  if (types.includes("application/pdf")) input.push("pdf");
+  return { input, reasoning: m.supportsThinking };
+}
+
 export function toModelDescriptors(raw: Readonly<Record<string, unknown>>): ModelDescriptor[] {
   const models = (raw["models"] ?? {}) as Record<string, RawModel>;
   const excluded = new Set(excludedModelIds(raw).map((e) => e.wireId));
@@ -92,6 +116,7 @@ export function toModelDescriptors(raw: Readonly<Record<string, unknown>>): Mode
       ...(m.quotaInfo?.remainingFraction !== undefined && m.quotaInfo.resetTime
         ? { quota: { remainingFraction: m.quotaInfo.remainingFraction, resetTime: m.quotaInfo.resetTime } }
         : {}),
+      ...mimeTypesOf(m.supportedMimeTypes),
     };
   });
 }

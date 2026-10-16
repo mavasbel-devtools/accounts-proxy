@@ -29,6 +29,7 @@
         "@inference-router/dialect-anthropic": "workspace:*",
         "@inference-router/dialect-gemini": "workspace:*",
         "@inference-router/dialect-openai": "workspace:*",
+        "@inference-router/dialect-opencode": "workspace:*",
         "@inference-router/provider-antigravity": "workspace:*",
         "@inference-router/provider-cheaper-inference": "workspace:*",
         "@inference-router/provider-claude": "workspace:*",
@@ -74,6 +75,9 @@
       "version": "0.1.0",
       "dependencies": {
         "@inference-router/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@inference-router/test-support": "workspace:*",
       },
     },
     "packages/provider-antigravity": {

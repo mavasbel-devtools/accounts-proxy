@@ -1,5 +1,6 @@
 // Live `GET /v1/models` parsing. Port of opencode-claude-auth @ 6292741
 // src/infrastructure/adapters/outbound/protocol/AnthropicModelsApiAdapter.ts#parseCatalogEntry (pure part).
+import { compactDetails, type ModelDetails, type ReasoningOption } from "@inference-router/core/domain/model-details.ts";
 import type { CatalogModelEntry, ModelCapabilities } from "@inference-router/provider-claude/domain/model-envelope.ts";
 
 type Flag = { readonly supported?: unknown } | undefined;
@@ -72,4 +73,37 @@ export function isSnapshot(value: unknown): value is CatalogSnapshot {
   if (typeof value !== "object" || value === null) return false;
   const v = value as { version?: unknown; fetchedAt?: unknown; models?: unknown };
   return v.version === 2 && typeof v.fetchedAt === "number" && Array.isArray(v.models) && v.models.length > 0;
+}
+
+/**
+ * Plan 2026-10-16 C3: what a `/v1/models` entry states (anthropic-models-list.md `ModelCapabilities`): text input plus
+ * `image_input` / `pdf_input`; `structured_outputs`; reasoning when `thinking.supported`; the `effort` levels and, for
+ * `thinking.types.enabled`, a token budget of at least 1024 (anthropic-messages.md: budget_tokens "Must be ≥1024").
+ */
+export function entryDetails(entry: CatalogModelEntry): ModelDetails | undefined {
+  const c = entry.capabilities;
+  if (c === undefined) return undefined;
+  const options: ReasoningOption[] = [
+    ...(c.effort.supported && c.effort.levels.length > 0 ? [{ type: "effort" as const, values: c.effort.levels }] : []),
+    ...(c.thinking.supported && c.thinking.types.enabled ? [{ type: "budget_tokens" as const, min: 1024 }] : []),
+  ];
+  return compactDetails({
+    description: undefined,
+    family: undefined,
+    releaseDate: undefined,
+    knowledge: undefined,
+    status: undefined,
+    inputLimit: undefined,
+    input: ["text", ...(c.imageInput ? ["image" as const] : []), ...(c.pdfInput ? ["pdf" as const] : [])],
+    output: undefined,
+    toolCall: undefined,
+    structuredOutput: c.structuredOutputs,
+    temperature: undefined,
+    reasoning: c.thinking.supported,
+    reasoningOptions: options.length > 0 ? options : undefined,
+    interleavedField: undefined,
+    openWeights: undefined,
+    aiSdkPackage: undefined,
+    cost: undefined,
+  });
 }

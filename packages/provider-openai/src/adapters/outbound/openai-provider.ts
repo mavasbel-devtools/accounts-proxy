@@ -6,6 +6,7 @@
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
 // status, body and request id (E1–E2).
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
+import { withDetails } from "@inference-router/core/domain/model-details.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
@@ -71,7 +72,7 @@ export class OpenAIProvider extends ProviderPort {
       provider: this.id,
       formats: this.formats,
       source,
-      models: entries.map((e) => ({ address: { provider: this.id, model: e.id }, displayName: e.displayName, ...(e.contextWindow !== undefined ? { contextWindow: e.contextWindow } : {}) })),
+      models: entries.map((e) => ({ address: { provider: this.id, model: e.id }, displayName: e.displayName, ...(e.contextWindow !== undefined ? { contextWindow: e.contextWindow } : {}), ...withDetails(e.details) })),
     };
   }
 

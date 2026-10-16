@@ -1,4 +1,5 @@
 // Cheaper Inference rules (rules document 2026-10-12-15-35-gateway-provider-rules.md §4, C1–C9). Pure.
+import { compactDetails, perMillion, type Modality, type ModelCost, type ModelDetails } from "@inference-router/core/domain/model-details.ts";
 import type { WireFormat } from "@inference-router/core/domain/models.ts";
 import { asArray, asObject, fieldsText, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
 
@@ -33,6 +34,45 @@ const ENDPOINT_FORMAT: ReadonlyMap<unknown, WireFormat> = new Map([
   ["/v1/messages", "anthropic-messages"],
 ]);
 
+/** Prices are USD per million tokens as decimal strings; the above-threshold prices are a context tier. */
+function pricing(row: Readonly<Record<string, unknown>>): ModelCost[] | undefined {
+  const input = perMillion(row["input_per_million"], "million");
+  const output = perMillion(row["output_per_million"], "million");
+  if (input === undefined || output === undefined) return undefined;
+  const cacheRead = perMillion(row["cache_read_per_million"], "million");
+  const cacheWrite = perMillion(row["cache_write_per_million"], "million");
+  const base: ModelCost = { input, output, ...(cacheRead !== undefined ? { cacheRead } : {}), ...(cacheWrite !== undefined ? { cacheWrite } : {}) };
+  const size = positiveInteger(row["input_token_price_threshold"]);
+  const above = { input: perMillion(row["input_per_million_above_threshold"], "million"), output: perMillion(row["output_per_million_above_threshold"], "million") };
+  if (size === undefined || above.input === undefined || above.output === undefined) return [base];
+  return [base, { input: above.input, output: above.output, tier: { type: "context", size } }];
+}
+
+/** Plan 2026-10-16 C3: a text model (`model_type: "text"`) reads text and writes text; `supports_*` add media. */
+function details(row: Readonly<Record<string, unknown>>): ModelDetails | undefined {
+  const text = row["model_type"] === "text";
+  const input: Modality[] = [...(text ? ["text" as const] : []), ...(row["supports_vision"] === true ? ["image" as const] : []), ...(row["supports_video"] === true ? ["video" as const] : [])];
+  return compactDetails({
+    description: undefined,
+    family: undefined,
+    releaseDate: undefined,
+    knowledge: undefined,
+    status: undefined,
+    inputLimit: undefined,
+    input: input.length > 0 ? input : undefined,
+    output: text ? ["text"] : undefined,
+    toolCall: undefined,
+    structuredOutput: undefined,
+    temperature: undefined,
+    reasoning: typeof row["supports_reasoning"] === "boolean" ? row["supports_reasoning"] : undefined,
+    reasoningOptions: undefined,
+    interleavedField: undefined,
+    openWeights: undefined,
+    aiSdkPackage: undefined,
+    cost: pricing(row),
+  });
+}
+
 /**
  * C3/C4: `data[]` of `GET /v1/models` or `models[]` of `GET /public/models`; a model's endpoints are its `endpoint` and
  * its `supported_endpoints`. A model is a text model when it lists at least one text endpoint; media-only models are
@@ -44,7 +84,7 @@ export function parseModels(value: unknown): GatewayModel[] {
     const endpoints = [row["endpoint"], ...asArray(row["supported_endpoints"])];
     const formats = [...new Set(endpoints.flatMap((e) => [ENDPOINT_FORMAT.get(e)]).filter((f): f is WireFormat => f !== undefined))];
     const id = row["id"] as string;
-    return formats.length === 0 ? [] : [gatewayModel({ id, displayName: id, contextWindow: positiveInteger(row["context_length"]), maxOutputTokens: positiveInteger(row["max_output_tokens"]), createdSeconds: undefined, formats })];
+    return formats.length === 0 ? [] : [gatewayModel({ id, displayName: id, contextWindow: positiveInteger(row["context_length"]), maxOutputTokens: positiveInteger(row["max_output_tokens"]), createdSeconds: undefined, formats, details: details(row) })];
   });
 }
 

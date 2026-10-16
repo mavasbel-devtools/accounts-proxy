@@ -603,8 +603,8 @@ describe("AntigravityProvider", () => {
     expect([provider.id, [...(await provider.nativeFormats("any"))]]).toEqual(["antigravity", ["gemini"]]);
     const catalog = await provider.models();
     expect([catalog.provider, catalog.source]).toEqual(["antigravity", "live"]);
-    expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536 });
-    expect(catalog.models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)" });
+    expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536, details: { input: ["text", "image", "video"], reasoning: true } });
+    expect(catalog.models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)", details: { input: ["text"], reasoning: false } });
   });
 
   test("route, method, model and body checks happen before any upstream call", async () => {

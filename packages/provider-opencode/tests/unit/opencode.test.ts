@@ -1,3 +1,4 @@
+import { parseReference, type ReferenceModel } from "@inference-router/core/domain/model-details.ts";
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -9,8 +10,8 @@ import {
   encodeDevice,
   GO_SPEC,
   isInvalidGrant,
-  modelsDevEntries,
   opencodeModels,
+  referenceFormats,
   parseDeviceAuthorization,
   parseTokens,
   pollError,
@@ -44,37 +45,24 @@ describe("OpenCode Zen and Go rules", () => {
     expect(ZEN_SPEC.headers!["user-agent"]).toBe(`inference-router/${pkg.version}`);
   });
 
-  test("Z4 + Z5: the committed lists and models.dev give the built-in lists", () => {
-    const md = spec("models-dev-gateways.json");
-    const zen = opencodeModels(spec("opencode-zen-models.json"), modelsDevEntries(md, "opencode"));
-    const go = opencodeModels(spec("opencode-go-models.json"), modelsDevEntries(md, "opencode-go"));
+  test("Z4 + Z5: the committed lists and the reference catalog give the built-in lists", () => {
+    const reference = parseReference(spec("models-opencode-reference.json"));
+    const zen = opencodeModels(spec("opencode-zen-models.json"), referenceFormats(reference, "opencode"));
+    const go = opencodeModels(spec("opencode-go-models.json"), referenceFormats(reference, "opencode-go"));
     expect(zen).toEqual([...ZEN_BUILTIN]);
     expect(go).toEqual([...GO_BUILTIN]);
-    expect(zen.find((m) => m.id === "big-pickle")).toEqual({ id: "big-pickle", displayName: "Big Pickle", contextWindow: 200_000, maxOutputTokens: 32_000, formats: ["openai-chat"] });
+    expect(zen.find((m) => m.id === "big-pickle")).toEqual({ id: "big-pickle", displayName: "big-pickle", formats: ["openai-chat"] });
     // zen.mdx: Claude models on /messages, GPT on /responses, Gemini on /models/<id>, Mistral on /chat/completions.
     const format = (id: string) => zen.find((m) => m.id === id)?.formats;
     expect([format("claude-haiku-4-5"), format("gpt-5.5"), format("gemini-3.6-flash"), format("mistral-large-4")]).toEqual([["anthropic-messages"], ["openai-responses"], ["gemini"], ["openai-chat"]]);
-    // Z6: a live id that models.dev does not describe keeps no formats.
+    // Z6: a live id that the reference does not describe keeps no formats.
     expect(zen.find((m) => m.id === "jev-1.13")).toEqual({ id: "jev-1.13", displayName: "jev-1.13" });
   });
 
-  test("modelsDevEntries: provider npm fallback, unknown packages, malformed entries", () => {
-    const md = {
-      opencode: {
-        npm: "@ai-sdk/openai-compatible",
-        models: { a: { name: "A", limit: { context: 10, output: 5 } }, b: { provider: { npm: "@ai-sdk/unknown" }, limit: "x" }, c: 3 },
-      },
-      "opencode-go": { models: { d: { provider: { npm: 7 } } } },
-    };
-    const none = { name: undefined, context: undefined, output: undefined, format: undefined };
-    expect([...modelsDevEntries(md, "opencode")]).toEqual([
-      ["a", { name: "A", context: 10, output: 5, format: "openai-chat" }],
-      ["b", none],
-      ["c", { ...none, format: "openai-chat" }],
-    ]);
-    expect([...modelsDevEntries(md, "opencode-go")]).toEqual([["d", none]]);
-    expect(modelsDevEntries({ opencode: { models: [] } }, "opencode").size).toBe(0);
-    expect(modelsDevEntries(null, "opencode").size).toBe(0);
+  test("referenceFormats: the AI SDK package of each model, unknown packages and models without one left out", () => {
+    const reference = new Map([["opencode", new Map<string, ReferenceModel>([["a", { aiSdkPackage: "@ai-sdk/mistral" }], ["b", { aiSdkPackage: "@ai-sdk/unknown" }], ["c", {}]])]]);
+    expect([...referenceFormats(reference, "opencode")]).toEqual([["a", "openai-chat"]]);
+    expect(referenceFormats(reference, "opencode-go").size).toBe(0);
     expect(opencodeModels({ data: [{ id: "x" }, { object: "model" }, "y"] }, new Map())).toEqual([{ id: "x", displayName: "x" }]);
     expect(opencodeModels(null, new Map())).toEqual([]);
   });

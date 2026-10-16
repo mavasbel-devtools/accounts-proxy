@@ -2,6 +2,7 @@
 // document 2026-10-12-15-35-gateway-provider-rules.md §3a, Z12–Z23; §3 Z4–Z6, Z8 and Z9 still hold). Pure.
 import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { JsonObject } from "@inference-router/core/domain/json.ts";
+import type { ReferenceCatalog } from "@inference-router/core/domain/model-details.ts";
 import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
 import { asArray, asObject, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
@@ -61,9 +62,6 @@ export const GO_SPEC: GatewaySpec = {
 
 /** Z12, Z13: under each spec's apiBase. */
 export const MODELS_PATH = "/v1/models";
-/** Z5: per-model formats. */
-export const MODELS_DEV_URL = "https://models.dev/api.json";
-
 /** Z5: the AI SDK package of a model → its format. */
 const NPM_FORMAT: ReadonlyMap<string, WireFormat> = new Map([
   ["@ai-sdk/openai", "openai-responses"],
@@ -73,27 +71,29 @@ const NPM_FORMAT: ReadonlyMap<string, WireFormat> = new Map([
   ["@ai-sdk/mistral", "openai-chat"],
 ]);
 
-export type ModelsDevModel = { readonly name: string | undefined; readonly context: number | undefined; readonly output: number | undefined; readonly format: WireFormat | undefined };
-
-/** Z5: the provider's models.dev entries by id (format from the per-model `provider.npm`, else the provider's `npm`). */
-export function modelsDevEntries(value: unknown, provider: OpencodeProvider): ReadonlyMap<string, ModelsDevModel> {
-  const entry = asObject(asObject(value)[provider]);
-  return new Map(
-    Object.entries(asObject(entry["models"])).map(([id, raw]) => {
-      const model = asObject(raw);
-      const limit = asObject(model["limit"]);
-      const npm = firstString(asObject(model["provider"])["npm"], entry["npm"]);
-      return [id, { name: firstString(model["name"]), context: positiveInteger(limit["context"]), output: positiveInteger(limit["output"]), format: NPM_FORMAT.get(String(npm)) }];
-    }),
-  );
+/**
+ * Z5: each model's format from the reference catalog's AI SDK package (the per-model `provider.npm`, else the
+ * provider's `npm`). Since plan 2026-10-16 C3 the reference is models.opencode.ai, the catalog opencode v2 loads
+ * (it was models.dev).
+ */
+export function referenceFormats(reference: ReferenceCatalog, provider: OpencodeProvider): ReadonlyMap<string, WireFormat> {
+  const out = new Map<string, WireFormat>();
+  for (const [id, model] of reference.get(provider) ?? []) {
+    const format = model.aiSdkPackage === undefined ? undefined : NPM_FORMAT.get(model.aiSdkPackage);
+    if (format !== undefined) out.set(id, format);
+  }
+  return out;
 }
 
-/** Z4 + Z5: the gateway's live ids, described by models.dev where it knows them (others: formats unknown, Z6). */
-export function opencodeModels(list: unknown, details: ReadonlyMap<string, ModelsDevModel>): GatewayModel[] {
+/**
+ * Z4 + Z5: the gateway's live ids with their formats (others: formats unknown, Z6). The names, limits and the rest
+ * come from the reference catalog when the model list is described (rule M1), not from the gateway's list.
+ */
+export function opencodeModels(list: unknown, formats: ReadonlyMap<string, WireFormat>): GatewayModel[] {
   return rowsWithId(asObject(list)["data"]).map((row) => {
     const id = row["id"] as string;
-    const d = details.get(id);
-    return gatewayModel({ id, displayName: firstString(d?.name, id)!, contextWindow: d?.context, maxOutputTokens: d?.output, createdSeconds: undefined, formats: d?.format === undefined ? undefined : [d.format] });
+    const format = formats.get(id);
+    return gatewayModel({ id, displayName: id, contextWindow: undefined, maxOutputTokens: undefined, createdSeconds: undefined, formats: format === undefined ? undefined : [format] });
   });
 }
 

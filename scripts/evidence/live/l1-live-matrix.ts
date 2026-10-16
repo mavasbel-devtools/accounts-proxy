@@ -15,6 +15,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { GoogleGenAI, type Content, type GenerateContentResponse } from "@google/genai";
+import { join } from "node:path";
 import type { WireFormat } from "@inference-router/core/domain/models.ts";
 import { SystemBrowserLauncher } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
 import { opencodeDataDir } from "@inference-router/router/adapters/outbound/opencode-auth-file.ts";
@@ -86,6 +87,7 @@ function options(live: Live, out: (text: string) => void, shutdown: ShutdownSign
   return {
     home: live.home,
     opencodeData: opencodeDataDir(process.env),
+    entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "router", "src", "main", "cli.ts")],
     out,
     err: out,
     stdin: process.stdin,

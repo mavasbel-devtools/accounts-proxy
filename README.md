@@ -38,7 +38,7 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 | `router.yaml` | configuration; example: [config/router.example.yaml](config/router.example.yaml). No file = every provider disabled. Unknown keys are errors. |
 | `token.json` | the router token clients present (created on first `serve` or `token`, mode 0600) |
 | `accounts-<provider>.json` | the router's own accounts, tokens and API keys (atomic writes, mode 0600); `opencode-go` uses `accounts-opencode.json` |
-| `state/` | per-install provider state (device and session ids, catalog cache, thought signatures) |
+| `state/` | per-install provider state (device and session ids, catalog caches, the reference model catalog copy `model-reference.json`, thought signatures) |
 | `locks/` | cross-process lock files (token refresh) |
 | `logs/router.log` | the log; never contains tokens |
 
@@ -52,7 +52,8 @@ The router keeps everything in its own data directory, `~/.local/share/inference
 | `account list <provider>` | stored accounts; `*` marks the active one |
 | `account use <provider> <account-id>` | choose the active account (the router never switches accounts by itself) |
 | `quota <provider>` | remaining quota as reported by the provider: `antigravity`, `openrouter` (key usage and limit), `cheaper-inference` (wallet) |
-| `models [<provider>]` | each provider's model catalog with advertised limits, and where it came from (live, stored copy, or the built-in list) |
+| `models [<provider>] [--json]` | each provider's model catalog with advertised limits, and where it came from (live, stored copy, or the built-in list; a provider that cannot list, e.g. without an account, is `unavailable`); `--json`: every model in detail (formats, limits, media, tools, reasoning options, price, …), each field with its source |
+| `opencode-config` | prints the opencode v2 configuration of every model (the same document as `GET /opencode/config.json`) |
 | `serve` | runs the daemon in the foreground on `127.0.0.1:<port>` (Ctrl-C or SIGTERM stops it; in-flight responses get 10 s) |
 | `token` | prints the router token (created on first use) |
 | `status` | checks whether a daemon answers `GET /health` on the configured port (exit 1 when not) |
@@ -85,7 +86,12 @@ Coding agents work the same way (both measured live, L3 of the
 - **Claude Code** (Anthropic Messages): `ANTHROPIC_BASE_URL=http://127.0.0.1:4141/anthropic`, `ANTHROPIC_API_KEY=<token>`,
   `--model claude/claude-haiku-4-5-20251001` (or any Messages model: `openrouter/…`, `opencode/claude-haiku-4-5`,
   `opencode-go/qwen3.8-flash`, `cheaper-inference/…`; set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to a routable model too).
-- **opencode**: one custom provider per format, `options.baseURL` at the router and `options.apiKey` the token:
+- **opencode** (v2): `opencode auth login http://127.0.0.1:4141` reads the router's `/.well-known/opencode`, runs
+  `inference-router token` for the key and loads `GET /opencode/config.json`: one provider `ir-<provider>` per router
+  provider, every model with its route, limits, media, price and opencode's own variants
+  ([rules O1–O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)). `bun run router opencode-config` prints the
+  same document for a config file. By hand: one custom provider per format, `options.baseURL` at the router and
+  `options.apiKey` the token:
   `@ai-sdk/openai-compatible` → `http://127.0.0.1:4141/openai/v1` (Chat), `@ai-sdk/openai` → the same URL (Responses;
   for `openai/*` add `options.headers: {"x-router-lossy": "1"}`, because the AI SDK sends `max_output_tokens`, which
   ChatGPT plan usage refuses), `@ai-sdk/anthropic` → `http://127.0.0.1:4141/anthropic/v1`, `@ai-sdk/google` →
@@ -93,7 +99,10 @@ Coding agents work the same way (both measured live, L3 of the
 
 | Route | Format | Served natively by |
 |---|---|---|
-| `GET /health` | | `{status, providers}`; the only route without the token |
+| `GET /health` | | `{status, providers}`; no token |
+| `GET /.well-known/opencode` | | the manifest of `opencode auth login <origin>` (token command, configuration URL); no token |
+| `GET /opencode/config.json` | | the opencode v2 configuration of every model |
+| `GET /router/v1/models` (`?provider=<id>`) | | every enabled provider's models in detail, each field with its source (`provider:<id>` or `models.opencode.ai:<provider>/<model>`) |
 | `POST /anthropic/v1/messages`, `/anthropic/v1/messages/count_tokens` | Anthropic Messages | `claude/*`; `openrouter/*`; the Messages models of `opencode`, `opencode-go`, `cheaper-inference` (`count_tokens`: `claude`, `cheaper-inference`) |
 | `POST /openai/v1/chat/completions` | OpenAI Chat | `openrouter/*`; the Chat models of `opencode`, `opencode-go`, `cheaper-inference` |
 | `POST /openai/v1/responses` | OpenAI Responses | `openai/*`; `openrouter/*`; the Responses models of the other gateways |
@@ -193,6 +202,7 @@ flowchart LR
     DA[anthropic]
     DO[openai]
     DG[gemini]
+    DC[opencode config]
   end
   subgraph core[packages/core]
     D[core domain]
@@ -207,7 +217,7 @@ flowchart LR
   A --> H
   O --> H
   G --> H
-  H --> DA & DO & DG --> S
+  H --> DA & DO & DG & DC --> S
   S --> P
   P -.implemented by.-> PC & PA & PO & PG
   PC --> X[(api.anthropic.com)]
@@ -231,6 +241,7 @@ Workspaces:
 | `@inference-router/provider-gateway` | `packages/provider-gateway` | shared base of the API-key gateways (native cells, catalogs, key sessions and logins) |
 | `@inference-router/provider-{openrouter,opencode,cheaper-inference}` | `packages/provider-*` | the gateway vendors' rules, logins, catalogs and quota |
 | `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: router errors and model lists |
+| `@inference-router/dialect-opencode` | `packages/dialect-opencode` | the opencode v2 configuration and well-known manifest; opencode's variant rules |
 | `@inference-router/router` | `apps/router` | application, adapters, composition, CLI |
 | `@inference-router/test-support` | `tests/support` | shared test doubles, guarded temp directories, e2e replay upstreams and process runner |
 | `@inference-router/scripts` | `scripts` | release gate and evidence scripts |

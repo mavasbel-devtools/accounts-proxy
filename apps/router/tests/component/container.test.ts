@@ -72,6 +72,7 @@ function options(extra: Partial<ContainerOptions> = {}) {
     seams: {},
     listenHost: "127.0.0.1",
     opencodeData: join(home, "opencode-data"),
+    entry: ["/usr/bin/bun", "/app/cli.ts"],
     ...extra,
   };
   return { opts, out, err, transport, browser };
@@ -116,7 +117,8 @@ describe("composition root", () => {
       expect(out[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)\n");
       expect(await runCli(["account", "list", "openai"], opts)).toBe(0);
       expect(out.at(-1)).toBe("no openai accounts; run: inference-router login openai\n");
-      expect(transport.requests).toHaveLength(0);
+      // The detailed list reads the reference catalog (rule M4; the gateways seam, unset here, would repoint it).
+      expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json"]);
       removeTemporary(home!);
       home = undefined;
     }
@@ -143,6 +145,7 @@ describe("composition root", () => {
         at("https://opencode.ai/inference/v1/models"),
         at("https://opencode.ai/inference/go/v1/models"),
         at("https://api.cheaperinference.com/public/models"),
+        at("https://models.opencode.ai/api.json"),
       ]);
       removeTemporary(home!);
       home = undefined;

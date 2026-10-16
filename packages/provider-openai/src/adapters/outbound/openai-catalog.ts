@@ -41,7 +41,7 @@ export class OpenAICatalog extends OpenAICatalogPort {
     try {
       const models = await this.fetchLive(accessToken);
       if (models.length === 0) throw new Error("live model list is empty");
-      const snapshot: CatalogSnapshot = { version: 1, clientId, fetchedAt: this.clock.now(), models };
+      const snapshot: CatalogSnapshot = { version: 2, clientId, fetchedAt: this.clock.now(), models };
       this.memory = snapshot;
       await this.store.write(CATALOG_KEY, snapshot as unknown as JsonValue).catch((error: unknown) => this.logger.warn(`openai: model list cache write failed: ${String(error)}`));
       return { source: "live", entries: models };

@@ -34,7 +34,7 @@ export class GatewayCatalog extends GatewayCatalogPort {
     if (cached !== undefined && this.clock.now() - cached.fetchedAt < CATALOG_TTL_MS) return { source: fromMemory ? "live" : "cache", models: cached.models };
     try {
       const models = await this.source.fetch(await this.session.optionalKey());
-      const snapshot: CatalogSnapshot = { version: 1, fetchedAt: this.clock.now(), models };
+      const snapshot: CatalogSnapshot = { version: 2, fetchedAt: this.clock.now(), models };
       this.memory = snapshot;
       await this.store.write(this.cacheKey, snapshot as unknown as JsonValue).catch((error: unknown) => this.logger.warn(`${this.provider}: model list cache write failed: ${String(error)}`));
       return { source: "live", models };

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { EMPTY_POOL, upsertAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
 import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
+import { ModelReferencePort, type ReferenceListing } from "@inference-router/core/ports/outbound/model-reference.ts";
 import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
 import { OpencodeCatalogSource } from "@inference-router/provider-opencode/adapters/outbound/opencode-catalog-source.ts";
 import { OpencodeConsoleClient } from "@inference-router/provider-opencode/adapters/outbound/opencode-console-client.ts";
@@ -19,36 +20,36 @@ class Hash extends HashPort {
 
 const CONSOLE = "http://gw/console";
 const LIST = JSON.stringify({ object: "list", data: [{ id: "big-pickle" }, { id: "new" }] });
-const MODELS_DEV = JSON.stringify({ opencode: { npm: "@ai-sdk/openai-compatible", models: { "big-pickle": { name: "Big Pickle" } } } });
 /** The Console API page's config example (opencode-console-api.html "Workspace config"). */
 const CONFIG = JSON.stringify({ providers: { opencode: { name: "OpenCode", headers: { "x-opencode-org-id": "org_..." }, models: { "kimi-k2.6": { name: "Kimi K2.6" } } } } });
 const AUTHORIZATION: DeviceAuthorization = { deviceCode: "dc", userCode: "U", verificationUrl: "http://gw/console/device", intervalMs: 5000, expiresInMs: 600_000 };
 const TOKENS: ConsoleTokens = { accessToken: "at", refreshToken: "rt", expiresAt: 1_800_000_000_000 + 3_600_000, orgId: "org_1" };
 
+class Reference extends ModelReferencePort {
+  async reference(): Promise<ReferenceListing> {
+    return { source: "live", catalog: new Map([["opencode", new Map([["big-pickle", { name: "Big Pickle", aiSdkPackage: "@ai-sdk/openai-compatible" }]])]]) };
+  }
+}
+
 describe("OpencodeCatalogSource (Z4, Z5, Z12, Z13)", () => {
-  test("the Console's ids described by models.dev", async () => {
-    const transport = new ScriptedTransport((r) => ({ status: 200, body: r.url.endsWith("/api.json") ? MODELS_DEV : LIST }));
-    const source = new OpencodeCatalogSource("opencode", transport, new MemoryLogger(), "http://gw/inference", "http://md/api.json");
+  test("the Console's ids with the reference catalog's formats; a model it does not know keeps none (Z6)", async () => {
+    const transport = new ScriptedTransport(() => ({ status: 200, body: LIST }));
+    const source = new OpencodeCatalogSource("opencode", transport, new Reference(), "http://gw/inference");
     expect(await source.fetch()).toEqual([
-      { id: "big-pickle", displayName: "Big Pickle", formats: ["openai-chat"] },
+      { id: "big-pickle", displayName: "big-pickle", formats: ["openai-chat"] },
       { id: "new", displayName: "new" },
     ]);
-    expect(transport.requests.map((r) => [r.url, r.headers])).toEqual([
-      ["http://gw/inference/v1/models", { accept: "application/json" }],
-      ["http://md/api.json", { accept: "application/json" }],
-    ]);
+    expect(transport.requests.map((r) => [r.url, r.headers])).toEqual([["http://gw/inference/v1/models", { accept: "application/json" }]]);
   });
 
-  test("models.dev unavailable: the ids without formats, warned; the Console list failing fails the fetch", async () => {
-    const logger = new MemoryLogger();
-    const transport = new ScriptedTransport((r) => (r.url.endsWith("/api.json") ? { status: 502 } : { status: 200, body: LIST }));
-    expect(await new OpencodeCatalogSource("opencode", transport, logger, "http://gw/inference", "http://md/api.json").fetch()).toEqual([
+  test("the Console list failing fails the fetch; Go has no reference entries here", async () => {
+    const down = new ScriptedTransport(() => ({ status: 500 }));
+    await expect(new OpencodeCatalogSource("opencode-go", down, new Reference(), "http://gw/inference/go").fetch()).rejects.toThrow("GET http://gw/inference/go/v1/models HTTP 500");
+    const up = new ScriptedTransport(() => ({ status: 200, body: LIST }));
+    expect(await new OpencodeCatalogSource("opencode-go", up, new Reference(), "http://gw/inference/go").fetch()).toEqual([
       { id: "big-pickle", displayName: "big-pickle" },
       { id: "new", displayName: "new" },
     ]);
-    expect(logger.lines).toEqual(["WARN opencode: models.dev unavailable (GET http://md/api.json HTTP 502); model formats unknown"]);
-    const down = new ScriptedTransport(() => ({ status: 500 }));
-    await expect(new OpencodeCatalogSource("opencode-go", down, logger, "http://gw/inference/go", "http://md/api.json").fetch()).rejects.toThrow("GET http://gw/inference/go/v1/models HTTP 500");
   });
 });
 

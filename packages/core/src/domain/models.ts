@@ -1,4 +1,5 @@
 // Provider and model identity shared by every layer.
+import type { ModelDetails } from "@inference-router/core/domain/model-details.ts";
 
 export type ProviderId = "claude" | "antigravity" | "openai" | "openrouter" | "opencode" | "opencode-go" | "cheaper-inference";
 export const PROVIDER_IDS: readonly ProviderId[] = ["claude", "antigravity", "openai", "openrouter", "opencode", "opencode-go", "cheaper-inference"];
@@ -41,17 +42,27 @@ export type ModelInfo = {
   readonly createdAt?: string;
   /** The model's own native formats when they differ per model (gateways); absent: the catalog's `formats`. */
   readonly formats?: readonly WireFormat[];
+  /** What the provider's own list states beyond these fields (plan 2026-10-16 C3); absent: nothing more. */
+  readonly details?: ModelDetails;
 };
 
 /** Where a model list came from: fetched now, a stored copy, or the built-in minimum (P0-LIVE plan §7). */
 export type ModelsSource = "live" | "cache" | "static";
 
+/**
+ * A provider's list in a listing of every provider: a source, or `unavailable` when the provider could not list its
+ * models (no account, or no list and no built-in copy); that provider's error is then in `error` (plan 2026-10-16 C4).
+ */
+export type CatalogSource = ModelsSource | "unavailable";
+
 export type ModelCatalog = {
   readonly provider: ProviderId;
   /** The formats every model of the provider serves natively, unless a model states its own `formats`. */
   readonly formats: readonly WireFormat[];
-  readonly source: ModelsSource;
+  readonly source: CatalogSource;
   readonly models: readonly ModelInfo[];
+  /** Why the provider is `unavailable`. */
+  readonly error?: { readonly code: string; readonly message: string };
 };
 
 /** The native formats of one listed model. */

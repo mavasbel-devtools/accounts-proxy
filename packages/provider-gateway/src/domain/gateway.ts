@@ -2,6 +2,7 @@
 // §5 G1–G4). Pure: a vendor package supplies a GatewaySpec; the adapters do the I/O.
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
+import type { ModelDetails } from "@inference-router/core/domain/model-details.ts";
 import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
 import type { RawRequest } from "@inference-router/core/domain/wire.ts";
@@ -43,6 +44,8 @@ export type GatewayModel = {
   readonly maxOutputTokens?: number;
   readonly createdAt?: string;
   readonly formats?: readonly WireFormat[];
+  /** What the vendor's list states beyond these fields (plan 2026-10-16 C3). */
+  readonly details?: ModelDetails;
 };
 
 export type UpstreamCall = {
@@ -119,8 +122,8 @@ export function servedFormats(spec: GatewaySpec, formats: readonly WireFormat[])
   return formats.filter((f) => spec.endpoints[f] !== undefined);
 }
 
-/** Cached model list (G5). */
-export type CatalogSnapshot = { readonly version: 1; readonly fetchedAt: number; readonly models: readonly GatewayModel[] };
+/** Cached model list (G5). Version 2 (plan 2026-10-16 C3): the details; a version-1 copy is not reused. */
+export type CatalogSnapshot = { readonly version: 2; readonly fetchedAt: number; readonly models: readonly GatewayModel[] };
 
 export const CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
 export const CATALOG_TIMEOUT_MS = 30_000;
@@ -136,7 +139,7 @@ function isGatewayModel(value: unknown): value is GatewayModel {
 export function isCatalogSnapshot(value: unknown): value is CatalogSnapshot {
   return (
     isJsonObject(value) &&
-    value["version"] === 1 &&
+    value["version"] === 2 &&
     typeof value["fetchedAt"] === "number" &&
     Array.isArray(value["models"]) &&
     value["models"].every(isGatewayModel)
@@ -156,6 +159,7 @@ export type GatewayModelFields = {
   readonly maxOutputTokens: number | undefined;
   readonly createdSeconds: number | undefined;
   readonly formats: readonly WireFormat[] | undefined;
+  readonly details?: ModelDetails | undefined;
 };
 
 /** A GatewayModel without the fields the vendor did not state (exact optional property types). */
@@ -167,6 +171,7 @@ export function gatewayModel(fields: GatewayModelFields): GatewayModel {
     ...(fields.maxOutputTokens !== undefined ? { maxOutputTokens: fields.maxOutputTokens } : {}),
     ...(fields.createdSeconds !== undefined ? { createdAt: new Date(fields.createdSeconds * 1000).toISOString() } : {}),
     ...(fields.formats !== undefined ? { formats: fields.formats } : {}),
+    ...(fields.details !== undefined ? { details: fields.details } : {}),
   };
 }
 

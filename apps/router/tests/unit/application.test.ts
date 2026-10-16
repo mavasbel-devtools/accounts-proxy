@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { EMPTY_POOL, upsertAccount, type AccountCredential, markNeedsLogin } from "@inference-router/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@inference-router/core/domain/errors.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import type { ModelCatalog, ProviderId } from "@inference-router/core/domain/models.ts";
+import { ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { ModelReferencePort, type ReferenceListing } from "@inference-router/core/ports/outbound/model-reference.ts";
 import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
 import { ApiKeyLoginPort, ForeignKeySourcePort, SecretPromptPort } from "@inference-router/core/ports/outbound/api-key.ts";
 import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
@@ -12,6 +14,7 @@ import { BrowserLauncherPort, HashPort, TimerPort } from "@inference-router/core
 import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
 import { FixedClock, MemoryCredentialStore, MemoryLogger, SequenceRandom } from "@inference-router/test-support/fakes.ts";
 import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
+import { DescribeModelsService } from "@inference-router/router/application/describe-models-service.ts";
 import { ListModelsService } from "@inference-router/router/application/list-models-service.ts";
 import { LoginService } from "@inference-router/router/application/login-service.ts";
 import type { LoginOptions } from "@inference-router/core/ports/inbound/accounts.ts";
@@ -405,5 +408,56 @@ describe("ListModelsService", () => {
     expect((await service.listModels()).map((c) => c.models[0]!.address.model)).toEqual(["claude-m", "antigravity-m"]);
     expect((await service.listModels("antigravity")).map((c) => c.provider)).toEqual(["antigravity"]);
     await expect(new ListModelsService([]).listModels("antigravity")).rejects.toBeInstanceOf(ProviderDisabledError);
+  });
+
+  class Failing extends Provider {
+    constructor(
+      id: ProviderId,
+      private readonly error: Error,
+    ) {
+      super(id);
+    }
+    override async models(): Promise<never> {
+      throw this.error;
+    }
+  }
+
+  test("all providers: one that cannot list is unavailable with its error; asked by name it fails; a bug is never hidden", async () => {
+    const auth = new ProviderAuthRequiredError("antigravity", "no active account");
+    const service = new ListModelsService([new Provider("claude"), new Failing("antigravity", auth)]);
+    expect((await service.listModels())[1]).toEqual({ provider: "antigravity", formats: [], source: "unavailable", models: [], error: { code: "provider_auth_required", message: auth.message } });
+    await expect(service.listModels("antigravity")).rejects.toBe(auth);
+    await expect(new ListModelsService([new Failing("claude", new TypeError("boom"))]).listModels()).rejects.toThrow("boom");
+  });
+});
+
+describe("DescribeModelsService", () => {
+  class Models extends ListModelsPort {
+    constructor(private readonly catalogs: readonly ModelCatalog[]) {
+      super();
+    }
+    async listModels(provider?: ProviderId) {
+      return this.catalogs.filter((c) => provider === undefined || c.provider === provider);
+    }
+  }
+  class Reference extends ModelReferencePort {
+    reads = 0;
+    async reference(): Promise<ReferenceListing> {
+      this.reads += 1;
+      return { source: "cache", catalog: new Map([["anthropic", new Map([["c", { name: "Claude C", toolCall: true }]])]]) };
+    }
+  }
+  const claude: ModelCatalog = { provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "c" }, displayName: "c" }] };
+  const cheaper: ModelCatalog = { provider: "cheaper-inference", formats: [], source: "live", models: [{ address: { provider: "cheaper-inference", model: "x" }, displayName: "x", formats: ["openai-chat"] }] };
+
+  test("each catalog described with the reference; the reference is read only when a listed provider has one", async () => {
+    const reference = new Reference();
+    const service = new DescribeModelsService(new Models([claude, cheaper]), reference);
+    const [c, x] = await service.describeModels();
+    expect(c).toEqual({ provider: "claude", source: "live", referenceSource: "cache", models: [{ id: "claude/c", provider: "claude", model: "c", name: "Claude C", formats: ["anthropic-messages"], toolCall: true, sources: { name: "models.opencode.ai:anthropic/c", toolCall: "models.opencode.ai:anthropic/c" } }] });
+    expect(x!.referenceSource).toBeUndefined();
+    expect(reference.reads).toBe(1);
+    await service.describeModels("cheaper-inference");
+    expect(reference.reads).toBe(1);
   });
 });

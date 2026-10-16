@@ -44,6 +44,7 @@ export class GatewayProvider extends ProviderPort {
         ...(m.maxOutputTokens !== undefined ? { maxOutputTokens: m.maxOutputTokens } : {}),
         ...(m.createdAt !== undefined ? { createdAt: m.createdAt } : {}),
         ...(m.formats !== undefined ? { formats: servedFormats(this.spec, m.formats) } : {}),
+        ...(m.details !== undefined ? { details: m.details } : {}),
       })),
     };
   }

@@ -18,7 +18,14 @@ describe("Cheaper Inference rules", () => {
     const models = parseModels(spec("cheaper-inference-public-models.json"));
     expect(models).toEqual([...CHEAPER_BUILTIN]);
     expect(models).toHaveLength(91);
-    expect(models[0]).toEqual({ id: "aion-3.0", displayName: "aion-3.0", contextWindow: 128_000, maxOutputTokens: 32_768, formats: ["openai-chat", "openai-responses", "anthropic-messages"] });
+    expect(models[0]).toEqual({
+      id: "aion-3.0",
+      displayName: "aion-3.0",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_768,
+      formats: ["openai-chat", "openai-responses", "anthropic-messages"],
+      details: { input: ["text"], output: ["text"], reasoning: true, cost: [{ input: 1.65, output: 3.3, cacheRead: 0.4125, cacheWrite: 1.65 }] },
+    });
   });
 
   test("parseModels: data[] or models[], endpoint and supported_endpoints, unknown endpoints dropped", () => {
@@ -44,5 +51,19 @@ describe("Cheaper Inference rules", () => {
       'Cheaper Inference wallet (GET /v1/account/balance):\n  currency: "USD"\n  balance_usd: 12.5\n  available_usd: "10.000000"\n  reserved_usd: 2.5',
     );
     expect(balanceText([])).toBe("Cheaper Inference wallet (GET /v1/account/balance):");
+  });
+});
+
+describe("Cheaper Inference model details (plan 2026-10-16 C3)", () => {
+  const row = { id: "m", endpoint: "/v1/chat/completions" };
+  test("media from the flags, prices per million, the above-threshold prices as a context tier", () => {
+    expect(parseModels({ data: [row] })).toEqual([{ id: "m", displayName: "m", formats: ["openai-chat"] }]);
+    const [m] = parseModels({
+      data: [{ ...row, model_type: "text", supports_vision: true, supports_video: true, supports_reasoning: false, input_per_million: "1", output_per_million: "2", input_token_price_threshold: 1000, input_per_million_above_threshold: "3", output_per_million_above_threshold: "4" }],
+    });
+    expect(m!.details).toEqual({ input: ["text", "image", "video"], output: ["text"], reasoning: false, cost: [{ input: 1, output: 2 }, { input: 3, output: 4, tier: { type: "context", size: 1000 } }] });
+    const [n] = parseModels({ data: [{ ...row, model_type: "image", input_per_million: "1", output_per_million: "2", input_token_price_threshold: 1000, input_per_million_above_threshold: "3" }] });
+    expect(n!.details).toEqual({ cost: [{ input: 1, output: 2 }] });
+    expect(parseModels({ data: [{ ...row, input_per_million: "1" }] })[0]!.details).toBeUndefined();
   });
 });

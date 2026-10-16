@@ -415,6 +415,7 @@ describe("ClaudeSubscriptionProvider", () => {
       contextWindow: 1_000_000,
       maxOutputTokens: 128_000,
       createdAt: "2026-07-24T00:00:00Z",
+      details: { input: ["text", "image", "pdf"], structuredOutput: true, reasoning: true, reasoningOptions: [{ type: "effort", values: ["low", "medium", "high", "xhigh", "max"] }] },
     });
   });
 

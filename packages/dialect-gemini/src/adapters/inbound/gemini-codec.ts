@@ -7,7 +7,7 @@
 //           invented version (decision Q5). Only Gemini-native providers (antigravity) list generateContent and
 //           streamGenerateContent; the others list none (the router does not translate between formats).
 import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
-import { formatModelAddress, modelFormats, type ModelCatalog } from "@inference-router/core/domain/models.ts";
+import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
 import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
@@ -25,18 +25,18 @@ export class GeminiCodec extends DialectCodecPort {
     };
   }
 
-  models(catalogs: readonly ModelCatalog[]): EncodedResponse {
+  models(catalogs: readonly DetailedCatalog[]): EncodedResponse {
     const models = catalogs.flatMap((c) =>
       c.models.map((m) => {
-        const id = formatModelAddress(m.address);
+        const id = m.id;
         return {
           name: `models/${id}`,
           baseModelId: id,
           version: c.provider,
-          displayName: m.displayName,
+          displayName: m.name,
           ...(m.contextWindow !== undefined ? { inputTokenLimit: m.contextWindow } : {}),
           ...(m.maxOutputTokens !== undefined ? { outputTokenLimit: m.maxOutputTokens } : {}),
-          supportedGenerationMethods: modelFormats(c, m).includes("gemini") ? ["generateContent", "streamGenerateContent"] : [],
+          supportedGenerationMethods: m.formats.includes("gemini") ? ["generateContent", "streamGenerateContent"] : [],
         };
       }),
     );

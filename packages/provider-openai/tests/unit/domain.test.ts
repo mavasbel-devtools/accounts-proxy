@@ -1,5 +1,7 @@
 // provider-openai domain rules (docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md).
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
 import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
 import { isSnapshot, parseModelList, STATIC_CATALOG } from "@inference-router/provider-openai/domain/catalog.ts";
@@ -109,6 +111,19 @@ describe("model list (M1–M2)", () => {
       { id: "gpt-6-luna", displayName: "gpt-6-luna" },
     ]);
     expect(() => parseModelList({ data: [] })).toThrow("model list has no models array");
+    // Plan 2026-10-16 C3: description, input modalities and reasoning levels; the captured live list.
+    expect(parseModelList({ models: [{ slug: "m", visibility: "list", description: "", input_modalities: ["text", "image", "x"], supported_reasoning_levels: [{ effort: "low" }, { effort: "" }, "x", {}] }] })).toEqual([
+      { id: "m", displayName: "m", details: { input: ["text", "image"], reasoningOptions: [{ type: "effort", values: ["low"] }] } },
+    ]);
+    expect(parseModelList({ models: [{ slug: "m", visibility: "list", supported_reasoning_levels: [] }] })).toEqual([{ id: "m", displayName: "m" }]);
+    const captured = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "p0-live", "l4", "openai-models.json"), "utf8")) as { exchanges: { response: { chunks: { text: string }[] } }[] };
+    const live = parseModelList(JSON.parse(captured.exchanges[0]!.response.chunks.map((c) => c.text).join("")));
+    expect(live[0]).toEqual({
+      id: "gpt-6.1-sol",
+      displayName: "GPT-6.1-Sol",
+      contextWindow: 500_000,
+      details: { description: "Latest workhorse model for coding and everyday work.", input: ["text", "image"], reasoningOptions: [{ type: "effort", values: ["low", "medium", "high", "xhigh", "max", "ultra"] }] },
+    });
     expect(() => parseModelList(null)).toThrow("model list has no models array");
   });
 
@@ -118,10 +133,11 @@ describe("model list (M1–M2)", () => {
   });
 
   test("a stored copy belongs to one registration", () => {
-    const snapshot = { version: 1, clientId: "c", fetchedAt: 1, models: [{ id: "m", displayName: "M" }] };
+    const snapshot = { version: 2, clientId: "c", fetchedAt: 1, models: [{ id: "m", displayName: "M" }] };
     expect(isSnapshot(snapshot, "c")).toBe(true);
+    expect(isSnapshot({ ...snapshot, version: 1 }, "c")).toBe(false);
     expect(isSnapshot(snapshot, "d")).toBe(false);
-    expect(isSnapshot({ ...snapshot, version: 2 }, "c")).toBe(false);
+    expect(isSnapshot({ ...snapshot, version: 3 }, "c")).toBe(false);
     expect(isSnapshot({ ...snapshot, fetchedAt: "1" }, "c")).toBe(false);
     expect(isSnapshot({ ...snapshot, models: {} }, "c")).toBe(false);
     expect(isSnapshot({ ...snapshot, models: [{ id: "m" }] }, "c")).toBe(false);

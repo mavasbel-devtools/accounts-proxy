@@ -4,7 +4,7 @@
 //   models  ListModelsResponse `{object:"list", data:[Model]}`, Model `{id, object:"model", created, owned_by}`.
 //           `created` is Unix seconds; a catalog without dates (Antigravity) gets 0, never an invented date (Q5).
 import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
-import { formatModelAddress, type ModelCatalog } from "@inference-router/core/domain/models.ts";
+import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;
@@ -26,8 +26,8 @@ export class OpenAiCodec extends DialectCodecPort {
     };
   }
 
-  models(catalogs: readonly ModelCatalog[]): EncodedResponse {
-    const data = catalogs.flatMap((c) => c.models.map((m) => ({ id: formatModelAddress(m.address), object: "model", created: unixSeconds(m.createdAt), owned_by: c.provider })));
+  models(catalogs: readonly DetailedCatalog[]): EncodedResponse {
+    const data = catalogs.flatMap((c) => c.models.map((m) => ({ id: m.id, object: "model", created: unixSeconds(m.createdAt), owned_by: c.provider })));
     return { status: 200, headers: JSON_HEADERS, body: JSON.stringify({ object: "list", data }) };
   }
 }

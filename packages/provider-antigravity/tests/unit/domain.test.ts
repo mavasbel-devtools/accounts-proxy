@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import { accountId, activeProject, fromCredential, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
-import { advertisedLimits, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { advertisedLimits, descriptorDetails, toModelDescriptors, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
 import { onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
 import { formatUsage } from "@inference-router/provider-antigravity/domain/quota.ts";
 import { defaultFamilyOf, isContinuation, isSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
@@ -124,5 +124,15 @@ describe("upstream", () => {
     expect(isLocationGate(new Error("User location is not supported"))).toBe(false);
     expect(isUnauthorized(upstreamFailure(401, "", undefined))).toBe(true);
     expect(isUnauthorized(upstreamFailure(403, "", undefined))).toBe(false);
+  });
+});
+
+describe("descriptorDetails (plan 2026-10-16 C3)", () => {
+  test("media from the flags and the MIME types; reasoning from supportsThinking", () => {
+    const d: ModelDescriptor = { wireId: "m", displayName: "M", maxTokens: 1, maxOutputTokens: 1, supportsImages: false, supportsThinking: false, supportsVideo: false, recommended: false, enumPlaceholder: "" };
+    expect(descriptorDetails(d)).toEqual({ input: ["text"], reasoning: false });
+    expect(descriptorDetails({ ...d, supportsThinking: true, mimeTypes: ["image/png", "audio/mp3", "video/mp4", "application/pdf", "text/csv"] })).toEqual({ input: ["text", "image", "audio", "video", "pdf"], reasoning: true });
+    expect(descriptorDetails({ ...d, supportsImages: true, supportsVideo: true }).input).toEqual(["text", "image", "video"]);
+    expect(toModelDescriptors({ models: { a: { supportedMimeTypes: { "image/png": true, "audio/wav": false } }, b: { supportedMimeTypes: { "x/y": false } } } }).map((m) => m.mimeTypes)).toEqual([["image/png"], undefined]);
   });
 });

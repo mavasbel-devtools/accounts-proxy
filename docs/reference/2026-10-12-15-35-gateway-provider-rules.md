@@ -115,3 +115,12 @@ Router rules added by amendment A:
 | G8 | OpenCode requests carry, besides G2, the router's `User-Agent` (Z15), the workspace's config headers for that provider (Z20) and the client's `x-opencode-session` when it sent one (Z15). |
 | G9 | `opencode` and `opencode-go` use one account pool (`accounts-opencode.json`, decision K2): a device sign-in (renewed under the Phase H rules, Z18) or a service-account key (never renewed). |
 | G10 | `login <gateway> --from-opencode` imports the provider's entry of OpenCode's `auth.json` only when it is an API key (Z22); a sign-in entry is refused. |
+
+## Amendment 2026-10-16 (plan 2026-10-16 C3)
+
+- **Z5** now reads the model's AI SDK package from the reference catalog `https://models.opencode.ai/api.json` (the
+  catalog opencode v2 loads), not models.dev; the mapping of packages to formats is unchanged. When the catalog cannot
+  be read, its stored copy or its built-in copy is used, so a format is never lost to an outage
+  ([model catalog rules M4](2026-10-16-01-38-model-catalog-rules.md)). The OpenCode lists keep only the ids; names,
+  limits and the other details come from the same catalog when the list is described (rule M1).
+- **G5** cached copies are version 2 (they carry the details); a version-1 copy is fetched again.

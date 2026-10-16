@@ -35,7 +35,22 @@ describe("OpenRouter rules", () => {
     const models = parseModels(spec("openrouter-models.json"));
     expect(models).toHaveLength(459);
     expect(models).toEqual([...OPENROUTER_BUILTIN]);
-    expect(models[0]).toEqual({ id: "meta/muse-wonder", displayName: "Meta: Muse Wonder", contextWindow: 1_048_576, maxOutputTokens: 943_718, createdAt: "2026-10-12T12:25:45.000Z" });
+    expect(models[0]).toMatchObject({ id: "meta/muse-wonder", displayName: "Meta: Muse Wonder", contextWindow: 1_048_576, maxOutputTokens: 943_718, createdAt: "2026-10-12T12:25:45.000Z" });
+    // Plan 2026-10-16 C3: the details of the row (prices are USD per token in the list, per million here).
+    expect(models[0]!.details).toMatchObject({
+      input: ["text", "image", "audio", "video", "pdf"],
+      output: ["text"],
+      toolCall: true,
+      structuredOutput: true,
+      temperature: true,
+      reasoning: true,
+      reasoningOptions: [{ type: "effort", values: ["max", "xhigh", "high", "medium", "low", "minimal"] }],
+      cost: [{ input: 4, output: 20, cacheRead: 0.2 }],
+    });
+    expect(models.find((m) => m.id === "anthropic/claude-haiku-5.5:batch")!.details!.cost).toEqual([
+      { input: 0.05, output: 0.25, cacheRead: 0.005, cacheWrite: 0.0625 },
+      { input: 0.25, output: 1.25, cacheRead: 0.025, cacheWrite: 0.3125, tier: { type: "context", size: 100_000 } },
+    ]);
     expect(parseModels({ data: [{ id: "x" }, { name: "no id" }, 3] })).toEqual([{ id: "x", displayName: "x" }]);
     expect(parseModels({ data: [{ id: "y", top_provider: "n/a" }] })).toEqual([{ id: "y", displayName: "y" }]);
     expect(parseModels(null)).toEqual([]);
@@ -46,5 +61,17 @@ describe("OpenRouter rules", () => {
       'OpenRouter key (GET /key):\n  label: "inference-router"\n  is_free_tier: true\n  usage: 1.5\n  limit: null\n  limit_remaining: null',
     );
     expect(keyUsageText({})).toBe("OpenRouter key (GET /key):");
+  });
+});
+
+describe("OpenRouter model details (plan 2026-10-16 C3)", () => {
+  test("absent or malformed fields read as absent; an override without a size or a price is not a tier", () => {
+    expect(parseModels({ data: [{ id: "a" }] })).toEqual([{ id: "a", displayName: "a" }]);
+    const [b] = parseModels({
+      data: [{ id: "b", supported_parameters: ["tools"], reasoning: { supported_efforts: [1, ""] }, pricing: { prompt: "0.000001", completion: "x", overrides: [] } }],
+    });
+    expect(b!.details).toEqual({ toolCall: true, structuredOutput: false, temperature: false, reasoning: false });
+    const [c] = parseModels({ data: [{ id: "c", pricing: { prompt: "0", completion: 0.000002, overrides: [{ prompt: "0.000003" }, { min_prompt_tokens: 10, completion: "-1" }, { min_prompt_tokens: 20, prompt: "0.000004" }] } }] });
+    expect(c!.details!.cost).toEqual([{ input: 0, output: 2 }, { input: 4, output: 2, tier: { type: "context", size: 20 } }]);
   });
 });

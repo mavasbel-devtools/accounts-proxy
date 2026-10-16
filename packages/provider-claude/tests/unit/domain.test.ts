@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
+import { entryDetails, isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
 import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
 import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
@@ -164,5 +164,21 @@ describe("guard idempotence (L4)", () => {
       { role: "assistant", content: "x" },
     ]);
     expect(guardAndNormalize(once)).toEqual(once);
+  });
+});
+
+describe("entryDetails (plan 2026-10-16 C3)", () => {
+  const base = STATIC_CATALOG[0]!;
+  const caps = base.capabilities!;
+  test("media, structured output, reasoning, effort levels and the manual budget of at least 1024", () => {
+    expect(entryDetails({ ...base, capabilities: { ...caps, imageInput: false, pdfInput: false, structuredOutputs: false, effort: { supported: false, levels: ["low"] }, thinking: { supported: true, types: { enabled: true, adaptive: false } } } })).toEqual({
+      input: ["text"],
+      structuredOutput: false,
+      reasoning: true,
+      reasoningOptions: [{ type: "budget_tokens", min: 1024 }],
+    });
+    expect(entryDetails({ ...base, capabilities: { ...caps, effort: { supported: true, levels: [] }, thinking: { supported: false, types: { enabled: true, adaptive: false } } } })?.reasoningOptions).toBeUndefined();
+    const { capabilities: _, ...bare } = base;
+    expect(entryDetails(bare)).toBeUndefined();
   });
 });

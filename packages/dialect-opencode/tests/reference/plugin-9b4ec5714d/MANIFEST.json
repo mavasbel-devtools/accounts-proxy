@@ -55,6 +55,16 @@
       "bytes": 22357
     },
     {
+      "file": "core/src/config.ts",
+      "blob": "fce18f08aecb694592ea3ceb5ecc18efc9c7bfc5",
+      "bytes": 16190
+    },
+    {
+      "file": "core/src/config/variable.ts",
+      "blob": "e6d7ad4d266ab769a2a99e384cfb08e94c6dd66d",
+      "bytes": 2615
+    },
+    {
       "file": "core/test/variant.test.ts",
       "blob": "8f2367bc7acfaf80c2d8f325fd4dd32f0a7d48c8",
       "bytes": 21244

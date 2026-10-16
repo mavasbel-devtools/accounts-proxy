@@ -6,7 +6,7 @@
 //           `created_at` is required; a catalog without dates (Antigravity) gets the neutral marker
 //           1970-01-01T00:00:00Z, never an invented date (decision Q5).
 import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
-import { formatModelAddress, type ModelCatalog } from "@inference-router/core/domain/models.ts";
+import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
 import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
 
 const ERROR_TYPES: Readonly<Record<number, string>> = {
@@ -43,12 +43,12 @@ export class AnthropicCodec extends DialectCodecPort {
     };
   }
 
-  models(catalogs: readonly ModelCatalog[]): EncodedResponse {
+  models(catalogs: readonly DetailedCatalog[]): EncodedResponse {
     const data = catalogs.flatMap((c) =>
       c.models.map((m) => ({
         type: "model",
-        id: formatModelAddress(m.address),
-        display_name: m.displayName,
+        id: m.id,
+        display_name: m.name,
         created_at: m.createdAt ?? UNDATED,
         max_input_tokens: m.contextWindow ?? null,
         max_tokens: m.maxOutputTokens ?? null,

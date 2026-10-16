@@ -4,6 +4,7 @@
 // (AnthropicApiClientAdapter.ts:45). F4: the client's anthropic-beta is honoured within the model's captured set and a
 // client anthropic-version must be the captured one. A client disconnect aborts the upstream exchange (signal).
 import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import { withDetails } from "@inference-router/core/domain/model-details.ts";
 import { isJsonObject } from "@inference-router/core/domain/json.ts";
 import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
 import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
@@ -12,6 +13,7 @@ import { DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@in
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import { entryDetails } from "@inference-router/provider-claude/domain/catalog.ts";
 import { ANTHROPIC_VERSION_HEADER } from "@inference-router/provider-claude/domain/constants.ts";
 import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
 import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
@@ -67,6 +69,7 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
         ...(e.maxInputTokens > 0 ? { contextWindow: e.maxInputTokens } : {}),
         ...(e.maxTokens > 0 ? { maxOutputTokens: e.maxTokens } : {}),
         ...(e.createdAt !== "" ? { createdAt: e.createdAt } : {}),
+        ...withDetails(entryDetails(e)),
       })),
     };
   }

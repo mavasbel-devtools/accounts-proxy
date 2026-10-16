@@ -104,11 +104,18 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude retries once after renewing on an
   upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
-  Every route except `/health` requires the router token (`<data>/token.json`, 0600), compared in constant time.
+  Every route except `/health` and `/.well-known/opencode` requires the router token (`<data>/token.json`, 0600),
+  compared in constant time. The well-known manifest carries no secret: the command that prints the token and the
+  configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
+- **Model details.** A model's detailed record takes each field from its provider's own list first, then from the
+  reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
+  Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
+  opencode v2's `providers` schema, one `ir-<provider>` each, variants from opencode's own rules (none for
+  Antigravity). [Rules M1–M6, O1–O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md).
 - **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
   OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
-  origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference,
-  models.dev) to one origin, paths kept.
+  origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference)
+  and the reference model catalog (models.opencode.ai) to one origin, paths kept.
 - **Opt-in providers.** Every provider starts only with `enabled: true`; a subscription provider also needs
   `acknowledgeTermsRisk: true` in config.
 

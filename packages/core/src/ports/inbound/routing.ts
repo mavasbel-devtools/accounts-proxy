@@ -1,10 +1,16 @@
 // Inbound (driving) ports implemented by the router's application services and called by the HTTP adapter.
+import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
 import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
 
 export abstract class ListModelsPort {
   /** One catalog per enabled provider (configuration order), or the catalog of one provider. */
   abstract listModels(provider?: ProviderId): Promise<readonly ModelCatalog[]>;
+}
+
+export abstract class DescribeModelsPort {
+  /** Every enabled provider's models in detail (plan 2026-10-16 C2), or one provider's. */
+  abstract describeModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]>;
 }
 
 export abstract class PassthroughPort {

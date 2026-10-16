@@ -1,12 +1,13 @@
 // Command-line inbound adapter: parses argv, drives the inbound ports, renders results. Exit codes: 0 success,
 // 1 the command failed (message on stderr), 2 usage error.
 import type { KeyImportSource } from "@inference-router/core/domain/api-key.ts";
-import { isProviderId, PROVIDER_IDS, type ModelsSource, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { isProviderId, PROVIDER_IDS, type CatalogSource, type ProviderId } from "@inference-router/core/domain/models.ts";
 import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
 import type { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
 import type { AccountAdminPort, LoginPort, UsagePort } from "@inference-router/core/ports/inbound/accounts.ts";
 import type { DaemonStatusPort } from "@inference-router/core/ports/inbound/daemon.ts";
-import type { HealthPort, ListModelsPort } from "@inference-router/core/ports/inbound/routing.ts";
+import type { OpencodeConfigPort, OpencodeOrigin } from "@inference-router/core/ports/inbound/opencode.ts";
+import type { DescribeModelsPort, HealthPort } from "@inference-router/core/ports/inbound/routing.ts";
 import { Driver } from "@inference-router/router/adapters/inbound/driver.ts";
 import type { Server, ShutdownSignal } from "@inference-router/router/adapters/inbound/server.ts";
 
@@ -15,7 +16,9 @@ export type CliPorts = {
   readonly login: LoginPort;
   readonly accounts: AccountAdminPort;
   readonly usage: UsagePort;
-  readonly models: ListModelsPort;
+  readonly models: DescribeModelsPort;
+  readonly opencode: OpencodeConfigPort;
+  readonly origin: OpencodeOrigin;
   readonly access: AccessPort;
   readonly health: HealthPort;
   readonly status: DaemonStatusPort;
@@ -39,7 +42,9 @@ export const USAGE = `usage: inference-router <command>
   account list <provider>                             accounts stored by the router
   account use <provider> <account-id>                 choose the active account
   quota <provider>                                    remaining provider quota
-  models [<provider>]                                 model catalog (and where it came from)
+  models [<provider>] [--json]                        model catalog (and where it came from); --json: every
+                                                      detail with its source
+  opencode-config                                     the opencode v2 configuration of every model (JSON)
   serve                                               run the daemon in the foreground (Ctrl-C stops it)
   token                                               print the router token clients send (created on first use)
   status                                              check whether the daemon answers on the configured port
@@ -48,10 +53,11 @@ providers: ${PROVIDER_IDS.join(", ")}`;
 
 class UsageError extends Error {}
 
-const SOURCE_TEXT: Readonly<Record<ModelsSource, string>> = {
+const SOURCE_TEXT: Readonly<Record<CatalogSource, string>> = {
   live: "live catalog",
   cache: "stored copy of the live catalog",
   static: "built-in list: the live catalog was unavailable",
+  unavailable: "unavailable",
 };
 
 export class CliDriver extends Driver {
@@ -91,18 +97,28 @@ export class CliDriver extends Driver {
         return;
       }
       case "models": {
-        if (rest.length > 1) throw new UsageError("models takes at most one provider");
-        const catalogs = await this.ports.models.listModels(rest[0] === undefined ? undefined : provider(rest[0], true));
+        const json = rest.includes("--json");
+        const names = rest.filter((a) => a !== "--json");
+        if (names.length > 1 || rest.length - names.length > 1) throw new UsageError("models takes at most one provider and --json");
+        const catalogs = await this.ports.models.describeModels(names[0] === undefined ? undefined : provider(names[0], true));
+        if (json) {
+          this.out(`${JSON.stringify({ catalogs }, null, 2)}\n`);
+          return;
+        }
         for (const catalog of catalogs) {
-          this.out(`# ${catalog.provider}: ${catalog.models.length} models (${SOURCE_TEXT[catalog.source]})\n`);
+          this.out(`# ${catalog.provider}: ${catalog.models.length} models (${SOURCE_TEXT[catalog.source]}${catalog.error !== undefined ? `: ${catalog.error.message}` : ""})\n`);
           for (const m of catalog.models) {
-            // Each limit only when the catalog states it (OpenAI's list names the context window only, live L0).
+            // Each limit only when a source states it (OpenAI's list names the context window only, live L0).
             const limits = [m.contextWindow !== undefined ? `context ${m.contextWindow}` : "", m.maxOutputTokens !== undefined ? `output ${m.maxOutputTokens}` : ""].filter((x) => x !== "").join(" / ");
-            this.out(`${m.address.provider}/${m.address.model}  ${m.displayName}${limits === "" ? "" : `  ${limits}`}\n`);
+            this.out(`${m.id}  ${m.name}${limits === "" ? "" : `  ${limits}`}\n`);
           }
         }
         return;
       }
+      case "opencode-config":
+        if (rest.length > 0) throw new UsageError("opencode-config takes no arguments");
+        this.out(`${JSON.stringify(this.ports.opencode.config(await this.ports.models.describeModels(), this.ports.origin), null, 2)}\n`);
+        return;
       case "serve":
         if (rest.length > 0) throw new UsageError("serve takes no arguments");
         return this.serve();

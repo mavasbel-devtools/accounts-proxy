@@ -23,6 +23,8 @@ const R = {
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const models = JSON.parse(readFileSync(join(fixtures, "fetch-available-models.sample.json"), "utf8")) as Record<string, unknown>;
+const liveText: string = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "p0-live", "e5", "fetch-available-models.json"), "utf8")).exchanges[0].response.chunks.map((c: { text: string }) => c.text).join("");
+const live = JSON.parse(liveText) as Record<string, unknown>;
 const quota = JSON.parse(readFileSync(join(fixtures, "retrieve-user-quota-summary.sample.json"), "utf8")) as Record<string, unknown>;
 
 const counter = () => {
@@ -34,6 +36,11 @@ describe("catalog parity", () => {
   test("descriptors, exclusions, thinking defaults, advertised windows over the captured catalog", () => {
     const ours = toModelDescriptors(models);
     expect(ours).toEqual(R.catalog.toModelDescriptors(models));
+    // The router adds `mimeTypes` (plan 2026-10-16 C3); every plugin field stays identical on the live catalog too.
+    const plugin = R.catalog.toModelDescriptors(live);
+    const routed = toModelDescriptors(live);
+    expect(routed.map(({ mimeTypes: _, ...d }) => d)).toEqual(plugin);
+    expect(routed.find((d) => d.wireId === "gemini-3.6-flash-medium")?.mimeTypes).toContain("application/pdf");
     expect(excludedModelIds(models)).toEqual(R.catalog.excludedModelIds(models));
     for (const d of ours) {
       expect(thinkingDefaultFor(d)).toBe(R.catalog.thinkingDefaultFor(d));

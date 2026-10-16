@@ -116,19 +116,21 @@ describe("headers and formats", () => {
 describe("catalog helpers", () => {
   test("isCatalogSnapshot", () => {
     const model = { id: "m", displayName: "M", formats: ["openai-chat"] };
-    expect(isCatalogSnapshot({ version: 1, fetchedAt: 1, models: [model, { id: "n", displayName: "N" }] })).toBe(true);
-    expect(isCatalogSnapshot({ version: 1, fetchedAt: 1, models: [] })).toBe(true);
+    expect(isCatalogSnapshot({ version: 2, fetchedAt: 1, models: [model, { id: "n", displayName: "N" }] })).toBe(true);
+    expect(isCatalogSnapshot({ version: 2, fetchedAt: 1, models: [] })).toBe(true);
+    // A version-1 copy (before plan 2026-10-16 C3) carries no details: it is fetched again.
+    expect(isCatalogSnapshot({ version: 1, fetchedAt: 1, models: [] })).toBe(false);
     for (const bad of [
       null,
-      { version: 2, fetchedAt: 1, models: [model] },
-      { version: 1, fetchedAt: "1", models: [model] },
-      { version: 1, fetchedAt: 1, models: "x" },
-      { version: 1, fetchedAt: 1, models: [{ id: 1, displayName: "M" }] },
-      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: 1 }] },
-      { version: 1, fetchedAt: 1, models: ["m"] },
-      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: "openai-chat" }] },
-      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: ["smoke-signals"] }] },
-      { version: 1, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: [1] }] },
+      { version: 3, fetchedAt: 1, models: [model] },
+      { version: 2, fetchedAt: "1", models: [model] },
+      { version: 2, fetchedAt: 1, models: "x" },
+      { version: 2, fetchedAt: 1, models: [{ id: 1, displayName: "M" }] },
+      { version: 2, fetchedAt: 1, models: [{ id: "m", displayName: 1 }] },
+      { version: 2, fetchedAt: 1, models: ["m"] },
+      { version: 2, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: "openai-chat" }] },
+      { version: 2, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: ["smoke-signals"] }] },
+      { version: 2, fetchedAt: 1, models: [{ id: "m", displayName: "M", formats: [1] }] },
     ]) {
       expect(isCatalogSnapshot(bad)).toBe(false);
     }

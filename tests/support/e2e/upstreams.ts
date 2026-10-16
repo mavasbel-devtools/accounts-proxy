@@ -243,8 +243,9 @@ export class ReplayUpstreams {
         return consoleCapture("console/c2-device-flow.json", 1);
       case "/console/api/v2/config":
         return headers["authorization"] === "Bearer oc_sk_refused" ? consoleCapture("console/c3-config-unauthenticated.json") : json(consoleConfigExample());
+      // models.opencode.ai/api.json: the committed extract of the reference providers (plan 2026-10-16 C0).
       case "/api.json":
-        return json(spec("models-dev-gateways.json"));
+        return json(spec("models-opencode-reference.json"));
       case "/public/models":
         return json(spec("cheaper-inference-public-models.json"));
       case "/api/v1/auth/keys":

@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { InvalidRequestError, QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
 import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
 import { AnthropicCodec, anthropicErrorType, UNDATED } from "@inference-router/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
+import { describeCatalog } from "@inference-router/core/domain/model-details.ts";
+
+const described = (catalogs: readonly ModelCatalog[]) => catalogs.map((c) => describeCatalog(c, undefined, undefined));
 
 const codec = new AnthropicCodec();
 
@@ -43,7 +46,7 @@ describe("AnthropicCodec", () => {
       { provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "claude-opus-5" }, displayName: "Opus", contextWindow: 1000, maxOutputTokens: 10, createdAt: "2026-07-24T00:00:00Z" }] },
       { provider: "antigravity", formats: ["gemini"], source: "live", models: [{ address: { provider: "antigravity", model: "g" }, displayName: "G" }] },
     ];
-    const encoded = codec.models(catalogs);
+    const encoded = codec.models(described(catalogs));
     expect(encoded.status).toBe(200);
     expect(JSON.parse(encoded.body)).toEqual({
       data: [

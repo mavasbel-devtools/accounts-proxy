@@ -56,7 +56,8 @@ describe("gateway catalogs (rule G5, live lists from the committed vendor lists)
       "# opencode-go: 38 models (live catalog)",
       "# cheaper-inference: 91 models (live catalog)",
     ]);
-    expect(upstreams.find("/api.json")).toHaveLength(2);
+    // The reference catalog is read once (rule M4): the OpenCode formats and the details share it.
+    expect(upstreams.find("/api.json")).toHaveLength(1);
     const s = await serve();
     const gemini = (await (await fetch(`${s.url}/gemini/v1beta/models`, { headers: { "x-goog-api-key": s.token } })).json()) as { models: { name: string; supportedGenerationMethods: string[] }[] };
     const methods = (name: string) => gemini.models.find((m) => m.name === `models/${name}`)!.supportedGenerationMethods;
@@ -309,21 +310,23 @@ describe("gateway edges", () => {
     expect([keyless.status, ((await keyless.json()) as { error: { message: string } }).error.message]).toEqual([401, "opencode: stored credential of key-e2e is unreadable; run `inference-router login opencode`"]);
   });
 
-  test("catalog fallbacks: models.dev or the list refused (captured gateway answer), a stale stored copy, an unreadable copy, an unwritable store", async () => {
+  test("catalog fallbacks: the reference catalog or the list refused (captured gateway answer), a stale stored copy, an unreadable copy, an unwritable store", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n  openrouter: {enabled: true}\n");
     upstreams.script("/api.json", zenRefusal);
     upstreams.script("/inference/go/v1/models", zenRefusal);
     upstreams.script("/api/v1/models", documented("/models", "get", "500"));
     const listed = await run(["models"]);
     expect(listed.stdout.split("\n").filter((l) => l.startsWith("# "))).toEqual(["# openrouter: 459 models (built-in list: the live catalog was unavailable)", "# opencode: 84 models (live catalog)", "# opencode-go: 38 models (built-in list: the live catalog was unavailable)"]);
-    expect(listed.stdout).toContain("opencode/big-pickle  big-pickle\n");
+    // The built-in copy of the reference catalog still names the models and gives their formats.
+    expect(listed.stdout).toContain("opencode/big-pickle  Big Pickle  context 200000 / output 32000\n");
     const log = readFileSync(join(home.dir, "logs", "router.log"), "utf8");
-    expect(log).toContain("WARN opencode: models.dev unavailable (GET ");
+    expect(log).toContain("WARN model reference: http://127.0.0.1:");
+    expect(log).toContain("/api.json HTTP 403)");
     expect(log).toContain("WARN openrouter: live model list unavailable (model list HTTP 500)");
     // A stale copy (older than 24 h) is the fallback when the live list fails; an unreadable copy is ignored.
     for (const dir of ["opencode-go", "openrouter"]) mkdirSync(join(home.dir, "state", dir), { recursive: true });
-    writeFileSync(join(home.dir, "state", "opencode-go", "model-catalog.json"), JSON.stringify({ version: 1, fetchedAt: 1, models: [{ id: "stale", displayName: "Stale" }] }));
-    writeFileSync(join(home.dir, "state", "openrouter", "model-catalog.json"), JSON.stringify({ version: 1, fetchedAt: 1, models: [{ id: 7 }] }));
+    writeFileSync(join(home.dir, "state", "opencode-go", "model-catalog.json"), JSON.stringify({ version: 2, fetchedAt: 1, models: [{ id: "stale", displayName: "Stale" }] }));
+    writeFileSync(join(home.dir, "state", "openrouter", "model-catalog.json"), JSON.stringify({ version: 2, fetchedAt: 1, models: [{ id: 7 }] }));
     upstreams.script("/inference/go/v1/models", zenRefusal);
     const stale = await run(["models", "opencode-go"]);
     expect(stale.stdout).toBe("# opencode-go: 1 models (stored copy of the live catalog)\nopencode-go/stale  Stale\n");

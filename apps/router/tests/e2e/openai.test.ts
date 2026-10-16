@@ -71,10 +71,11 @@ describe("sign-in (rules S1–S16)", () => {
     expect(accounts().accounts.map((a) => [a.id, a.label, a.data["subject"], a.data["scopes"]])).toEqual([["oaiapp_e2e", "e2e@example.com", "e2e-subject", GRANTED_SCOPES]]);
     expect((await run(["account", "list", "openai"])).stdout).toBe("* oaiapp_e2e  (e2e@example.com)\n");
 
-    // The live list (captured 2026-10-13): the listed models, with their context windows only.
+    // The live list (captured 2026-10-13) states the context windows only; the output limit comes from the reference
+    // catalog, whose context window (1 050 000) yields to the provider's own (rule M1).
     const models = await run(["models", "openai"]);
     expect(models.stdout.split("\n")[0]).toBe("# openai: 7 models (live catalog)");
-    expect(models.stdout).toContain("openai/gpt-5.6-luna  GPT-5.6-Luna  context 272000\n");
+    expect(models.stdout).toContain("openai/gpt-5.6-luna  GPT-5.6-Luna  context 272000 / output 128000\n");
     expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 7 models (stored copy of the live catalog)");
 
     // A re-login re-authorizes the saved registration with its issued client id (the callback carries none) and the

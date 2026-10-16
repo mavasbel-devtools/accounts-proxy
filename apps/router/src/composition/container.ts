@@ -67,7 +67,7 @@ import { OpencodeConsoleClient } from "@inference-router/provider-opencode/adapt
 import { OpencodeDeviceLogin, OpencodeKeyLogin } from "@inference-router/provider-opencode/adapters/outbound/opencode-logins.ts";
 import { ConsoleGatewaySession, ConsoleSession } from "@inference-router/provider-opencode/adapters/outbound/opencode-session.ts";
 import { GO_BUILTIN, ZEN_BUILTIN } from "@inference-router/provider-opencode/domain/builtin-models.ts";
-import { CONSOLE_URL, GO_SPEC, MODELS_DEV_URL, OPENCODE_PROVIDERS, ZEN_SPEC, type OpencodeProvider } from "@inference-router/provider-opencode/domain/opencode.ts";
+import { CONSOLE_URL, GO_SPEC, OPENCODE_PROVIDERS, ZEN_SPEC, type OpencodeProvider } from "@inference-router/provider-opencode/domain/opencode.ts";
 import type { ConsoleApiPort, ConsoleSessionPort } from "@inference-router/provider-opencode/ports/outbound/console.ts";
 import { OpenRouterCatalogSource } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
 import { OpenRouterOAuthClient } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
@@ -95,6 +95,12 @@ import { AccessService } from "@inference-router/router/application/access-servi
 import { AccountAdminService, UsageService } from "@inference-router/router/application/account-services.ts";
 import { DaemonStatusService } from "@inference-router/router/application/daemon-status-service.ts";
 import { LoggingErrorReporter } from "@inference-router/router/application/error-reporter.ts";
+import type { OpencodeOrigin } from "@inference-router/core/ports/inbound/opencode.ts";
+import type { ModelReferencePort } from "@inference-router/core/ports/outbound/model-reference.ts";
+import { OpencodeConfigCodec } from "@inference-router/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
+import { BUILTIN_REFERENCE } from "@inference-router/router/adapters/outbound/builtin-model-reference.ts";
+import { MODEL_REFERENCE_URL, ModelReferenceCatalog } from "@inference-router/router/adapters/outbound/model-reference-catalog.ts";
+import { DescribeModelsService } from "@inference-router/router/application/describe-models-service.ts";
 import { ListModelsService } from "@inference-router/router/application/list-models-service.ts";
 import { LoginService } from "@inference-router/router/application/login-service.ts";
 import { HealthService, PassthroughService } from "@inference-router/router/application/passthrough-service.ts";
@@ -110,7 +116,10 @@ export type UpstreamSeams = {
   readonly googleOAuth?: string;
   readonly openaiApi?: string;
   readonly openaiAuth?: string;
-  /** Every API-key gateway host (OpenRouter, opencode.ai, Cheaper Inference, models.dev) on one origin, paths kept. */
+  /**
+   * Every API-key gateway host (OpenRouter, opencode.ai, Cheaper Inference) and the reference model catalog
+   * (models.opencode.ai) on one origin, paths kept.
+   */
   readonly gateways?: string;
 };
 
@@ -238,6 +247,8 @@ export type ContainerOptions = {
   readonly listenHost: string;
   /** OpenCode's data directory, read only by `login <provider> --from-opencode` (amendment A, K5). */
   readonly opencodeData: string;
+  /** How this program is started (the runtime and the entry script): the base of the token command (rule O5). */
+  readonly entry: readonly string[];
 };
 
 export type LockConfig = { readonly options: FileLockOptions; readonly fs: LockFs };
@@ -306,6 +317,8 @@ export type ProviderGraph = {
   readonly antigravity?: AntigravityGraph;
   readonly openai?: OpenAIGraph;
   readonly gateways: readonly GatewayGraph[];
+  /** The reference model catalog (plan 2026-10-16 rule M4), shared by the OpenCode catalogs and the detailed list. */
+  readonly reference: ModelReferencePort;
 };
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
@@ -355,7 +368,8 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     };
   }
   const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;
-  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash() });
+  const reference = new ModelReferenceCatalog(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE);
+  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference });
   return {
     config,
     enabled,
@@ -366,6 +380,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     store,
     transport,
     gateways,
+    reference,
     ...(claude ? { claude } : {}),
     ...(antigravity ? { antigravity } : {}),
     ...(openai ? { openai } : {}),
@@ -405,11 +420,12 @@ type GatewayDeps = {
   readonly lock: FileLock;
   readonly logger: LoggerPort;
   readonly hash: HashPort;
+  readonly reference: ModelReferencePort;
 };
 
 /** The enabled API-key gateways (plan P4.6), each on its production hosts or on the gateways seam. */
 function buildGateways(deps: GatewayDeps): GatewayGraph[] {
-  const { seams, transport, store, state, clock, lock, logger, hash } = deps;
+  const { seams, transport, store, state, clock, lock, logger, hash, reference } = deps;
   const at = (url: string) => onOrigin(url, seams.gateways);
   const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[], keySession?: GatewayKeySessionPort) => {
     const spec: GatewaySpec = { ...base, apiBase: at(base.apiBase) };
@@ -437,7 +453,7 @@ function buildGateways(deps: GatewayDeps): GatewayGraph[] {
     ] as const) {
       if (!deps.enabled.includes(base.provider)) continue;
       const provider = base.provider as OpencodeProvider;
-      const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, logger, spec.apiBase, at(MODELS_DEV_URL)), builtin, new ConsoleGatewaySession(provider, consoleSession, store));
+      const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, reference, spec.apiBase), builtin, new ConsoleGatewaySession(provider, consoleSession, store));
       out.push({ ...g, keyLogin: new OpencodeKeyLogin(provider, hash, api), device: new OpencodeDeviceLogin(provider, api), console: { api, session: consoleSession } });
     }
   }
@@ -488,11 +504,18 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   });
   const access = new AccessService(new FileRouterTokenStore(options.home), graph.random, hash);
   const models = new ListModelsService(providers);
+  const describe = new DescribeModelsService(models, graph.reference);
+  const opencode = new OpencodeConfigCodec();
+  const origin: OpencodeOrigin = {
+    origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
+    // Absolute, with the data directory, so opencode can spawn it from any directory (rule O5).
+    tokenCommand: ["env", `INFERENCE_ROUTER_HOME=${options.home}`, ...options.entry, "token"],
+  };
   const health = new HealthService(graph.enabled);
   const errors = new LoggingErrorReporter(graph.logger);
   const handler = new RouteHandler(
     [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
-    { access, passthrough: new PassthroughService(providers, graph.config.aliases), models, health },
+    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, opencode, origin },
     errors,
   );
   const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
@@ -501,7 +524,9 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       login,
       accounts: new AccountAdminService(graph.store),
       usage: new UsageService(graph.enabled, reporters),
-      models,
+      models: describe,
+      opencode,
+      origin,
       access,
       health,
       status: new DaemonStatusService(graph.transport, `http://${LOOPBACK_HOST}:${graph.config.port}`),
@@ -540,6 +565,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   return runCli(argv, {
     home: defaultHome(process.env),
     opencodeData: opencodeDataDir(process.env),
+    entry: [process.execPath, ...process.argv.slice(1, 2)],
     out: (text) => process.stdout.write(text),
     err,
     stdin: process.stdin,

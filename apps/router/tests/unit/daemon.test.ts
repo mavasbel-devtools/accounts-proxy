@@ -14,7 +14,9 @@ import {
 import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
 import { bodyOf, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
 import { AccessPort } from "@inference-router/core/ports/inbound/access.ts";
-import { HealthPort, ListModelsPort, PassthroughPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { DescribeModelsPort, HealthPort, PassthroughPort } from "@inference-router/core/ports/inbound/routing.ts";
+import { describeCatalog, type DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
+import { OpencodeConfigCodec } from "@inference-router/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
 import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
 import { RouterTokenStorePort } from "@inference-router/core/ports/outbound/router-token.ts";
 import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
@@ -207,12 +209,17 @@ class Passthrough extends PassthroughPort {
     return this.next();
   }
 }
-class Models extends ListModelsPort {
-  async listModels(): Promise<readonly ModelCatalog[]> {
-    return [
+class Models extends DescribeModelsPort {
+  seen: (ProviderId | undefined)[] = [];
+  failure: Error | undefined;
+  async describeModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]> {
+    this.seen.push(provider);
+    if (this.failure !== undefined) throw this.failure;
+    const catalogs: ModelCatalog[] = [
       { provider: "claude", formats: ["anthropic-messages"], source: "cache", models: [{ address: { provider: "claude", model: "c" }, displayName: "C" }] },
       { provider: "antigravity", formats: ["gemini"], source: "live", models: [] },
     ];
+    return catalogs.map((c) => describeCatalog(c, undefined, undefined));
   }
 }
 class Health extends HealthPort {
@@ -221,13 +228,16 @@ class Health extends HealthPort {
   }
 }
 
+const ORIGIN = { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] };
+
 describe("RouteHandler", () => {
   const make = () => {
     const passthrough = new Passthrough();
+    const models = new Models();
     const logger = new MemoryLogger();
     const errors = new LoggingErrorReporter(logger);
-    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, models: new Models(), health: new Health() }, errors);
-    return { handler, passthrough, logger };
+    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, health: new Health(), describe: models, opencode: new OpencodeConfigCodec(), origin: ORIGIN }, errors);
+    return { handler, passthrough, logger, models };
   };
   const request = (method: string, path: string, over: Partial<InboundRequest> = {}): InboundRequest => ({
     method,
@@ -256,6 +266,35 @@ describe("RouteHandler", () => {
     expect((gemini.body as { error: { status: string } }).error.status).toBe("UNAUTHENTICATED");
     expect((await handler.handle(request("GET", "/gemini/v1beta/models", { headers: {}, query: { key: "T" } }))).status).toBe(200);
     expect((await handler.handle(request("GET", "/openai/v1/models", { headers: { "x-api-key": "T" } }))).status).toBe(200);
+  });
+
+  test("GET /.well-known/opencode is open: the token command and the configuration URL (rules O1, O5)", async () => {
+    const { handler } = make();
+    expect(await json(await handler.handle(request("GET", "/.well-known/opencode", { headers: {} })))).toEqual({
+      status: 200,
+      body: { auth: { command: ["ir", "token"], env: "INFERENCE_ROUTER_TOKEN" }, remote_config: { url: "http://127.0.0.1:4141/opencode/config.json", headers: { authorization: "Bearer {env:INFERENCE_ROUTER_TOKEN}" } } },
+    });
+    expect((await handler.handle(request("POST", "/.well-known/opencode", { headers: {} }))).status).toBe(404);
+  });
+
+  test("the router's own routes: token first, GET only, plain JSON errors; ?provider names one provider", async () => {
+    const { handler, models, logger } = make();
+    const config = await json(await handler.handle(request("GET", "/opencode/config.json")));
+    expect(config.status).toBe(200);
+    expect(Object.keys((config.body as { providers: object }).providers)).toEqual(["ir-claude", "ir-antigravity"]);
+    const detailed = await json(await handler.handle(request("GET", "/router/v1/models", { query: { provider: "claude" } })));
+    expect((detailed.body as { catalogs: { provider: string }[] }).catalogs[0]!.provider).toBe("claude");
+    expect(models.seen).toEqual([undefined, "claude"]);
+    expect(await json(await handler.handle(request("GET", "/router/v1/models", { headers: {} })))).toEqual({ status: 401, body: { error: { code: "unauthorized", message: "missing or invalid inference-router token" } } });
+    expect(await json(await handler.handle(request("POST", "/opencode/config.json")))).toEqual({ status: 404, body: { error: { code: "not_found", message: "no route POST /opencode/config.json" } } });
+    expect((await json(await handler.handle(request("GET", "/router/v1/models", { query: { provider: "nope" } })))).body).toEqual({ error: { code: "invalid_request", message: 'unknown provider "nope"' } });
+    models.failure = new TypeError("boom");
+    expect((await handler.handle(request("GET", "/router/v1/models"))).status).toBe(500);
+    expect(logger.lines).toEqual(["ERROR GET /router/v1/models failed TypeError: boom"]);
+    const aborted = new AbortController();
+    aborted.abort();
+    expect((await handler.handle(request("GET", "/router/v1/models", { signal: aborted.signal }))).status).toBe(500);
+    expect(logger.lines).toHaveLength(1);
   });
 
   test("model lists in each dialect, with x-router-models-source", async () => {
