@@ -110,5 +110,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | Live validation L0–L4 (all seven providers) | done 2026-10-13 |
 | P5 (translation) | cancelled 2026-10-14 (D1-A); translation-only code removed 2026-10-16 (C1) |
 | Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0–C6 done 2026-10-16 (C2–C5 commit 98f610f; C6 live with opencode v2.0.26, rule O6); C7 documentation next |
-| Project rename to `accounts-proxy` ([record](../reference/2026-10-16-14-40-project-rename.md), plan amendment R) | 2026-10-16: R0–R4 done; R5–R7 in progress |
+| Project rename to `accounts-proxy` ([record](../reference/2026-10-16-14-40-project-rename.md), plan amendment R) | 2026-10-16: R0–R6 done (commit 427c395, repository and directory renamed); R7 waits for the user |
 | P6–P9 | not started |

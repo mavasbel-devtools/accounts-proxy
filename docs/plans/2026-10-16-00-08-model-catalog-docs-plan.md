@@ -141,7 +141,7 @@ and keeps the old names (`ir-<provider>`, `x-router-*`, `/router/v1/models`, "ro
 | R2 | Folders moved, `bun install` from scratch, lockfile byte-identical | done |
 | R3 | Permanent check `tests/arch/legacy-names.test.ts` | done |
 | R4 | AGENTS.md, README, diagram; dated notes on the rules documents; this amendment; session record | done |
-| R5 | `bun run verify`; commit; push | |
-| R6 | `gh repo rename accounts-proxy`; remote URL; directory moved to `/home/mavasbel/Dev/repos/accounts-proxy`; session moved; reinstall; typecheck and unit tier | |
+| R5 | `bun run verify`; commit; push | done: GATE PASS (685 unit+component, 218 e2e, 100% on all four); commit 427c395 |
+| R6 | `gh repo rename accounts-proxy`; remote URL; directory moved to `/home/mavasbel/Dev/repos/accounts-proxy`; session moved; reinstall; typecheck and unit tier | done: `mavasbel/accounts-proxy` (private), `origin/main` = 427c395; `--frozen-lockfile` no changes; typecheck, architecture and 685 unit+component tests at 100% in the new directory; the stale ignored `dist/inference-router.js` deleted |
 | R7 | User: daemon stopped, data directory moved, `proxy.yaml`, daemon started, `login opencode`. Then live: accounts, model lists, one request per provider, opencode login with `ap-<provider>` | |
 | C7 | (continues as planned, under the new name) | |
