@@ -1,42 +1,42 @@
 // One-shot P1 scaffold: writes each workspace package's package.json and its tests/{unit,component,live,e2e}
 // skeleton. Idempotent: an existing package.json is left untouched, so it is safe to re-run.
-// Only the layered workspaces are listed. tests/support (@inference-router/test-support) and scripts
-// (@inference-router/scripts) are hand-maintained workspaces with no layers and no test tiers; a workspace whose
-// tests import the shared fakes declares "@inference-router/test-support": "workspace:*" in devDependencies.
+// Only the layered workspaces are listed. tests/support (@accounts-proxy/test-support) and scripts
+// (@accounts-proxy/scripts) are hand-maintained workspaces with no layers and no test tiers; a workspace whose
+// tests import the shared fakes declares "@accounts-proxy/test-support": "workspace:*" in devDependencies.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..", "..");
 const packages: { dir: string; name: string; description: string; dependencies: string[] }[] = [
-  { dir: "packages/core", name: "@inference-router/core", description: "Canonical domain model, errors and ports (stdlib only).", dependencies: [] },
-  { dir: "packages/provider-claude", name: "@inference-router/provider-claude", description: "Claude subscription provider (outbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/provider-antigravity", name: "@inference-router/provider-antigravity", description: "Google Antigravity provider (outbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/provider-openai", name: "@inference-router/provider-openai", description: "OpenAI provider: Sign in with ChatGPT plan usage (outbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/provider-gateway", name: "@inference-router/provider-gateway", description: "Shared base of the API-key gateway providers (plan P4.6).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/provider-openrouter", name: "@inference-router/provider-openrouter", description: "OpenRouter provider (API-key gateway, PKCE login).", dependencies: ["@inference-router/core", "@inference-router/provider-gateway"] },
-  { dir: "packages/provider-opencode", name: "@inference-router/provider-opencode", description: "OpenCode Zen and Go providers (API-key gateways).", dependencies: ["@inference-router/core", "@inference-router/provider-gateway"] },
-  { dir: "packages/provider-cheaper-inference", name: "@inference-router/provider-cheaper-inference", description: "Cheaper Inference provider (API-key gateway).", dependencies: ["@inference-router/core", "@inference-router/provider-gateway"] },
-  { dir: "packages/dialect-anthropic", name: "@inference-router/dialect-anthropic", description: "Anthropic Messages dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/dialect-openai", name: "@inference-router/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/dialect-gemini", name: "@inference-router/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@inference-router/core"] },
-  { dir: "packages/dialect-opencode", name: "@inference-router/dialect-opencode", description: "opencode v2 provider configuration and well-known manifest (inbound adapters).", dependencies: ["@inference-router/core"] },
+  { dir: "packages/core", name: "@accounts-proxy/core", description: "Canonical domain model, errors and ports (stdlib only).", dependencies: [] },
+  { dir: "packages/provider-claude", name: "@accounts-proxy/provider-claude", description: "Claude subscription provider (outbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/provider-antigravity", name: "@accounts-proxy/provider-antigravity", description: "Google Antigravity provider (outbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/provider-openai", name: "@accounts-proxy/provider-openai", description: "OpenAI provider: Sign in with ChatGPT plan usage (outbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/provider-gateway", name: "@accounts-proxy/provider-gateway", description: "Shared base of the API-key gateway providers (plan P4.6).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/provider-openrouter", name: "@accounts-proxy/provider-openrouter", description: "OpenRouter provider (API-key gateway, PKCE login).", dependencies: ["@accounts-proxy/core", "@accounts-proxy/provider-gateway"] },
+  { dir: "packages/provider-opencode", name: "@accounts-proxy/provider-opencode", description: "OpenCode Zen and Go providers (API-key gateways).", dependencies: ["@accounts-proxy/core", "@accounts-proxy/provider-gateway"] },
+  { dir: "packages/provider-cheaper-inference", name: "@accounts-proxy/provider-cheaper-inference", description: "Cheaper Inference provider (API-key gateway).", dependencies: ["@accounts-proxy/core", "@accounts-proxy/provider-gateway"] },
+  { dir: "packages/dialect-anthropic", name: "@accounts-proxy/dialect-anthropic", description: "Anthropic Messages dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/dialect-openai", name: "@accounts-proxy/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/dialect-gemini", name: "@accounts-proxy/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/dialect-opencode", name: "@accounts-proxy/dialect-opencode", description: "opencode v2 provider configuration and well-known manifest (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   {
-    dir: "apps/router",
-    name: "@inference-router/router",
-    description: "The inference-router daemon and CLI (application services, HTTP/CLI adapters, composition root).",
+    dir: "apps/proxy",
+    name: "@accounts-proxy/proxy",
+    description: "The accounts-proxy daemon and CLI (application services, HTTP/CLI adapters, composition root).",
     dependencies: [
-      "@inference-router/core",
-      "@inference-router/provider-claude",
-      "@inference-router/provider-antigravity",
-      "@inference-router/provider-openai",
-      "@inference-router/provider-gateway",
-      "@inference-router/provider-openrouter",
-      "@inference-router/provider-opencode",
-      "@inference-router/provider-cheaper-inference",
-      "@inference-router/dialect-anthropic",
-      "@inference-router/dialect-openai",
-      "@inference-router/dialect-gemini",
-      "@inference-router/dialect-opencode",
+      "@accounts-proxy/core",
+      "@accounts-proxy/provider-claude",
+      "@accounts-proxy/provider-antigravity",
+      "@accounts-proxy/provider-openai",
+      "@accounts-proxy/provider-gateway",
+      "@accounts-proxy/provider-openrouter",
+      "@accounts-proxy/provider-opencode",
+      "@accounts-proxy/provider-cheaper-inference",
+      "@accounts-proxy/dialect-anthropic",
+      "@accounts-proxy/dialect-openai",
+      "@accounts-proxy/dialect-gemini",
+      "@accounts-proxy/dialect-opencode",
     ],
   },
 ];
@@ -69,7 +69,7 @@ for (const pkg of packages) {
         license: "MIT",
         type: "module",
         description: pkg.description,
-        // Specifiers carry the .ts extension (`@inference-router/core/domain/wire.ts`), so the pattern must not add one.
+        // Specifiers carry the .ts extension (`@accounts-proxy/core/domain/wire.ts`), so the pattern must not add one.
         exports: { "./*": "./src/*" },
         dependencies: Object.fromEntries(pkg.dependencies.map((name) => [name, "workspace:*"])),
       },

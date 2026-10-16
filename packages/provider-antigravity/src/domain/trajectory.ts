@@ -2,7 +2,7 @@
 // Capture-verified IDE trajectory envelope (2026-08-25, 2026-09-26): 5-segment requestId, per-install int64 sessionId
 // (exact decimal string; never Number()), ordered labels, step cadence 2,5,7,9,…, last_execution_id rotation.
 // Pure: randomness and time arrive as functions; the persisted sessionId is supplied by the caller.
-import type { ChatMessage } from "@inference-router/provider-antigravity/domain/generate.ts";
+import type { ChatMessage } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
 
 export type ModelFamily = "gemini" | "claude" | "other";
 

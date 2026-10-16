@@ -1,7 +1,7 @@
-// Claude OAuth credential held in the router's own account pool (AccountCredential.data).
+// Claude OAuth credential held in the proxy's own account pool (AccountCredential.data).
 // Fields mirror opencode-claude-auth @ 6292741 ClaudeOAuthCredential + TokenEndpointResult.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
 
 export type ClaudeTokens = {
   readonly accessToken: string;

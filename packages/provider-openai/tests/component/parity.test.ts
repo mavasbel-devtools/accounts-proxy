@@ -1,10 +1,10 @@
 // Parity with the vendored opencode sources (tests/reference/plugin-35ef229454, byte-identical, MANIFEST.json). They
-// import opencode's runtime (effect, @opencode/*), so they are compared as source text: every wire value the router
-// copies from them is extracted from the file and compared with the router's constant or request.
+// import opencode's runtime (effect, @opencode/*), so they are compared as source text: every wire value the proxy
+// copies from them is extracted from the file and compared with the proxy's constant or request.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { FALLBACK_MODELS, ISSUER, JWKS_PATH, REGISTRATION_CLIENT_ID, RESOURCE, SCOPES, SHARING_ERROR_STATUS, TOKEN_PATH } from "@inference-router/provider-openai/domain/constants.ts";
+import { FALLBACK_MODELS, ISSUER, JWKS_PATH, REGISTRATION_CLIENT_ID, RESOURCE, SCOPES, SHARING_ERROR_STATUS, TOKEN_PATH } from "@accounts-proxy/provider-openai/domain/constants.ts";
 
 const reference = join(import.meta.dir, "..", "reference", "plugin-35ef229454");
 const chatgpt = readFileSync(join(reference, "plugin", "provider", "chatgpt.ts"), "utf8");

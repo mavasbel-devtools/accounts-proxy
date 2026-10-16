@@ -15,8 +15,8 @@ import {
   withDetails,
   type ReferenceCatalog,
   type ReferenceModel,
-} from "@inference-router/core/domain/model-details.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+} from "@accounts-proxy/core/domain/model-details.ts";
+import type { ModelCatalog } from "@accounts-proxy/core/domain/models.ts";
 
 const reference: ReferenceCatalog = new Map<string, ReadonlyMap<string, ReferenceModel>>([
   ["anthropic", new Map([["c", { name: "Claude C", contextWindow: 200_000, maxOutputTokens: 64_000, toolCall: true, cost: [{ input: 1, output: 5 }] }]])],

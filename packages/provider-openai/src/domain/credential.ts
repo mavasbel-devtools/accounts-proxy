@@ -1,9 +1,9 @@
-// OpenAI credential record in the router's own account pool (AccountCredential.data). Fields: rules S13–S14 (the
+// OpenAI credential record in the proxy's own account pool (AccountCredential.data). Fields: rules S13–S14 (the
 // documented local credential record, openai-siwc-sign-in.md §5) and T1–T5 (token lifetimes and refresh).
 // One account per issued client id (a registration): its id is the issued client id, its label the email.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import { DEFAULT_EXPIRES_IN_S, PLAN_USAGE_SCOPE } from "@inference-router/provider-openai/domain/constants.ts";
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { DEFAULT_EXPIRES_IN_S, PLAN_USAGE_SCOPE } from "@accounts-proxy/provider-openai/domain/constants.ts";
 
 export type OpenAITokens = {
   readonly accessToken: string;

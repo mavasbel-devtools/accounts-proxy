@@ -1,5 +1,5 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 domain/services/QuotaService.ts (blob 148866d6) and
-// domain/entities/QuotaSnapshot.ts. Feeds `inference-router quota` (manual account choice, plan D4).
+// domain/entities/QuotaSnapshot.ts. Feeds `accounts-proxy quota` (manual account choice, plan D4).
 
 export type QuotaBucket = { readonly bucketId: string; readonly displayName: string; readonly window: string; readonly resetTime: string; readonly remainingFraction: number };
 export type QuotaGroup = { readonly displayName: string; readonly description?: string; readonly buckets: readonly QuotaBucket[] };

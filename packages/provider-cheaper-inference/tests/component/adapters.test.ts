@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { CheaperCatalogSource, CheaperKeyLogin, CheaperQuota } from "@inference-router/provider-cheaper-inference/adapters/outbound/cheaper-inference-adapters.ts";
-import { GatewayKeySession } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-session.ts";
-import { FixedClock, MemoryCredentialStore, ScriptedTransport } from "@inference-router/test-support/fakes.ts";
+import { EMPTY_POOL, upsertAccount } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyAccount } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { CheaperCatalogSource, CheaperKeyLogin, CheaperQuota } from "@accounts-proxy/provider-cheaper-inference/adapters/outbound/cheaper-inference-adapters.ts";
+import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
+import { FixedClock, MemoryCredentialStore, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 
 class Hash extends HashPort {
   sha256() {

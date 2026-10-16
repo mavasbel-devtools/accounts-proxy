@@ -1,11 +1,11 @@
 // OAuthSessionBase: the renewal rules every subscription provider inherits (plan v4 H-a, H1, H4, H6).
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, RENEWAL_RETRY_AFTER_MS, upsertAccount, useAccount, type AccountCredential, type AccountPool } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError, UpstreamTimeoutError, UpstreamUnreachableError } from "@inference-router/core/domain/errors.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import { CredentialStorePort, type PoolChange } from "@inference-router/core/ports/outbound/credentials.ts";
-import { OAuthSessionBase, type SessionTokens } from "@inference-router/core/ports/outbound/session.ts";
-import { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
+import { EMPTY_POOL, RENEWAL_RETRY_AFTER_MS, upsertAccount, useAccount, type AccountCredential, type AccountPool } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError, UpstreamTimeoutError, UpstreamUnreachableError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import { CredentialStorePort, type PoolChange } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import { OAuthSessionBase, type SessionTokens } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { ClockPort, LockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 
 type Tokens = SessionTokens & { readonly note?: string };
 
@@ -180,7 +180,7 @@ describe("OAuthSessionBase", () => {
     await expect(session.active()).rejects.toBeInstanceOf(ProviderAuthRequiredError);
     expect(store.pool.accounts[0]!.needsLogin).toBe("grant rejected (HTTP 400)");
     expect(logger.lines).toEqual(["WARN claude: account me needs a new login (grant rejected (HTTP 400))"]);
-    await expect(session.active()).rejects.toThrow("claude: account me needs a new login (grant rejected (HTTP 400)); run `inference-router login claude`");
+    await expect(session.active()).rejects.toThrow("claude: account me needs a new login (grant rejected (HTTP 400)); run `accounts-proxy login claude`");
     expect(session.calls).toBe(1);
   });
 

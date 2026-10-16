@@ -1,7 +1,7 @@
 // The native Responses cell (rules I2–I4, E2–E3; decisions O7, O8).
 //   - prepareRequest: the client's Responses body → the upstream body. `store: false` and `stream: true` are always sent
 //     (I2). A documented unsupported field, tool or system-role input item is 400 unsupported_feature, or is dropped
-//     with `x-router-lossy: 1` (O7). A string `input` becomes the equivalent one user message (openai-openapi.yaml
+//     with `x-proxy-lossy: 1` (O7). A string `input` becomes the equivalent one user message (openai-openapi.yaml
 //     `input`: "A text input to the model, equivalent to a text input with the `user` role"), because this route takes
 //     `input` as an array (I2). A null field is the API's "not set" and is left out.
 //   - aggregate: for a client that did not ask for a stream, the upstream event stream becomes one response (O8): the
@@ -11,9 +11,9 @@
 //     the items arrive only in `response.output_item.done` events (live L1, 2026-10-13: capture
 //     tests/fixtures/captures/p0-live/l1/openai-resp-s2-plain-stream.json). The terminal response gets those items, in
 //     `output_index` order, both in the aggregated answer and in the stream a client reads (every other frame unchanged).
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import { isJsonObject, type JsonObject, type JsonValue } from "@inference-router/core/domain/json.ts";
-import { SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@inference-router/provider-openai/domain/constants.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { isJsonObject, type JsonObject, type JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import { SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@accounts-proxy/provider-openai/domain/constants.ts";
 
 export const TARGET = "openai (ChatGPT plan usage)";
 

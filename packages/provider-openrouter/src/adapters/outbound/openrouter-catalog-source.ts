@@ -1,9 +1,9 @@
 // OpenRouter's live model list (R4): `GET /models`, public (no key).
-import { CATALOG_TIMEOUT_MS, type GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { GatewayCatalogSourcePort } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
-import { MODELS_PATH, parseModels } from "@inference-router/provider-openrouter/domain/openrouter.ts";
+import { CATALOG_TIMEOUT_MS, type GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { GatewayCatalogSourcePort } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
+import { MODELS_PATH, parseModels } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 
 export class OpenRouterCatalogSource extends GatewayCatalogSourcePort {
   constructor(

@@ -1,21 +1,21 @@
-// Router configuration (`<home>/router.yaml`), validated strictly: unknown keys and wrong types are errors.
+// Proxy configuration (`<home>/proxy.yaml`), validated strictly: unknown keys and wrong types are errors.
 // Plan D4: a subscription provider is usable only when `enabled: true` AND `acknowledgeTermsRisk: true`; enabling it
 // without the acknowledgement is a named configuration error. An API-key gateway (plan P4.6) needs only `enabled: true`.
 // No file means every provider is disabled.
 // Plan E5: the default port is 4141 (measured free, outside every Windows excluded range).
-import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { isProviderId, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS, type ProviderId } from "@inference-router/core/domain/models.ts";
-import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
+import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { isProviderId, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS, type ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import { resolveModelAddress } from "@accounts-proxy/core/domain/services/model-address.ts";
 
 export class ConfigError extends Error {
   constructor(message: string) {
-    super(`router.yaml: ${message}`);
+    super(`proxy.yaml: ${message}`);
     this.name = "ConfigError";
   }
 }
 
 export type ProviderSettings = { readonly enabled: boolean; readonly acknowledgeTermsRisk: boolean };
-export type RouterConfig = {
+export type ProxyConfig = {
   readonly port: number;
   readonly providers: Readonly<Record<ProviderId, ProviderSettings>>;
   readonly aliases: Readonly<Record<string, string>>;
@@ -24,7 +24,7 @@ export type RouterConfig = {
 export const DEFAULT_PORT = 4141;
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
 const ALL_OFF: Readonly<Record<ProviderId, ProviderSettings>> = Object.fromEntries(PROVIDER_IDS.map((id) => [id, OFF])) as Record<ProviderId, ProviderSettings>;
-export const DEFAULT_CONFIG: RouterConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {} };
+export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {} };
 
 function only(value: Record<string, unknown>, allowed: readonly string[], where: string): void {
   const unknown = Object.keys(value).filter((k) => !allowed.includes(k));
@@ -37,7 +37,7 @@ function bool(value: unknown, where: string, fallback: boolean): boolean {
   return value;
 }
 
-export function parseRouterConfig(raw: unknown): RouterConfig {
+export function parseProxyConfig(raw: unknown): ProxyConfig {
   if (raw === undefined || raw === null) return DEFAULT_CONFIG;
   if (!isJsonObject(raw)) throw new ConfigError("the document must be a mapping");
   only(raw, ["port", "providers", "aliases"], "the document");
@@ -71,6 +71,6 @@ export function parseRouterConfig(raw: unknown): RouterConfig {
   return { port, providers, aliases };
 }
 
-export function enabledProviders(config: RouterConfig): ProviderId[] {
+export function enabledProviders(config: ProxyConfig): ProviderId[] {
   return PROVIDER_IDS.filter((id) => config.providers[id].enabled);
 }

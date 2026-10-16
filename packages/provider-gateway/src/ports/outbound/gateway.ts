@@ -1,7 +1,7 @@
 // Gateway-internal abstractions. GatewayProvider and GatewayCatalog depend only on these; vendor packages implement
 // the catalog source and the key login, composition wires them.
-import type { ModelsSource } from "@inference-router/core/domain/models.ts";
-import type { GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
+import type { ModelsSource } from "@accounts-proxy/core/domain/models.ts";
+import type { GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export type KeySession = {
   /** The active account's id. */

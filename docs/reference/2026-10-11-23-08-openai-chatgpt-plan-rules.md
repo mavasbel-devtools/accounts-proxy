@@ -67,3 +67,9 @@ choice open, the row says "design" and gives the reason.
 - The live model list (opencode stopped using it on 2026-10-05).
 - The error body of an unsupported field (`subscription_sharing_unsupported_capability` with `error.param`).
 - Refresh rotation and reuse of the previous refresh token.
+
+## Amendment 2026-10-16: project rename
+
+The project is now `accounts-proxy` ([project rename](2026-10-16-14-40-project-rename.md)): `agent_name_hint` = `accounts-proxy` (S3, still the app's actual
+name) and `User-Agent: accounts-proxy/0.1.0`. An account registered before the rename keeps its issued client id
+(S2), so the new hint is sent only by a first sign-in (`login openai --new`).

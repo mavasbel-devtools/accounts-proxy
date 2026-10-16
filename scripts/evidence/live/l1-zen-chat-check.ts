@@ -3,9 +3,9 @@
 // Three requests decide whether the path, the model or the account is the cause:
 //   z1 the same model on models.dev's api base (/inference/v1/chat/completions)
 //   z2 Chat Completions models the Console docs name (kimi-k2.6, glm-5.1) on the documented path
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-zen-chat-check.ts
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { PACE_MS, openLive, sleep, writeCapture } from "@inference-router/scripts/evidence/live/harness.ts";
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l1-zen-chat-check.ts
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { PACE_MS, openLive, sleep, writeCapture } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const live = await openLive();
 const zen = live.gateways.find((g) => g.spec.provider === "opencode");
@@ -23,7 +23,7 @@ for (const [id, url, model] of [
   ["z2-glm-5.1", "https://opencode.ai/inference/openai/v1/chat/completions", "glm-5.1"],
 ] as const) {
   const mark = live.recorder.mark();
-  const res = await live.recorder.send({ method: "POST", url, headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", "user-agent": "inference-router/0.1.0", "x-opencode-session": `ses_l1_${capturedAt}`, ...credential.headers.opencode }, body: body(model) });
+  const res = await live.recorder.send({ method: "POST", url, headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", "user-agent": "accounts-proxy/0.1.0", "x-opencode-session": `ses_l1_${capturedAt}`, ...credential.headers.opencode }, body: body(model) });
   const text = await readAll(res.body);
   writeCapture(live, `tests/fixtures/captures/p0-live/l1/opencode-${id}.json`, { id, target: "opencode", scenario: id, model, capturedAt, exchanges: live.recorder.since(mark) });
   console.log(`${id} ${model}: HTTP ${res.status} ${live.redactor.text(text).replace(/\s+/g, " ").slice(0, 300)}`);

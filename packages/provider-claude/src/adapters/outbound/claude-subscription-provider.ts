@@ -3,21 +3,21 @@
 // chunk by chunk — fix F1 for the source relay, which awaited res.text() before answering
 // (AnthropicApiClientAdapter.ts:45). F4: the client's anthropic-beta is honoured within the model's captured set and a
 // client anthropic-version must be the captured one. A client disconnect aborts the upstream exchange (signal).
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import { withDetails } from "@inference-router/core/domain/model-details.ts";
-import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
-import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import { DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
-import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import type { LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { entryDetails } from "@inference-router/provider-claude/domain/catalog.ts";
-import { ANTHROPIC_VERSION_HEADER } from "@inference-router/provider-claude/domain/constants.ts";
-import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
-import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
-import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { withDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { ModelCatalog, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
+import { DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
+import type { LoggerPort, RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { entryDetails } from "@accounts-proxy/provider-claude/domain/catalog.ts";
+import { ANTHROPIC_VERSION_HEADER } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import type { ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
+import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 
 /** Native routes (relative to the dialect prefix) → upstream path. */
 export const NATIVE_PATHS: Readonly<Record<string, string>> = {

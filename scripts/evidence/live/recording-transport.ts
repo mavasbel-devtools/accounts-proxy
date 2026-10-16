@@ -1,8 +1,8 @@
 // A recording decorator over the production HttpTransportPort: every exchange keeps the outbound request exactly as
 // sent and every response chunk with a monotonic arrival time (ms since the request was sent), which is the proof of
 // incremental streaming. Nothing is redacted here; the capture writer redacts before anything touches the disk.
-import type { HttpRequest, HttpResponse } from "@inference-router/core/domain/wire.ts";
-import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import type { HttpRequest, HttpResponse } from "@accounts-proxy/core/domain/wire.ts";
+import { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 
 export type RecordedChunk = { readonly atMs: number; readonly text: string };
 export type Exchange = {

@@ -1,10 +1,10 @@
 // Provider-internal abstractions. ClaudeSubscriptionProvider depends only on these; the adapters in
 // adapters/outbound implement them and composition wires them.
-import type { ModelsSource } from "@inference-router/core/domain/models.ts";
-import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
-import type { ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
-import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import type { ModelsSource } from "@accounts-proxy/core/domain/models.ts";
+import { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
+import type { ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import type { CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
 
 export abstract class ClaudeOAuthPort extends OAuthClientPort {
   /** Rotate the access token (and the refresh token when the server issues a new one). */
@@ -17,7 +17,7 @@ export type ClaudeSessionPort = OAuthSessionPort<ClaudeTokens>;
 export abstract class ClaudeIdentityPort {
   /** Persistent device id (official CLI format: 32 random bytes as 64 lowercase hex characters). */
   abstract deviceId(): Promise<string>;
-  /** One session id per router process (the source uses one per relay start). */
+  /** One session id per proxy process (the source uses one per relay start). */
   abstract readonly sessionId: string;
   abstract previousMessageId(): string | null;
   abstract setPreviousMessageId(id: string): void;

@@ -15,15 +15,15 @@
 //   - functionCallingConfig.mode only AUTO / VALIDATED; ANY, NONE and allowedFunctionNames are ignored or rejected
 //     upstream (P0-LIVE L6, plan amendment B1). With tools and no mode, VALIDATED (the IDE's captured value).
 //   - law 7: functionResponse parts ride in MODEL-role contents (a user-role run of them is moved).
-//   - law 6 (Gemini models): a functionCall without thoughtSignature is signed from the router's cache, else it is
+//   - law 6 (Gemini models): a functionCall without thoughtSignature is signed from the proxy's cache, else it is
 //     dropped with its functionResponse; law 8: content-free contents dropped; law 12: trailing model turns (other
 //     than function responses) stripped after the law-6 drop. These always apply and are reported (decision Q3).
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { thinkingDefaultFor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatMessage, ToolCall } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { isGeminiFamily, SCHEMA_KEYS, sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
-import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { thinkingDefaultFor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import type { ChatMessage, ToolCall } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { isGeminiFamily, SCHEMA_KEYS, sanitizeSchema } from "@accounts-proxy/provider-antigravity/domain/gemini-schema.ts";
+import type { TrajectorySnapshot } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 
 export type GeminiPart = Record<string, unknown>;
 export type GeminiContent = { role: "user" | "model"; parts: GeminiPart[] };
@@ -40,7 +40,7 @@ export type PreparedGemini = {
   readonly generationConfig: Record<string, unknown>;
   /** The conversation as the trajectory sees it (TrajectoryState.begin). */
   readonly turns: readonly ChatMessage[];
-  /** Everything removed: lossy drops and the always-applied wire-law drops (x-router-dropped). */
+  /** Everything removed: lossy drops and the always-applied wire-law drops (x-proxy-dropped). */
   readonly dropped: readonly string[];
 };
 

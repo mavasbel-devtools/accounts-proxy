@@ -1,12 +1,12 @@
 // Parity of the ported variant rules (opencode-variants.ts) with opencode v2.0.26's own `Variant.resolve`
 // (tests/reference/plugin-9b4ec5714d/core/src/variant.ts, byte-identical), over every model of the reference catalog
-// and every connection package the router writes. The reference's two imports are replaced by the members variant.ts
+// and every connection package the proxy writes. The reference's two imports are replaced by the members variant.ts
 // reads: `Model.VariantID.make` (a branded identity) and `Provider.aisdk` (provider.ts:24-26).
 import { describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseReference, type ReasoningOption } from "@inference-router/core/domain/model-details.ts";
-import { ANTHROPIC_PACKAGE, GOOGLE_PACKAGE, OPENAI_COMPATIBLE_PACKAGE, OPENAI_PACKAGE, OPENROUTER_PACKAGE, resolveVariants } from "@inference-router/dialect-opencode/adapters/inbound/opencode-variants.ts";
+import { parseReference, type ReasoningOption } from "@accounts-proxy/core/domain/model-details.ts";
+import { ANTHROPIC_PACKAGE, GOOGLE_PACKAGE, OPENAI_COMPATIBLE_PACKAGE, OPENAI_PACKAGE, OPENROUTER_PACKAGE, resolveVariants } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-variants.ts";
 
 const reference = join(import.meta.dir, "..", "reference", "plugin-9b4ec5714d", "core", "src");
 mock.module(join(reference, "model.ts"), () => ({ Model: { VariantID: { make: (id: string) => id } } }));

@@ -11,7 +11,7 @@ export function temporaryRoot(): string {
 
 export function makeTemporary(prefix: string): string {
   if (!/^[a-z0-9-]+$/.test(prefix)) throw new Error(`invalid temporary prefix: ${JSON.stringify(prefix)}`);
-  return realpathSync(mkdtempSync(join(temporaryRoot(), `inference-router-${prefix}-`)));
+  return realpathSync(mkdtempSync(join(temporaryRoot(), `accounts-proxy-${prefix}-`)));
 }
 
 export function isStrictlyInsideTemporary(path: string): boolean {

@@ -1,8 +1,8 @@
 // Upstream wire envelope and failure classification for cloudcode-pa.
 // Sources: opencode-antigravity-auth @ 5c6f7c2 AntigravityApiClientAdapter.ts (outer envelope, non-response law 10,
 // dual transport law 3) and StreamChatUseCase.ts (transient geo-gate law 14).
-import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { QuotaExhaustedError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
 
 const PROVIDER = "antigravity";
 
@@ -27,7 +27,7 @@ export function outerEnvelope(params: GenerateParams): Record<string, unknown> {
 
 /**
  * Non-response law 10: every observed stream envelope carries `response` (or bare `candidates`); a 200 payload without
- * one must not end the stream as zero chunks. Router decision: it surfaces as upstream_error with HTTP 502 (the
+ * one must not end the stream as zero chunks. Proxy decision: it surfaces as upstream_error with HTTP 502 (the
  * upstream answered 200 with something that is not a generation), body kept for diagnosis.
  */
 export function asResponseEnvelope(parsed: unknown): StreamEnvelope {

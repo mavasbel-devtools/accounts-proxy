@@ -8,7 +8,7 @@ import { createContext } from "istanbul-lib-report";
 import reports from "istanbul-reports";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 
 const METRICS = ["lines", "statements", "functions", "branches"] as const;
 

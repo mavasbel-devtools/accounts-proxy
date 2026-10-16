@@ -3,17 +3,17 @@
 //   A1 SSE framing uses the WHATWG SseCodec (CR/LF/CRLF, multi-line data joined) instead of a per-line splitter; for the
 //      captured upstream format (one `data:` line per event) the decoded envelopes are identical.
 //   A2 failures are core errors: 429 → quota_exhausted with Retry-After; other statuses → upstream_error (status kept).
-import type { HttpResponse } from "@inference-router/core/domain/wire.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import type { AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import { IDE_METADATA, USER_AGENT } from "@inference-router/provider-antigravity/domain/constants.ts";
-import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { asResponseEnvelope, outerEnvelope, upstreamFailure, type GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
-import { AntigravityApiPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import type { HttpResponse } from "@accounts-proxy/core/domain/wire.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import type { AuthTokens } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import { IDE_METADATA, USER_AGENT } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { asResponseEnvelope, outerEnvelope, upstreamFailure, type GenerateParams } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
+import { AntigravityApiPort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 const bearer = (tokens: AuthTokens) => `Bearer ${tokens.accessToken}`;
 

@@ -1,17 +1,17 @@
 // OpenRouter browser login (rules R5–R7): PKCE S256 on the OpenRouter page with a localhost callback, or the headless
 // page that shows the code (`--manual`); the code is exchanged for an API key. The key never expires, so the account is
 // an API-key account (plan P4.6 §2 item 3) used through GatewayKeySession.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyAccount, keyAccountId, normalizeApiKey } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import { TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { OAuthClientPort, type AuthorizeInput, type ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { firstString } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { authorizeUrl, CALLBACK_PATH, HEADLESS_REDIRECT, KEYS_PATH, parseKeyExchange } from "@inference-router/provider-openrouter/domain/openrouter.ts";
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyAccount, keyAccountId, normalizeApiKey } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { OAuthClientPort, type AuthorizeInput, type ExchangeInput } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { firstString } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { authorizeUrl, CALLBACK_PATH, HEADLESS_REDIRECT, KEYS_PATH, parseKeyExchange } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 
 export class OpenRouterOAuthClient extends OAuthClientPort {
   readonly provider = "openrouter";

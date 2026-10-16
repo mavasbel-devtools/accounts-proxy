@@ -3,9 +3,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { DetailedCatalog, DetailedModel } from "@inference-router/core/domain/model-details.ts";
-import { OpencodeConfigCodec, opencodeProviderId, PROVIDER_NAMES } from "@inference-router/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
-import { validate } from "@inference-router/test-support/json-schema.ts";
+import type { DetailedCatalog, DetailedModel } from "@accounts-proxy/core/domain/model-details.ts";
+import { OpencodeConfigCodec, opencodeProviderId, PROVIDER_NAMES } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
+import { validate } from "@accounts-proxy/test-support/json-schema.ts";
 
 const schema = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", "opencode-config-schema.json"), "utf8")) as Record<string, unknown>;
 const AT = { origin: "http://127.0.0.1:4141", tokenCommand: ["/usr/bin/bun", "/app/cli.ts", "token"] };
@@ -15,7 +15,7 @@ const model = (provider: DetailedModel["provider"], id: string, over: Partial<De
 const catalog = (provider: DetailedCatalog["provider"], models: DetailedModel[], over: Partial<DetailedCatalog> = {}): DetailedCatalog => ({ provider, source: "live", models, ...over });
 
 describe("OpencodeConfigCodec.config", () => {
-  test("one ir-<provider> per catalog; each model on the route of its format with its limits, media, price and variants", () => {
+  test("one ap-<provider> per catalog; each model on the route of its format with its limits, media, price and variants", () => {
     const doc = codec.config(
       [
         catalog("claude", [
@@ -48,10 +48,10 @@ describe("OpencodeConfigCodec.config", () => {
     );
     expect(validate(schema, doc)).toEqual([]);
     const providers = doc["providers"] as Record<string, { name: string; settings: object; headers?: object; models: Record<string, Record<string, unknown>> }>;
-    expect(Object.keys(providers)).toEqual(["ir-claude", "ir-openrouter", "ir-opencode", "ir-antigravity", "ir-openai"]);
-    expect(providers["ir-claude"]!.name).toBe("Inference Router · Claude");
-    expect(providers["ir-claude"]!.settings).toEqual({ apiKey: "{env:INFERENCE_ROUTER_TOKEN}" });
-    expect(providers["ir-claude"]!.models["claude-opus-6"]).toEqual({
+    expect(Object.keys(providers)).toEqual(["ap-claude", "ap-openrouter", "ap-opencode", "ap-antigravity", "ap-openai"]);
+    expect(providers["ap-claude"]!.name).toBe("Accounts Proxy · Claude");
+    expect(providers["ap-claude"]!.settings).toEqual({ apiKey: "{env:ACCOUNTS_PROXY_TOKEN}" });
+    expect(providers["ap-claude"]!.models["claude-opus-6"]).toEqual({
       modelID: "claude/claude-opus-6",
       name: "Claude Opus 6",
       family: "claude-opus",
@@ -66,7 +66,7 @@ describe("OpencodeConfigCodec.config", () => {
         { id: "high", settings: { effort: "high", thinking: { type: "adaptive", display: "summarized" } } },
       ],
     });
-    expect(providers["ir-openrouter"]!.models["vendor/m"]).toEqual({
+    expect(providers["ap-openrouter"]!.models["vendor/m"]).toEqual({
       modelID: "openrouter/vendor/m",
       name: "vendor/m",
       package: "@opencode/ai/providers/openrouter",
@@ -76,22 +76,22 @@ describe("OpencodeConfigCodec.config", () => {
       compatibility: { reasoningField: "reasoning_details" },
       variants: [],
     });
-    const opencode = providers["ir-opencode"]!.models;
+    const opencode = providers["ap-opencode"]!.models;
     expect(Object.keys(opencode)).toEqual(["chat", "named-but-elsewhere"]);
-    expect([opencode["chat"]!["package"], opencode["chat"]!["settings"], opencode["chat"]!["variants"]]).toEqual(["@opencode/ai/providers/openai-compatible", { baseURL: "http://127.0.0.1:4141/openai/v1", provider: "ir-opencode" }, [{ id: "high", settings: { reasoningEffort: "high" } }]]);
+    expect([opencode["chat"]!["package"], opencode["chat"]!["settings"], opencode["chat"]!["variants"]]).toEqual(["@opencode/ai/providers/openai-compatible", { baseURL: "http://127.0.0.1:4141/openai/v1", provider: "ap-opencode" }, [{ id: "high", settings: { reasoningEffort: "high" } }]]);
     expect([opencode["named-but-elsewhere"]!["package"], opencode["named-but-elsewhere"]!["settings"]]).toEqual(["@opencode/ai/providers/google", { baseURL: "http://127.0.0.1:4141/gemini/v1beta" }]);
     // Plugin law 1: the Antigravity thinking budget is the catalog's, so no variant.
-    expect(providers["ir-antigravity"]!.models["gemini-x"]!["variants"]).toEqual([]);
-    expect(providers["ir-openai"]!.headers).toEqual({ "x-router-lossy": "1" });
-    expect(providers["ir-openai"]!.models["gpt-x"]!["compatibility"]).toEqual({ supportsEffortUpdates: false });
+    expect(providers["ap-antigravity"]!.models["gemini-x"]!["variants"]).toEqual([]);
+    expect(providers["ap-openai"]!.headers).toEqual({ "x-proxy-lossy": "1" });
+    expect(providers["ap-openai"]!.models["gpt-x"]!["compatibility"]).toEqual({ supportsEffortUpdates: false });
     expect(opencode["chat"]!["compatibility"]).toBeUndefined();
-    expect((providers["ir-openai"]!.models["gpt-x"]!["variants"] as { id: string }[]).map((v) => v.id)).toEqual(["low"]);
+    expect((providers["ap-openai"]!.models["gpt-x"]!["variants"] as { id: string }[]).map((v) => v.id)).toEqual(["low"]);
     expect(doc["$schema"]).toBe("https://opencode.ai/config.json");
   });
 
   test("the schema check catches a wrong document; names and ids", () => {
     expect(validate(schema, { providers: { x: { models: { m: { limit: { context: "1" }, nope: 1 } } } } })).toEqual(["$.providers.x.models.m.limit.context: expected integer, got string", "$.providers.x.models.m.nope: not allowed"]);
-    expect(opencodeProviderId("opencode-go")).toBe("ir-opencode-go");
+    expect(opencodeProviderId("opencode-go")).toBe("ap-opencode-go");
     expect(Object.keys(PROVIDER_NAMES)).toHaveLength(7);
   });
 });
@@ -99,8 +99,8 @@ describe("OpencodeConfigCodec.config", () => {
 describe("OpencodeConfigCodec.manifest", () => {
   test("the token command and the configuration URL with the token substituted (wellknown.ts)", () => {
     expect(codec.manifest(AT)).toEqual({
-      auth: { command: ["/usr/bin/bun", "/app/cli.ts", "token"], env: "INFERENCE_ROUTER_TOKEN" },
-      remote_config: { url: "http://127.0.0.1:4141/opencode/config.json", headers: { authorization: "Bearer {env:INFERENCE_ROUTER_TOKEN}" } },
+      auth: { command: ["/usr/bin/bun", "/app/cli.ts", "token"], env: "ACCOUNTS_PROXY_TOKEN" },
+      remote_config: { url: "http://127.0.0.1:4141/opencode/config.json", headers: { authorization: "Bearer {env:ACCOUNTS_PROXY_TOKEN}" } },
     });
   });
 });

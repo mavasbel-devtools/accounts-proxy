@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "inference-router",
+  "name": "accounts-proxy",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -8,7 +8,7 @@
   "workspaces": ["packages/*", "apps/*", "tests/support", "scripts"],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mavasbel/inference-router.git"
+    "url": "git+https://github.com/mavasbel/accounts-proxy.git"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -21,7 +21,7 @@
     "lint:docs": "bun scripts/gate/lint-docs.ts",
     "verify": "bun scripts/gate/verify.ts",
     "fetch:specs": "bun scripts/evidence/fetch-specs.ts",
-    "router": "bun apps/router/src/main/cli.ts"
+    "proxy": "bun apps/proxy/src/main/cli.ts"
   },
   "devDependencies": {
     "@babel/core": "8.0.1",

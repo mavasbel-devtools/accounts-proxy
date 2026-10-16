@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { entryDetails, isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
-import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@inference-router/provider-claude/domain/constants.ts";
-import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
-import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
-import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "@inference-router/provider-claude/domain/request-transform.ts";
+import { entryDetails, isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
+import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
+import { apiUrl, guardAndNormalize, sanitizeThinking, transformRequest } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const json = <T>(name: string): T => JSON.parse(readFileSync(join(fixtures, name), "utf8")) as T;

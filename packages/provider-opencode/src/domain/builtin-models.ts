@@ -2,7 +2,7 @@
 //   opencode-zen-models.json (https://opencode.ai/inference/v1/models, fetched 2026-10-13T05:13:26.311Z, sha256 03a92916e0d161be0ff925edeb5673776679f4edfebf9218742a393f920efb49)
 //   opencode-go-models.json (https://opencode.ai/inference/go/v1/models, fetched 2026-10-13T05:13:26.393Z, sha256 43da091a37d236dcb3fde5020a3d5641c8f8a06009b790fffaf3e50e61bcdc02)
 //   models-opencode-reference.json (https://models.opencode.ai/api.json, fetched 2026-10-16T06:17:03.179Z, sha256 6792a0eb490aebb7b64c5969ababd4bb9e7d7aae2c35346c867280da473f899b)
-import type { GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
+import type { GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export const ZEN_BUILTIN: readonly GatewayModel[] = [
   {"id":"big-pickle","displayName":"big-pickle","formats":["openai-chat"]},

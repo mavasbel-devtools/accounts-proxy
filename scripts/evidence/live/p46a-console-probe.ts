@@ -3,19 +3,19 @@
 //       wants a key; 404/400 = no such route), and both model lists
 //   c1  keyless free model (big-pickle) on the documented Chat Completions address ("free chat models can be called
 //       without it", Console Inference API page)
-//   c2  device authorization under the router's own client id `inference-router` (Console API page, "Device flow"),
+//   c2  device authorization under the proxy's own client id `accounts-proxy` (Console API page, "Device flow"),
 //       and one poll before anyone approves it; the device and user codes are redacted
 //   c3  GET /console/api/v2/config without a credential (documented error shape)
 // Requests are 2 s apart; raw requests (no account is needed or used). Captures are redacted and secret-scanned.
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/p46a-console-probe.ts [--only=c0,c1,c2,c3]
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc } from "@inference-router/scripts/evidence/live/harness.ts";
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/p46a-console-probe.ts [--only=c0,c1,c2,c3]
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "").slice("--only=".length).split(",").filter((x) => x !== "");
 const wanted = (id: string) => only.length === 0 || only.some((o) => id.startsWith(o));
 
 const ORIGIN = "https://opencode.ai";
-const UA = "inference-router/0.1.0";
+const UA = "accounts-proxy/0.1.0";
 const PROMPT = "Reply with the single word OK.";
 const chat = (model: string) => ({ model, messages: [{ role: "user", content: PROMPT }], max_tokens: 32 });
 
@@ -61,16 +61,16 @@ async function main(): Promise<number> {
       headers: { "user-agent": UA, "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
       body: new URLSearchParams(fields).toString(),
     });
-    const code = await live.recorder.send({ ...form({ client_id: "inference-router", supports_org_scope: "true" }), url: `${ORIGIN}/console/auth/device/code` });
+    const code = await live.recorder.send({ ...form({ client_id: "accounts-proxy", supports_org_scope: "true" }), url: `${ORIGIN}/console/auth/device/code` });
     const body = JSON.parse(await readAll(code.body)) as Record<string, unknown>;
     live.redactor.add("device_code", String(body["device_code"]));
     live.redactor.add("user_code", String(body["user_code"]));
     await sleep(Number(body["interval"]) * 1000);
-    const poll = await live.recorder.send({ ...form({ grant_type: "urn:ietf:params:oauth:grant-type:device_code", device_code: String(body["device_code"]), client_id: "inference-router" }), url: `${ORIGIN}/console/auth/device/token` });
+    const poll = await live.recorder.send({ ...form({ grant_type: "urn:ietf:params:oauth:grant-type:device_code", device_code: String(body["device_code"]), client_id: "accounts-proxy" }), url: `${ORIGIN}/console/auth/device/token` });
     const pollText = await readAll(poll.body);
     writeCapture(live, "tests/fixtures/captures/p0-live/console/c2-device-flow.json", { id: "c2-device-flow", target: "opencode", scenario: "c2-device-flow", model: "-", capturedAt, exchanges: live.recorder.since(mark) });
     const observed = live.redactor.text(`HTTP ${code.status}; fields ${Object.keys(body).sort().join(", ")}; verification_uri_complete ${String(body["verification_uri_complete"])}; expires_in ${String(body["expires_in"])}; interval ${String(body["interval"])}; first poll after one interval: HTTP ${poll.status} ${pollText}`);
-    rows.push({ id: "c2-device-flow", description: "POST `/console/auth/device/code` (client_id=inference-router, supports_org_scope=true; form-encoded), then one poll of `/console/auth/device/token`", observed });
+    rows.push({ id: "c2-device-flow", description: "POST `/console/auth/device/code` (client_id=accounts-proxy, supports_org_scope=true; form-encoded), then one poll of `/console/auth/device/token`", observed });
     console.log(`c2-device-flow: ${observed}`);
     await sleep(PACE_MS);
   }

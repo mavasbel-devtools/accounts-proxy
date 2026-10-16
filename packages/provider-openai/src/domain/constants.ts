@@ -16,7 +16,7 @@ export const API_BASE = "https://api.openai.com";
 /** S2 (chatgpt.ts:20): the first-registration entry point; never saved as a client id. */
 export const REGISTRATION_CLIENT_ID = "dynamic_agent_client";
 /** S3, decision O4: the app's actual name. */
-export const AGENT_NAME = "inference-router";
+export const AGENT_NAME = "accounts-proxy";
 /** S11 (chatgpt.ts:25). */
 export const PLAN_USAGE_SCOPE = "chatgpt.tokens.use.direct";
 /** S6 (chatgpt.ts:532). */
@@ -25,10 +25,10 @@ export const SCOPES = `openid profile email offline_access resource.invoke ${PLA
 export const CALLBACK_PATH = "/auth/callback";
 /** T5 (chatgpt.ts:495). */
 export const DEFAULT_EXPIRES_IN_S = 3600;
-/** Renew this long before expiry: the router's common 2-minute buffer (Claude and Antigravity use the same value). */
+/** Renew this long before expiry: the proxy's common 2-minute buffer (Claude and Antigravity use the same value). */
 export const EXPIRY_BUFFER_MS = 120_000;
-/** The router's own User-Agent on OpenAI calls (opencode sends its own app's, chatgpt.ts:367,410). */
-export const USER_AGENT = "inference-router/0.1.0";
+/** The proxy's own User-Agent on OpenAI calls (opencode sends its own app's, chatgpt.ts:367,410). */
+export const USER_AGENT = "accounts-proxy/0.1.0";
 
 /** M2 (chatgpt.ts:30-47): the built-in model list, used when the live list is unavailable. */
 export const FALLBACK_MODELS: readonly string[] = [

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { apiKeyAccount, apiKeyOf, keyAccountId, normalizeApiKey } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
+import { apiKeyAccount, apiKeyOf, keyAccountId, normalizeApiKey } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
 
 describe("API-key accounts (plan P4.6 §2 item 3)", () => {
   test("an account holds the key in data.apiKey; apiKeyOf reads it back", () => {
@@ -13,7 +13,7 @@ describe("API-key accounts (plan P4.6 §2 item 3)", () => {
     for (const data of [{}, { apiKey: "" }, { apiKey: 1 }]) {
       expect(() => apiKeyOf({ provider: "opencode", id: "k", label: "k", data })).toThrow(ProviderAuthRequiredError);
     }
-    expect(() => apiKeyOf({ provider: "opencode", id: "k", label: "k", data: {} })).toThrow("opencode: account k has no API key; run `inference-router login opencode`");
+    expect(() => apiKeyOf({ provider: "opencode", id: "k", label: "k", data: {} })).toThrow("opencode: account k has no API key; run `accounts-proxy login opencode`");
   });
 
   test("keyAccountId: key- and the first 8 hex digits of the digest", () => {

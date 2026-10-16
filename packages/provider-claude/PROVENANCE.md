@@ -7,7 +7,7 @@
 
 ## File mapping
 
-| Router file | Source |
+| Proxy file | Source |
 |---|---|
 | `src/domain/constants.ts` | `RequestTransformService.ts` (wire constants), `ClaudeOAuthClientAdapter.ts` (`TOKEN_HEADERS`), `ClaudeCredential.ts` (120 s expiry buffer), AGENTS.md §9 (catalog contract), and the binary's OAuth constants object `a`, `kCr`, `gqe` |
 | `src/domain/model-envelope.ts` | `src/domain/services/ModelEnvelope.ts` (blob `ef95776e`); data byte-identical |
@@ -20,7 +20,7 @@
 | `src/adapters/outbound/claude-catalog.ts` | `AnthropicModelsApiAdapter.ts`, `RefreshModelCatalogUseCase.ts`, `CatalogCacheStoreAdapter.ts` (contract) |
 | `src/adapters/outbound/claude-subscription-provider.ts` | `AnthropicRelayAdapter.ts`, `AnthropicApiClientAdapter.ts` |
 
-**Not carried over.** Everything specific to OpenCode: the v1/v2 host adapters, the provider registration, the paste-code `authorize()` hook, and writes to `~/.claude/.credentials.json`. The router keeps its own credential store (plan D5).
+**Not carried over.** Everything specific to OpenCode: the v1/v2 host adapters, the provider registration, the paste-code `authorize()` hook, and writes to `~/.claude/.credentials.json`. The proxy keeps its own credential store (plan D5).
 
 ## Deliberate differences
 
@@ -37,9 +37,9 @@ Every difference is pinned by a test.
 
 ## Not changed yet (waiting on evidence)
 
-- **D-4. The client's `anthropic-beta` header is not merged.** On the native cell the router sends exactly the per-model captured beta list, as the source does. The source never forwards client betas (`RequestTransformService.headers` ignores input headers). A merge rule would change the wire, so it is decided only from the P0-LIVE captures (plan amendment A1).
+- **D-4. The client's `anthropic-beta` header is not merged.** On the native cell the proxy sends exactly the per-model captured beta list, as the source does. The source never forwards client betas (`RequestTransformService.headers` ignores input headers). A merge rule would change the wire, so it is decided only from the P0-LIVE captures (plan amendment A1).
 - **Translated cells** (`stream`, `countTokens`) raise `unsupported_feature` until P5. `capabilities()` stays empty until the P0-E3 fidelity matrix exists.
 
 ## Response headers returned to the native client
 
-Router decision (not taken from the source): `content-type`, `retry-after`, `request-id` and `anthropic-ratelimit-*`. The source returned only `retry-after` and inferred `content-type`.
+Proxy decision (not taken from the source): `content-type`, `retry-after`, `request-id` and `anthropic-ratelimit-*`. The source returned only `retry-after` and inferred `content-type`.

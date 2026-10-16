@@ -24,7 +24,7 @@ export abstract class LoggerPort {
   abstract error(message: string, cause: unknown): void;
 }
 
-/** Mutual exclusion that holds across processes (the router daemon and a concurrent CLI command). */
+/** Mutual exclusion that holds across processes (the proxy daemon and a concurrent CLI command). */
 export abstract class LockPort {
   abstract withLock<T>(name: string, work: () => Promise<T>): Promise<T>;
 }

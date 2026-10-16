@@ -1,5 +1,5 @@
 {
-  "name": "@inference-router/provider-cheaper-inference",
+  "name": "@accounts-proxy/provider-cheaper-inference",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -9,10 +9,10 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@inference-router/core": "workspace:*",
-    "@inference-router/provider-gateway": "workspace:*"
+    "@accounts-proxy/core": "workspace:*",
+    "@accounts-proxy/provider-gateway": "workspace:*"
   },
   "devDependencies": {
-    "@inference-router/test-support": "workspace:*"
+    "@accounts-proxy/test-support": "workspace:*"
   }
 }

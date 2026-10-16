@@ -1,7 +1,7 @@
 // Cheaper Inference rules (rules document 2026-10-12-15-35-gateway-provider-rules.md §4, C1–C9). Pure.
-import { compactDetails, perMillion, type Modality, type ModelCost, type ModelDetails } from "@inference-router/core/domain/model-details.ts";
-import type { WireFormat } from "@inference-router/core/domain/models.ts";
-import { asArray, asObject, fieldsText, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
+import { compactDetails, perMillion, type Modality, type ModelCost, type ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { asArray, asObject, fieldsText, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export const API_ORIGIN = "https://api.cheaperinference.com";
 

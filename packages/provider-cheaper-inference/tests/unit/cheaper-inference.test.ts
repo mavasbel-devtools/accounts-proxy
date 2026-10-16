@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CHEAPER_BUILTIN } from "@inference-router/provider-cheaper-inference/domain/builtin-models.ts";
-import { balanceText, CHEAPER_SPEC, parseAccount, parseModels } from "@inference-router/provider-cheaper-inference/domain/cheaper-inference.ts";
+import { CHEAPER_BUILTIN } from "@accounts-proxy/provider-cheaper-inference/domain/builtin-models.ts";
+import { balanceText, CHEAPER_SPEC, parseAccount, parseModels } from "@accounts-proxy/provider-cheaper-inference/domain/cheaper-inference.ts";
 
 const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", file), "utf8"));
 

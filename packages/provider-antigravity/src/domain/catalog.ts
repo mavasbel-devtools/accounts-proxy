@@ -1,7 +1,7 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 domain/services/ModelCatalogService.ts (blob 722ede31) and the pure
 // parts of application/use-cases/ResolveModelsUseCase.ts (descriptorToEntry limit rule, wireDefaults).
-import type { Modality, ModelDetails } from "@inference-router/core/domain/model-details.ts";
-import { IDE_WORKING_SET_CONTEXT_CAP } from "@inference-router/provider-antigravity/domain/constants.ts";
+import type { Modality, ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import { IDE_WORKING_SET_CONTEXT_CAP } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
 
 export type ModelDescriptor = {
   readonly wireId: string;
@@ -18,7 +18,7 @@ export type ModelDescriptor = {
   /** `labels.model_enum` placeholder (MODEL_PLACEHOLDER_Mxx) required by every stream request. */
   readonly enumPlaceholder: string;
   readonly quota?: { readonly remainingFraction: number; readonly resetTime: string };
-  /** Router addition (plan 2026-10-16 C3): the `supportedMimeTypes` the catalog marks true. */
+  /** Proxy addition (plan 2026-10-16 C3): the `supportedMimeTypes` the catalog marks true. */
   readonly mimeTypes?: readonly string[];
 };
 

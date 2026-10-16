@@ -3,7 +3,7 @@
 // kid/use/alg); its private half is OpenAI's, so the replay signs with this key and publishes it the same way. The
 // claim names are those of the live ID token of 2026-10-13 (iss, sub, aud[], nonce, auth_time, email, email_verified,
 // name, sid, https://api.openai.com/auth, iat, exp, jti, at_hash); every value here is the replay's own.
-import { IdTokenSigner } from "@inference-router/test-support/openai-id-token.ts";
+import { IdTokenSigner } from "@accounts-proxy/test-support/openai-id-token.ts";
 
 const signer = new IdTokenSigner("e2e-key");
 

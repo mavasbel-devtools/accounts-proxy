@@ -1,12 +1,12 @@
 // OpenCode Console API (rules Z17–Z20): device authorization, device tokens and their renewal, the user's identity and
 // the workspace config. Form-encoded token requests as in the Console API page's examples; every call is bounded by
 // TOKEN_ENDPOINT_TIMEOUT_MS (plan v4 H-c).
-import { TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
-import type { ClockPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
+import type { ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import {
   CLIENT_ID,
   CONFIG_PATH,
@@ -24,8 +24,8 @@ import {
   workspaceHeaders,
   type ConsoleTokens,
   type WorkspaceHeaders,
-} from "@inference-router/provider-opencode/domain/opencode.ts";
-import { ConsoleApiPort, type ConsoleAuth, type TokenPoll } from "@inference-router/provider-opencode/ports/outbound/console.ts";
+} from "@accounts-proxy/provider-opencode/domain/opencode.ts";
+import { ConsoleApiPort, type ConsoleAuth, type TokenPoll } from "@accounts-proxy/provider-opencode/ports/outbound/console.ts";
 
 type Answer = { readonly status: number; readonly text: string; readonly json: unknown };
 

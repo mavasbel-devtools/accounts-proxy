@@ -1,5 +1,5 @@
 // One-off codemod (alias-imports plan, step 3): rewrite every relative import specifier in the repository's own
-// TypeScript into the owning workspace's package name, `@inference-router/<workspace>/<subpath>`.
+// TypeScript into the owning workspace's package name, `@accounts-proxy/<workspace>/<subpath>`.
 // Scope: packages/*/{src,tests}, apps/*/{src,tests}, tests/, scripts/ — excluding vendored parity references
 // (packages/*/tests/reference/**), node_modules and docs/temp. Only the string literal of each specifier changes.
 // A target that no workspace "exports" maps is a hard error (nothing is guessed).

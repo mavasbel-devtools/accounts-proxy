@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { activeAccount, EMPTY_POOL, upsertAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import type { RawRequest } from "@inference-router/core/domain/wire.ts";
-import { TimerPort } from "@inference-router/core/ports/outbound/system.ts";
+import { activeAccount, EMPTY_POOL, upsertAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import {
   FixedClock,
   MemoryCredentialStore,
@@ -15,25 +15,25 @@ import {
   ScriptedTransport,
   SequenceRandom,
   type ScriptedResponse,
-} from "@inference-router/test-support/fakes.ts";
-import { AntigravityApiClient } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
-import { AntigravityCatalog } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
-import { AntigravityNative, unwrapEnvelope } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-native.ts";
-import { AntigravityRunner } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-runner.ts";
-import { AntigravityProvider } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-provider.ts";
-import { AntigravityQuota } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-quota.ts";
-import { AntigravitySession, REFRESH_LOCK } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-session.ts";
-import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "@inference-router/provider-antigravity/adapters/outbound/antigravity-state.ts";
-import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-antigravity/adapters/outbound/google-oauth-client.ts";
-import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
-import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import { CLIENT_ID, CLIENT_SECRET, DAILY_HOST, SCOPES, SUCCESS_REDIRECT, USER_AGENT, USERINFO_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
-import { toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { prepareGeminiRequest } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
-import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
-import { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
-import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravityStatePort, type ActiveAccount } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+} from "@accounts-proxy/test-support/fakes.ts";
+import { AntigravityApiClient } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
+import { AntigravityCatalog } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
+import { AntigravityNative, unwrapEnvelope } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-native.ts";
+import { AntigravityRunner } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-runner.ts";
+import { AntigravityProvider } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-provider.ts";
+import { AntigravityQuota } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-quota.ts";
+import { AntigravitySession, REFRESH_LOCK } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-session.ts";
+import { AntigravityState, SESSION_ID_KEY, SIGNATURES_KEY } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-state.ts";
+import { GoogleOAuthClient, PRODUCTION_ENDPOINTS } from "@accounts-proxy/provider-antigravity/adapters/outbound/google-oauth-client.ts";
+import { withActive } from "@accounts-proxy/provider-antigravity/adapters/outbound/with-active.ts";
+import { fromCredential, toCredential, type AntigravityAccount, type AuthTokens } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import { CLIENT_ID, CLIENT_SECRET, DAILY_HOST, SCOPES, SUCCESS_REDIRECT, USER_AGENT, USERINFO_URL } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { toModelDescriptors } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { prepareGeminiRequest } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
+import type { GenerateParams } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
+import { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravityStatePort, type ActiveAccount } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -681,7 +681,7 @@ describe("AntigravityProvider", () => {
 
     const json = make(failing(new TypeError("connection reset")));
     const body = (await decode((await json.provider.passthrough("gemini-3.6-flash-low", raw("streamGenerateContent", hello))).body)).join("");
-    expect(JSON.parse(body)[1]).toEqual({ error: { code: 500, message: "internal router error (details are in the router log)", status: "INTERNAL" } });
+    expect(JSON.parse(body)[1]).toEqual({ error: { code: 500, message: "internal proxy error (details are in the proxy log)", status: "INTERNAL" } });
     expect(json.logger.lines.some((l) => l.endsWith("connection reset"))).toBe(true);
   });
 
@@ -701,11 +701,11 @@ describe("AntigravityProvider", () => {
     expect(finished).toBe(true);
   });
 
-  test("lossy drops are reported in x-router-dropped; the client signal reaches the upstream call", async () => {
+  test("lossy drops are reported in x-proxy-dropped; the client signal reaches the upstream call", async () => {
     const { provider, api } = make();
     const controller = new AbortController();
     const response = await provider.passthrough("gemini-3.6-flash-low", { ...raw("generateContent", { ...hello, safetySettings: [] }, {}, true), signal: controller.signal });
-    expect(response.headers["x-router-dropped"]).toBe("safetySettings");
+    expect(response.headers["x-proxy-dropped"]).toBe("safetySettings");
     expect(api.signals[0]).toBe(controller.signal);
   });
 
@@ -723,7 +723,7 @@ describe("AntigravityProvider", () => {
       ],
     };
     const response = await provider.passthrough("gemini-3.6-flash-low", raw("generateContent", replay));
-    expect(response.headers["x-router-dropped"]).toBeUndefined();
+    expect(response.headers["x-proxy-dropped"]).toBeUndefined();
     const contents = (api.streams[1]!.body as { contents: { role: string; parts: Record<string, unknown>[] }[] }).contents;
     expect(contents[1]!.parts[0]!["thoughtSignature"]).toBe("SIG-LIVE");
     expect(contents[2]!.role).toBe("model");

@@ -5,18 +5,18 @@
 // The request carries opencode's session headers `session-id`, `thread-id`, `x-client-request-id` (I5, decision O9).
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
 // status, body and request id (E1–E2).
-import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
-import { withDetails } from "@inference-router/core/domain/model-details.ts";
-import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
-import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import { bodyOf, DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
-import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { aggregate, prepareRequest, StreamRepair } from "@inference-router/provider-openai/domain/responses.ts";
-import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { withDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ModelCatalog, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
+import { bodyOf, DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { aggregate, prepareRequest, StreamRepair } from "@accounts-proxy/provider-openai/domain/responses.ts";
+import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAISessionPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 export const NATIVE_PATH = "/v1/responses";
 

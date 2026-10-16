@@ -1,9 +1,9 @@
-// S4: the host id is created once per host (a router data directory) and reused for every sign-in; the accepted
+// S4: the host id is created once per host (a proxy data directory) and reused for every sign-in; the accepted
 // formats are `urn:ietf:params:oauth:jwk-thumbprint:…`, `urn:uuid:…` and `did:key:…` (openai-siwc-overview.md "Host-ID").
-// The router creates the documented UUID form; a stored value of any accepted form is kept.
-import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import type { RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import { OpenAIIdentityPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+// The proxy creates the documented UUID form; a stored value of any accepted form is kept.
+import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import type { RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { OpenAIIdentityPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 export const HOST_ID_KEY = "openai/host-id";
 const HOST_ID = /^(urn:uuid:[0-9a-f-]{36}|urn:ietf:params:oauth:jwk-thumbprint:\S+|did:key:\S+)$/;

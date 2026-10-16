@@ -1,14 +1,14 @@
 // Model list (M1–M2): the active registration's live `GET /v1/models` (cached 24 h, per issued client id because the
 // list is per account), else the stored copy, else the built-in list. Never empty.
-import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import type { ClockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { isSnapshot, parseModelList, STATIC_CATALOG, type CatalogSnapshot } from "@inference-router/provider-openai/domain/catalog.ts";
-import { CATALOG, USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { OpenAICatalogPort, type CatalogListing, type OpenAISessionPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { isSnapshot, parseModelList, STATIC_CATALOG, type CatalogSnapshot } from "@accounts-proxy/provider-openai/domain/catalog.ts";
+import { CATALOG, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { OpenAICatalogPort, type CatalogListing, type OpenAISessionPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 export const CATALOG_KEY = "openai/model-catalog";
 

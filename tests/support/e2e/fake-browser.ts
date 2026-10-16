@@ -1,5 +1,5 @@
 // The `xdg-open` the e2e daemon finds first on PATH. It records the authorization URL it was given, then acts like the
-// user chosen by INFERENCE_ROUTER_E2E_BROWSER_MODE:
+// user chosen by ACCOUNTS_PROXY_E2E_BROWSER_MODE:
 //   approve (default)  calls the loopback redirect with a code and the URL's own state
 //   deny               the user refuses: error=access_denied with a description
 //   deny-bare          the user refuses: error=access_denied without a description
@@ -8,18 +8,18 @@
 //   wrong-path-twice   first a request to another path (404), then approves twice (the second gets 409)
 //   ignore             never calls back (the login times out)
 //   approve-registration  approves a new ChatGPT registration: the callback also carries the issued client id
-//                      (INFERENCE_ROUTER_E2E_ISSUED_CLIENT, default oaiapp_e2e; Sign in with ChatGPT S2, S9)
+//                      (ACCOUNTS_PROXY_E2E_ISSUED_CLIENT, default oaiapp_e2e; Sign in with ChatGPT S2, S9)
 import { appendFileSync } from "node:fs";
 
 const authorize = new URL(process.argv[2]!);
-appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `${authorize.toString()}\n`);
+appendFileSync(process.env["ACCOUNTS_PROXY_E2E_BROWSER_LOG"]!, `${authorize.toString()}\n`);
 const params = authorize.searchParams;
 // OAuth providers name the loopback `redirect_uri`; OpenRouter's PKCE page names it `callback_url` (rule R5).
 const redirect = (params.get("redirect_uri") ?? params.get("callback_url"))!;
 const state = encodeURIComponent(params.get("state")!);
-const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => appendFileSync(process.env["INFERENCE_ROUTER_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
+const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => appendFileSync(process.env["ACCOUNTS_PROXY_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
 
-switch (process.env["INFERENCE_ROUTER_E2E_BROWSER_MODE"] ?? "approve") {
+switch (process.env["ACCOUNTS_PROXY_E2E_BROWSER_MODE"] ?? "approve") {
   case "deny":
     await visit(`${redirect}?error=access_denied&error_description=${encodeURIComponent("The user denied access")}&state=${state}`);
     break;
@@ -40,7 +40,7 @@ switch (process.env["INFERENCE_ROUTER_E2E_BROWSER_MODE"] ?? "approve") {
   case "ignore":
     break;
   case "approve-registration":
-    await visit(`${redirect}?code=e2e-code&state=${state}&client_id=${encodeURIComponent(process.env["INFERENCE_ROUTER_E2E_ISSUED_CLIENT"] ?? "oaiapp_e2e")}`);
+    await visit(`${redirect}?code=e2e-code&state=${state}&client_id=${encodeURIComponent(process.env["ACCOUNTS_PROXY_E2E_ISSUED_CLIENT"] ?? "oaiapp_e2e")}`);
     break;
   default:
     await visit(`${redirect}?code=e2e-code&state=${state}`);

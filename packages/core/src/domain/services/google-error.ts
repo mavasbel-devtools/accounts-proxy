@@ -2,7 +2,7 @@
 // finding L10: tests/fixtures/captures/p0-live/e3/t3-f3b-tool-choice-any.json, t4-f2-document.json). `status` is the
 // google.rpc.Code name whose documented "HTTP Mapping" is the HTTP status (docs/reference/specs/google-rpc-code.proto);
 // a status with no mapping there is UNKNOWN ("errors raised by APIs that do not return enough error information").
-import { RouterError, UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { ProxyError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
 
 const RPC_STATUS: Readonly<Record<number, string>> = {
   400: "INVALID_ARGUMENT",
@@ -30,8 +30,8 @@ function isGoogleError(value: unknown): value is GoogleErrorEnvelope {
   return error !== null && typeof error === "object" && typeof (error as { code?: unknown }).code === "number" && typeof (error as { message?: unknown }).message === "string";
 }
 
-/** The envelope for a router error. An upstream error whose body already is a Google envelope is kept verbatim. */
-export function googleErrorEnvelope(error: RouterError): GoogleErrorEnvelope {
+/** The envelope for a proxy error. An upstream error whose body already is a Google envelope is kept verbatim. */
+export function googleErrorEnvelope(error: ProxyError): GoogleErrorEnvelope {
   if (error instanceof UpstreamError) {
     try {
       const parsed: unknown = JSON.parse(error.body);

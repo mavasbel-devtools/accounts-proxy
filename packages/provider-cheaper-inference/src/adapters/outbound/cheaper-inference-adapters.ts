@@ -1,15 +1,15 @@
 // Cheaper Inference adapters: the live model list (C3 with the key, C4 without), the key login (C6) and the wallet
 // report (C7). Every call authenticates with `Authorization: Bearer` (C1).
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { UsageReport } from "@inference-router/core/domain/usage.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { ClockPort, HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
-import { GatewayKeyLogin, type KeyIdentity } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-login.ts";
-import { CATALOG_TIMEOUT_MS, type GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { GatewayCatalogSourcePort, type GatewayKeySessionPort } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
-import { ACCOUNT_PATH, BALANCE_PATH, balanceText, MODELS_PATH, parseAccount, parseModels } from "@inference-router/provider-cheaper-inference/domain/cheaper-inference.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { UsageReport } from "@accounts-proxy/core/domain/usage.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { ClockPort, HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
+import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
+import { CATALOG_TIMEOUT_MS, type GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { GatewayCatalogSourcePort, type GatewayKeySessionPort } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
+import { ACCOUNT_PATH, BALANCE_PATH, balanceText, MODELS_PATH, parseAccount, parseModels } from "@accounts-proxy/provider-cheaper-inference/domain/cheaper-inference.ts";
 
 async function getJson(transport: HttpTransportPort, url: string, key: string | undefined): Promise<{ status: number; text: string }> {
   const res = await transport.send({ method: "GET", url, headers: { accept: "application/json", ...(key !== undefined ? { authorization: `Bearer ${key}` } : {}) }, timeoutMs: CATALOG_TIMEOUT_MS });

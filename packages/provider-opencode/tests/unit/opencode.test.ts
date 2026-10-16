@@ -1,9 +1,9 @@
-import { parseReference, type ReferenceModel } from "@inference-router/core/domain/model-details.ts";
+import { parseReference, type ReferenceModel } from "@accounts-proxy/core/domain/model-details.ts";
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { GO_BUILTIN, ZEN_BUILTIN } from "@inference-router/provider-opencode/domain/builtin-models.ts";
-import { UpstreamError } from "@inference-router/core/domain/errors.ts";
+import { GO_BUILTIN, ZEN_BUILTIN } from "@accounts-proxy/provider-opencode/domain/builtin-models.ts";
+import { UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
 import {
   consoleIdentity,
   decodeCredential,
@@ -17,12 +17,12 @@ import {
   pollError,
   workspaceHeaders,
   ZEN_SPEC,
-} from "@inference-router/provider-opencode/domain/opencode.ts";
+} from "@accounts-proxy/provider-opencode/domain/opencode.ts";
 
 const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", file), "utf8"));
 
 describe("OpenCode Zen and Go rules", () => {
-  test("Z12–Z15, Z9: Console addresses, bearer everywhere, the router's User-Agent and the client's x-opencode-session; Go has no Gemini route", () => {
+  test("Z12–Z15, Z9: Console addresses, bearer everywhere, the proxy's User-Agent and the client's x-opencode-session; Go has no Gemini route", () => {
     expect([ZEN_SPEC.apiBase, GO_SPEC.apiBase]).toEqual(["https://opencode.ai/inference", "https://opencode.ai/inference/go"]);
     expect(ZEN_SPEC.endpoints).toEqual({
       "openai-chat": { path: "/openai/v1/chat/completions" },
@@ -36,13 +36,13 @@ describe("OpenCode Zen and Go rules", () => {
       "anthropic-messages": { path: "/v1/messages" },
     });
     for (const spec of [ZEN_SPEC, GO_SPEC]) {
-      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardHeaders]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "inference-router/0.1.0" }, ["x-opencode-session"]]);
+      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardHeaders]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "accounts-proxy/0.1.0" }, ["x-opencode-session"]]);
     }
   });
 
-  test("the User-Agent names the router's own version", () => {
-    const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "apps", "router", "package.json"), "utf8")) as { name: string; version: string };
-    expect(ZEN_SPEC.headers!["user-agent"]).toBe(`inference-router/${pkg.version}`);
+  test("the User-Agent names the proxy's own version", () => {
+    const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "apps", "proxy", "package.json"), "utf8")) as { name: string; version: string };
+    expect(ZEN_SPEC.headers!["user-agent"]).toBe(`accounts-proxy/${pkg.version}`);
   });
 
   test("Z4 + Z5: the committed lists and the reference catalog give the built-in lists", () => {
@@ -71,11 +71,11 @@ describe("OpenCode Zen and Go rules", () => {
 
 describe("OpenCode Console device login and workspace config (Z17–Z20)", () => {
   test("Z17: the device-code answer (the live field set); the page resolved against the Console URL; incomplete or non-HTTP answers refused", () => {
-    const answer = { device_code: "dc", user_code: "ABCD-EFGH", verification_uri: "/console/device", verification_uri_complete: "/console/device?user_code=ABCD-EFGH&client_id=inference-router", expires_in: 600, interval: 5 };
+    const answer = { device_code: "dc", user_code: "ABCD-EFGH", verification_uri: "/console/device", verification_uri_complete: "/console/device?user_code=ABCD-EFGH&client_id=accounts-proxy", expires_in: 600, interval: 5 };
     expect(parseDeviceAuthorization(answer, "https://opencode.ai/console")).toEqual({
       deviceCode: "dc",
       userCode: "ABCD-EFGH",
-      verificationUrl: "https://opencode.ai/console/device?user_code=ABCD-EFGH&client_id=inference-router",
+      verificationUrl: "https://opencode.ai/console/device?user_code=ABCD-EFGH&client_id=accounts-proxy",
       intervalMs: 5000,
       expiresInMs: 600_000,
     });

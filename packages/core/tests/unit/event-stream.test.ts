@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EventStreamCodec, SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
+import { EventStreamCodec, SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
 
 describe("SseCodec (WHATWG server-sent events)", () => {
   test("is an EventStreamCodec", () => {

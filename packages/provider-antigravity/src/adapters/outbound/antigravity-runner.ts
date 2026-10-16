@@ -3,12 +3,12 @@
 // retries (2 s, 8 s) only before anything was yielded; the step counter advances only after a completed stream.
 // Difference G5: the account is refreshed proactively before the call (source used bare loadActive); the 401 retry
 // additionally requires that nothing was yielded yet.
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { ClockPort, LoggerPort, RandomPort, TimerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { activeProject } from "@inference-router/provider-antigravity/domain/account.ts";
-import { LOCATION_RETRY_BACKOFF_MS } from "@inference-router/provider-antigravity/domain/constants.ts";
-import { TrajectoryState } from "@inference-router/provider-antigravity/domain/trajectory.ts";
-import { isLocationGate, isUnauthorized } from "@inference-router/provider-antigravity/domain/upstream.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ClockPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { activeProject } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import { LOCATION_RETRY_BACKOFF_MS } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { TrajectoryState } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
+import { isLocationGate, isUnauthorized } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
 import {
   AntigravityRunnerPort,
   type ActiveAccount,
@@ -16,7 +16,7 @@ import {
   type AntigravitySessionPort,
   type AntigravityStatePort,
   type RunInput,
-} from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+} from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 export class AntigravityRunner extends AntigravityRunnerPort {
   private trajectory: Promise<TrajectoryState> | undefined;

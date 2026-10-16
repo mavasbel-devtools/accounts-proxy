@@ -1,4 +1,4 @@
-# AGENTS.md — inference-router laws (non-negotiable)
+# AGENTS.md — accounts-proxy laws (non-negotiable)
 
 Plan: [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md),
 extended by [plan v4](docs/plans/2026-10-11-22-11-completion-plan.md) and
@@ -14,7 +14,7 @@ Gemini `generateContent` formats and routes each request to one of seven provide
   `openrouter`, `opencode` (OpenCode Zen), `opencode-go`, `cheaper-inference`.
 
 A model accepts some formats natively (one fixed format per subscription provider; per model, or uniformly, on a
-gateway); a request in any other format answers 400 `unsupported_feature`. The router does not translate between
+gateway); a request in any other format answers 400 `unsupported_feature`. The proxy does not translate between
 formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (decision D1-A,
 [plan](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md)).
 
@@ -24,7 +24,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   - `packages/provider-*`: domain (pure provider rules), `ports/outbound` (provider-internal abstractions) and
     `adapters/outbound`; `provider-gateway` is the shared base the gateway vendors build on.
   - `packages/dialect-*`: `adapters/inbound` codecs.
-  - `apps/router`: application, `adapters/{inbound,outbound}`, `composition`, `main`.
+  - `apps/proxy`: application, `adapters/{inbound,outbound}`, `composition`, `main`.
 - **Layers** are recognised by path: `src/domain`, `src/ports/{inbound,outbound}`, `src/application`,
   `src/adapters/{inbound,outbound}`, `src/composition`, `src/main`. A file anywhere else under `src/` fails the gate.
 - **Allowed internal imports:**
@@ -39,9 +39,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - **External imports** (`node:*`, third-party) are allowed only in adapters, composition and main. Domain, ports and
   application are pure TypeScript.
 - **Imports are aliases, never relative.** Every import of the repository's own code is
-  `@inference-router/<workspace>/<subpath-with-.ts>`, also inside the same workspace (package self-reference) and in
+  `@accounts-proxy/<workspace>/<subpath-with-.ts>`, also inside the same workspace (package self-reference) and in
   tests and scripts. Each workspace's `exports["./*"]` maps the subpath: `packages/*` and `apps/*` → `src/`,
-  `@inference-router/test-support` → `tests/support/`, `@inference-router/scripts` → `scripts/`. Barrel imports are
+  `@accounts-proxy/test-support` → `tests/support/`, `@accounts-proxy/scripts` → `scripts/`. Barrel imports are
   forbidden. The only relative or foreign-alias imports are inside the vendored parity references
   (`packages/*/tests/reference/plugin-<sha>/`): they are byte-identical to the plugin sources, and their own
   `tsconfig.json` maps the plugin's alias (`@claude/`, `@antigravity/`).
@@ -50,7 +50,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - The architecture gate enforces both rules on every `.ts` under `packages/*/{src,tests}`, `apps/*/{src,tests}`,
   `tests/` and `scripts/`. Its self-test injects relative, unresolvable and undeclared imports.
 - **Abstractions.** Every port is an abstract class or interface. Every implementation extends or implements one.
-  Constructor parameters and return types are abstractions (IoC). Concrete wiring happens only in `apps/router/src/composition`.
+  Constructor parameters and return types are abstractions (IoC). Concrete wiring happens only in `apps/proxy/src/composition`.
 
 ## 3. Wire laws carried from the source plugins (must never regress)
 
@@ -69,30 +69,30 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 | OpenAI Responses cell: the terminal `response` gets the items of `response.output_item.done` when it arrives with an empty `output`, in the aggregated answer and in the stream (rule I6) | [live validation F1](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | Gateway native cells: the body `model` (or Gemini path model) becomes the bare id; upstream headers are only the key header, `content-type`, the client's `accept` and, on Messages, `anthropic-version`/`anthropic-beta`; the answer streams back with `content-type`, `retry-after` and the vendor's request id | [gateway rules G1–G4](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) |
 | Gateway credential: `Authorization: Bearer` on every endpoint of every gateway (OpenCode since its 2026-10-12 Console migration) | rules R1, C1, Z14 |
-| OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the router's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
-| OpenCode Console cells without a client `x-opencode-session`: the conversation's own id (Claude Code's `metadata.user_id` session, the Responses `prompt_cache_key`), else `rtr_` + a 64-bit FNV-1a hash of the first user turn (rule Z24) | [live validation F3](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
+| OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the proxy's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
+| OpenCode Console cells without a client `x-opencode-session`: the conversation's own id (Claude Code's `metadata.user_id` session, the Responses `prompt_cache_key`), else `ap_` + a 64-bit FNV-1a hash of the first user turn (rule Z24) | [live validation F3](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from models.dev `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
 ## 4. Behaviour laws
 - **Evidence only.** Every translation rule cites a spec in `docs/reference/specs/` or a capture in
   `tests/fixtures/captures/`. Nothing is guessed.
 - **Strict translation.** A feature the target cannot carry returns 400 `unsupported_feature`. Dropping happens only
-  with `x-router-lossy: 1`, and the response then reports `x-router-dropped`.
+  with `x-proxy-lossy: 1`, and the response then reports `x-proxy-dropped`.
 - **Quota.** 429 / quota errors are surfaced with `retry-after`. There is **no** automatic account rotation.
-- **Browser login.** `inference-router login <provider>` opens the browser and captures the loopback redirect.
+- **Browser login.** `accounts-proxy login <provider>` opens the browser and captures the loopback redirect.
   Paste-code exists only as the headless fallback (`--manual`). Evidence:
   [P0-E6](docs/reference/2026-10-06-00-32-p0-e6-browser-login-mechanisms.md). OpenRouter's PKCE login is a browser
   login too (it yields an API key; `--manual` is its headless page, rules R5–R7).
 - **API keys** (plan P4.6 N4). A key is read only at a hidden prompt (`login cheaper-inference`, and
   `login <gateway> --key`), never from a command argument or an environment variable, and checked where the vendor
   documents a way. A key is never renewed; an upstream 401 reaches the client unchanged. OpenCode's keyless free tier
-  is not available to the router (live 403 `FreeTierError`, rules Z8, Z21).
+  is not available to the proxy (live 403 `FreeTierError`, rules Z8, Z21).
 - **OpenCode Console** (plan P4.6 amendment A, K1–K6). `login opencode` is the Console's device login (RFC 8628)
-  under the router's own client id `inference-router`: the code is shown, the approval page opened, the token
+  under the proxy's own client id `accounts-proxy`: the code is shown, the approval page opened, the token
   endpoint polled every interval (+5 s after `slow_down`). `opencode` and `opencode-go` share one account, stored as
   `opencode`. Device tokens renew under the Phase H rules (single-use refresh tokens, Z18); a key never renews. The
   credential is checked by reading the workspace config (`GET /console/api/v2/config`), whose headers the requests carry.
-- **Own credentials.** The router's credentials live only in `~/.local/share/inference-router/`. The router never
+- **Own credentials.** The proxy's credentials live only in `~/.local/share/accounts-proxy/`. The proxy never
   writes Claude Code's, OpenCode's or the plugins' credential files, and reads one only for
   `login <gateway> --from-opencode` (decision K5): OpenCode's `auth.json`, read once, from which an **API key** only is
   imported, never a sign-in token (rule Z22).
@@ -104,17 +104,17 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude retries once after renewing on an
   upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
-  Every route except `/health` and `/.well-known/opencode` requires the router token (`<data>/token.json`, 0600),
+  Every route except `/health` and `/.well-known/opencode` requires the proxy token (`<data>/token.json`, 0600),
   compared in constant time. The well-known manifest carries no secret: the command that prints the token and the
   configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
 - **Model details.** A model's detailed record takes each field from its provider's own list first, then from the
   reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
   Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
-  opencode v2's `providers` schema, one `ir-<provider>` each, variants from opencode's own rules (none for
+  opencode v2's `providers` schema, one `ap-<provider>` each, variants from opencode's own rules (none for
   Antigravity). `claude` and `openai` models carry opencode `compatibility` overrides that switch off what those cells
   refuse (thinking-prefix controls, per-message effort updates; rule O6, live C6).
   [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md).
-- **Test seams.** `INFERENCE_ROUTER_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
+- **Test seams.** `ACCOUNTS_PROXY_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
   OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
   origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference)
   and the reference model catalog (models.opencode.ai) to one origin, paths kept.
@@ -126,11 +126,11 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - **Coverage** is measured with Babel + istanbul (`scripts/gate/`). It must be exactly 100% lines, statements, functions
   and branches for unit+component, for e2e, and merged. It must also be **complete**: every source file with runtime
   code must be loaded by some test.
-- **E2E coverage** comes from router processes (the source entry `apps/router/src/main/cli.ts`) started with
-  `--preload scripts/gate/e2e-coverage-preload.ts` (`tests/support/e2e/router-process.ts`). A daemon must exit through
+- **E2E coverage** comes from proxy processes (the source entry `apps/proxy/src/main/cli.ts`) started with
+  `--preload scripts/gate/e2e-coverage-preload.ts` (`tests/support/e2e/proxy-process.ts`). A daemon must exit through
   a normal exit path (SIGTERM is handled), never a hard kill, or its coverage is lost. Upstreams are the replay server
   `tests/support/e2e/upstreams.ts`, answering only from committed captures; browser logins use the fake `xdg-open`.
-  The built bundle is run separately (`apps/router/tests/e2e/bundle.test.ts`); it cannot carry coverage.
+  The built bundle is run separately (`apps/proxy/tests/e2e/bundle.test.ts`); it cannot carry coverage.
   Code no e2e route can reach yet is deferred by name in `scripts/gate/e2e-deferred.ts` (file, function or branch,
   each with phase and reason; an entry e2e covers, or whose name stops matching, fails the gate;
   [R1 option B](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)). The list is empty: the P5-only code left with
@@ -138,17 +138,17 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   the phases `P4.5-live` and `P4.6-live`: code whose replay needs a live capture only the user's own sign-in or key can
   produce; such an entry leaves the list when its capture is committed and replayed (none is left since the live
   validation of 2026-10-13). Replayed answers come from committed captures or from the vendors' documented examples
-  (`docs/reference/specs/`). Grants are never recorded: a replayed token answer carries the fields the router reads,
+  (`docs/reference/specs/`). Grants are never recorded: a replayed token answer carries the fields the proxy reads,
   and the OpenAI ID token is signed by the replay's own key (`tests/support/e2e/openai-signing.ts`).
 - **Hermetic test hooks** (only with every upstream seam set; validated; read only by `main()`):
-  `INFERENCE_ROUTER_TEST_PLATFORM`, `INFERENCE_ROUTER_TEST_UPSTREAM_IDLE_MS`, `INFERENCE_ROUTER_TEST_LOCK_TIMEOUT_MS`,
-  `INFERENCE_ROUTER_TEST_LOCK_STAT_VANISHES=1`, `INFERENCE_ROUTER_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
+  `ACCOUNTS_PROXY_TEST_PLATFORM`, `ACCOUNTS_PROXY_TEST_UPSTREAM_IDLE_MS`, `ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS`,
+  `ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES=1`, `ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
   `192.0.2.1`, so listen fails). They exist only for paths no outside test can otherwise reach.
 - **Recursive deletes** in tests go only through `tests/support/temporary.ts#removeTemporary`, which refuses anything
   outside `os.tmpdir()`.
 - **`bun run verify`** runs typecheck → unit+component+arch coverage gate → build → e2e gate → merged gate → docs lint.
   It reports INCOMPLETE (exit 3) while a tier has nothing to run yet, and never reports that as a pass.
-- **`bun run test:live`** runs the real accounts tier. It sets `INFERENCE_ROUTER_LIVE=1` itself and is never part of `verify`.
+- **`bun run test:live`** runs the real accounts tier. It sets `ACCOUNTS_PROXY_LIVE=1` itself and is never part of `verify`.
 
 ## 6. Pins (exact versions only; no ranges, no `latest`)
 - Bun 1.4.2
@@ -156,10 +156,14 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - @babel/core 8.0.1, @babel/plugin-transform-typescript 8.0.1, babel-plugin-istanbul 8.0.0
 - istanbul-lib-coverage 3.2.2, istanbul-lib-report 3.0.1, istanbul-reports 3.2.0
 - @types/istanbul-lib-coverage 2.0.6, @types/istanbul-lib-report 3.0.3, @types/istanbul-reports 3.0.4
-- e2e clients (devDependencies of `apps/router`, and of `@inference-router/scripts` for the live matrix):
+- e2e clients (devDependencies of `apps/proxy`, and of `@accounts-proxy/scripts` for the live matrix):
   @anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0
 
 ## 7. Docs
 - Files under `docs/{plans,research,issues,reference,temp}` are named `YYYY-MM-DD-HH-MM-<name>.md`, using the system clock.
 - Session records are `docs/sessions/<session-id>.md`.
 - README, this file, plans and diagrams are kept in exact sync with the code and the measured results after every change.
+- **Name.** The project is `accounts-proxy` (prefix `ap`, environment `ACCOUNTS_PROXY_*`), renamed on 2026-10-16
+  ([record](docs/reference/2026-10-16-14-40-project-rename.md)). No tracked path or live file carries a former name;
+  historical records (dated docs, captures, vendored sources) keep the names of their time. Enforced by
+  `tests/arch/legacy-names.test.ts`.

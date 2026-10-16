@@ -1,19 +1,19 @@
 // Sign in with ChatGPT (plan usage): rules S1–S16 and T2–T4 of docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md.
 // Authorize parameters and order, exchange and refresh bodies: chatgpt.ts @ 35ef229454 (authorizeURL, exchange,
-// refresh), with `agent_name_hint` = inference-router (O4). A login re-authorizes the active registration with its
+// refresh), with `agent_name_hint` = accounts-proxy (O4). A login re-authorizes the active registration with its
 // issued client id; `--new` (AuthorizeInput.fresh) or no registration yet registers a new one through
 // `dynamic_agent_client`, whose callback carries the issued client id (S2, S9).
-import { activeAccount, TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
-import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { ClockPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { AGENT_NAME, AUTHORIZE_PATH, CALLBACK_PATH, REGISTRATION_CLIENT_ID, RESOURCE, SCOPES, TOKEN_PATH, USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens, type TokenEndpointResponse } from "@inference-router/provider-openai/domain/credential.ts";
-import { OpenAIOAuthPort, type IdTokenVerifierPort, type OpenAIIdentityPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+import { activeAccount, TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import type { AuthorizeInput, ExchangeInput } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { AGENT_NAME, AUTHORIZE_PATH, CALLBACK_PATH, REGISTRATION_CLIENT_ID, RESOURCE, SCOPES, TOKEN_PATH, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens, type TokenEndpointResponse } from "@accounts-proxy/provider-openai/domain/credential.ts";
+import { OpenAIOAuthPort, type IdTokenVerifierPort, type OpenAIIdentityPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 const PROVIDER = "openai";
 const TOKEN_HEADERS = { "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": USER_AGENT };

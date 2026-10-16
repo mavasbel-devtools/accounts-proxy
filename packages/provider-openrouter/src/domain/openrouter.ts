@@ -1,6 +1,6 @@
 // OpenRouter rules (rules document 2026-10-12-15-35-gateway-provider-rules.md §2, R1–R10). Pure.
-import { compactDetails, modalities, perMillion, type ModelCost, type ModelDetails } from "@inference-router/core/domain/model-details.ts";
-import { asArray, asObject, fieldsText, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
+import { compactDetails, modalities, perMillion, type ModelCost, type ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import { asArray, asObject, fieldsText, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export const API_BASE = "https://openrouter.ai/api/v1";
 /** R5: the browser page of the PKCE login. */
@@ -14,12 +14,12 @@ export const KEY_PATH = "/key";
 /** R4 */
 export const MODELS_PATH = "/models";
 /** R6: prefills the label of the key the login creates. */
-export const KEY_LABEL = "inference-router";
+export const KEY_LABEL = "accounts-proxy";
 /**
- * The router's internal marker for the headless login (R6): never sent; it makes the authorization URL omit
+ * The proxy's internal marker for the headless login (R6): never sent; it makes the authorization URL omit
  * `callback_url` and `state`, so the page shows the code to paste.
  */
-export const HEADLESS_REDIRECT = "urn:inference-router:openrouter:headless";
+export const HEADLESS_REDIRECT = "urn:accounts-proxy:openrouter:headless";
 
 /** R1–R3: bearer key on every endpoint; Chat, Responses and Messages for every model; no count_tokens. */
 export const OPENROUTER_SPEC: GatewaySpec = {

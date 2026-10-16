@@ -1,13 +1,13 @@
 // A gateway's model list (rule G5): the live list (kept in memory and stored for 24 h), else the stored copy, else the
 // built-in list generated from the committed vendor list. A live list is shown as the vendor answers it, even empty:
 // routing does not depend on it (a model the list does not describe is forwarded as sent, rule Z6).
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import type { ClockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { CATALOG_TTL_MS, isCatalogSnapshot, type CatalogSnapshot, type GatewayModel } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { GatewayCatalogPort, type GatewayCatalogSourcePort, type GatewayKeySessionPort, type GatewayListing } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { CATALOG_TTL_MS, isCatalogSnapshot, type CatalogSnapshot, type GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { GatewayCatalogPort, type GatewayCatalogSourcePort, type GatewayKeySessionPort, type GatewayListing } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
 
 export class GatewayCatalog extends GatewayCatalogPort {
   private memory: CatalogSnapshot | undefined;

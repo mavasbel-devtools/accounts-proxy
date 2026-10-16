@@ -1,8 +1,8 @@
 // P0-LIVE E5 (R1 option B): the antigravity control-plane answers the e2e replay needs as real evidence — the live
 // model catalog (Gemini, Claude and gpt-oss models with their real limits), the quota summary, loadCodeAssist and
-// fetchUserInfo — captured once through the router's own wiring, redacted and secret-scanned.
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/e5-control-plane.ts
-import { openLive, PACE_MS, sleep, writeCapture } from "@inference-router/scripts/evidence/live/harness.ts";
+// fetchUserInfo — captured once through the proxy's own wiring, redacted and secret-scanned.
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/e5-control-plane.ts
+import { openLive, PACE_MS, sleep, writeCapture } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const live = await openLive();
 const active = await live.antigravity.session.active();

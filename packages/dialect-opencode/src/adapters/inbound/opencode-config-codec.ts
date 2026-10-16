@@ -1,21 +1,21 @@
-// The router's models as an opencode v2 configuration (plan 2026-10-16 rules O1–O5; opencode v2.0.26
+// The proxy's models as an opencode v2 configuration (plan 2026-10-16 rules O1–O5; opencode v2.0.26
 // schema/src/config/provider.ts, core/src/models-dev.ts `modelInfo`, core/src/aisdk-native.ts `PACKAGES`,
-// core/src/wellknown.ts). One opencode provider `ir-<provider>` per router provider; each model names the router route
+// core/src/wellknown.ts). One opencode provider `ap-<provider>` per proxy provider; each model names the proxy route
 // of the format it is sent in, its limits, media, price and the variants opencode's own rules derive from its reasoning
 // controls. Fields no source states are left out: opencode then applies its defaults.
-import type { JsonObject, JsonValue } from "@inference-router/core/domain/json.ts";
-import type { DetailedCatalog, DetailedModel, ModelCost } from "@inference-router/core/domain/model-details.ts";
-import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import { OpencodeConfigPort, type OpencodeOrigin } from "@inference-router/core/ports/inbound/opencode.ts";
-import { ANTHROPIC_PACKAGE, GOOGLE_PACKAGE, OPENAI_COMPATIBLE_PACKAGE, OPENAI_PACKAGE, OPENROUTER_PACKAGE, resolveVariants, type OpencodePackage } from "@inference-router/dialect-opencode/adapters/inbound/opencode-variants.ts";
+import type { JsonObject, JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { DetailedCatalog, DetailedModel, ModelCost } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import { ANTHROPIC_PACKAGE, GOOGLE_PACKAGE, OPENAI_COMPATIBLE_PACKAGE, OPENAI_PACKAGE, OPENROUTER_PACKAGE, resolveVariants, type OpencodePackage } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-variants.ts";
 
 export const CONFIG_SCHEMA_URL = "https://opencode.ai/config.json";
-/** The variable opencode keeps the router token in (`auth.env`) and substitutes as `{env:…}` (config/variable.ts). */
-export const TOKEN_VARIABLE = "INFERENCE_ROUTER_TOKEN";
+/** The variable opencode keeps the proxy token in (`auth.env`) and substitutes as `{env:…}` (config/variable.ts). */
+export const TOKEN_VARIABLE = "ACCOUNTS_PROXY_TOKEN";
 export const CONFIG_PATH = "/opencode/config.json";
 /** opencode's default output limit (schema/src/model.ts `Info.default`), used by the variant rules when none is stated. */
 const DEFAULT_OUTPUT_LIMIT = 32_000;
-const LOSSY_HEADER = "x-router-lossy";
+const LOSSY_HEADER = "x-proxy-lossy";
 
 export const PROVIDER_NAMES: Readonly<Record<ProviderId, string>> = {
   claude: "Claude",
@@ -27,7 +27,7 @@ export const PROVIDER_NAMES: Readonly<Record<ProviderId, string>> = {
   "cheaper-inference": "Cheaper Inference",
 };
 
-/** Rule O2: the package and router route of each format. */
+/** Rule O2: the package and proxy route of each format. */
 const FORMAT_PACKAGE: Readonly<Record<WireFormat, { readonly package: OpencodePackage; readonly path: string }>> = {
   "anthropic-messages": { package: ANTHROPIC_PACKAGE, path: "/anthropic/v1" },
   "openai-responses": { package: OPENAI_PACKAGE, path: "/openai/v1" },
@@ -35,7 +35,7 @@ const FORMAT_PACKAGE: Readonly<Record<WireFormat, { readonly package: OpencodePa
   gemini: { package: GOOGLE_PACKAGE, path: "/gemini/v1beta" },
 };
 
-/** aisdk-native.ts `PACKAGES` for the AI SDK packages whose opencode package speaks a router format. */
+/** aisdk-native.ts `PACKAGES` for the AI SDK packages whose opencode package speaks a proxy format. */
 const AISDK_PACKAGE: Readonly<Record<string, { readonly package: OpencodePackage; readonly format: WireFormat }>> = {
   "@ai-sdk/anthropic": { package: ANTHROPIC_PACKAGE, format: "anthropic-messages" },
   "@ai-sdk/openai": { package: OPENAI_PACKAGE, format: "openai-responses" },
@@ -44,9 +44,9 @@ const AISDK_PACKAGE: Readonly<Record<string, { readonly package: OpencodePackage
   "@openrouter/ai-sdk-provider": { package: OPENROUTER_PACKAGE, format: "openai-chat" },
 };
 
-export const opencodeProviderId = (provider: ProviderId): string => `ir-${provider}`;
+export const opencodeProviderId = (provider: ProviderId): string => `ap-${provider}`;
 
-/** Rule O2: the reference's package when the router accepts its format for the model, else the model's first format. */
+/** Rule O2: the reference's package when the proxy accepts its format for the model, else the model's first format. */
 function connection(model: DetailedModel): { readonly package: OpencodePackage; readonly format: WireFormat } | undefined {
   const named = model.aiSdkPackage === undefined ? undefined : AISDK_PACKAGE[model.aiSdkPackage];
   if (named !== undefined && model.formats.includes(named.format)) return named;
@@ -126,7 +126,7 @@ export class OpencodeConfigCodec extends OpencodeConfigPort {
         if (entry !== undefined) models[model.model] = entry;
       }
       providers[id] = {
-        name: `Inference Router · ${PROVIDER_NAMES[catalog.provider]}`,
+        name: `Accounts Proxy · ${PROVIDER_NAMES[catalog.provider]}`,
         settings: { apiKey: `{env:${TOKEN_VARIABLE}}` },
         // OpenAI plan usage refuses `max_output_tokens`, which opencode always sends (live validation F5).
         ...(catalog.provider === "openai" ? { headers: { [LOSSY_HEADER]: "1" } } : {}),

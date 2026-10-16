@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "inference-router",
+      "name": "accounts-proxy",
       "devDependencies": {
         "@babel/core": "8.0.1",
         "@babel/plugin-transform-typescript": "8.0.1",
@@ -18,167 +18,167 @@
         "typescript": "5.9.3",
       },
     },
-    "apps/router": {
-      "name": "@inference-router/router",
+    "apps/proxy": {
+      "name": "@accounts-proxy/proxy",
       "version": "0.1.0",
       "bin": {
-        "inference-router": "./src/main/cli.ts",
+        "accounts-proxy": "./src/main/cli.ts",
       },
       "dependencies": {
-        "@inference-router/core": "workspace:*",
-        "@inference-router/dialect-anthropic": "workspace:*",
-        "@inference-router/dialect-gemini": "workspace:*",
-        "@inference-router/dialect-openai": "workspace:*",
-        "@inference-router/dialect-opencode": "workspace:*",
-        "@inference-router/provider-antigravity": "workspace:*",
-        "@inference-router/provider-cheaper-inference": "workspace:*",
-        "@inference-router/provider-claude": "workspace:*",
-        "@inference-router/provider-gateway": "workspace:*",
-        "@inference-router/provider-openai": "workspace:*",
-        "@inference-router/provider-opencode": "workspace:*",
-        "@inference-router/provider-openrouter": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/dialect-anthropic": "workspace:*",
+        "@accounts-proxy/dialect-gemini": "workspace:*",
+        "@accounts-proxy/dialect-openai": "workspace:*",
+        "@accounts-proxy/dialect-opencode": "workspace:*",
+        "@accounts-proxy/provider-antigravity": "workspace:*",
+        "@accounts-proxy/provider-cheaper-inference": "workspace:*",
+        "@accounts-proxy/provider-claude": "workspace:*",
+        "@accounts-proxy/provider-gateway": "workspace:*",
+        "@accounts-proxy/provider-openai": "workspace:*",
+        "@accounts-proxy/provider-opencode": "workspace:*",
+        "@accounts-proxy/provider-openrouter": "workspace:*",
       },
       "devDependencies": {
         "@anthropic-ai/sdk": "0.133.0",
         "@google/genai": "2.28.0",
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
         "openai": "7.32.0",
       },
     },
     "packages/core": {
-      "name": "@inference-router/core",
+      "name": "@accounts-proxy/core",
       "version": "0.1.0",
     },
     "packages/dialect-anthropic": {
-      "name": "@inference-router/dialect-anthropic",
+      "name": "@accounts-proxy/dialect-anthropic",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
     },
     "packages/dialect-gemini": {
-      "name": "@inference-router/dialect-gemini",
+      "name": "@accounts-proxy/dialect-gemini",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
     },
     "packages/dialect-openai": {
-      "name": "@inference-router/dialect-openai",
+      "name": "@accounts-proxy/dialect-openai",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
     },
     "packages/dialect-opencode": {
-      "name": "@inference-router/dialect-opencode",
+      "name": "@accounts-proxy/dialect-opencode",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-antigravity": {
-      "name": "@inference-router/provider-antigravity",
+      "name": "@accounts-proxy/provider-antigravity",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-cheaper-inference": {
-      "name": "@inference-router/provider-cheaper-inference",
+      "name": "@accounts-proxy/provider-cheaper-inference",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
-        "@inference-router/provider-gateway": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/provider-gateway": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-claude": {
-      "name": "@inference-router/provider-claude",
+      "name": "@accounts-proxy/provider-claude",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-gateway": {
-      "name": "@inference-router/provider-gateway",
+      "name": "@accounts-proxy/provider-gateway",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-openai": {
-      "name": "@inference-router/provider-openai",
+      "name": "@accounts-proxy/provider-openai",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-opencode": {
-      "name": "@inference-router/provider-opencode",
+      "name": "@accounts-proxy/provider-opencode",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
-        "@inference-router/provider-gateway": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/provider-gateway": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "packages/provider-openrouter": {
-      "name": "@inference-router/provider-openrouter",
+      "name": "@accounts-proxy/provider-openrouter",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
-        "@inference-router/provider-gateway": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/provider-gateway": "workspace:*",
       },
       "devDependencies": {
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
       },
     },
     "scripts": {
-      "name": "@inference-router/scripts",
+      "name": "@accounts-proxy/scripts",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
-        "@inference-router/provider-antigravity": "workspace:*",
-        "@inference-router/provider-cheaper-inference": "workspace:*",
-        "@inference-router/provider-claude": "workspace:*",
-        "@inference-router/provider-gateway": "workspace:*",
-        "@inference-router/provider-openai": "workspace:*",
-        "@inference-router/provider-opencode": "workspace:*",
-        "@inference-router/provider-openrouter": "workspace:*",
-        "@inference-router/router": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/provider-antigravity": "workspace:*",
+        "@accounts-proxy/provider-cheaper-inference": "workspace:*",
+        "@accounts-proxy/provider-claude": "workspace:*",
+        "@accounts-proxy/provider-gateway": "workspace:*",
+        "@accounts-proxy/provider-openai": "workspace:*",
+        "@accounts-proxy/provider-opencode": "workspace:*",
+        "@accounts-proxy/provider-openrouter": "workspace:*",
+        "@accounts-proxy/proxy": "workspace:*",
       },
       "devDependencies": {
         "@anthropic-ai/sdk": "0.133.0",
         "@google/genai": "2.28.0",
-        "@inference-router/test-support": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
         "openai": "7.32.0",
       },
     },
     "tests/support": {
-      "name": "@inference-router/test-support",
+      "name": "@accounts-proxy/test-support",
       "version": "0.1.0",
       "dependencies": {
-        "@inference-router/core": "workspace:*",
+        "@accounts-proxy/core": "workspace:*",
       },
     },
   },
@@ -239,35 +239,35 @@
 
     "@google/genai": ["@google/genai@2.28.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"] }, "sha512-hyNAJj+ywu3L46qlZod6KO/JvcT3QONz6VCiPevC/FWOjAD+LQb7DMLUoV8vzoLpt61Q0ruQX99iqbxEjPJWmw=="],
 
-    "@inference-router/core": ["@inference-router/core@workspace:packages/core"],
+    "@accounts-proxy/core": ["@accounts-proxy/core@workspace:packages/core"],
 
-    "@inference-router/dialect-anthropic": ["@inference-router/dialect-anthropic@workspace:packages/dialect-anthropic"],
+    "@accounts-proxy/dialect-anthropic": ["@accounts-proxy/dialect-anthropic@workspace:packages/dialect-anthropic"],
 
-    "@inference-router/dialect-gemini": ["@inference-router/dialect-gemini@workspace:packages/dialect-gemini"],
+    "@accounts-proxy/dialect-gemini": ["@accounts-proxy/dialect-gemini@workspace:packages/dialect-gemini"],
 
-    "@inference-router/dialect-openai": ["@inference-router/dialect-openai@workspace:packages/dialect-openai"],
+    "@accounts-proxy/dialect-openai": ["@accounts-proxy/dialect-openai@workspace:packages/dialect-openai"],
 
-    "@inference-router/dialect-opencode": ["@inference-router/dialect-opencode@workspace:packages/dialect-opencode"],
+    "@accounts-proxy/dialect-opencode": ["@accounts-proxy/dialect-opencode@workspace:packages/dialect-opencode"],
 
-    "@inference-router/provider-antigravity": ["@inference-router/provider-antigravity@workspace:packages/provider-antigravity"],
+    "@accounts-proxy/provider-antigravity": ["@accounts-proxy/provider-antigravity@workspace:packages/provider-antigravity"],
 
-    "@inference-router/provider-cheaper-inference": ["@inference-router/provider-cheaper-inference@workspace:packages/provider-cheaper-inference"],
+    "@accounts-proxy/provider-cheaper-inference": ["@accounts-proxy/provider-cheaper-inference@workspace:packages/provider-cheaper-inference"],
 
-    "@inference-router/provider-claude": ["@inference-router/provider-claude@workspace:packages/provider-claude"],
+    "@accounts-proxy/provider-claude": ["@accounts-proxy/provider-claude@workspace:packages/provider-claude"],
 
-    "@inference-router/provider-gateway": ["@inference-router/provider-gateway@workspace:packages/provider-gateway"],
+    "@accounts-proxy/provider-gateway": ["@accounts-proxy/provider-gateway@workspace:packages/provider-gateway"],
 
-    "@inference-router/provider-openai": ["@inference-router/provider-openai@workspace:packages/provider-openai"],
+    "@accounts-proxy/provider-openai": ["@accounts-proxy/provider-openai@workspace:packages/provider-openai"],
 
-    "@inference-router/provider-opencode": ["@inference-router/provider-opencode@workspace:packages/provider-opencode"],
+    "@accounts-proxy/provider-opencode": ["@accounts-proxy/provider-opencode@workspace:packages/provider-opencode"],
 
-    "@inference-router/provider-openrouter": ["@inference-router/provider-openrouter@workspace:packages/provider-openrouter"],
+    "@accounts-proxy/provider-openrouter": ["@accounts-proxy/provider-openrouter@workspace:packages/provider-openrouter"],
 
-    "@inference-router/router": ["@inference-router/router@workspace:apps/router"],
+    "@accounts-proxy/proxy": ["@accounts-proxy/proxy@workspace:apps/proxy"],
 
-    "@inference-router/scripts": ["@inference-router/scripts@workspace:scripts"],
+    "@accounts-proxy/scripts": ["@accounts-proxy/scripts@workspace:scripts"],
 
-    "@inference-router/test-support": ["@inference-router/test-support@workspace:tests/support"],
+    "@accounts-proxy/test-support": ["@accounts-proxy/test-support@workspace:tests/support"],
 
     "@isaacs/cliui": ["@isaacs/cliui@8.0.2", "", { "dependencies": { "string-width": "^5.1.2", "string-width-cjs": "npm:string-width@^4.2.0", "strip-ansi": "^7.0.1", "strip-ansi-cjs": "npm:strip-ansi@^6.0.1", "wrap-ansi": "^8.1.0", "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0" } }, "sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA=="],
 

@@ -1,6 +1,6 @@
-# inference-router
+# accounts-proxy
 
-A local LLM router. It exposes **Anthropic Messages**, **OpenAI Chat Completions**, **OpenAI Responses** and **Gemini
+(Renamed on 2026-10-16; [record](docs/reference/2026-10-16-14-40-project-rename.md).) A local LLM proxy. It exposes **Anthropic Messages**, **OpenAI Chat Completions**, **OpenAI Responses** and **Gemini
 generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call the models of seven providers directly:
 
 | Provider | Sign-in | Upstream | Native formats |
@@ -14,7 +14,7 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 | **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
 > **Status: P4.6 with amendment A (OpenCode Console), live-validated.** Every provider serves its native formats; a
-> request in another format answers 400 `unsupported_feature`: the router does not translate between formats (P5
+> request in another format answers 400 `unsupported_feature`: the proxy does not translate between formats (P5
 > cancelled 2026-10-14, [plan](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md)). All seven
 > providers were validated live on 2026-10-13 with the official SDKs, Claude Code and opencode, MCP tools included
 > ([findings](docs/reference/2026-10-13-02-52-live-validation-findings.md)). Plans:
@@ -30,40 +30,40 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 
 ## Configuration
 
-The router keeps everything in its own data directory, `~/.local/share/inference-router/` (override:
-`INFERENCE_ROUTER_HOME`). It never reads or writes Claude Code's or the plugins' files.
+The proxy keeps everything in its own data directory, `~/.local/share/accounts-proxy/` (override:
+`ACCOUNTS_PROXY_HOME`). It never reads or writes Claude Code's or the plugins' files.
 
 | Path | Content |
 |---|---|
-| `router.yaml` | configuration; example: [config/router.example.yaml](config/router.example.yaml). No file = every provider disabled. Unknown keys are errors. |
-| `token.json` | the router token clients present (created on first `serve` or `token`, mode 0600) |
-| `accounts-<provider>.json` | the router's own accounts, tokens and API keys (atomic writes, mode 0600); `opencode-go` uses `accounts-opencode.json` |
+| `proxy.yaml` | configuration; example: [config/proxy.example.yaml](config/proxy.example.yaml). No file = every provider disabled. Unknown keys are errors. |
+| `token.json` | the proxy token clients present (created on first `serve` or `token`, mode 0600) |
+| `accounts-<provider>.json` | the proxy's own accounts, tokens and API keys (atomic writes, mode 0600); `opencode-go` uses `accounts-opencode.json` |
 | `state/` | per-install provider state (device and session ids, catalog caches, the reference model catalog copy `model-reference.json`, thought signatures) |
 | `locks/` | cross-process lock files (token refresh) |
-| `logs/router.log` | the log; never contains tokens |
+| `logs/proxy.log` | the log; never contains tokens |
 
 ## Command line
 
-`bun run router <command>` (the workspace also declares the `inference-router` bin):
+`bun run proxy <command>` (the workspace also declares the `accounts-proxy` bin):
 
 | Command | What it does |
 |---|---|
-| `login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]` | Browser sign-in for `claude`, `antigravity`, `openai`, `openrouter`: a loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback (`claude`, `openrouter`). `--new` registers another ChatGPT account (`openai`). `opencode` / `opencode-go`: the OpenCode Console device login (the code is printed, the approval page opened, the router polls until you approve). `cheaper-inference`: the API key at a hidden prompt. `--key` (gateways): enter an API key at a hidden prompt instead (an OpenCode service-account key `oc_sk_…`, an OpenRouter key). `--from-opencode` (gateways): import the API key OpenCode stores in its `auth.json` once (keys only, never OpenCode's sign-ins). Keys are checked where the vendor documents a way. |
+| `login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]` | Browser sign-in for `claude`, `antigravity`, `openai`, `openrouter`: a loopback listener on `127.0.0.1` captures the redirect (default timeout 300 s). `--manual` is the headless paste-code fallback (`claude`, `openrouter`). `--new` registers another ChatGPT account (`openai`). `opencode` / `opencode-go`: the OpenCode Console device login (the code is printed, the approval page opened, the proxy polls until you approve). `cheaper-inference`: the API key at a hidden prompt. `--key` (gateways): enter an API key at a hidden prompt instead (an OpenCode service-account key `oc_sk_…`, an OpenRouter key). `--from-opencode` (gateways): import the API key OpenCode stores in its `auth.json` once (keys only, never OpenCode's sign-ins). Keys are checked where the vendor documents a way. |
 | `account list <provider>` | stored accounts; `*` marks the active one |
-| `account use <provider> <account-id>` | choose the active account (the router never switches accounts by itself) |
+| `account use <provider> <account-id>` | choose the active account (the proxy never switches accounts by itself) |
 | `quota <provider>` | remaining quota as reported by the provider: `antigravity`, `openrouter` (key usage and limit), `cheaper-inference` (wallet) |
 | `models [<provider>] [--json]` | each provider's model catalog with advertised limits, and where it came from (live, stored copy, or the built-in list; a provider that cannot list, e.g. without an account, is `unavailable`); `--json`: every model in detail (formats, limits, media, tools, reasoning options, price, …), each field with its source |
 | `opencode-config` | prints the opencode v2 configuration of every model (the same document as `GET /opencode/config.json`) |
 | `serve` | runs the daemon in the foreground on `127.0.0.1:<port>` (Ctrl-C or SIGTERM stops it; in-flight responses get 10 s) |
-| `token` | prints the router token (created on first use) |
+| `token` | prints the proxy token (created on first use) |
 | `status` | checks whether a daemon answers `GET /health` on the configured port (exit 1 when not) |
 
 Exit codes: 0 success, 1 the command failed, 2 usage error.
 
 ## Using the daemon
 
-Start it with `bun run router serve`, then point a stock SDK at it with the router token (`bun run router token`) as
-the API key. Models are addressed as `<provider>/<model>` (or an alias from `router.yaml`).
+Start it with `bun run proxy serve`, then point a stock SDK at it with the proxy token (`bun run proxy token`) as
+the API key. Models are addressed as `<provider>/<model>` (or an alias from `proxy.yaml`).
 
 ```ts
 import Anthropic from "@anthropic-ai/sdk";
@@ -86,16 +86,16 @@ Coding agents work the same way (both measured live, L3 of the
 - **Claude Code** (Anthropic Messages): `ANTHROPIC_BASE_URL=http://127.0.0.1:4141/anthropic`, `ANTHROPIC_API_KEY=<token>`,
   `--model claude/claude-haiku-4-5-20251001` (or any Messages model: `openrouter/…`, `opencode/claude-haiku-4-5`,
   `opencode-go/qwen3.8-flash`, `cheaper-inference/…`; set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to a routable model too).
-- **opencode** (v2): `opencode auth login http://127.0.0.1:4141` reads the router's `/.well-known/opencode`, runs
-  `inference-router token` for the key and loads `GET /opencode/config.json`: one provider `ir-<provider>` per router
+- **opencode** (v2): `opencode auth login http://127.0.0.1:4141` reads the proxy's `/.well-known/opencode`, runs
+  `accounts-proxy token` for the key and loads `GET /opencode/config.json`: one provider `ap-<provider>` per proxy
   provider, every model with its route, limits, media, price and opencode's own variants; `claude` and `openai` models
   also switch off the opencode features those providers refuse (`compatibility.supportsThinkingBlockBinding`,
   `supportsEffortUpdates`), so changing a variant mid-session works
-  ([rules O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md)). `bun run router opencode-config` prints the
-  same document for a config file. By hand: one custom provider per format, `options.baseURL` at the router and
+  ([rules O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md)). `bun run proxy opencode-config` prints the
+  same document for a config file. By hand: one custom provider per format, `options.baseURL` at the proxy and
   `options.apiKey` the token:
   `@ai-sdk/openai-compatible` → `http://127.0.0.1:4141/openai/v1` (Chat), `@ai-sdk/openai` → the same URL (Responses;
-  for `openai/*` add `options.headers: {"x-router-lossy": "1"}`, because the AI SDK sends `max_output_tokens`, which
+  for `openai/*` add `options.headers: {"x-proxy-lossy": "1"}`, because the AI SDK sends `max_output_tokens`, which
   ChatGPT plan usage refuses), `@ai-sdk/anthropic` → `http://127.0.0.1:4141/anthropic/v1` (for `claude/*` set the
   model's `compatibility` as rule O6 does, or Claude 5.1+ requests answer 400 `unsupported_feature`), `@ai-sdk/google` →
   `http://127.0.0.1:4141/gemini/v1beta`. Model ids are `<provider>/<model>`.
@@ -105,7 +105,7 @@ Coding agents work the same way (both measured live, L3 of the
 | `GET /health` | | `{status, providers}`; no token |
 | `GET /.well-known/opencode` | | the manifest of `opencode auth login <origin>` (token command, configuration URL); no token |
 | `GET /opencode/config.json` | | the opencode v2 configuration of every model |
-| `GET /router/v1/models` (`?provider=<id>`) | | every enabled provider's models in detail, each field with its source (`provider:<id>` or `models.opencode.ai:<provider>/<model>`) |
+| `GET /proxy/v1/models` (`?provider=<id>`) | | every enabled provider's models in detail, each field with its source (`provider:<id>` or `models.opencode.ai:<provider>/<model>`) |
 | `POST /anthropic/v1/messages`, `/anthropic/v1/messages/count_tokens` | Anthropic Messages | `claude/*`; `openrouter/*`; the Messages models of `opencode`, `opencode-go`, `cheaper-inference` (`count_tokens`: `claude`, `cheaper-inference`) |
 | `POST /openai/v1/chat/completions` | OpenAI Chat | `openrouter/*`; the Chat models of `opencode`, `opencode-go`, `cheaper-inference` |
 | `POST /openai/v1/responses` | OpenAI Responses | `openai/*`; `openrouter/*`; the Responses models of the other gateways |
@@ -118,20 +118,20 @@ formats the vendor's list does not state is forwarded in the client's format, an
 The token is accepted as `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `?key=`. Errors use each dialect's
 own error shape; upstream errors on the native cells pass through with their status, body and `retry-after`.
 
-Router errors:
+Proxy errors:
 
 | Status | Code | When |
 |---|---|---|
 | 400 | `invalid_request`, `unsupported_feature` | the request cannot be served as sent |
-| 401 | `unauthorized` | missing or wrong router token |
+| 401 | `unauthorized` | missing or wrong proxy token |
 | 401 | `provider_auth_required` | no usable login: no account, an unreadable one, or one whose refresh was rejected (`account list` shows it as `[needs login: …]` until `login <provider>`) |
 | 404 | `unknown_model`, `unknown_account`, `not_found` | unknown model address, account or route |
 | 413 | `payload_too_large` | request body over the limit |
 | 429 | `quota_exhausted` | provider quota, with `retry-after` when known |
 | 502 | `upstream_unreachable` | no HTTP answer from the provider (DNS, refused, reset) |
-| 503 | `provider_disabled` | the provider is not enabled in `router.yaml` |
+| 503 | `provider_disabled` | the provider is not enabled in `proxy.yaml` |
 | 504 | `upstream_timeout` | the provider sent nothing for the idle timeout |
-| 500 | `internal_error` | a router defect (details in the log) |
+| 500 | `internal_error` | a proxy defect (details in the log) |
 
 Sign-in sessions (plan v4 Phase H): an access token is renewed 2 minutes before it expires, once for all concurrent
 requests and processes. A renewal never undoes a concurrent `login` or `account use` (every account-file write is a
@@ -139,13 +139,13 @@ locked read-change-write), each token call is bounded by 30 s, and a renewal tha
 unreachable) keeps using a token that is still valid, retrying after 30 s. On `claude`, an upstream 401 renews the
 token once and resends the request before anything reaches the client.
 
-Router headers:
+Proxy headers:
 
 | Header | Direction | Meaning |
 |---|---|---|
-| `x-router-lossy: 1` | request | drop (instead of rejecting with 400 `unsupported_feature`) what the target cannot carry |
-| `x-router-dropped` | response | every feature or element removed from the request, comma-separated — lossy drops and the always-applied wire laws (unsigned Gemini function calls, empty contents, trailing model turns) |
-| `x-router-models-source` | response (model lists) | one `provider=source` pair per provider, e.g. `claude=cache,antigravity=live`; source is `live`, `cache` or `static` |
+| `x-proxy-lossy: 1` | request | drop (instead of rejecting with 400 `unsupported_feature`) what the target cannot carry |
+| `x-proxy-dropped` | response | every feature or element removed from the request, comma-separated — lossy drops and the always-applied wire laws (unsigned Gemini function calls, empty contents, trailing model turns) |
+| `x-proxy-models-source` | response (model lists) | one `provider=source` pair per provider, e.g. `claude=cache,antigravity=live`; source is `live`, `cache` or `static` |
 
 Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-23-17-p0-live-findings.md)):
 
@@ -165,12 +165,12 @@ Notes from the live measurements ([P0-LIVE findings](docs/reference/2026-10-10-2
   Inference's own lists (OpenCode formats from models.dev), live → stored copy (24 h) → built-in copy of the committed
   lists. OpenCode's keyless free tier answers 403 `FreeTierError` "can only be used from within OpenCode" to any other
   client, so `opencode` needs a sign-in or a key.
-- **OpenCode Console** (rules §3a): requests also carry the router's `User-Agent`, the workspace's headers from the
+- **OpenCode Console** (rules §3a): requests also carry the proxy's `User-Agent`, the workspace's headers from the
   Console config (`x-opencode-org-id`) and the client's `x-opencode-session`. OpenCode Go refuses a request without
-  it (400 `MissingSessionID`); when a client sends none (Claude Code does not), the router sends the conversation's own
-  id (Claude Code's session, the Responses `prompt_cache_key`) or a stable `rtr_…` id derived from the conversation's
+  it (400 `MissingSessionID`); when a client sends none (Claude Code does not), the proxy sends the conversation's own
+  id (Claude Code's session, the Responses `prompt_cache_key`) or a stable `ap_…` id derived from the conversation's
   first user turn (rule Z24, live F3).
-- **openai:** ChatGPT plan usage ends a stream with an empty `response.output`; the router fills it with the streamed
+- **openai:** ChatGPT plan usage ends a stream with an empty `response.output`; the proxy fills it with the streamed
   items, so non-streamed answers and the SDKs' `finalResponse()` carry the output (rule I6, live F1).
 - **Model-list fields the catalogs do not have** are neutral markers, never invented values: Antigravity models list
   `created_at: 1970-01-01T00:00:00Z` (Anthropic shape) and `created: 0` (OpenAI shape); Gemini-shape `version` is the
@@ -196,8 +196,8 @@ flowchart LR
     O[OpenAI SDK / tools]
     G[Google GenAI SDK]
   end
-  subgraph apps/router
-    H[NodeHttpServer + RouteHandler, router token]
+  subgraph apps/proxy
+    H[NodeHttpServer + RouteHandler, proxy token]
     S[Application services]
     C[composition root]
   end
@@ -237,19 +237,19 @@ Workspaces:
 
 | Workspace | Directory | Role |
 |---|---|---|
-| `@inference-router/core` | `packages/core` | domain and ports |
-| `@inference-router/provider-claude` | `packages/provider-claude` | Claude subscription provider |
-| `@inference-router/provider-antigravity` | `packages/provider-antigravity` | Antigravity provider |
-| `@inference-router/provider-openai` | `packages/provider-openai` | OpenAI provider (Sign in with ChatGPT plan usage) |
-| `@inference-router/provider-gateway` | `packages/provider-gateway` | shared base of the API-key gateways (native cells, catalogs, key sessions and logins) |
-| `@inference-router/provider-{openrouter,opencode,cheaper-inference}` | `packages/provider-*` | the gateway vendors' rules, logins, catalogs and quota |
-| `@inference-router/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: router errors and model lists |
-| `@inference-router/dialect-opencode` | `packages/dialect-opencode` | the opencode v2 configuration and well-known manifest; opencode's variant rules |
-| `@inference-router/router` | `apps/router` | application, adapters, composition, CLI |
-| `@inference-router/test-support` | `tests/support` | shared test doubles, guarded temp directories, e2e replay upstreams and process runner |
-| `@inference-router/scripts` | `scripts` | release gate and evidence scripts |
+| `@accounts-proxy/core` | `packages/core` | domain and ports |
+| `@accounts-proxy/provider-claude` | `packages/provider-claude` | Claude subscription provider |
+| `@accounts-proxy/provider-antigravity` | `packages/provider-antigravity` | Antigravity provider |
+| `@accounts-proxy/provider-openai` | `packages/provider-openai` | OpenAI provider (Sign in with ChatGPT plan usage) |
+| `@accounts-proxy/provider-gateway` | `packages/provider-gateway` | shared base of the API-key gateways (native cells, catalogs, key sessions and logins) |
+| `@accounts-proxy/provider-{openrouter,opencode,cheaper-inference}` | `packages/provider-*` | the gateway vendors' rules, logins, catalogs and quota |
+| `@accounts-proxy/dialect-{anthropic,openai,gemini}` | `packages/dialect-*` | dialect codecs: proxy errors and model lists |
+| `@accounts-proxy/dialect-opencode` | `packages/dialect-opencode` | the opencode v2 configuration and well-known manifest; opencode's variant rules |
+| `@accounts-proxy/proxy` | `apps/proxy` | application, adapters, composition, CLI |
+| `@accounts-proxy/test-support` | `tests/support` | shared test doubles, guarded temp directories, e2e replay upstreams and process runner |
+| `@accounts-proxy/scripts` | `scripts` | release gate and evidence scripts |
 
-Every import of the repository's own code uses the workspace name, `@inference-router/<workspace>/<subpath>.ts`,
+Every import of the repository's own code uses the workspace name, `@accounts-proxy/<workspace>/<subpath>.ts`,
 also inside one workspace. Relative imports are rejected by the architecture gate.
 
 ## Development
@@ -262,7 +262,7 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run coverage` | same set under istanbul; fails below 100% lines/statements/functions/branches or if a source file is never loaded |
 | `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; the deferral list is empty: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
-| `INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts` | the live matrix: every provider's native cells through the daemon with the official SDKs (about 80 small requests; `--only=`, `--scenarios=`) |
+| `ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts` | the live matrix: every provider's native cells through the daemon with the official SDKs (about 80 small requests; `--only=`, `--scenarios=`) |
 | `bun run verify` | the full release gate |
 | `bun run fetch:specs` | re-fetch the official wire specs into `docs/reference/specs/` |
 | `bun scripts/evidence/gateway-snapshots.ts` | regenerate the gateways' built-in model lists from the committed vendor lists |

@@ -3,7 +3,7 @@
 //     and checked against the layer matrix. Type-only imports are checked too: a type dependency is a dependency.
 //  2. Aliases: no relative import anywhere in the repository's own TypeScript (packages/*/{src,tests},
 //     apps/*/{src,tests}, tests/, scripts/); the only exclusion is the byte-identical vendored parity references
-//     (packages/*/tests/reference/**). Every `@inference-router/<workspace>/<subpath>` specifier must resolve to a
+//     (packages/*/tests/reference/**). Every `@accounts-proxy/<workspace>/<subpath>` specifier must resolve to a
 //     file through that workspace's `exports["./*"]`, and the importing workspace must be the target itself or
 //     declare it (Bun 1.4.2's isolated linker links only declared workspace dependencies).
 import { describe, expect, test } from "bun:test";
@@ -117,7 +117,7 @@ export function aliasProblems(file: string, source: string, spaces: readonly Wor
   const problems: string[] = [];
   for (const { fileName: specifier } of ts.preProcessFile(source, true, true).importedFiles) {
     if (specifier.startsWith(".")) {
-      problems.push(`${where}: relative import ${specifier} (use @inference-router/<workspace>/<subpath>)`);
+      problems.push(`${where}: relative import ${specifier} (use @accounts-proxy/<workspace>/<subpath>)`);
       continue;
     }
     const resolved = resolveImport(file, specifier, spaces);
@@ -205,41 +205,41 @@ describe("architecture law", () => {
   test("the alias law reports relative, unresolvable and undeclared imports (gate self-test)", () => {
     const spaces = workspaces();
     expect(spaces.map((s) => s.name).sort()).toEqual([
-      "@inference-router/core",
-      "@inference-router/dialect-anthropic",
-      "@inference-router/dialect-gemini",
-      "@inference-router/dialect-openai",
-      "@inference-router/dialect-opencode",
-      "@inference-router/provider-antigravity",
-      "@inference-router/provider-cheaper-inference",
-      "@inference-router/provider-claude",
-      "@inference-router/provider-gateway",
-      "@inference-router/provider-openai",
-      "@inference-router/provider-opencode",
-      "@inference-router/provider-openrouter",
-      "@inference-router/router",
-      "@inference-router/scripts",
-      "@inference-router/test-support",
+      "@accounts-proxy/core",
+      "@accounts-proxy/dialect-anthropic",
+      "@accounts-proxy/dialect-gemini",
+      "@accounts-proxy/dialect-openai",
+      "@accounts-proxy/dialect-opencode",
+      "@accounts-proxy/provider-antigravity",
+      "@accounts-proxy/provider-cheaper-inference",
+      "@accounts-proxy/provider-claude",
+      "@accounts-proxy/provider-gateway",
+      "@accounts-proxy/provider-openai",
+      "@accounts-proxy/provider-opencode",
+      "@accounts-proxy/provider-openrouter",
+      "@accounts-proxy/proxy",
+      "@accounts-proxy/scripts",
+      "@accounts-proxy/test-support",
     ]);
     const coreTest = join(root, "packages", "core", "tests", "unit", "synthetic.test.ts");
     expect(aliasProblems(coreTest, 'import { x } from "../../src/domain/json.ts";', spaces)).toEqual([
-      "packages/core/tests/unit/synthetic.test.ts: relative import ../../src/domain/json.ts (use @inference-router/<workspace>/<subpath>)",
+      "packages/core/tests/unit/synthetic.test.ts: relative import ../../src/domain/json.ts (use @accounts-proxy/<workspace>/<subpath>)",
     ]);
     expect(aliasProblems(coreTest, 'export * from "./sibling.ts";\nconst m = await import("../x.ts");', spaces)).toHaveLength(2);
-    expect(aliasProblems(coreTest, 'import { x } from "@inference-router/core/domain/nope.ts";', spaces)[0]).toContain("unresolvable import");
-    expect(aliasProblems(coreTest, 'import { x } from "@inference-router/core";', spaces)[0]).toContain("unresolvable import");
-    expect(aliasProblems(coreTest, 'import { x } from "@inference-router/router/composition/container.ts";', spaces)).toEqual([
-      "packages/core/tests/unit/synthetic.test.ts: imports @inference-router/router without declaring it in @inference-router/core package.json",
+    expect(aliasProblems(coreTest, 'import { x } from "@accounts-proxy/core/domain/nope.ts";', spaces)[0]).toContain("unresolvable import");
+    expect(aliasProblems(coreTest, 'import { x } from "@accounts-proxy/core";', spaces)[0]).toContain("unresolvable import");
+    expect(aliasProblems(coreTest, 'import { x } from "@accounts-proxy/proxy/composition/container.ts";', spaces)).toEqual([
+      "packages/core/tests/unit/synthetic.test.ts: imports @accounts-proxy/proxy without declaring it in @accounts-proxy/core package.json",
     ]);
-    expect(aliasProblems(join(root, "tests", "arch", "synthetic.test.ts"), 'import "@inference-router/core/domain/json.ts";', spaces)[0]).toContain("without declaring it in the root package.json");
-    expect(aliasProblems(coreTest, 'import { x } from "@inference-router/core/domain/json.ts";\nimport ts from "typescript";', spaces)).toEqual([]);
+    expect(aliasProblems(join(root, "tests", "arch", "synthetic.test.ts"), 'import "@accounts-proxy/core/domain/json.ts";', spaces)[0]).toContain("without declaring it in the root package.json");
+    expect(aliasProblems(coreTest, 'import { x } from "@accounts-proxy/core/domain/json.ts";\nimport ts from "typescript";', spaces)).toEqual([]);
     const providerTest = join(root, "packages", "provider-claude", "tests", "unit", "synthetic.test.ts");
-    expect(aliasProblems(providerTest, 'import { FixedClock } from "@inference-router/test-support/fakes.ts";', spaces)).toEqual([]);
+    expect(aliasProblems(providerTest, 'import { FixedClock } from "@accounts-proxy/test-support/fakes.ts";', spaces)).toEqual([]);
   });
 
   test("alias scope: own code everywhere, never the vendored references", () => {
     expect(aliasScope(join(root, "packages", "core", "src", "domain", "x.ts"))).toBe(true);
-    expect(aliasScope(join(root, "apps", "router", "tests", "unit", "x.ts"))).toBe(true);
+    expect(aliasScope(join(root, "apps", "proxy", "tests", "unit", "x.ts"))).toBe(true);
     expect(aliasScope(join(root, "tests", "support", "fakes.ts"))).toBe(true);
     expect(aliasScope(join(root, "scripts", "gate", "verify.ts"))).toBe(true);
     expect(aliasScope(join(root, "packages", "provider-claude", "tests", "reference", "plugin-6292741", "domain", "x.ts"))).toBe(false);

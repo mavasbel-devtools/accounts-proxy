@@ -1,13 +1,13 @@
-// Anthropic Messages dialect: the router's own errors and the model list in Anthropic's shapes.
+// Anthropic Messages dialect: the proxy's own errors and the model list in Anthropic's shapes.
 //   errors  `{type:"error", error:{type, message}}`, `type` from the documented status table
-//           (docs/reference/specs/anthropic-errors.md §HTTP errors); the table holds every 4xx status the router emits,
+//           (docs/reference/specs/anthropic-errors.md §HTTP errors); the table holds every 4xx status the proxy emits,
 //           so a status outside it is a 5xx → api_error.
 //   models  ListModels (anthropic-models-list.md §Returns): data[] of ModelInfo, first_id, has_more, last_id.
 //           `created_at` is required; a catalog without dates (Antigravity) gets the neutral marker
 //           1970-01-01T00:00:00Z, never an invented date (decision Q5).
-import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
-import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
-import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
+import { errorHeaders, type ProxyError } from "@accounts-proxy/core/domain/errors.ts";
+import type { DetailedCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import { DialectCodecPort, type EncodedResponse } from "@accounts-proxy/core/ports/inbound/dialect.ts";
 
 const ERROR_TYPES: Readonly<Record<number, string>> = {
   400: "invalid_request_error",
@@ -35,7 +35,7 @@ export class AnthropicCodec extends DialectCodecPort {
   readonly dialect = "anthropic";
   readonly prefix = "/anthropic";
 
-  error(error: RouterError): EncodedResponse {
+  error(error: ProxyError): EncodedResponse {
     return {
       status: error.httpStatus,
       headers: errorHeaders(error),

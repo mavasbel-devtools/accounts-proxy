@@ -1,7 +1,7 @@
-// Provider accounts held by the router (own store, never shared with Claude Code or the plugins).
-import { UnknownAccountError } from "@inference-router/core/domain/errors.ts";
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
+// Provider accounts held by the proxy (own store, never shared with Claude Code or the plugins).
+import { UnknownAccountError } from "@accounts-proxy/core/domain/errors.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
 
 export type AccountCredential = {
   readonly provider: ProviderId;
@@ -24,7 +24,7 @@ export type AccountPool = {
 
 /**
  * Deadline of one token-endpoint exchange (plan v4 H2/H-c). A renewal runs inside the cross-process renewal lock, and a
- * lock older than its staleness (60 s, apps/router file-lock.ts DEFAULT_LOCK_OPTIONS.staleMs) is taken over by another
+ * lock older than its staleness (60 s, apps/proxy file-lock.ts DEFAULT_LOCK_OPTIONS.staleMs) is taken over by another
  * process; the deadline must stay below that, or two processes could spend the same refresh token. Design value.
  */
 export const TOKEN_ENDPOINT_TIMEOUT_MS = 30_000;

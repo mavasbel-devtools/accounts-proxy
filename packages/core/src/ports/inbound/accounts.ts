@@ -1,7 +1,7 @@
 // Inbound ports driven by the CLI.
-import type { KeyImportSource } from "@inference-router/core/domain/api-key.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import type { UsageReport } from "@inference-router/core/domain/usage.ts";
+import type { KeyImportSource } from "@accounts-proxy/core/domain/api-key.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import type { UsageReport } from "@accounts-proxy/core/domain/usage.ts";
 
 export type AccountSummary = {
   readonly provider: ProviderId;

@@ -1,11 +1,11 @@
 // Provider-internal abstractions. OpenAIProvider and the OAuth client depend only on these; the adapters in
 // adapters/outbound implement them and composition wires them.
-import type { ModelsSource } from "@inference-router/core/domain/models.ts";
-import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
-import type { CatalogEntry } from "@inference-router/provider-openai/domain/catalog.ts";
-import type { OpenAITokens } from "@inference-router/provider-openai/domain/credential.ts";
-import type { ExpectedClaims, VerifiedIdentity } from "@inference-router/provider-openai/domain/id-token.ts";
+import type { ModelsSource } from "@accounts-proxy/core/domain/models.ts";
+import { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
+import type { CatalogEntry } from "@accounts-proxy/provider-openai/domain/catalog.ts";
+import type { OpenAITokens } from "@accounts-proxy/provider-openai/domain/credential.ts";
+import type { ExpectedClaims, VerifiedIdentity } from "@accounts-proxy/provider-openai/domain/id-token.ts";
 
 export abstract class OpenAIOAuthPort extends OAuthClientPort {
   /** One refresh-token grant (T2); the refresh token rotates (T3). */
@@ -23,7 +23,7 @@ export abstract class IdTokenVerifierPort {
 export abstract class OpenAIIdentityPort {
   /** S4: this host's stable `ext_agent_host_id` (`urn:uuid:<UUIDv4>`), created and stored before the first sign-in. */
   abstract hostId(): Promise<string>;
-  /** One session id per router process, sent as `session-id` when the client sends none (I5). */
+  /** One session id per proxy process, sent as `session-id` when the client sends none (I5). */
   abstract readonly sessionId: string;
 }
 

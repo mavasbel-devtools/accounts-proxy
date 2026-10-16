@@ -1,4 +1,4 @@
-// OAuth session over the router's own account pool: one abstraction tree for every subscription provider (plan v4 H-a).
+// OAuth session over the proxy's own account pool: one abstraction tree for every subscription provider (plan v4 H-a).
 //   OAuthSessionPort<A>   what the provider adapters depend on (the active account with a usable access token)
 //   OAuthSessionBase<A>   the renewal rules, written once; each provider supplies decode/encode/renew
 // Rules:
@@ -12,11 +12,11 @@
 //     no new attempt is made for that token during RENEWAL_RETRY_AFTER_MS;
 //   - a rejected refresh grant marks the account needsLogin, and later calls fail fast without calling the token
 //     endpoint until a new login replaces the account (H6).
-import { activeAccount, markNeedsLogin, RENEWAL_RETRY_AFTER_MS, replaceAccount, type AccountCredential, type AccountPool } from "@inference-router/core/domain/accounts.ts";
-import { isTransientUpstream, ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
-import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
+import { activeAccount, markNeedsLogin, RENEWAL_RETRY_AFTER_MS, replaceAccount, type AccountCredential, type AccountPool } from "@accounts-proxy/core/domain/accounts.ts";
+import { isTransientUpstream, ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import type { ClockPort, LockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 
 export type Session<A> = { readonly id: string; readonly account: A };
 export type SessionTokens = { readonly accessToken: string; readonly refreshToken?: string; readonly expiresAt: number };

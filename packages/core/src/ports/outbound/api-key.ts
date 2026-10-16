@@ -1,8 +1,8 @@
 // API-key login ports (plan P4.6 decision N4): a key is entered only at a hidden prompt of `login <provider>` and stored
-// only in the router's own account files. ApiKeyLoginPort is implemented once per API-key provider.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import type { KeyImportSource } from "@inference-router/core/domain/api-key.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
+// only in the proxy's own account files. ApiKeyLoginPort is implemented once per API-key provider.
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import type { KeyImportSource } from "@accounts-proxy/core/domain/api-key.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
 
 export abstract class ApiKeyLoginPort {
   abstract readonly provider: ProviderId;

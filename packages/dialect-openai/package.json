@@ -1,5 +1,5 @@
 {
-  "name": "@inference-router/dialect-openai",
+  "name": "@accounts-proxy/dialect-openai",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -9,6 +9,6 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@inference-router/core": "workspace:*"
+    "@accounts-proxy/core": "workspace:*"
   }
 }

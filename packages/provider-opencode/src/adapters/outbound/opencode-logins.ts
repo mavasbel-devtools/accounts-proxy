@@ -3,13 +3,13 @@
 //                        workspace's request headers (Z20)
 //   OpencodeKeyLogin     a service-account key (K3, Z16) at the hidden prompt or imported (K5), checked by reading the
 //                        workspace config with it (K4, Z20)
-import { accountOwner, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
-import { DeviceLoginClientPort, type DevicePoll } from "@inference-router/core/ports/outbound/device.ts";
-import type { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { GatewayKeyLogin, type KeyIdentity } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-login.ts";
-import { encodeDevice, type ConsoleTokens, type OpencodeProvider } from "@inference-router/provider-opencode/domain/opencode.ts";
-import type { ConsoleApiPort } from "@inference-router/provider-opencode/ports/outbound/console.ts";
+import { accountOwner, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
+import { DeviceLoginClientPort, type DevicePoll } from "@accounts-proxy/core/ports/outbound/device.ts";
+import type { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
+import { encodeDevice, type ConsoleTokens, type OpencodeProvider } from "@accounts-proxy/provider-opencode/domain/opencode.ts";
+import type { ConsoleApiPort } from "@accounts-proxy/provider-opencode/ports/outbound/console.ts";
 
 export class OpencodeDeviceLogin extends DeviceLoginClientPort {
   constructor(

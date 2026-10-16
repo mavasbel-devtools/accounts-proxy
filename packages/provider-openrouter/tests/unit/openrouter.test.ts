@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { OPENROUTER_BUILTIN } from "@inference-router/provider-openrouter/domain/builtin-models.ts";
-import { AUTH_URL, authorizeUrl, HEADLESS_REDIRECT, keyUsageText, OPENROUTER_SPEC, parseKeyExchange, parseModels } from "@inference-router/provider-openrouter/domain/openrouter.ts";
+import { OPENROUTER_BUILTIN } from "@accounts-proxy/provider-openrouter/domain/builtin-models.ts";
+import { AUTH_URL, authorizeUrl, HEADLESS_REDIRECT, keyUsageText, OPENROUTER_SPEC, parseKeyExchange, parseModels } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 
 const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", file), "utf8"));
 
@@ -22,7 +22,7 @@ describe("OpenRouter rules", () => {
       { callback_url: "http://localhost:5000/callback", code_challenge: "ch", code_challenge_method: "S256", state: "st" },
     ]);
     const headless = new URL(authorizeUrl(AUTH_URL, HEADLESS_REDIRECT, "st", "ch"));
-    expect(Object.fromEntries(headless.searchParams)).toEqual({ code_challenge: "ch", code_challenge_method: "S256", key_label: "inference-router" });
+    expect(Object.fromEntries(headless.searchParams)).toEqual({ code_challenge: "ch", code_challenge_method: "S256", key_label: "accounts-proxy" });
   });
 
   test("R7: the key exchange answer", () => {
@@ -57,8 +57,8 @@ describe("OpenRouter rules", () => {
   });
 
   test("R8: the key usage report prints the fields OpenRouter answered", () => {
-    expect(keyUsageText({ data: { label: "inference-router", usage: 1.5, limit: null, limit_remaining: null, is_free_tier: true, extra: 1 } })).toBe(
-      'OpenRouter key (GET /key):\n  label: "inference-router"\n  is_free_tier: true\n  usage: 1.5\n  limit: null\n  limit_remaining: null',
+    expect(keyUsageText({ data: { label: "accounts-proxy", usage: 1.5, limit: null, limit_remaining: null, is_free_tier: true, extra: 1 } })).toBe(
+      'OpenRouter key (GET /key):\n  label: "accounts-proxy"\n  is_free_tier: true\n  usage: 1.5\n  limit: null\n  limit_remaining: null',
     );
     expect(keyUsageText({})).toBe("OpenRouter key (GET /key):");
   });

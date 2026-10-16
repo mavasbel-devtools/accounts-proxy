@@ -1,15 +1,15 @@
 // Durable per-install state over KeyValueStorePort. Sources: opencode-antigravity-auth @ 5c6f7c2
 // DeviceIdentityStoreAdapter (persisted minted int64 sessionId, never the machine-captured literal) and
-// SignatureStoreAdapter (thoughtSignature per call id, ~2000-entry oldest-eviction cap). Router fix: the store is read
+// SignatureStoreAdapter (thoughtSignature per call id, ~2000-entry oldest-eviction cap). Proxy fix: the store is read
 // once even by concurrent first callers, and writes never overlap: while one runs, the next is queued once and stores
 // the map as it is when it starts, so the last write always holds the newest map (fire-and-forget saves used to race,
 // and an older snapshot could land last — found by the e2e cap test, 2026-10-11).
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import type { RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import { SIGNATURE_CAP } from "@inference-router/provider-antigravity/domain/constants.ts";
-import { isSessionId, mintSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
-import { AntigravityStatePort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import type { RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { SIGNATURE_CAP } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { isSessionId, mintSessionId } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
+import { AntigravityStatePort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 export const SESSION_ID_KEY = "antigravity/session-id";
 export const SIGNATURES_KEY = "antigravity/thought-signatures";

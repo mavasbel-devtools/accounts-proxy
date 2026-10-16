@@ -1,22 +1,22 @@
-// Shared P0-LIVE harness (plan 2026-10-07-01-23 §6): refuses to run without INFERENCE_ROUTER_LIVE=1, wires the
-// providers through the router composition root over a RecordingTransport, collects every secret into a Redactor,
+// Shared P0-LIVE harness (plan 2026-10-07-01-23 §6): refuses to run without ACCOUNTS_PROXY_LIVE=1, wires the
+// providers through the proxy composition root over a RecordingTransport, collects every secret into a Redactor,
 // paces upstream calls 2 s apart, stops the whole run at the first quota signal, and writes redacted capture files.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { PROVIDER_IDS } from "@inference-router/core/domain/models.ts";
-import { SseCodec } from "@inference-router/core/domain/services/event-stream.ts";
-import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@inference-router/core/domain/wire.ts";
-import { activeProject } from "@inference-router/provider-antigravity/domain/account.ts";
-import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { TrajectoryState, type TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
-import type { ChatMessage } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { FetchTransport, type FetchFunction } from "@inference-router/router/adapters/outbound/fetch-transport.ts";
-import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type GatewayGraph, type OpenAIGraph, type ProviderGraph } from "@inference-router/router/composition/container.ts";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
-import { Redactor } from "@inference-router/scripts/evidence/live/redact.ts";
-import { RecordingTransport, type Exchange } from "@inference-router/scripts/evidence/live/recording-transport.ts";
+import { QuotaExhaustedError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { PROVIDER_IDS } from "@accounts-proxy/core/domain/models.ts";
+import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
+import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@accounts-proxy/core/domain/wire.ts";
+import { activeProject } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { TrajectoryState, type TrajectorySnapshot } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
+import type { ChatMessage } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { FetchTransport, type FetchFunction } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
+import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type GatewayGraph, type OpenAIGraph, type ProviderGraph } from "@accounts-proxy/proxy/composition/container.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
+import { Redactor } from "@accounts-proxy/scripts/evidence/live/redact.ts";
+import { RecordingTransport, type Exchange } from "@accounts-proxy/scripts/evidence/live/recording-transport.ts";
 
 export const PACE_MS = 2000;
 
@@ -37,8 +37,8 @@ export type Live = {
 };
 
 export function requireLive(): void {
-  if (process.env["INFERENCE_ROUTER_LIVE"] !== "1") {
-    console.error("refusing to run: set INFERENCE_ROUTER_LIVE=1 (this script calls the real provider accounts)");
+  if (process.env["ACCOUNTS_PROXY_LIVE"] !== "1") {
+    console.error("refusing to run: set ACCOUNTS_PROXY_LIVE=1 (this script calls the real provider accounts)");
     process.exit(2);
   }
 }
@@ -48,7 +48,7 @@ export async function openLive(): Promise<Live> {
   const home = defaultHome(process.env);
   const recorder = new RecordingTransport(new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS));
   const graph = await buildGraph({ home, transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
-  if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in router.yaml");
+  if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in proxy.yaml");
   const redactor = new Redactor();
   for (const provider of PROVIDER_IDS) {
     const pool = await graph.store.load(provider);

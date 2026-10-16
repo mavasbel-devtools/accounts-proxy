@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { upsertAccount, EMPTY_POOL, activeAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@inference-router/core/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { readAll, type RawRequest } from "@inference-router/core/domain/wire.ts";
+import { upsertAccount, EMPTY_POOL, activeAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { readAll, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import {
   collect,
   FixedClock,
@@ -14,19 +14,19 @@ import {
   ScriptedTransport,
   SequenceRandom,
   type ScriptedResponse,
-} from "@inference-router/test-support/fakes.ts";
-import { CATALOG_KEY, ClaudeCatalog } from "@inference-router/provider-claude/adapters/outbound/claude-catalog.ts";
-import { ClaudeIdentity, DEVICE_ID_KEY } from "@inference-router/provider-claude/adapters/outbound/claude-identity.ts";
-import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "@inference-router/provider-claude/adapters/outbound/claude-oauth-client.ts";
-import { API_BASE } from "@inference-router/provider-claude/domain/constants.ts";
-import { ClaudeSession, REFRESH_LOCK } from "@inference-router/provider-claude/adapters/outbound/claude-session.ts";
-import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "@inference-router/provider-claude/adapters/outbound/claude-subscription-provider.ts";
-import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@inference-router/provider-claude/domain/constants.ts";
-import { fromAccount, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
-import { STATIC_CATALOG } from "@inference-router/provider-claude/domain/model-envelope.ts";
-import { capturedBetaHeader } from "@inference-router/provider-claude/domain/request-transform.ts";
-import { ClaudeCatalogPort, ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
-import { OAuthSessionPort, type Session } from "@inference-router/core/ports/outbound/session.ts";
+} from "@accounts-proxy/test-support/fakes.ts";
+import { CATALOG_KEY, ClaudeCatalog } from "@accounts-proxy/provider-claude/adapters/outbound/claude-catalog.ts";
+import { ClaudeIdentity, DEVICE_ID_KEY } from "@accounts-proxy/provider-claude/adapters/outbound/claude-identity.ts";
+import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "@accounts-proxy/provider-claude/adapters/outbound/claude-oauth-client.ts";
+import { API_BASE } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { ClaudeSession, REFRESH_LOCK } from "@accounts-proxy/provider-claude/adapters/outbound/claude-session.ts";
+import { ClaudeSubscriptionProvider, forwardedResponseHeaders } from "@accounts-proxy/provider-claude/adapters/outbound/claude-subscription-provider.ts";
+import { CLAUDEAI_SUCCESS_URL, CONSOLE_SUCCESS_URL, TOKEN_HEADERS } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { fromAccount, toAccount, type ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import { STATIC_CATALOG } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
+import { capturedBetaHeader } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
+import { ClaudeCatalogPort, ClaudeOAuthPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
+import { OAuthSessionPort, type Session } from "@accounts-proxy/core/ports/outbound/session.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -527,7 +527,7 @@ describe("ClaudeSubscriptionProvider", () => {
     const { provider, transport } = make(ok({}));
     const response = await provider.passthrough("claude-opus-4-8", raw({ messages: [] }));
     expect(sentBetas(transport)).toBe(captured);
-    expect(response.headers["x-router-dropped"]).toBeUndefined();
+    expect(response.headers["x-proxy-dropped"]).toBeUndefined();
   });
 
   test("F4: known client betas go first (client order, deduplicated), then the rest of the captured set", async () => {
@@ -550,7 +550,7 @@ describe("ClaudeSubscriptionProvider", () => {
     const response = await lossy.provider.passthrough("claude-opus-4-8", { ...request, lossy: true });
     expect(sentBetas(lossy.transport)!.includes("files-api")).toBe(false);
     expect(sentBetas(lossy.transport)!.startsWith("oauth-2025-04-20")).toBe(true);
-    expect(response.headers["x-router-dropped"]).toBe("anthropic-beta:files-api-2025-04-14");
+    expect(response.headers["x-proxy-dropped"]).toBe("anthropic-beta:files-api-2025-04-14");
   });
 
   test("anthropic-version: the captured value passes; any other is unsupported_feature, or dropped with lossy", async () => {
@@ -563,7 +563,7 @@ describe("ClaudeSubscriptionProvider", () => {
     await expect(other.provider.passthrough("m", request)).rejects.toBeInstanceOf(UnsupportedFeatureError);
     const response = await other.provider.passthrough("m", { ...request, lossy: true });
     expect(other.transport.requests[0]!.headers["anthropic-version"]).toBe("2023-06-01");
-    expect(response.headers["x-router-dropped"]).toBe("anthropic-version:2099-01-01,anthropic-beta:nope-1");
+    expect(response.headers["x-proxy-dropped"]).toBe("anthropic-version:2099-01-01,anthropic-beta:nope-1");
   });
 
   test("the client's abort signal is handed to the transport", async () => {

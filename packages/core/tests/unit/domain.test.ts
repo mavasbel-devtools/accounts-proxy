@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeAccount, EMPTY_POOL, markNeedsLogin, replaceAccount, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount, useAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
+import { activeAccount, EMPTY_POOL, markNeedsLogin, replaceAccount, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount, useAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
 import {
   ClientRequestError,
   InvalidRequestError,
@@ -7,7 +7,7 @@ import {
   ProviderDisabledError,
   ProviderError,
   QuotaExhaustedError,
-  RouterError,
+  ProxyError,
   UnauthorizedError,
   UnknownAccountError,
   UnknownModelError,
@@ -16,14 +16,14 @@ import {
   UpstreamTimeoutError,
   UpstreamUnreachableError,
   isTransientUpstream,
-  asRouterError,
+  asProxyError,
   InternalError,
-} from "@inference-router/core/domain/errors.ts";
-import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { formatModelAddress, isProviderId, modelFormats, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS } from "@inference-router/core/domain/models.ts";
-import { base64UrlDecode, base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
-import { resolveModelAddress } from "@inference-router/core/domain/services/model-address.ts";
-import { bodyOf, readAll } from "@inference-router/core/domain/wire.ts";
+} from "@accounts-proxy/core/domain/errors.ts";
+import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { formatModelAddress, isProviderId, modelFormats, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS } from "@accounts-proxy/core/domain/models.ts";
+import { base64UrlDecode, base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.ts";
+import { resolveModelAddress } from "@accounts-proxy/core/domain/services/model-address.ts";
+import { bodyOf, readAll } from "@accounts-proxy/core/domain/wire.ts";
 
 describe("json", () => {
   test("isJsonObject accepts plain objects only", () => {
@@ -69,7 +69,7 @@ describe("resolveModelAddress", () => {
 
 describe("errors", () => {
   test("tree, codes and statuses", () => {
-    const cases: [RouterError, string, number, typeof ClientRequestError | typeof ProviderError][] = [
+    const cases: [ProxyError, string, number, typeof ClientRequestError | typeof ProviderError][] = [
       [new InvalidRequestError("bad"), "invalid_request", 400, ClientRequestError],
       [new UnsupportedFeatureError(["images", "top_k"], "antigravity"), "unsupported_feature", 400, ClientRequestError],
       [new UnauthorizedError(), "unauthorized", 401, ClientRequestError],
@@ -82,18 +82,18 @@ describe("errors", () => {
       [new UpstreamUnreachableError("api.anthropic.com", "Unable to connect"), "upstream_unreachable", 502, ProviderError],
     ];
     for (const [error, code, status, family] of cases) {
-      expect(error).toBeInstanceOf(RouterError);
+      expect(error).toBeInstanceOf(ProxyError);
       expect(error).toBeInstanceOf(family);
-      expect(error.code).toBe(code as RouterError["code"]);
+      expect(error.code).toBe(code as ProxyError["code"]);
       expect(error.httpStatus).toBe(status);
       expect(error.name).toBe(error.constructor.name);
     }
   });
   test("messages and retry hints", () => {
     expect(new UnsupportedFeatureError(["images", "top_k"], "antigravity").message).toBe("antigravity cannot carry: images, top_k");
-    expect(new ProviderAuthRequiredError("antigravity", "no account").message).toContain("inference-router login antigravity");
-    expect(new ProviderDisabledError("claude").message).toBe("claude is disabled; enable it with acknowledgeTermsRisk: true in router.yaml");
-    expect(new ProviderDisabledError("openrouter").message).toBe("openrouter is disabled; enable it with enabled: true in router.yaml");
+    expect(new ProviderAuthRequiredError("antigravity", "no account").message).toContain("accounts-proxy login antigravity");
+    expect(new ProviderDisabledError("claude").message).toBe("claude is disabled; enable it with acknowledgeTermsRisk: true in proxy.yaml");
+    expect(new ProviderDisabledError("openrouter").message).toBe("openrouter is disabled; enable it with enabled: true in proxy.yaml");
     expect(new QuotaExhaustedError("antigravity", "x", 30).retryAfterSeconds).toBe(30);
     expect(new QuotaExhaustedError("antigravity", "x").retryAfterSeconds).toBeUndefined();
     expect(new UpstreamError("antigravity", 500, "e".repeat(600)).message.length).toBeLessThan(560);
@@ -102,10 +102,10 @@ describe("errors", () => {
     expect(new UpstreamUnreachableError("h:1", "refused").message).toBe("upstream h:1 could not be reached: refused");
     expect(new ProviderAuthRequiredError("claude", "why").detail).toBe("why");
   });
-  test("asRouterError keeps a RouterError and turns anything else into the fixed InternalError", () => {
+  test("asProxyError keeps a ProxyError and turns anything else into the fixed InternalError", () => {
     const quota = new QuotaExhaustedError("claude", "x");
-    expect(asRouterError(quota)).toBe(quota);
-    expect(asRouterError(new Error("defect"))).toBeInstanceOf(InternalError);
+    expect(asProxyError(quota)).toBe(quota);
+    expect(asProxyError(new Error("defect"))).toBeInstanceOf(InternalError);
   });
   test("transient upstream failures (plan v4 H4)", () => {
     expect(isTransientUpstream(new UpstreamTimeoutError("h", 1))).toBe(true);

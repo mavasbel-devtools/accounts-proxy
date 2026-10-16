@@ -1,4 +1,4 @@
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
 
 /**
  * Small durable provider state that is not a credential: device identity, catalog caches, signature

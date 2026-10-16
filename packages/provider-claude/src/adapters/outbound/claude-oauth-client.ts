@@ -2,12 +2,12 @@
 // Authorize parameters and order: official Claude Code 2.1.280 `_Ln`; exchange body: `M_r`; success redirect:
 // `handleSuccessRedirect` (P0-E6). Token request headers and refresh body: opencode-claude-auth @ 6292741
 // ClaudeOAuthClientAdapter (captured fixtures refresh-request.json / refresh-request-headers.json).
-import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { ClockPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { AuthorizeInput, ExchangeInput } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import {
   AUTHORIZE_SCOPES,
   AUTHORIZE_URL,
@@ -20,9 +20,9 @@ import {
   REFRESH_SCOPES,
   TOKEN_HEADERS,
   TOKEN_URL,
-} from "@inference-router/provider-claude/domain/constants.ts";
-import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens, type TokenEndpointResponse } from "@inference-router/provider-claude/domain/credential.ts";
-import { ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+} from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens, type TokenEndpointResponse } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import { ClaudeOAuthPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 
 export type ClaudeOAuthEndpoints = { readonly authorizeUrl: string; readonly tokenUrl: string };
 export const PRODUCTION_ENDPOINTS: ClaudeOAuthEndpoints = { authorizeUrl: AUTHORIZE_URL, tokenUrl: TOKEN_URL };

@@ -1,11 +1,11 @@
-// OpenAI dialect: the router's own errors and the model list in OpenAI's shapes (docs/reference/specs/openai-openapi.yaml).
+// OpenAI dialect: the proxy's own errors and the model list in OpenAI's shapes (docs/reference/specs/openai-openapi.yaml).
 //   errors  ErrorResponse `{error:{message, type, param, code}}` (all four required). The spec fixes no vocabulary for
-//           `type`/`code`, so both carry the router's own error code; `param` is null.
+//           `type`/`code`, so both carry the proxy's own error code; `param` is null.
 //   models  ListModelsResponse `{object:"list", data:[Model]}`, Model `{id, object:"model", created, owned_by}`.
 //           `created` is Unix seconds; a catalog without dates (Antigravity) gets 0, never an invented date (Q5).
-import { errorHeaders, type RouterError } from "@inference-router/core/domain/errors.ts";
-import type { DetailedCatalog } from "@inference-router/core/domain/model-details.ts";
-import { DialectCodecPort, type EncodedResponse } from "@inference-router/core/ports/inbound/dialect.ts";
+import { errorHeaders, type ProxyError } from "@accounts-proxy/core/domain/errors.ts";
+import type { DetailedCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import { DialectCodecPort, type EncodedResponse } from "@accounts-proxy/core/ports/inbound/dialect.ts";
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;
 
@@ -18,7 +18,7 @@ export class OpenAiCodec extends DialectCodecPort {
   readonly dialect = "openai";
   readonly prefix = "/openai";
 
-  error(error: RouterError): EncodedResponse {
+  error(error: ProxyError): EncodedResponse {
     return {
       status: error.httpStatus,
       headers: errorHeaders(error),

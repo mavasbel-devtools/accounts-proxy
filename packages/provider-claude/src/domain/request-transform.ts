@@ -9,7 +9,7 @@
 //       `context_management` clear-thinking edit is left out — with it the upstream answers 400 "clear_thinking_20251015
 //       strategy requires thinking to be enabled or adaptive" (P0-LIVE L2; Q6 probe: without it → 200).
 //   F4  the client's `anthropic-beta` is honoured within this model's captured beta set (mergeBetaHeader).
-import { UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
+import { UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
 import {
   ANTHROPIC_IDENTITY,
   ANTHROPIC_VERSION_HEADER,
@@ -17,8 +17,8 @@ import {
   CLAUDE_ENTRYPOINT,
   CLAUDE_VERSION,
   SDK_PACKAGE_VERSION,
-} from "@inference-router/provider-claude/domain/constants.ts";
-import { envelopeFor, type CatalogModelEntry, type ThinkingSpec } from "@inference-router/provider-claude/domain/model-envelope.ts";
+} from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { envelopeFor, type CatalogModelEntry, type ThinkingSpec } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
 
 export type WireBlock = { readonly type: string; readonly [key: string]: unknown };
 export type WireMessage = {
@@ -200,7 +200,7 @@ export function capturedBetaHeader(model: string, lookup: CatalogLookup): string
   return envelopeFor(model, lookup(model)).betaHeader;
 }
 
-/** Captured-claude request header set; authorization carries the router's fresh OAuth token, `betaHeader` the merged
+/** Captured-claude request header set; authorization carries the proxy's fresh OAuth token, `betaHeader` the merged
  * beta set (mergeBetaHeader over capturedBetaHeader). */
 export function upstreamHeaders(ctx: TransformContext, betaHeader: string): Record<string, string> {
   return {

@@ -1,5 +1,5 @@
 // Transport-neutral HTTP message shapes used by ports (bodies are bytes; streaming bodies are async iterables).
-import type { WireFormat } from "@inference-router/core/domain/models.ts";
+import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
 
 export type Headers = Readonly<Record<string, string>>;
 
@@ -42,16 +42,16 @@ export type RawRequest = {
   readonly format: WireFormat;
   /** Path relative to the dialect prefix, e.g. `/v1/messages` or `/v1beta/models/<model>:streamGenerateContent`. */
   readonly path: string;
-  /** Query parameters (the router token's `key` already removed). */
+  /** Query parameters (the proxy token's `key` already removed). */
   readonly query: Readonly<Record<string, string>>;
   /** Client headers, names lower-cased. */
   readonly headers: Headers;
   readonly body: string;
-  /** `x-router-lossy: 1`: features the target cannot carry are dropped and reported instead of rejected. */
+  /** `x-proxy-lossy: 1`: features the target cannot carry are dropped and reported instead of rejected. */
   readonly lossy: boolean;
   /** Aborted when the client disconnects. */
   readonly signal?: AbortSignal | undefined;
 };
 
 /** Response header naming every feature or element removed from the request (AGENTS.md §4). */
-export const DROPPED_HEADER = "x-router-dropped";
+export const DROPPED_HEADER = "x-proxy-dropped";

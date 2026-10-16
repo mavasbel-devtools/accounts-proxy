@@ -1,13 +1,13 @@
-// The shared OpenCode Console session of `opencode` and `opencode-go` (decision K2) over the router's `opencode` account
+// The shared OpenCode Console session of `opencode` and `opencode-go` (decision K2) over the proxy's `opencode` account
 // pool, with the renewal rules of OAuthSessionBase (plan v4 Phase H; Console refresh tokens are single-use, Z18). A
 // service-account key never expires and is never renewed (G6).
-import { activeAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
-import { OAuthSessionBase, type SessionTokens } from "@inference-router/core/ports/outbound/session.ts";
-import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { GatewayKeySessionPort, type KeySession } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
-import { decodeCredential, encodeDevice, type ConsoleCredential, type OpencodeProvider } from "@inference-router/provider-opencode/domain/opencode.ts";
-import type { ConsoleApiPort, ConsoleSessionPort } from "@inference-router/provider-opencode/ports/outbound/console.ts";
+import { activeAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import { OAuthSessionBase, type SessionTokens } from "@accounts-proxy/core/ports/outbound/session.ts";
+import type { ClockPort, LockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { GatewayKeySessionPort, type KeySession } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
+import { decodeCredential, encodeDevice, type ConsoleCredential, type OpencodeProvider } from "@accounts-proxy/provider-opencode/domain/opencode.ts";
+import type { ConsoleApiPort, ConsoleSessionPort } from "@accounts-proxy/provider-opencode/ports/outbound/console.ts";
 
 export const REFRESH_LOCK = "opencode-refresh";
 /** Renew this long before the access token expires (the value of the other providers; design value). */

@@ -1,8 +1,8 @@
-// Antigravity account in the router's own pool (AccountCredential.data). Fields mirror opencode-antigravity-auth
-// @ 5c6f7c2 domain/entities/Account.ts; enable/cooldown are dropped because the router never rotates accounts
-// automatically (plan D4) — the active account is chosen only by `inference-router account use`.
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
+// Antigravity account in the proxy's own pool (AccountCredential.data). Fields mirror opencode-antigravity-auth
+// @ 5c6f7c2 domain/entities/Account.ts; enable/cooldown are dropped because the proxy never rotates accounts
+// automatically (plan D4) — the active account is chosen only by `accounts-proxy account use`.
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
 
 export type AuthTokens = { readonly accessToken: string; readonly refreshToken?: string; readonly expiresAt: number };
 

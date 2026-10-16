@@ -1,9 +1,9 @@
 // The P0-LIVE redactor and recording transport: nothing credential-bearing may reach a capture file.
 import { describe, expect, test } from "bun:test";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { ScriptedTransport } from "@inference-router/test-support/fakes.ts";
-import { Redactor } from "@inference-router/scripts/evidence/live/redact.ts";
-import { RecordingTransport } from "@inference-router/scripts/evidence/live/recording-transport.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
+import { Redactor } from "@accounts-proxy/scripts/evidence/live/redact.ts";
+import { RecordingTransport } from "@accounts-proxy/scripts/evidence/live/recording-transport.ts";
 
 function redactor(): Redactor {
   const r = new Redactor();

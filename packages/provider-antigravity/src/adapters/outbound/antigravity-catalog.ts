@@ -1,11 +1,11 @@
 // Live model catalog (`fetchAvailableModels`). Source ResolveModelsUseCase: no static list; descriptors exclude
 // tab/deprecated models (law 9); the per-request envelope defaults are memoized per process ("the relay memoizes
-// this map per process"). Router addition: a memo miss for a requested id triggers one refetch, so a model added
+// this map per process"). Proxy addition: a memo miss for a requested id triggers one refetch, so a model added
 // upstream after start-up is usable without restarting the daemon.
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { toModelDescriptors, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { AntigravityCatalogPort, type AntigravityApiPort, type AntigravitySessionPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
-import { withActive } from "@inference-router/provider-antigravity/adapters/outbound/with-active.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { toModelDescriptors, type ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { AntigravityCatalogPort, type AntigravityApiPort, type AntigravitySessionPort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
+import { withActive } from "@accounts-proxy/provider-antigravity/adapters/outbound/with-active.ts";
 
 export class AntigravityCatalog extends AntigravityCatalogPort {
   private memo: readonly ModelDescriptor[] | undefined;

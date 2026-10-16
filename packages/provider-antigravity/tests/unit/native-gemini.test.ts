@@ -2,8 +2,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
 import {
   aggregateResponses,
   foreignSchemaKeywords,
@@ -13,8 +13,8 @@ import {
   signedCalls,
   turnView,
   type GeminiResponse,
-} from "@inference-router/provider-antigravity/domain/native-gemini.ts";
-import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+} from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
+import type { TrajectorySnapshot } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 
 const descriptor = (over: Partial<ModelDescriptor>): ModelDescriptor => ({
   wireId: "gemini-3.6-flash-low",

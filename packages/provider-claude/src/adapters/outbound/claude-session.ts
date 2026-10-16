@@ -1,12 +1,12 @@
-// Fresh-token session over the router's own Claude account pool: the shared renewal rules of OAuthSessionBase (plan v4
+// Fresh-token session over the proxy's own Claude account pool: the shared renewal rules of OAuthSessionBase (plan v4
 // H-a). Fixes the source defect "refresh has no lock" (opencode-claude-auth RefreshSessionUseCase.ts:30-49).
-import type { AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { OAuthSessionBase, type SessionTokens } from "@inference-router/core/ports/outbound/session.ts";
-import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
-import type { ClockPort, LockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { EXPIRY_BUFFER_MS } from "@inference-router/provider-claude/domain/constants.ts";
-import { fromAccount, toAccount, type ClaudeTokens } from "@inference-router/provider-claude/domain/credential.ts";
-import type { ClaudeOAuthPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import type { AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { OAuthSessionBase, type SessionTokens } from "@accounts-proxy/core/ports/outbound/session.ts";
+import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import type { ClockPort, LockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { fromAccount, toAccount, type ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
+import type { ClaudeOAuthPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 
 export const REFRESH_LOCK = "claude-refresh";
 

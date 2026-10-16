@@ -2,13 +2,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import { base64UrlEncode } from "@inference-router/core/domain/services/base64url.ts";
-import { isSnapshot, parseModelList, STATIC_CATALOG } from "@inference-router/provider-openai/domain/catalog.ts";
-import { FALLBACK_MODELS, SCOPES, SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@inference-router/provider-openai/domain/constants.ts";
-import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens } from "@inference-router/provider-openai/domain/credential.ts";
-import { checkClaims, IdTokenError, parseCompactJws } from "@inference-router/provider-openai/domain/id-token.ts";
-import { aggregate, OutputItems, prepareRequest, StreamRepair } from "@inference-router/provider-openai/domain/responses.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.ts";
+import { isSnapshot, parseModelList, STATIC_CATALOG } from "@accounts-proxy/provider-openai/domain/catalog.ts";
+import { FALLBACK_MODELS, SCOPES, SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens } from "@accounts-proxy/provider-openai/domain/credential.ts";
+import { checkClaims, IdTokenError, parseCompactJws } from "@accounts-proxy/provider-openai/domain/id-token.ts";
+import { aggregate, OutputItems, prepareRequest, StreamRepair } from "@accounts-proxy/provider-openai/domain/responses.ts";
 
 const enc = (value: unknown) => base64UrlEncode(new TextEncoder().encode(typeof value === "string" ? value : JSON.stringify(value)));
 

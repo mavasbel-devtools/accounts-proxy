@@ -1,4 +1,4 @@
-import { InvalidRequestError } from "@inference-router/core/domain/errors.ts";
+import { InvalidRequestError } from "@accounts-proxy/core/domain/errors.ts";
 
 /** A client request body parsed as JSON; anything unparsable is a 400 invalid_request_error. */
 export function parseJsonBody(text: string): unknown {

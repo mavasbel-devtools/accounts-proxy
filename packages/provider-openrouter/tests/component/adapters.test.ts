@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, upsertAccount } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { GatewayKeySession } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-session.ts";
-import { OpenRouterCatalogSource } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
-import { OpenRouterKeyLogin } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-key-login.ts";
-import { OpenRouterOAuthClient } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
-import { OpenRouterQuota } from "@inference-router/provider-openrouter/adapters/outbound/openrouter-quota.ts";
-import { HEADLESS_REDIRECT } from "@inference-router/provider-openrouter/domain/openrouter.ts";
-import { FixedClock, MemoryCredentialStore, ScriptedTransport } from "@inference-router/test-support/fakes.ts";
+import { EMPTY_POOL, upsertAccount } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyAccount } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
+import { OpenRouterCatalogSource } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-catalog-source.ts";
+import { OpenRouterKeyLogin } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-key-login.ts";
+import { OpenRouterOAuthClient } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-oauth-client.ts";
+import { OpenRouterQuota } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-quota.ts";
+import { HEADLESS_REDIRECT } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
+import { FixedClock, MemoryCredentialStore, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 
 class Hash extends HashPort {
   sha256() {

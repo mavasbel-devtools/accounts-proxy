@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, upsertAccount, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
-import { ModelReferencePort, type ReferenceListing } from "@inference-router/core/ports/outbound/model-reference.ts";
-import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { OpencodeCatalogSource } from "@inference-router/provider-opencode/adapters/outbound/opencode-catalog-source.ts";
-import { OpencodeConsoleClient } from "@inference-router/provider-opencode/adapters/outbound/opencode-console-client.ts";
-import { OpencodeDeviceLogin, OpencodeKeyLogin } from "@inference-router/provider-opencode/adapters/outbound/opencode-logins.ts";
-import { ConsoleGatewaySession, ConsoleSession, EXPIRY_BUFFER_MS, REFRESH_LOCK } from "@inference-router/provider-opencode/adapters/outbound/opencode-session.ts";
-import { encodeDevice, type ConsoleTokens, type WorkspaceHeaders } from "@inference-router/provider-opencode/domain/opencode.ts";
-import { ConsoleApiPort, type ConsoleAuth, type TokenPoll } from "@inference-router/provider-opencode/ports/outbound/console.ts";
-import { FixedClock, MemoryCredentialStore, MemoryLogger, RecordingLock, ScriptedTransport } from "@inference-router/test-support/fakes.ts";
+import { EMPTY_POOL, upsertAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
+import { ModelReferencePort, type ReferenceListing } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
+import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { OpencodeCatalogSource } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-catalog-source.ts";
+import { OpencodeConsoleClient } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-console-client.ts";
+import { OpencodeDeviceLogin, OpencodeKeyLogin } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-logins.ts";
+import { ConsoleGatewaySession, ConsoleSession, EXPIRY_BUFFER_MS, REFRESH_LOCK } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-session.ts";
+import { encodeDevice, type ConsoleTokens, type WorkspaceHeaders } from "@accounts-proxy/provider-opencode/domain/opencode.ts";
+import { ConsoleApiPort, type ConsoleAuth, type TokenPoll } from "@accounts-proxy/provider-opencode/ports/outbound/console.ts";
+import { FixedClock, MemoryCredentialStore, MemoryLogger, RecordingLock, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 
 class Hash extends HashPort {
   sha256() {
@@ -58,13 +58,13 @@ describe("OpencodeConsoleClient (Z17–Z20)", () => {
     const transport = new ScriptedTransport(handler);
     return { transport, api: new OpencodeConsoleClient(transport, new FixedClock(1000), CONSOLE) };
   };
-  const form = { "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": "inference-router/0.1.0" };
+  const form = { "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": "accounts-proxy/0.1.0" };
 
-  test("device code: form-encoded under the router's client id with the workspace scope; errors and non-JSON answers fail", async () => {
+  test("device code: form-encoded under the proxy's client id with the workspace scope; errors and non-JSON answers fail", async () => {
     const body = JSON.stringify({ device_code: "dc", user_code: "U", verification_uri_complete: "/console/device?user_code=U", expires_in: 600, interval: 5 });
     const { transport, api } = client(() => ({ status: 200, body }));
     expect(await api.deviceCode()).toEqual({ deviceCode: "dc", userCode: "U", verificationUrl: "http://gw/console/device?user_code=U", intervalMs: 5000, expiresInMs: 600_000 });
-    expect(transport.requests[0]).toEqual({ method: "POST", url: "http://gw/console/auth/device/code", headers: form, body: "client_id=inference-router&supports_org_scope=true", timeoutMs: 30_000 });
+    expect(transport.requests[0]).toEqual({ method: "POST", url: "http://gw/console/auth/device/code", headers: form, body: "client_id=accounts-proxy&supports_org_scope=true", timeoutMs: 30_000 });
     await expect(client(() => ({ status: 503, body: "down" })).api.deviceCode()).rejects.toThrow("opencode upstream HTTP 503: down");
     await expect(client(() => ({ status: 200, body: "<html>" })).api.deviceCode()).rejects.toThrow("the device authorization answer lacks a field or names a non-HTTP page: {}");
     await expect(client(() => ({ status: 400, body: "<html>" })).api.deviceToken(AUTHORIZATION)).rejects.toThrow("device authorization ended: no error code");
@@ -82,7 +82,7 @@ describe("OpencodeConsoleClient (Z17–Z20)", () => {
     const polls: TokenPoll[] = [];
     for (let i = 0; i < 3; i += 1) polls.push(await api.deviceToken(AUTHORIZATION));
     expect(polls).toEqual([{ kind: "pending" }, { kind: "slow_down" }, { kind: "tokens", tokens: { accessToken: "at", refreshToken: "rt", expiresAt: 3_601_000, orgId: "org_1" } }]);
-    expect(transport.requests[0]!.body).toBe("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=dc&client_id=inference-router");
+    expect(transport.requests[0]!.body).toBe("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=dc&client_id=accounts-proxy");
     await expect(api.deviceToken(AUTHORIZATION)).rejects.toBeInstanceOf(UpstreamError);
     await expect(api.deviceToken(AUTHORIZATION)).rejects.toThrow("device authorization ended: expired_token");
   });
@@ -97,7 +97,7 @@ describe("OpencodeConsoleClient (Z17–Z20)", () => {
     ];
     const { transport, api } = client((_, i) => answers[i]!);
     expect(await api.refresh(TOKENS)).toEqual({ accessToken: "a2", refreshToken: "r2", expiresAt: 61_000, orgId: "org_1" });
-    expect(transport.requests[0]!.body).toBe("grant_type=refresh_token&refresh_token=rt&client_id=inference-router");
+    expect(transport.requests[0]!.body).toBe("grant_type=refresh_token&refresh_token=rt&client_id=accounts-proxy");
     expect((await api.refresh(TOKENS)).orgId).toBe("org_2");
     const rejected = api.refresh(TOKENS);
     await expect(rejected).rejects.toBeInstanceOf(ProviderAuthRequiredError);
@@ -116,11 +116,11 @@ describe("OpencodeConsoleClient (Z17–Z20)", () => {
     await api.workspaceHeaders({ kind: "user", accessToken: "at", orgId: "org_1" });
     await api.workspaceHeaders({ kind: "user", accessToken: "at", orgId: undefined });
     expect(transport.requests.map((r) => [r.method, r.url, r.headers])).toEqual([
-      ["GET", "http://gw/console/api/user", { accept: "application/json", "user-agent": "inference-router/0.1.0", authorization: "Bearer at" }],
-      ["GET", "http://gw/console/api/orgs", { accept: "application/json", "user-agent": "inference-router/0.1.0", authorization: "Bearer at" }],
-      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "inference-router/0.1.0", authorization: "Bearer oc_sk_1" }],
-      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "inference-router/0.1.0", authorization: "Bearer at", "x-org-id": "org_1" }],
-      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "inference-router/0.1.0", authorization: "Bearer at" }],
+      ["GET", "http://gw/console/api/user", { accept: "application/json", "user-agent": "accounts-proxy/0.1.0", authorization: "Bearer at" }],
+      ["GET", "http://gw/console/api/orgs", { accept: "application/json", "user-agent": "accounts-proxy/0.1.0", authorization: "Bearer at" }],
+      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "accounts-proxy/0.1.0", authorization: "Bearer oc_sk_1" }],
+      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "accounts-proxy/0.1.0", authorization: "Bearer at", "x-org-id": "org_1" }],
+      ["GET", "http://gw/console/api/v2/config", { accept: "application/json", "user-agent": "accounts-proxy/0.1.0", authorization: "Bearer at" }],
     ]);
     const key: ConsoleAuth = { kind: "key", key: "k" };
     await expect(client(() => ({ status: 401, body: '{"_tag":"Unauthorized"}' })).api.workspaceHeaders(key)).rejects.toThrow('opencode: the Console refused the credential: HTTP 401 {"_tag":"Unauthorized"}');
@@ -222,6 +222,6 @@ describe("ConsoleSession and ConsoleGatewaySession (K2, Z18)", () => {
     expect((await s.store.load("opencode")).accounts[0]!.needsLogin).toBe("the Console rejected the refresh token (invalid_grant)");
     const empty = setup(undefined);
     expect(await empty.zen.optionalKey()).toBeUndefined();
-    await expect(empty.zen.active()).rejects.toThrow("opencode: no active account; run `inference-router login opencode`");
+    await expect(empty.zen.active()).rejects.toThrow("opencode: no active account; run `accounts-proxy login opencode`");
   });
 });

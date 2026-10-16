@@ -4,8 +4,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createCoverageMap, type FileCoverageData } from "istanbul-lib-coverage";
-import { makeTemporary, removeTemporary } from "@inference-router/test-support/temporary.ts";
-import { applyDeferrals, E2E_DEFERRED } from "@inference-router/scripts/gate/e2e-deferred.ts";
+import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
+import { applyDeferrals, E2E_DEFERRED } from "@accounts-proxy/scripts/gate/e2e-deferred.ts";
 
 let root: string | undefined;
 afterEach(() => {

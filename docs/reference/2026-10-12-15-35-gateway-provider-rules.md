@@ -124,3 +124,10 @@ Router rules added by amendment A:
   ([model catalog rules M4](2026-10-16-01-38-model-catalog-rules.md)). The OpenCode lists keep only the ids; names,
   limits and the other details come from the same catalog when the list is described (rule M1).
 - **G5** cached copies are version 2 (they carry the details); a version-1 copy is fetched again.
+
+## Amendment 2026-10-16: project rename
+
+The project is now `accounts-proxy` ([project rename](2026-10-16-14-40-project-rename.md)). The rules above stand with the new names: the Console device login
+and its renewals send `client_id=accounts-proxy` (Z17, Z18), requests carry `User-Agent: accounts-proxy/0.1.0` (G8),
+the derived session id is `ap_` + the FNV-1a hash (Z24), the OpenRouter key label is `accounts-proxy`, and the
+headers are `x-proxy-lossy`/`x-proxy-dropped`. The captures keep the values sent when they were recorded.

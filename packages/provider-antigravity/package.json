@@ -1,5 +1,5 @@
 {
-  "name": "@inference-router/provider-antigravity",
+  "name": "@accounts-proxy/provider-antigravity",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -9,9 +9,9 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@inference-router/core": "workspace:*"
+    "@accounts-proxy/core": "workspace:*"
   },
   "devDependencies": {
-    "@inference-router/test-support": "workspace:*"
+    "@accounts-proxy/test-support": "workspace:*"
   }
 }

@@ -1,12 +1,12 @@
 // API-key login of one gateway (plan P4.6 §2 item 4): the vendor's check of the key (where it documents one) gives the
 // account identity; a vendor without one gets `key-<8 hex of SHA-256(key)>`.
-import { accountOwner, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyAccount, keyAccountId, normalizeApiKey } from "@inference-router/core/domain/api-key.ts";
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import { ApiKeyLoginPort } from "@inference-router/core/ports/outbound/api-key.ts";
-import type { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { firstString } from "@inference-router/provider-gateway/domain/gateway.ts";
+import { accountOwner, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyAccount, keyAccountId, normalizeApiKey } from "@accounts-proxy/core/domain/api-key.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import { ApiKeyLoginPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
+import type { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { firstString } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 /**
  * What the vendor's check reports about the key's owner (an absent id: the key-hash identity), and any further account

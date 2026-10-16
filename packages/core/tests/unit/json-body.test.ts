@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { InvalidRequestError } from "@inference-router/core/domain/errors.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
+import { InvalidRequestError } from "@accounts-proxy/core/domain/errors.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
 
 describe("parseJsonBody", () => {
   test("JSON is parsed; anything else is a 400", () => {

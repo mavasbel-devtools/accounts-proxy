@@ -10,11 +10,11 @@
 // The identifying values of the identity answers (ids, e-mail addresses, names, organisation ids: console-identity,
 // cheaper-account) are added to the redactor before any capture is written; the other answers are catalogues and keep
 // their names. Token-endpoint answers are never recorded (they carry grants).
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l4-control-plane.ts
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import { API_BASE, ISSUER, JWKS_PATH, USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { PACE_MS, openLive, sleep, writeCapture } from "@inference-router/scripts/evidence/live/harness.ts";
-import type { Live } from "@inference-router/scripts/evidence/live/harness.ts";
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l4-control-plane.ts
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { API_BASE, ISSUER, JWKS_PATH, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { PACE_MS, openLive, sleep, writeCapture } from "@accounts-proxy/scripts/evidence/live/harness.ts";
+import type { Live } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const live = await openLive();
 const capturedAt = new Date().toISOString();

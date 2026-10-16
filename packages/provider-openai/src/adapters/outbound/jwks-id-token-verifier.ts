@@ -3,14 +3,14 @@
 // fetched for each verification (one per sign-in) and fetched again once when the token's `kid` is not in it (key
 // rotation).
 import { createPublicKey, verify, type JsonWebKeyInput, type KeyObject } from "node:crypto";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { isJsonObject } from "@inference-router/core/domain/json.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { ClockPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { CATALOG, USER_AGENT } from "@inference-router/provider-openai/domain/constants.ts";
-import { checkClaims, IdTokenError, parseCompactJws, type ExpectedClaims, type VerifiedIdentity } from "@inference-router/provider-openai/domain/id-token.ts";
-import { IdTokenVerifierPort } from "@inference-router/provider-openai/ports/outbound/openai.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { CATALOG, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { checkClaims, IdTokenError, parseCompactJws, type ExpectedClaims, type VerifiedIdentity } from "@accounts-proxy/provider-openai/domain/id-token.ts";
+import { IdTokenVerifierPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 type Jwk = JsonWebKeyInput["key"] & { readonly kid?: string; readonly kty?: string; readonly use?: string };
 

@@ -3,17 +3,17 @@
 // `:generateContent` (the stream merged, decision Q4) through AntigravityNativePort. `:countTokens` is unsupported:
 // cloudcode-pa has no token-count endpoint (SPEC.md §2). Errors before the first byte are thrown (the HTTP adapter
 // renders them in the Gemini shape); after it, a final error element closes the stream.
-import { asRouterError, InvalidRequestError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { ModelCatalog, WireFormat } from "@inference-router/core/domain/models.ts";
-import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import { googleErrorEnvelope } from "@inference-router/core/domain/services/google-error.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@inference-router/core/domain/wire.ts";
-import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import { advertisedLimits, descriptorDetails } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
-import type { AntigravityCatalogPort, AntigravityNativePort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import { asProxyError, InvalidRequestError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ModelCatalog, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+import { googleErrorEnvelope } from "@accounts-proxy/core/domain/services/google-error.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
+import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { advertisedLimits, descriptorDetails } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
+import type { AntigravityCatalogPort, AntigravityNativePort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 /** Law 11 for the native cell: a stream that ends without any response is an upstream failure, never an empty 200. */
 const emptyStream = () => new UpstreamError("antigravity", 502, "empty stream: the upstream ended without any response");
@@ -94,7 +94,7 @@ export class AntigravityProvider extends ProviderPort {
       }
     } catch (error) {
       this.logger.warn(`${this.id}: stream failed after the first byte (model=${model}): ${errorMessage(error)}`);
-      yield encoder.encode(frame(googleErrorEnvelope(asRouterError(error))));
+      yield encoder.encode(frame(googleErrorEnvelope(asProxyError(error))));
     } finally {
       await rest.return?.();
     }

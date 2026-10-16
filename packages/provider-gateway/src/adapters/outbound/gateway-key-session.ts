@@ -1,10 +1,10 @@
-// The active API-key account of one gateway provider, read from the router's own account file (plan P4.6 §2 item 3).
-import { activeAccount } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyOf } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import type { CredentialStorePort } from "@inference-router/core/ports/outbound/credentials.ts";
-import { GatewayKeySessionPort, type KeySession } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
+// The active API-key account of one gateway provider, read from the proxy's own account file (plan P4.6 §2 item 3).
+import { activeAccount } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyOf } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import { GatewayKeySessionPort, type KeySession } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
 
 export class GatewayKeySession extends GatewayKeySessionPort {
   constructor(

@@ -1,5 +1,5 @@
-import { UnknownModelError } from "@inference-router/core/domain/errors.ts";
-import { isProviderId, type ModelAddress } from "@inference-router/core/domain/models.ts";
+import { UnknownModelError } from "@accounts-proxy/core/domain/errors.ts";
+import { isProviderId, type ModelAddress } from "@accounts-proxy/core/domain/models.ts";
 
 export type AliasTable = Readonly<Record<string, string>>;
 

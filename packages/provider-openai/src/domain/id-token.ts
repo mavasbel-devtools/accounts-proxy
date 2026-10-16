@@ -3,9 +3,9 @@
 // iss = https://auth.openai.com, aud ∋ the issued client id, exp in the future, nonce = this attempt's, a non-empty sub.
 // This module is the pure part: the compact form, the header and the claims. The signature is checked by the
 // IdTokenVerifierPort adapter.
-import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
-import { base64UrlDecode } from "@inference-router/core/domain/services/base64url.ts";
-import { ISSUER } from "@inference-router/provider-openai/domain/constants.ts";
+import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import { base64UrlDecode } from "@accounts-proxy/core/domain/services/base64url.ts";
+import { ISSUER } from "@accounts-proxy/provider-openai/domain/constants.ts";
 
 export type CompactJws = {
   readonly header: JsonObject;

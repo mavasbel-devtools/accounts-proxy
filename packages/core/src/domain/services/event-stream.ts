@@ -1,5 +1,5 @@
 // Server-sent events decoding (WHATWG HTML §9.2 "Server-sent events", the format every streaming upstream uses).
-// EventStreamCodec is the general abstraction; SseCodec is the only framing in use. The router forwards each
+// EventStreamCodec is the general abstraction; SseCodec is the only framing in use. The proxy forwards each
 // upstream's own bytes, so nothing encodes frames (the encoder of the translated cells left with P5, plan 2026-10-16 C1).
 
 export type StreamFrame = { readonly event?: string; readonly data: string };

@@ -4,13 +4,13 @@
 //       `public` (what opencode sends without a key) and once with no key (rule Z8)
 //   g1  per enabled gateway with an account: the live model list through the provider's catalog
 //   g2  per enabled gateway with an account: one streamed request per native format of a small model
-//       (INFERENCE_ROUTER_GW_MODEL_<PROVIDER> overrides the model; the defaults are listed below); every request carries
+//       (ACCOUNTS_PROXY_GW_MODEL_<PROVIDER> overrides the model; the defaults are listed below); every request carries
 //       an `x-opencode-session` (OpenCode Go refuses requests without one, rule Z15; the others do not forward it)
 // Requests are 2 s apart; the first 429 or 402 stops the run.
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/p46-gateway-probe.ts [--only=z0,g1,g2]
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { WireFormat } from "@inference-router/core/domain/models.ts";
-import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc } from "@inference-router/scripts/evidence/live/harness.ts";
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/p46-gateway-probe.ts [--only=z0,g1,g2]
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "").slice("--only=".length).split(",").filter((x) => x !== "");
 const wanted = (id: string) => only.length === 0 || only.some((o) => id.startsWith(o));
@@ -68,10 +68,10 @@ async function main(): Promise<number> {
   for (const gateway of live.gateways) {
     const provider = gateway.spec.provider;
     if ((await gateway.session.optionalKey()) === undefined) {
-      rows.push({ id: `g-${provider}`, description: "per-account probes", observed: `skipped: no ${provider} account (run \`bun run router login ${provider}\`)` });
+      rows.push({ id: `g-${provider}`, description: "per-account probes", observed: `skipped: no ${provider} account (run \`bun run proxy login ${provider}\`)` });
       continue;
     }
-    const model = process.env[`INFERENCE_ROUTER_GW_MODEL_${provider.replaceAll("-", "_").toUpperCase()}`] ?? DEFAULT_MODEL[provider]!;
+    const model = process.env[`ACCOUNTS_PROXY_GW_MODEL_${provider.replaceAll("-", "_").toUpperCase()}`] ?? DEFAULT_MODEL[provider]!;
     if (wanted("g1")) {
       const mark = live.recorder.mark();
       const listing = await gateway.catalog.listing();

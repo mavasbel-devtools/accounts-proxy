@@ -1,6 +1,6 @@
 // One loopback replay server standing in for every upstream host the daemon talks to; the composition root's
-// INFERENCE_ROUTER_TEST_UPSTREAM_* seams point all four origins here (paths are the production paths). Every response
-// body is a committed capture: the source plugins' fixtures (plugin-6292741, plugin-5c6f7c2) or the router's own
+// ACCOUNTS_PROXY_TEST_UPSTREAM_* seams point all four origins here (paths are the production paths). Every response
+// body is a committed capture: the source plugins' fixtures (plugin-6292741, plugin-5c6f7c2) or the proxy's own
 // redacted P0-LIVE captures (E2/E3 streams, E5 control plane: live catalog, quota, loadCodeAssist, fetchUserInfo), and
 // the gateways' public model lists fetched into docs/reference/specs (plan P4.6), OpenRouter's documented OpenAPI examples
 // (key exchange, key info, Chat / Responses / Messages answers), the captured OpenCode gateway refusal (probe z0), and
@@ -12,7 +12,7 @@
 // Every request is recorded so tests can assert what the daemon really sent.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { jwks } from "@inference-router/test-support/e2e/openai-signing.ts";
+import { jwks } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
 
 export type Recorded = { readonly method: string; readonly path: string; readonly search: string; readonly headers: Record<string, string>; readonly body: string };
 
@@ -125,13 +125,13 @@ export class ReplayUpstreams {
   /** The seam variables pointing every provider host at this server. */
   seamEnv(): Record<string, string> {
     return {
-      INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_API: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_CLAUDE_OAUTH: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_ANTIGRAVITY_API: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_GOOGLE_OAUTH: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_API: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_OPENAI_AUTH: this.origin,
-      INFERENCE_ROUTER_TEST_UPSTREAM_GATEWAYS: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_OAUTH: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_ANTIGRAVITY_API: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_GOOGLE_OAUTH: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_API: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_AUTH: this.origin,
+      ACCOUNTS_PROXY_TEST_UPSTREAM_GATEWAYS: this.origin,
     };
   }
 

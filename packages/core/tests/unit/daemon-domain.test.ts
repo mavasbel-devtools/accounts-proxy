@@ -8,9 +8,9 @@ import {
   RouteNotFoundError,
   UpstreamError,
   UpstreamTimeoutError,
-} from "@inference-router/core/domain/errors.ts";
-import { constantTimeEqual } from "@inference-router/core/domain/services/constant-time.ts";
-import { googleErrorEnvelope, rpcStatusFor } from "@inference-router/core/domain/services/google-error.ts";
+} from "@accounts-proxy/core/domain/errors.ts";
+import { constantTimeEqual } from "@accounts-proxy/core/domain/services/constant-time.ts";
+import { googleErrorEnvelope, rpcStatusFor } from "@accounts-proxy/core/domain/services/google-error.ts";
 
 describe("daemon errors", () => {
   test("codes, statuses and messages", () => {
@@ -18,7 +18,7 @@ describe("daemon errors", () => {
       [new RouteNotFoundError("GET", "/x"), "not_found", 404, "no route GET /x"],
       [new PayloadTooLargeError(32_000_000), "payload_too_large", 413, "request body exceeds 32000000 bytes"],
       [new UpstreamTimeoutError("api.anthropic.com", 600_000), "upstream_timeout", 504, "upstream api.anthropic.com sent nothing for 600000 ms"],
-      [new InternalError(), "internal_error", 500, "internal router error (details are in the router log)"],
+      [new InternalError(), "internal_error", 500, "internal proxy error (details are in the proxy log)"],
     ] as const;
     for (const [error, code, status, message] of cases) {
       expect([error.code, error.httpStatus, error.message, error.name]).toEqual([code, status, message, error.constructor.name]);
@@ -45,7 +45,7 @@ describe("Google error envelope", () => {
     expect(rpcStatusFor(status)).toBe(name);
   });
 
-  test("router errors are wrapped; an upstream Google body is kept verbatim; other upstream bodies are wrapped", () => {
+  test("proxy errors are wrapped; an upstream Google body is kept verbatim; other upstream bodies are wrapped", () => {
     expect(googleErrorEnvelope(new InvalidRequestError("bad"))).toEqual({ error: { code: 400, message: "bad", status: "INVALID_ARGUMENT" } });
     const captured = { error: { code: 400, message: "Request contains an invalid argument.", status: "INVALID_ARGUMENT", details: [] } };
     expect(googleErrorEnvelope(new UpstreamError("antigravity", 400, JSON.stringify(captured)))).toEqual(captured);

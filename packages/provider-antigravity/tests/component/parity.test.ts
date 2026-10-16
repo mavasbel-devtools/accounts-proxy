@@ -3,11 +3,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { sanitizeSchema } from "@inference-router/provider-antigravity/domain/gemini-schema.ts";
-import { extractProjectIds } from "@inference-router/provider-antigravity/domain/project.ts";
-import { formatUsage, parseGroupModels, toQuotaSnapshot } from "@inference-router/provider-antigravity/domain/quota.ts";
-import { mintSessionId, TrajectoryState } from "@inference-router/provider-antigravity/domain/trajectory.ts";
+import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { sanitizeSchema } from "@accounts-proxy/provider-antigravity/domain/gemini-schema.ts";
+import { extractProjectIds } from "@accounts-proxy/provider-antigravity/domain/project.ts";
+import { formatUsage, parseGroupModels, toQuotaSnapshot } from "@accounts-proxy/provider-antigravity/domain/quota.ts";
+import { mintSessionId, TrajectoryState } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 
 const ref = join(import.meta.dir, "..", "reference", "plugin-5c6f7c2", "domain");
 const load = async <T>(path: string): Promise<T> => (await import(join(ref, path))) as T;
@@ -36,7 +36,7 @@ describe("catalog parity", () => {
   test("descriptors, exclusions, thinking defaults, advertised windows over the captured catalog", () => {
     const ours = toModelDescriptors(models);
     expect(ours).toEqual(R.catalog.toModelDescriptors(models));
-    // The router adds `mimeTypes` (plan 2026-10-16 C3); every plugin field stays identical on the live catalog too.
+    // The proxy adds `mimeTypes` (plan 2026-10-16 C3); every plugin field stays identical on the live catalog too.
     const plugin = R.catalog.toModelDescriptors(live);
     const routed = toModelDescriptors(live);
     expect(routed.map(({ mimeTypes: _, ...d }) => d)).toEqual(plugin);

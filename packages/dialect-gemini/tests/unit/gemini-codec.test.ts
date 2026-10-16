@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { QuotaExhaustedError, UnauthorizedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { GeminiCodec } from "@inference-router/dialect-gemini/adapters/inbound/gemini-codec.ts";
-import { describeCatalog } from "@inference-router/core/domain/model-details.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+import { QuotaExhaustedError, UnauthorizedError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { GeminiCodec } from "@accounts-proxy/dialect-gemini/adapters/inbound/gemini-codec.ts";
+import { describeCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ModelCatalog } from "@accounts-proxy/core/domain/models.ts";
 
 const described = (catalogs: readonly ModelCatalog[]) => catalogs.map((c) => describeCatalog(c, undefined, undefined));
 
@@ -17,7 +17,7 @@ describe("GeminiCodec", () => {
     expect(codec.error(new UnauthorizedError())).toEqual({
       status: 401,
       headers: { "content-type": "application/json" },
-      body: '{"error":{"code":401,"message":"missing or invalid inference-router token","status":"UNAUTHENTICATED"}}',
+      body: '{"error":{"code":401,"message":"missing or invalid accounts-proxy token","status":"UNAUTHENTICATED"}}',
     });
     const upstream = '{"error":{"code":400,"message":"Request contains an invalid argument.","status":"INVALID_ARGUMENT"}}';
     expect(codec.error(new UpstreamError("antigravity", 400, upstream)).body).toBe(upstream);

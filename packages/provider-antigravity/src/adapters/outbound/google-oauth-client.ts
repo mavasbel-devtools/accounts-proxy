@@ -2,16 +2,16 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 GoogleOAuthClientAdapter.ts (authorize parameters and order, token form)
 // and LoginUseCase.buildAccount (userinfo → loadCodeAssist → onboardUser bootstrap). The source uses no PKCE, so
 // none is added (an unmeasured wire change).
-import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { AuthorizeInput, ExchangeInput } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { ClockPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { accountId, toCredential, type AntigravityAccount, type AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import { AUTHORIZE_URL, CLIENT_ID, CLIENT_SECRET, DEFAULT_EXPIRES_IN_S, LOOPBACK_CALLBACK_PATH, SCOPES, SUCCESS_REDIRECT, TOKEN_URL } from "@inference-router/provider-antigravity/domain/constants.ts";
-import { extractProjectIds, onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
-import { AntigravityOAuthPort, type AntigravityApiPort } from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+import { TOKEN_ENDPOINT_TIMEOUT_MS, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { AuthorizeInput, ExchangeInput } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { ClockPort, LoggerPort, RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { accountId, toCredential, type AntigravityAccount, type AuthTokens } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import { AUTHORIZE_URL, CLIENT_ID, CLIENT_SECRET, DEFAULT_EXPIRES_IN_S, LOOPBACK_CALLBACK_PATH, SCOPES, SUCCESS_REDIRECT, TOKEN_URL } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { extractProjectIds, onboardedProjectId } from "@accounts-proxy/provider-antigravity/domain/project.ts";
+import { AntigravityOAuthPort, type AntigravityApiPort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 export type GoogleOAuthEndpoints = { readonly authorizeUrl: string; readonly tokenUrl: string };
 export const PRODUCTION_ENDPOINTS: GoogleOAuthEndpoints = { authorizeUrl: AUTHORIZE_URL, tokenUrl: TOKEN_URL };

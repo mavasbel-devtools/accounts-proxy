@@ -124,3 +124,24 @@ and [the live validation](2026-10-13-01-42-live-validation-plan.md); nothing the
   are vendored byte-identical (21 files, 0 blob mismatches). Test processes (daemon 4142, proxy 4143, opencode services
   49398/49399) stopped; the user's daemon untouched; no router error logged.
 
+
+## 5. Amendment R — project rename (2026-10-16)
+
+The user asked to rename everything from `inference-router` to `accounts-proxy`, with `ap` as the opencode provider-id
+prefix, before C7 (so the documentation is written once, under the new name). Decisions Q1–Q6 approved as recommended
+(scope B including the generic word "router"; history keeps the old name; no compatibility with old names; `login
+opencode` once more; GitHub repository and local directory renamed; Hindsight bank kept by `mapPathToBank`). Full
+record: [project rename](../reference/2026-10-16-14-40-project-rename.md). Everything above this section is history
+and keeps the old names (`ir-<provider>`, `x-router-*`, `/router/v1/models`, "router").
+
+| # | Step | Status |
+|---|---|---|
+| R0 | Start from a clean tree at `fa4545f` (`bun run verify` passing) | done |
+| R1 | `scripts/evidence/rename-project.ts --apply`, then `--check` (mechanical proof) | done: 236 files, 58 paths, 0 failures |
+| R2 | Folders moved, `bun install` from scratch, lockfile byte-identical | done |
+| R3 | Permanent check `tests/arch/legacy-names.test.ts` | done |
+| R4 | AGENTS.md, README, diagram; dated notes on the rules documents; this amendment; session record | done |
+| R5 | `bun run verify`; commit; push | |
+| R6 | `gh repo rename accounts-proxy`; remote URL; directory moved to `/home/mavasbel/Dev/repos/accounts-proxy`; session moved; reinstall; typecheck and unit tier | |
+| R7 | User: daemon stopped, data directory moved, `proxy.yaml`, daemon started, `login opencode`. Then live: accounts, model lists, one request per provider, opencode login with `ap-<provider>` | |
+| C7 | (continues as planned, under the new name) | |

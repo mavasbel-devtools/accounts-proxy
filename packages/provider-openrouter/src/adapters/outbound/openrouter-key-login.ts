@@ -1,12 +1,12 @@
 // `login openrouter --key` / `--from-opencode` (plan P4.6 amendment A, K3/K5): an existing OpenRouter key, checked
 // against `GET /key` (R8); the key's own label names the account.
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { GatewayKeyLogin, type KeyIdentity } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-login.ts";
-import { asObject, CATALOG_TIMEOUT_MS, firstString } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { KEY_PATH } from "@inference-router/provider-openrouter/domain/openrouter.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
+import { asObject, CATALOG_TIMEOUT_MS, firstString } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { KEY_PATH } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 
 export class OpenRouterKeyLogin extends GatewayKeyLogin {
   readonly provider = "openrouter";

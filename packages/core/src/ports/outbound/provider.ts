@@ -1,6 +1,6 @@
 // ProviderPort: the general abstraction every provider adapter extends (plan §2).
-import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
+import type { ModelCatalog, ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import type { HttpResponse, RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 
 export abstract class ProviderPort {
   abstract readonly id: ProviderId;

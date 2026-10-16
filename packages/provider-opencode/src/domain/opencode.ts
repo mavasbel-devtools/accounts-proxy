@@ -1,11 +1,11 @@
 // OpenCode Console rules for Zen (`opencode`) and Go (`opencode-go`) after the 2026-10-12 Console migration (rules
 // document 2026-10-12-15-35-gateway-provider-rules.md §3a, Z12–Z23; §3 Z4–Z6, Z8 and Z9 still hold). Pure.
-import { ProviderAuthRequiredError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { JsonObject } from "@inference-router/core/domain/json.ts";
-import type { ReferenceCatalog } from "@inference-router/core/domain/model-details.ts";
-import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import type { DeviceAuthorization } from "@inference-router/core/domain/device-flow.ts";
-import { asArray, asObject, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
+import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { ReferenceCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
+import { asArray, asObject, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export type OpencodeProvider = Extract<ProviderId, "opencode" | "opencode-go">;
 export const OPENCODE_PROVIDERS: readonly OpencodeProvider[] = ["opencode", "opencode-go"];
@@ -13,8 +13,8 @@ export const OPENCODE_PROVIDERS: readonly OpencodeProvider[] = ["opencode", "ope
 export const OPENCODE_ORIGIN = "https://opencode.ai";
 /** The Console: device login, identity and workspace config (Z17–Z20). */
 export const CONSOLE_URL = `${OPENCODE_ORIGIN}/console`;
-/** The router's own device-login client id (decision K1; the Console API page has other CLIs use their own). */
-export const CLIENT_ID = "inference-router";
+/** The proxy's own device-login client id (decision K1; the Console API page has other CLIs use their own). */
+export const CLIENT_ID = "accounts-proxy";
 export const DEVICE_CODE_PATH = "/auth/device/code";
 export const DEVICE_TOKEN_PATH = "/auth/device/token";
 export const DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
@@ -22,8 +22,8 @@ export const USER_PATH = "/api/user";
 export const ORGS_PATH = "/api/orgs";
 export const CONFIG_PATH = "/api/v2/config";
 
-/** Z15: Go wants the client's own User-Agent (the router's name and version, as in apps/router/package.json). */
-export const USER_AGENT = "inference-router/0.1.0";
+/** Z15: Go wants the client's own User-Agent (the proxy's name and version, as in apps/proxy/package.json). */
+export const USER_AGENT = "accounts-proxy/0.1.0";
 /** Z15: the conversation id the client sends, forwarded as it is. */
 export const SESSION_HEADER = "x-opencode-session";
 /** Z9: the gateway's request id response header. */

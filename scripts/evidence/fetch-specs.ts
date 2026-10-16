@@ -12,14 +12,14 @@ mkdirSync(out, { recursive: true });
  * (`sha256`) and the written extract (`extractSha256`). */
 type Source = { file: string; url: string; commitOf?: { repo: string; branch: string; path: string }; extract?: (body: string) => string };
 
-/** models.dev entries of the gateways the router serves (5 MB in full). */
+/** models.dev entries of the gateways the proxy serves (5 MB in full). */
 const modelsDevGateways = (body: string): string => {
   const all = JSON.parse(body) as Record<string, unknown>;
   const kept = Object.fromEntries(["opencode", "opencode-go", "openrouter"].map((id) => [id, all[id]]));
   return JSON.stringify(kept, null, 1) + "\n";
 };
 
-/** models.opencode.ai entries of the providers the router matches its models against (5.6 MB in full; plan
+/** models.opencode.ai entries of the providers the proxy matches its models against (5.6 MB in full; plan
  * 2026-10-16 C0, decision E3): anthropic (claude), google (antigravity), openai, openrouter, opencode, opencode-go. */
 const modelsOpencodeReference = (body: string): string => {
   const all = JSON.parse(body) as Record<string, unknown>;

@@ -1,12 +1,12 @@
 // Live validation, decision 4 (docs/plans/2026-10-13-01-42-live-validation-plan.md): the official Google Gen AI SDK
 // sends every tool whose schema carries `$schema` (and every MCP tool, `mcpToGeminiTool`) as
-// `functionDeclarations[].parametersJsonSchema`; the router's Antigravity Gemini cell refuses that field (L1 s5).
+// `functionDeclarations[].parametersJsonSchema`; the proxy's Antigravity Gemini cell refuses that field (L1 s5).
 // Four direct upstream requests (production API client, trajectory, envelope) decide what Antigravity itself does:
 //   j1/j2 `parametersJsonSchema` = the MCP schema as the SDK sends it, on a Gemini and on a Claude model
 //   j3/j4 `parameters` = the same schema unsanitized (`$schema`, `additionalProperties`, `anyOf`, `default`)
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-antigravity-json-schema.ts
-import type { ChatMessage, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { PACE_MS, antigravityGenerate, antigravityModel, openLive, sleep, writeCapture } from "@inference-router/scripts/evidence/live/harness.ts";
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l1-antigravity-json-schema.ts
+import type { ChatMessage, StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { PACE_MS, antigravityGenerate, antigravityModel, openLive, sleep, writeCapture } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const MCP_SCHEMA = {
   type: "object",

@@ -1,12 +1,12 @@
 // Test doubles shared by every workspace. Each extends the port it stands in for (no structural fakes).
-import { EMPTY_POOL, type AccountPool } from "@inference-router/core/domain/accounts.ts";
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
-import type { Headers, HttpRequest, HttpResponse } from "@inference-router/core/domain/wire.ts";
-import { CredentialStorePort, type PoolChange } from "@inference-router/core/ports/outbound/credentials.ts";
-import { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import { ClockPort, LockPort, LoggerPort, RandomPort } from "@inference-router/core/ports/outbound/system.ts";
-import { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
+import { EMPTY_POOL, type AccountPool } from "@accounts-proxy/core/domain/accounts.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
+import type { Headers, HttpRequest, HttpResponse } from "@accounts-proxy/core/domain/wire.ts";
+import { CredentialStorePort, type PoolChange } from "@accounts-proxy/core/ports/outbound/credentials.ts";
+import { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import { ClockPort, LockPort, LoggerPort, RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 
 export class FixedClock extends ClockPort {
   constructor(public time = 1_800_000_000_000) {

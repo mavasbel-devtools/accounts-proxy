@@ -1,15 +1,15 @@
 // Provider-internal abstractions. Every Antigravity adapter depends only on these and the core ports;
 // composition wires the implementations.
-import { OAuthClientPort } from "@inference-router/core/ports/outbound/oauth.ts";
-import type { OAuthSessionPort, Session } from "@inference-router/core/ports/outbound/session.ts";
-import { UsageReporterPort } from "@inference-router/core/ports/outbound/usage.ts";
-import type { AntigravityAccount, AuthTokens } from "@inference-router/provider-antigravity/domain/account.ts";
-import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatMessage, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import type { GeminiResponse, PreparedGemini } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
-import type { UsageView } from "@inference-router/provider-antigravity/domain/quota.ts";
-import type { TrajectorySnapshot } from "@inference-router/provider-antigravity/domain/trajectory.ts";
-import type { GenerateParams } from "@inference-router/provider-antigravity/domain/upstream.ts";
+import { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
+import type { OAuthSessionPort, Session } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
+import type { AntigravityAccount, AuthTokens } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import type { ChatMessage, StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import type { GeminiResponse, PreparedGemini } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
+import type { UsageView } from "@accounts-proxy/provider-antigravity/domain/quota.ts";
+import type { TrajectorySnapshot } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
+import type { GenerateParams } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
 
 /** The cloudcode-pa `/v1internal:*` surface (every call carries the captured user agent, wire law 1). */
 export abstract class AntigravityApiPort {

@@ -2,7 +2,7 @@
 // model accepts and produces, its limits, reasoning controls and price, each field with the source that stated it.
 // The provider's own list comes first; the reference catalog (models.opencode.ai, the catalog opencode v2 loads) fills
 // the fields the provider does not state; a field neither states is absent, never guessed (decision E3).
-import { formatModelAddress, modelFormats, SUBSCRIPTION_PROVIDERS, type ModelCatalog, type CatalogSource, type ModelInfo, type ModelsSource, type ProviderId, type WireFormat } from "@inference-router/core/domain/models.ts";
+import { formatModelAddress, modelFormats, SUBSCRIPTION_PROVIDERS, type ModelCatalog, type CatalogSource, type ModelInfo, type ModelsSource, type ProviderId, type WireFormat } from "@accounts-proxy/core/domain/models.ts";
 
 export type Modality = "text" | "image" | "audio" | "video" | "pdf";
 export const MODALITIES: readonly Modality[] = ["text", "image", "audio", "video", "pdf"];
@@ -59,7 +59,7 @@ export type ReferenceModel = ModelDetails & {
 /** Reference provider id → model id → entry. */
 export type ReferenceCatalog = ReadonlyMap<string, ReadonlyMap<string, ReferenceModel>>;
 
-/** Rule M2: the reference provider each router provider's ids are matched in (exact ids only). */
+/** Rule M2: the reference provider each proxy provider's ids are matched in (exact ids only). */
 export const REFERENCE_PROVIDER: Readonly<Record<ProviderId, string | undefined>> = {
   claude: "anthropic",
   antigravity: "google",
@@ -265,7 +265,7 @@ export function parseReference(value: unknown): Map<string, Map<string, Referenc
   return out;
 }
 
-/** The stored form of a reference catalog (the router's state and the built-in copy). */
+/** The stored form of a reference catalog (the proxy's state and the built-in copy). */
 export type ReferenceRecord = Readonly<Record<string, Readonly<Record<string, ReferenceModel>>>>;
 
 export function referenceRecord(catalog: ReferenceCatalog): ReferenceRecord {

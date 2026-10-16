@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { InvalidRequestError, QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
-import { AnthropicCodec, anthropicErrorType, UNDATED } from "@inference-router/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
-import { describeCatalog } from "@inference-router/core/domain/model-details.ts";
+import { InvalidRequestError, QuotaExhaustedError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ModelCatalog } from "@accounts-proxy/core/domain/models.ts";
+import { AnthropicCodec, anthropicErrorType, UNDATED } from "@accounts-proxy/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
+import { describeCatalog } from "@accounts-proxy/core/domain/model-details.ts";
 
 const described = (catalogs: readonly ModelCatalog[]) => catalogs.map((c) => describeCatalog(c, undefined, undefined));
 

@@ -1,16 +1,16 @@
 // Live model catalog. Contract of opencode-claude-auth @ 6292741 (AGENTS.md §9, AnthropicModelsApiAdapter,
 // RefreshModelCatalogUseCase): fresh cache (< 24 h) → live paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per
 // page, cursor last_id else final id) → on failure or empty: stale non-empty cache → static minimum. Never empty.
-import { errorMessage } from "@inference-router/core/domain/services/error-message.ts";
-import { readAll } from "@inference-router/core/domain/wire.ts";
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import type { KeyValueStorePort } from "@inference-router/core/ports/outbound/state.ts";
-import type { ClockPort, LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "@inference-router/provider-claude/domain/catalog.ts";
-import { ANTHROPIC_VERSION_HEADER, CATALOG } from "@inference-router/provider-claude/domain/constants.ts";
-import { STATIC_CATALOG, type CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
-import { ClaudeCatalogPort, type CatalogListing, type ClaudeSessionPort } from "@inference-router/provider-claude/ports/outbound/claude.ts";
+import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
+import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
+import { ANTHROPIC_VERSION_HEADER, CATALOG } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { STATIC_CATALOG, type CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
+import { ClaudeCatalogPort, type CatalogListing, type ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 
 export const CATALOG_KEY = "claude/model-catalog";
 

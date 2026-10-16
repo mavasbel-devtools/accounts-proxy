@@ -2,13 +2,13 @@
 // Anthropic Messages fields for T1, public Gemini fields inside the Antigravity envelope for T2–T4 — sent through the
 // production session, transport and envelope. Each cell is classified from the observed response:
 // ACCEPTED (200 and the effect observed), IGNORED (200, no effect), REJECTED (4xx, exact message kept).
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/e3-fidelity.ts
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/e3-fidelity.ts
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
-import type { ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import type { ChatMessage, EnvelopePart, StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
+import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import type { ChatMessage, EnvelopePart, StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
 import {
   PACE_MS,
   StopRun,
@@ -24,7 +24,7 @@ import {
   writeDoc,
   type ClaudeResult,
   type Live,
-} from "@inference-router/scripts/evidence/live/harness.ts";
+} from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 type Verdict = "ACCEPTED" | "IGNORED" | "REJECTED" | "BLOCKED";
 type Cell = { target: string; probe: string; feature: string; verdict: Verdict; evidence: string };

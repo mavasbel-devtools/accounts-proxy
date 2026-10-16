@@ -1,15 +1,15 @@
 // Test-tier runner. Usage: bun scripts/gate/run-tests.ts <unit|coverage|e2e|live>
 //   unit     — tests/arch, tests/support and every workspace's tests/unit + tests/component
 //   coverage — the same set under istanbul instrumentation, then the 100% + completeness gate
-//   e2e      — every workspace's tests/e2e (daemons inherit INFERENCE_ROUTER_E2E_COVERAGE_DIR), then the gate
-//   live     — every workspace's tests/live with INFERENCE_ROUTER_LIVE=1 (real accounts; never part of verify)
+//   e2e      — every workspace's tests/e2e (daemons inherit ACCOUNTS_PROXY_E2E_COVERAGE_DIR), then the gate
+//   live     — every workspace's tests/live with ACCOUNTS_PROXY_LIVE=1 (real accounts; never part of verify)
 // Options: --workspace <packages/x|apps/x> scopes unit/coverage to one workspace (development aid, not the gate).
 // Exit codes: 0 pass, 1 fail, 3 incomplete (the tier has no test files yet — reported, never treated as a pass).
 import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { loadMaps, report, scopeMap } from "@inference-router/scripts/gate/coverage-report.ts";
-import { applyDeferrals, E2E_DEFERRED } from "@inference-router/scripts/gate/e2e-deferred.ts";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
+import { loadMaps, report, scopeMap } from "@accounts-proxy/scripts/gate/coverage-report.ts";
+import { applyDeferrals, E2E_DEFERRED } from "@accounts-proxy/scripts/gate/e2e-deferred.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 
 export const INCOMPLETE = 3;
 export const E2E_TEST_TIMEOUT_MS = 60_000;
@@ -64,7 +64,7 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
     const raw = join(outDir, "raw.json");
     rmSync(outDir, { recursive: true, force: true });
     const code = await bunTest(["--preload", join(import.meta.dir, "unit-coverage-preload.ts"), ...scoped(["unit", "component"])], {
-      INFERENCE_ROUTER_UNIT_COVERAGE_FILE: raw,
+      ACCOUNTS_PROXY_UNIT_COVERAGE_FILE: raw,
     });
     if (code !== 0) return code;
     if (!existsSync(raw)) {
@@ -86,7 +86,7 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
     const rawDir = join(coverageRoot, "e2e", "raw");
     rmSync(join(coverageRoot, "e2e"), { recursive: true, force: true });
     // E2E tests spawn real processes (logins, daemons): a per-test budget of 60 s instead of bun's 5 s default.
-    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), ...dirs], { INFERENCE_ROUTER_E2E_COVERAGE_DIR: rawDir });
+    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), ...dirs], { ACCOUNTS_PROXY_E2E_COVERAGE_DIR: rawDir });
     if (code !== 0) return code;
     const files = existsSync(rawDir) ? readdirSync(rawDir).map((f) => join(rawDir, f)) : [];
     if (files.length === 0) {
@@ -107,7 +107,7 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
       console.error("LIVE INCOMPLETE — no live test files exist yet");
       return INCOMPLETE;
     }
-    return bunTest(dirs, { INFERENCE_ROUTER_LIVE: "1" });
+    return bunTest(dirs, { ACCOUNTS_PROXY_LIVE: "1" });
   }
   console.error("usage: run-tests.ts <unit|coverage|e2e|live>");
   return 2;

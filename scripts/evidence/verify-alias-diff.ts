@@ -19,10 +19,10 @@ const git = (...args: string[]) => execFileSync("git", ["-C", root, ...args], { 
 
 const expected = new Map<string, [string, string][]>();
 for (const line of readFileSync(log, "utf8").split(/\r?\n/)) {
-  const m = /^(.+?): (\.\.?\/\S+) -> (@inference-router\/\S+)$/.exec(line);
+  const m = /^(.+?): (\.\.?\/\S+) -> (@accounts-proxy\/\S+)$/.exec(line);
   if (m) expected.set(m[1]!, [...(expected.get(m[1]!) ?? []), [m[2]!, m[3]!]]);
 }
-const SPEC = /(["'])((?:\.{1,2}\/|@inference-router\/)[^"']*)\1/g;
+const SPEC = /(["'])((?:\.{1,2}\/|@accounts-proxy\/)[^"']*)\1/g;
 const failures: string[] = [];
 const exceptions: string[] = [];
 let verified = 0;

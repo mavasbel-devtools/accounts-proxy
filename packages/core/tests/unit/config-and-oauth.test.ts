@@ -1,19 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import { ConfigError, DEFAULT_CONFIG, enabledProviders, parseRouterConfig } from "@inference-router/core/domain/config.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "@inference-router/core/domain/services/oauth-flow.ts";
+import { ConfigError, DEFAULT_CONFIG, enabledProviders, parseProxyConfig } from "@accounts-proxy/core/domain/config.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "@accounts-proxy/core/domain/services/oauth-flow.ts";
 
-describe("parseRouterConfig", () => {
+describe("parseProxyConfig", () => {
   test("no document → defaults, everything disabled, port 4141", () => {
-    expect(parseRouterConfig(undefined)).toBe(DEFAULT_CONFIG);
-    expect(parseRouterConfig(null)).toBe(DEFAULT_CONFIG);
+    expect(parseProxyConfig(undefined)).toBe(DEFAULT_CONFIG);
+    expect(parseProxyConfig(null)).toBe(DEFAULT_CONFIG);
     expect(DEFAULT_CONFIG.port).toBe(4141);
     expect(enabledProviders(DEFAULT_CONFIG)).toEqual([]);
-    expect(parseRouterConfig({})).toEqual(DEFAULT_CONFIG);
+    expect(parseProxyConfig({})).toEqual(DEFAULT_CONFIG);
   });
 
   test("the example configuration enables both providers", () => {
-    const config = parseRouterConfig({
+    const config = parseProxyConfig({
       port: 4141,
       providers: { claude: { enabled: true, acknowledgeTermsRisk: true }, antigravity: { enabled: true, acknowledgeTermsRisk: true } },
       aliases: { opus: "claude/claude-opus-4-8" },
@@ -23,13 +23,13 @@ describe("parseRouterConfig", () => {
   });
 
   test("an API-key gateway needs only enabled: true (plan P4.6 N1); a subscription provider needs the acknowledgement", () => {
-    const config = parseRouterConfig({ providers: { openrouter: { enabled: true }, "cheaper-inference": { enabled: true, acknowledgeTermsRisk: false } } });
+    const config = parseProxyConfig({ providers: { openrouter: { enabled: true }, "cheaper-inference": { enabled: true, acknowledgeTermsRisk: false } } });
     expect(enabledProviders(config)).toEqual(["openrouter", "cheaper-inference"]);
-    expect(() => parseRouterConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
+    expect(() => parseProxyConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
   });
 
   test("acknowledged but disabled stays disabled", () => {
-    expect(enabledProviders(parseRouterConfig({ providers: { antigravity: { acknowledgeTermsRisk: true } } }))).toEqual([]);
+    expect(enabledProviders(parseProxyConfig({ providers: { antigravity: { acknowledgeTermsRisk: true } } }))).toEqual([]);
   });
 
   test.each([
@@ -50,8 +50,8 @@ describe("parseRouterConfig", () => {
     [{ aliases: { a: 1 } }, "aliases.a must be a <provider>/<model> string"],
     [{ aliases: { a: "gpt-4o" } }, 'aliases.a = "gpt-4o" is not <provider>/<model>'],
   ])("%p is rejected", (raw, message) => {
-    expect(() => parseRouterConfig(raw)).toThrow(ConfigError);
-    expect(() => parseRouterConfig(raw)).toThrow(message);
+    expect(() => parseProxyConfig(raw)).toThrow(ConfigError);
+    expect(() => parseProxyConfig(raw)).toThrow(message);
   });
 });
 

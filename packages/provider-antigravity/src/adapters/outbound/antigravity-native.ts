@@ -1,15 +1,15 @@
 // The near-native Gemini cell over the shared runner: each upstream envelope is unwrapped to the public
 // GenerateContentResponse (`envelope.response`, or the envelope itself when it is a bare response — law 10 accepts
 // both), and every signed functionCall it carries is cached in memory and in the durable store (law 6).
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { StreamEnvelope } from "@inference-router/provider-antigravity/domain/generate.ts";
-import { innerRequest, signedCalls, type GeminiResponse } from "@inference-router/provider-antigravity/domain/native-gemini.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { innerRequest, signedCalls, type GeminiResponse } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
 import {
   AntigravityNativePort,
   type AntigravityRunnerPort,
   type AntigravityStatePort,
   type NativeInput,
-} from "@inference-router/provider-antigravity/ports/outbound/antigravity.ts";
+} from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 export function unwrapEnvelope(envelope: StreamEnvelope): GeminiResponse {
   return (envelope.response ?? envelope) as GeminiResponse;

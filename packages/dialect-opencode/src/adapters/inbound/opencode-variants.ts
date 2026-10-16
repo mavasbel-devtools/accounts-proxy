@@ -1,17 +1,17 @@
-// opencode's model variants for the packages the router's configuration uses (plan 2026-10-16 rule O4). Port of
+// opencode's model variants for the packages the proxy's configuration uses (plan 2026-10-16 rule O4). Port of
 // opencode v2.0.26 (9b4ec5714d) packages/core/src/variant.ts `resolve` with the protocols of
 // @opencode/ai/providers/{anthropic, openai, openai-compatible, google, openrouter}; vendored byte-identical in
-// tests/reference/plugin-9b4ec5714d/core/src/variant.ts, its cases in core/test/variant.test.ts. The router's
+// tests/reference/plugin-9b4ec5714d/core/src/variant.ts, its cases in core/test/variant.test.ts. The proxy's
 // openai-compatible models are never NVIDIA's (`openaiCompatible` → `openaiChat`). An effort option always carries its
 // values here (models.dev `reasoning_options`, `ReasoningOption`), so variant.ts's default effort lists never apply.
-import type { ReasoningOption } from "@inference-router/core/domain/model-details.ts";
+import type { ReasoningOption } from "@accounts-proxy/core/domain/model-details.ts";
 
 export const ANTHROPIC_PACKAGE = "@opencode/ai/providers/anthropic";
 export const OPENAI_PACKAGE = "@opencode/ai/providers/openai";
 export const OPENAI_COMPATIBLE_PACKAGE = "@opencode/ai/providers/openai-compatible";
 export const GOOGLE_PACKAGE = "@opencode/ai/providers/google";
 export const OPENROUTER_PACKAGE = "@opencode/ai/providers/openrouter";
-/** The connection packages the router's configuration writes (rule O2); each has its protocol below. */
+/** The connection packages the proxy's configuration writes (rule O2); each has its protocol below. */
 export type OpencodePackage = typeof ANTHROPIC_PACKAGE | typeof OPENAI_PACKAGE | typeof OPENAI_COMPATIBLE_PACKAGE | typeof GOOGLE_PACKAGE | typeof OPENROUTER_PACKAGE;
 
 type Json = Readonly<Record<string, unknown>>;

@@ -1,5 +1,5 @@
 {
-  "name": "@inference-router/test-support",
+  "name": "@accounts-proxy/test-support",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -9,6 +9,6 @@
     "./*": "./*"
   },
   "dependencies": {
-    "@inference-router/core": "workspace:*"
+    "@accounts-proxy/core": "workspace:*"
   }
 }

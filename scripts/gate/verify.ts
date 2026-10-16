@@ -3,11 +3,11 @@
 // reported explicitly and never counted as a pass.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 
 const PASS = 0;
 const INCOMPLETE = 3;
-const entry = join(repositoryRoot, "apps", "router", "src", "main", "cli.ts");
+const entry = join(repositoryRoot, "apps", "proxy", "src", "main", "cli.ts");
 
 type Step = { name: string; command: string[] | (() => string[] | "incomplete") };
 
@@ -19,7 +19,7 @@ const steps: Step[] = [
     name: "build",
     command: () =>
       existsSync(entry)
-        ? [bun, "build", entry, "--target", "bun", "--outfile", join("dist", "inference-router.js")]
+        ? [bun, "build", entry, "--target", "bun", "--outfile", join("dist", "accounts-proxy.js")]
         : "incomplete",
   },
   { name: "e2e with 100% coverage", command: [bun, "scripts/gate/run-tests.ts", "e2e"] },

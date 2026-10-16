@@ -3,7 +3,7 @@
 // Usage: bun scripts/evidence/e2e-gaps.ts [coverage/e2e/coverage-final.json]
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { repositoryRoot } from "@inference-router/scripts/gate/instrument.ts";
+import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 
 type FileCoverage = { path: string; s: Record<string, number>; f: Record<string, number>; b: Record<string, number[]> };
 

@@ -2,13 +2,13 @@
 // production composition root, in this process so that its upstream traffic goes through the recording transport)
 // answers the official Anthropic, OpenAI and Google Gen AI SDKs for every provider's native cells.
 //   primary cell per provider: s1 plain, s2 plain streamed, s3 three-turn conversation, s4 tool round trip,
-//     s5 MCP-style tool definition, s5b the same with `x-router-lossy: 1`, s6 unknown model
+//     s5 MCP-style tool definition, s5b the same with `x-proxy-lossy: 1`, s6 unknown model
 //   secondary cells: s2 plain streamed in each other native format
 //   L2 (--only=l2): one forced renewal of the openai and the OpenCode Console sessions, then one request each
 // One request at a time, 2 s apart; a 429 or 402 stops that provider's remaining requests (no retry, no rotation).
 // Captures (redacted, secret-scanned): tests/fixtures/captures/p0-live/l1/<cell>-<scenario>.json; the findings table:
 // docs/reference/<ts>-l1-live-matrix.md.
-// Usage: INFERENCE_ROUTER_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts [--only=<cell|provider|l2|l2-openai|l2-opencode>,...]
+// Usage: ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts [--only=<cell|provider|l2|l2-openai|l2-opencode>,...]
 //          [--scenarios=s1,s5,...]
 // Zen's deepseek-v4-flash and kimi-k2.6 answered 404/410 "Upstream request failed: Endpoint is unavailable." on the
 // documented path (l1-zen-chat-check.ts, 2026-10-13); the Zen Chat cell uses glm-5.1, which answered 200.
@@ -16,12 +16,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { GoogleGenAI, type Content, type GenerateContentResponse } from "@google/genai";
 import { join } from "node:path";
-import type { WireFormat } from "@inference-router/core/domain/models.ts";
-import { SystemBrowserLauncher } from "@inference-router/router/adapters/outbound/browser-launcher.ts";
-import { opencodeDataDir } from "@inference-router/router/adapters/outbound/opencode-auth-file.ts";
-import { ShutdownSignal } from "@inference-router/router/adapters/inbound/server.ts";
-import { LOOPBACK_HOST, PRODUCTION_LOCK, runCli, type ContainerOptions } from "@inference-router/router/composition/container.ts";
-import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@inference-router/scripts/evidence/live/harness.ts";
+import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { SystemBrowserLauncher } from "@accounts-proxy/proxy/adapters/outbound/browser-launcher.ts";
+import { opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
+import { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
+import { LOOPBACK_HOST, PRODUCTION_LOCK, runCli, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
+import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "").slice("--only=".length).split(",").filter((x) => x !== "");
 const onlyScenarios = (process.argv.find((a) => a.startsWith("--scenarios=")) ?? "").slice("--scenarios=".length).split(",").filter((x) => x !== "");
@@ -87,7 +87,7 @@ function options(live: Live, out: (text: string) => void, shutdown: ShutdownSign
   return {
     home: live.home,
     opencodeData: opencodeDataDir(process.env),
-    entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "router", "src", "main", "cli.ts")],
+    entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "proxy", "src", "main", "cli.ts")],
     out,
     err: out,
     stdin: process.stdin,
@@ -120,13 +120,13 @@ type Client = {
 };
 
 function anthropicClient(base: string, token: string, extra: Record<string, string>): Client {
-  const client = (lossy = false) => new Anthropic({ apiKey: token, baseURL: `${base}/anthropic`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-router-lossy": "1" } : {}) } });
+  const client = (lossy = false) => new Anthropic({ apiKey: token, baseURL: `${base}/anthropic`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-proxy-lossy": "1" } : {}) } });
   const text = (m: Anthropic.Message) => m.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
   const tools = (m: Anthropic.Message) => m.content.flatMap((b) => (b.type === "tool_use" ? [`${b.name}(${JSON.stringify(b.input)})`] : []));
   const describe = (m: Anthropic.Message, extraText = "") => `stop=${m.stop_reason} text=${JSON.stringify(clip(text(m)))}${tools(m).length > 0 ? ` tool_use=${tools(m).join(";")}` : ""}${extraText}`;
   const create = async (body: Omit<Anthropic.MessageCreateParamsNonStreaming, "max_tokens">, lossy = false) => {
     const { data, response } = await client(lossy).messages.create({ max_tokens: 1024, ...body }).withResponse();
-    return { message: data, dropped: response.headers.get("x-router-dropped") };
+    return { message: data, dropped: response.headers.get("x-proxy-dropped") };
   };
   return {
     async plain(model, stream) {
@@ -171,7 +171,7 @@ function anthropicClient(base: string, token: string, extra: Record<string, stri
 }
 
 function chatClient(base: string, token: string, extra: Record<string, string>): Client {
-  const client = (lossy = false) => new OpenAI({ apiKey: token, baseURL: `${base}/openai/v1`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-router-lossy": "1" } : {}) } });
+  const client = (lossy = false) => new OpenAI({ apiKey: token, baseURL: `${base}/openai/v1`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-proxy-lossy": "1" } : {}) } });
   const describe = (c: OpenAI.ChatCompletion, extraText = "") => {
     const choice = c.choices[0];
     const calls = (choice?.message.tool_calls ?? []).flatMap((t) => (t.type === "function" ? [`${t.function.name}(${t.function.arguments})`] : []));
@@ -179,7 +179,7 @@ function chatClient(base: string, token: string, extra: Record<string, string>):
   };
   const create = async (body: OpenAI.ChatCompletionCreateParamsNonStreaming, lossy = false) => {
     const { data, response } = await client(lossy).chat.completions.create(body).withResponse();
-    return { completion: data, dropped: response.headers.get("x-router-dropped") };
+    return { completion: data, dropped: response.headers.get("x-proxy-dropped") };
   };
   const getTime: OpenAI.ChatCompletionTool = { type: "function", function: { name: "get_time", description: "Current local time in an IANA timezone.", parameters: GET_TIME_SCHEMA } };
   return {
@@ -221,12 +221,12 @@ function chatClient(base: string, token: string, extra: Record<string, string>):
 }
 
 function responsesClient(base: string, token: string, extra: Record<string, string>): Client {
-  const client = (lossy = false) => new OpenAI({ apiKey: token, baseURL: `${base}/openai/v1`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-router-lossy": "1" } : {}) } });
+  const client = (lossy = false) => new OpenAI({ apiKey: token, baseURL: `${base}/openai/v1`, maxRetries: 0, timeout: 180_000, defaultHeaders: { ...extra, ...(lossy ? { "x-proxy-lossy": "1" } : {}) } });
   const calls = (r: OpenAI.Responses.Response) => r.output.flatMap((i) => (i.type === "function_call" ? [i] : []));
   const describe = (r: OpenAI.Responses.Response, extraText = "") => `status=${r.status} text=${JSON.stringify(clip(r.output_text ?? ""))}${calls(r).length > 0 ? ` function_calls=${calls(r).map((c) => `${c.name}(${c.arguments})`).join(";")}` : ""}${extraText}`;
   const create = async (body: OpenAI.Responses.ResponseCreateParamsNonStreaming, lossy = false) => {
     const { data, response } = await client(lossy).responses.create(body).withResponse();
-    return { response: data, dropped: response.headers.get("x-router-dropped") };
+    return { response: data, dropped: response.headers.get("x-proxy-dropped") };
   };
   /** Stateless history (store: false): assistant text as a message, function calls without their item ids. */
   const history = (r: OpenAI.Responses.Response): OpenAI.Responses.ResponseInputItem[] =>
@@ -274,12 +274,12 @@ function responsesClient(base: string, token: string, extra: Record<string, stri
 }
 
 function geminiClient(base: string, token: string, extra: Record<string, string>): Client {
-  const client = (lossy = false) => new GoogleGenAI({ apiKey: token, httpOptions: { baseUrl: `${base}/gemini`, timeout: 180_000, headers: { ...extra, ...(lossy ? { "x-router-lossy": "1" } : {}) } } });
+  const client = (lossy = false) => new GoogleGenAI({ apiKey: token, httpOptions: { baseUrl: `${base}/gemini`, timeout: 180_000, headers: { ...extra, ...(lossy ? { "x-proxy-lossy": "1" } : {}) } } });
   const describe = (r: GenerateContentResponse, extraText = "") => {
     const calls = (r.functionCalls ?? []).map((c) => `${c.name}(${JSON.stringify(c.args)})`);
     return `finish=${r.candidates?.[0]?.finishReason} text=${JSON.stringify(clip(r.text ?? ""))}${calls.length > 0 ? ` function_calls=${calls.join(";")}` : ""}${extraText}`;
   };
-  const dropped = (r: GenerateContentResponse) => r.sdkHttpResponse?.headers?.["x-router-dropped"] ?? null;
+  const dropped = (r: GenerateContentResponse) => r.sdkHttpResponse?.headers?.["x-proxy-dropped"] ?? null;
   const getTime = { functionDeclarations: [{ name: "get_time", description: "Current local time in an IANA timezone.", parameters: GET_TIME_SCHEMA as never }] };
   return {
     async plain(model, stream) {
@@ -332,7 +332,7 @@ async function main(): Promise<number> {
   let tokenText = "";
   await runCli(["token"], options(live, (t) => void (tokenText += t), new ManualShutdown()));
   const token = tokenText.trim();
-  live.redactor.add("router_token", token);
+  live.redactor.add("proxy_token", token);
 
   let daemonOut = "";
   const shutdown = new ManualShutdown();
@@ -437,11 +437,11 @@ async function main(): Promise<number> {
 Generated by \`scripts/evidence/live/l1-live-matrix.ts\` on ${capturedAt}
 ([plan](../plans/2026-10-13-01-42-live-validation-plan.md)). The daemon is the production composition root
 (\`runCli(["serve"])\`) in the script's process over the recording transport; the clients are the official SDKs
-(@anthropic-ai/sdk, openai, @google/genai) on the router's own routes and token. Captures:
+(@anthropic-ai/sdk, openai, @google/genai) on the proxy's own routes and token. Captures:
 \`tests/fixtures/captures/p0-live/l1/<cell>-<scenario>.json\` (redacted, secret-scanned; token-endpoint exchanges are
 omitted). Daemon exit: ${code}.
 
-| Cell | Scenario | HTTP (client) | Observed (client side) | x-router-dropped | Upstream calls | ms |
+| Cell | Scenario | HTTP (client) | Observed (client side) | x-proxy-dropped | Upstream calls | ms |
 |---|---|---|---|---|---|---|
 ${rows.map((r) => `| ${r.cell} | ${r.scenario} | ${r.status} | ${r.summary.replaceAll("|", "\\|")} | ${r.dropped} | ${r.upstream} | ${r.ms} |`).join("\n")}
 

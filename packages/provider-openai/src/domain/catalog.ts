@@ -3,9 +3,9 @@
 // it is a positive integer (the field opencode decodes, chatgpt.ts:66-75). Without a live list: the built-in slugs.
 // Plan 2026-10-16 C3: `description`, `input_modalities` and the `supported_reasoning_levels[].effort` values are kept
 // as details (the captured list, tests/fixtures/captures/p0-live/l4/openai-models.json).
-import { isJsonObject, type JsonValue } from "@inference-router/core/domain/json.ts";
-import { compactDetails, modalities, type ModelDetails } from "@inference-router/core/domain/model-details.ts";
-import { FALLBACK_MODELS } from "@inference-router/provider-openai/domain/constants.ts";
+import { isJsonObject, type JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import { compactDetails, modalities, type ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import { FALLBACK_MODELS } from "@accounts-proxy/provider-openai/domain/constants.ts";
 
 export type CatalogEntry = { readonly id: string; readonly displayName: string; readonly contextWindow?: number; readonly details?: ModelDetails };
 

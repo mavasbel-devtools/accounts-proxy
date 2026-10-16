@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { QuotaExhaustedError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import { OpenAiCodec, unixSeconds } from "@inference-router/dialect-openai/adapters/inbound/openai-codec.ts";
-import { describeCatalog } from "@inference-router/core/domain/model-details.ts";
-import type { ModelCatalog } from "@inference-router/core/domain/models.ts";
+import { QuotaExhaustedError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { OpenAiCodec, unixSeconds } from "@accounts-proxy/dialect-openai/adapters/inbound/openai-codec.ts";
+import { describeCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ModelCatalog } from "@accounts-proxy/core/domain/models.ts";
 
 const described = (catalogs: readonly ModelCatalog[]) => catalogs.map((c) => describeCatalog(c, undefined, undefined));
 

@@ -1,5 +1,5 @@
-import type { ReferenceCatalog } from "@inference-router/core/domain/model-details.ts";
-import type { ModelsSource } from "@inference-router/core/domain/models.ts";
+import type { ReferenceCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ModelsSource } from "@accounts-proxy/core/domain/models.ts";
 
 export type ReferenceListing = { readonly source: ModelsSource; readonly catalog: ReferenceCatalog };
 

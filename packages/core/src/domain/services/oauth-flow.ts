@@ -1,6 +1,6 @@
 // Pure OAuth browser-login rules shared by every provider.
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { ProviderId } from "@inference-router/core/domain/models.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
 
 export type LoopbackCallback = Readonly<Record<string, string>>;
 

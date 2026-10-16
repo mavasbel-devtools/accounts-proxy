@@ -1,4 +1,4 @@
-// P3 parity gate: for the same input, the router's outbound Claude request (url, headers, body bytes) must equal
+// P3 parity gate: for the same input, the proxy's outbound Claude request (url, headers, body bytes) must equal
 // the reference implementation's (opencode-claude-auth @ 6292741, tests/reference/plugin-6292741). Any difference
 // is a defect, except the deliberate fixes listed (and asserted) at the bottom of this file. F9 (Q6) changes every
 // request whose thinking is absent or disabled, so `both` applies exactly that change to the reference output before
@@ -6,8 +6,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { capturedBetaHeader, transformRequest, type TransformContext, type WireRequestBody } from "@inference-router/provider-claude/domain/request-transform.ts";
-import type { CatalogModelEntry } from "@inference-router/provider-claude/domain/model-envelope.ts";
+import { capturedBetaHeader, transformRequest, type TransformContext, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
+import type { CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
 // Loaded through a computed specifier so the typecheck does not compile the verbatim (differently linted) source.
 type ReferenceService = new (
   random: { uuid(): string; sha256Base64Url(input: string): string },
@@ -189,7 +189,7 @@ describe("deliberate differences (each one asserted, nothing else may differ)", 
     expect(withoutThinking(actual.body)).toEqual(withoutThinking(expected.body));
   });
 
-  test("F9: absent thinking — the reference adds the captured default thinking and the clear-thinking edit; the router adds neither", () => {
+  test("F9: absent thinking — the reference adds the captured default thinking and the clear-thinking edit; the proxy adds neither", () => {
     const body: WireRequestBody = { model: "claude-haiku-4-5-20251001", messages: user };
     const source = JSON.parse(reference(body, "/v1/messages", null, "https://api.anthropic.com").body) as Record<string, unknown>;
     expect(source["thinking"]).toEqual({ type: "enabled", display: "omitted", budget_tokens: 31999 });

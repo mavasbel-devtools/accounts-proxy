@@ -2,13 +2,13 @@
 // catalog, or uniform for the vendor); the client's request goes to the vendor's endpoint with the bare model id and the
 // key in the endpoint's header, and the response streams back unchanged (rules G1–G4). A fixed key is never renewed;
 // an upstream 401 reaches the client as it is (G6).
-import type { ModelCatalog, ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import type { HttpResponse, RawRequest } from "@inference-router/core/domain/wire.ts";
-import { ProviderPort } from "@inference-router/core/ports/outbound/provider.ts";
-import type { LoggerPort } from "@inference-router/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@inference-router/core/ports/outbound/transport.ts";
-import { forwardedResponseHeaders, keyHeaders, servedFormats, upstreamCall, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
-import type { GatewayCatalogPort, GatewayKeySessionPort } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
+import type { ModelCatalog, ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import type { HttpResponse, RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
+import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import { forwardedResponseHeaders, keyHeaders, servedFormats, upstreamCall, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import type { GatewayCatalogPort, GatewayKeySessionPort } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
 
 export class GatewayProvider extends ProviderPort {
   constructor(

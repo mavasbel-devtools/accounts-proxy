@@ -1,5 +1,5 @@
 // Provider and model identity shared by every layer.
-import type { ModelDetails } from "@inference-router/core/domain/model-details.ts";
+import type { ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
 
 export type ProviderId = "claude" | "antigravity" | "openai" | "openrouter" | "opencode" | "opencode-go" | "cheaper-inference";
 export const PROVIDER_IDS: readonly ProviderId[] = ["claude", "antigravity", "openai", "openrouter", "opencode", "opencode-go", "cheaper-inference"];
@@ -15,7 +15,7 @@ export type Dialect = "anthropic" | "openai" | "gemini";
 /**
  * The request format of one route (plan P4.6 §2): `/anthropic/v1/messages*` → anthropic-messages,
  * `/openai/v1/chat/completions` → openai-chat, `/openai/v1/responses` → openai-responses, `/gemini/v1beta/models/*` →
- * gemini. A model serves some formats natively; a request in any other format answers unsupported_feature (the router
+ * gemini. A model serves some formats natively; a request in any other format answers unsupported_feature (the proxy
  * does not translate between formats: P5 cancelled, plan 2026-10-16 D1-A).
  */
 export type WireFormat = "anthropic-messages" | "openai-chat" | "openai-responses" | "gemini";

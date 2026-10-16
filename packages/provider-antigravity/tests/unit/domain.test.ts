@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { QuotaExhaustedError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { accountId, activeProject, fromCredential, rotated, toCredential, type AntigravityAccount } from "@inference-router/provider-antigravity/domain/account.ts";
-import { advertisedLimits, descriptorDetails, toModelDescriptors, type ModelDescriptor } from "@inference-router/provider-antigravity/domain/catalog.ts";
-import { onboardedProjectId } from "@inference-router/provider-antigravity/domain/project.ts";
-import { formatUsage } from "@inference-router/provider-antigravity/domain/quota.ts";
-import { defaultFamilyOf, isContinuation, isSessionId } from "@inference-router/provider-antigravity/domain/trajectory.ts";
-import { asResponseEnvelope, isLocationGate, isUnauthorized, outerEnvelope, retryAfterSeconds, upstreamFailure } from "@inference-router/provider-antigravity/domain/upstream.ts";
+import { QuotaExhaustedError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { accountId, activeProject, fromCredential, rotated, toCredential, type AntigravityAccount } from "@accounts-proxy/provider-antigravity/domain/account.ts";
+import { advertisedLimits, descriptorDetails, toModelDescriptors, type ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { onboardedProjectId } from "@accounts-proxy/provider-antigravity/domain/project.ts";
+import { formatUsage } from "@accounts-proxy/provider-antigravity/domain/quota.ts";
+import { defaultFamilyOf, isContinuation, isSessionId } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
+import { asResponseEnvelope, isLocationGate, isUnauthorized, outerEnvelope, retryAfterSeconds, upstreamFailure } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
 
 const account: AntigravityAccount = { email: "me@x", tokens: { accessToken: "a", refreshToken: "r", expiresAt: 1_000_000 }, projectIds: ["p1", "p2"], activeProjectId: "p2" };
 

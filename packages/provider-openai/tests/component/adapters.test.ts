@@ -1,23 +1,23 @@
 // provider-openai adapters over the shared test doubles; ID tokens are signed with a real RSA key (IdTokenSigner).
 import { describe, expect, test } from "bun:test";
-import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@inference-router/core/domain/accounts.ts";
-import { ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@inference-router/core/domain/errors.ts";
-import { DROPPED_HEADER, readAll, type HttpRequest, type RawRequest } from "@inference-router/core/domain/wire.ts";
-import { FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, RecordingLock, ScriptedTransport, SequenceRandom, type ScriptedResponse } from "@inference-router/test-support/fakes.ts";
-import { IdTokenSigner } from "@inference-router/test-support/openai-id-token.ts";
-import { JwksIdTokenVerifier } from "@inference-router/provider-openai/adapters/outbound/jwks-id-token-verifier.ts";
-import { CATALOG_KEY, OpenAICatalog } from "@inference-router/provider-openai/adapters/outbound/openai-catalog.ts";
-import { HOST_ID_KEY, OpenAIIdentity } from "@inference-router/provider-openai/adapters/outbound/openai-identity.ts";
-import { OpenAIOAuthClient } from "@inference-router/provider-openai/adapters/outbound/openai-oauth-client.ts";
-import { forwardedResponseHeaders, NATIVE_PATH, OpenAIProvider, sseEvents } from "@inference-router/provider-openai/adapters/outbound/openai-provider.ts";
-import { OpenAISession, REFRESH_LOCK } from "@inference-router/provider-openai/adapters/outbound/openai-session.ts";
-import { STATIC_CATALOG } from "@inference-router/provider-openai/domain/catalog.ts";
-import { SCOPES } from "@inference-router/provider-openai/domain/constants.ts";
-import { fromAccount, toAccount, type OpenAITokens } from "@inference-router/provider-openai/domain/credential.ts";
-import type { ExpectedClaims, VerifiedIdentity } from "@inference-router/provider-openai/domain/id-token.ts";
-import { IdTokenVerifierPort, OpenAICatalogPort, OpenAIIdentityPort, type CatalogListing } from "@inference-router/provider-openai/ports/outbound/openai.ts";
-import type { Session } from "@inference-router/core/ports/outbound/session.ts";
-import { OAuthSessionPort } from "@inference-router/core/ports/outbound/session.ts";
+import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@accounts-proxy/core/domain/accounts.ts";
+import { ProviderAuthRequiredError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { DROPPED_HEADER, readAll, type HttpRequest, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, RecordingLock, ScriptedTransport, SequenceRandom, type ScriptedResponse } from "@accounts-proxy/test-support/fakes.ts";
+import { IdTokenSigner } from "@accounts-proxy/test-support/openai-id-token.ts";
+import { JwksIdTokenVerifier } from "@accounts-proxy/provider-openai/adapters/outbound/jwks-id-token-verifier.ts";
+import { CATALOG_KEY, OpenAICatalog } from "@accounts-proxy/provider-openai/adapters/outbound/openai-catalog.ts";
+import { HOST_ID_KEY, OpenAIIdentity } from "@accounts-proxy/provider-openai/adapters/outbound/openai-identity.ts";
+import { OpenAIOAuthClient } from "@accounts-proxy/provider-openai/adapters/outbound/openai-oauth-client.ts";
+import { forwardedResponseHeaders, NATIVE_PATH, OpenAIProvider, sseEvents } from "@accounts-proxy/provider-openai/adapters/outbound/openai-provider.ts";
+import { OpenAISession, REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
+import { STATIC_CATALOG } from "@accounts-proxy/provider-openai/domain/catalog.ts";
+import { SCOPES } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { fromAccount, toAccount, type OpenAITokens } from "@accounts-proxy/provider-openai/domain/credential.ts";
+import type { ExpectedClaims, VerifiedIdentity } from "@accounts-proxy/provider-openai/domain/id-token.ts";
+import { IdTokenVerifierPort, OpenAICatalogPort, OpenAIIdentityPort, type CatalogListing } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
+import type { Session } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
 
 const NOW = 1_800_000_000_000;
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}): ScriptedResponse => ({ status, headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
@@ -74,8 +74,8 @@ describe("JwksIdTokenVerifier (S12)", () => {
     expect(await verifier.verify(token, expected)).toEqual({ subject: "user-e2e-subject", email: "e2e@example.com" });
     expect(await verifier.verify(token, expected)).toEqual({ subject: "user-e2e-subject", email: "e2e@example.com" });
     expect(transport.requests.map((r) => [r.method, r.url, r.headers["user-agent"]])).toEqual([
-      ["GET", "http://auth/.well-known/jwks.json", "inference-router/0.1.0"],
-      ["GET", "http://auth/.well-known/jwks.json", "inference-router/0.1.0"],
+      ["GET", "http://auth/.well-known/jwks.json", "accounts-proxy/0.1.0"],
+      ["GET", "http://auth/.well-known/jwks.json", "accounts-proxy/0.1.0"],
     ]);
     const rotated = new IdTokenSigner("k2");
     const second = make(json(signer.jwks()), json(rotated.jwks()));
@@ -128,7 +128,7 @@ describe("OpenAIOAuthClient (S1–S16, T2–T4)", () => {
     expect(`${url.origin}${url.pathname}`).toBe("http://auth/api/accounts/authorize");
     expect([...url.searchParams.entries()]).toEqual([
       ["client_id", "dynamic_agent_client"],
-      ["agent_name_hint", "inference-router"],
+      ["agent_name_hint", "accounts-proxy"],
       ["ext_agent_host_id", "urn:uuid:00000000-0000-4000-8000-000000000000"],
       ["response_type", "code"],
       ["redirect_uri", "http://127.0.0.1:1455/auth/callback"],
@@ -147,7 +147,7 @@ describe("OpenAIOAuthClient (S1–S16, T2–T4)", () => {
     const account = await exchange(client, { code: "c0de", state: "st", client_id: "oaiapp_new" });
     const sent = transport.requests[0]!;
     expect([sent.method, sent.url, sent.timeoutMs]).toEqual(["POST", "http://auth/api/accounts/oauth/token", TOKEN_ENDPOINT_TIMEOUT_MS]);
-    expect(sent.headers).toEqual({ "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": "inference-router/0.1.0" });
+    expect(sent.headers).toEqual({ "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": "accounts-proxy/0.1.0" });
     expect([...new URLSearchParams(sent.body!).entries()]).toEqual([
       ["grant_type", "authorization_code"],
       ["client_id", "oaiapp_new"],
@@ -273,7 +273,7 @@ describe("OpenAICatalog (M1–M2)", () => {
   test("live list (bearer, user agent), cached per registration for 24 h, then refreshed", async () => {
     const m = make();
     expect(await m.catalog.listing()).toEqual({ source: "live", entries: [{ id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol", contextWindow: 500_000 }] });
-    expect(m.transport.requests[0]).toMatchObject({ method: "GET", url: "http://api/v1/models", headers: { authorization: "Bearer at", accept: "application/json", "user-agent": "inference-router/0.1.0" } });
+    expect(m.transport.requests[0]).toMatchObject({ method: "GET", url: "http://api/v1/models", headers: { authorization: "Bearer at", accept: "application/json", "user-agent": "accounts-proxy/0.1.0" } });
     expect((await m.catalog.listing()).source).toBe("live");
     expect(m.store.values.get(CATALOG_KEY)).toMatchObject({ version: 2, clientId: "oaiapp_saved", fetchedAt: NOW });
     const restarted = new OpenAICatalog(m.transport, m.session, m.store, m.clock, m.logger, "http://api");
@@ -290,7 +290,7 @@ describe("OpenAICatalog (M1–M2)", () => {
     const none = make();
     none.session.failing = new ProviderAuthRequiredError("openai", "no active account");
     expect(await none.catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
-    expect(none.logger.lines).toEqual(["WARN openai: live model list unavailable (openai: no active account; run `inference-router login openai`)"]);
+    expect(none.logger.lines).toEqual(["WARN openai: live model list unavailable (openai: no active account; run `accounts-proxy login openai`)"]);
 
     const failing = make(() => ({ status: 500, body: "x" }));
     expect((await failing.catalog.listing()).source).toBe("static");
@@ -354,7 +354,7 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
       authorization: "Bearer at",
       "content-type": "application/json",
       accept: "text/event-stream",
-      "user-agent": "inference-router/0.1.0",
+      "user-agent": "accounts-proxy/0.1.0",
       "session-id": "proc-session",
       "thread-id": "proc-session",
       "x-client-request-id": "proc-session",

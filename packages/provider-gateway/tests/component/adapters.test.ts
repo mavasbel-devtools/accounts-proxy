@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { upsertAccount, EMPTY_POOL } from "@inference-router/core/domain/accounts.ts";
-import { apiKeyAccount } from "@inference-router/core/domain/api-key.ts";
-import { ProviderAuthRequiredError } from "@inference-router/core/domain/errors.ts";
-import type { JsonValue } from "@inference-router/core/domain/json.ts";
-import type { RawRequest } from "@inference-router/core/domain/wire.ts";
-import { HashPort } from "@inference-router/core/ports/outbound/system.ts";
-import { GatewayCatalog } from "@inference-router/provider-gateway/adapters/outbound/gateway-catalog.ts";
-import { GatewayKeyLogin, type KeyIdentity } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-login.ts";
-import { GatewayKeySession } from "@inference-router/provider-gateway/adapters/outbound/gateway-key-session.ts";
-import { GatewayProvider } from "@inference-router/provider-gateway/adapters/outbound/gateway-provider.ts";
-import { CATALOG_TTL_MS, type GatewayModel, type GatewaySpec } from "@inference-router/provider-gateway/domain/gateway.ts";
-import { GatewayCatalogPort, GatewayCatalogSourcePort, type GatewayListing } from "@inference-router/provider-gateway/ports/outbound/gateway.ts";
-import { collect, FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, ScriptedTransport } from "@inference-router/test-support/fakes.ts";
+import { upsertAccount, EMPTY_POOL } from "@accounts-proxy/core/domain/accounts.ts";
+import { apiKeyAccount } from "@accounts-proxy/core/domain/api-key.ts";
+import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
+import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { GatewayCatalog } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-catalog.ts";
+import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
+import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
+import { GatewayProvider } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-provider.ts";
+import { CATALOG_TTL_MS, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { GatewayCatalogPort, GatewayCatalogSourcePort, type GatewayListing } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
+import { collect, FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 
 const SPEC: GatewaySpec = {
   provider: "cheaper-inference",
@@ -32,7 +32,7 @@ describe("GatewayKeySession", () => {
     expect((await session.active()).key).toBe("ci_live_1");
     expect(await session.optionalKey()).toBe("ci_live_1");
     const empty = new GatewayKeySession("cheaper-inference", new MemoryCredentialStore());
-    await expect(empty.active()).rejects.toThrow("cheaper-inference: no active account; run `inference-router login cheaper-inference`");
+    await expect(empty.active()).rejects.toThrow("cheaper-inference: no active account; run `accounts-proxy login cheaper-inference`");
     expect(await empty.optionalKey()).toBeUndefined();
   });
 });

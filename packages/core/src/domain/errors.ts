@@ -1,7 +1,7 @@
-// RouterError tree. Every failure the router reports to a client is one of these; each dialect codec renders
+// ProxyError tree. Every failure the proxy reports to a client is one of these; each dialect codec renders
 // the (httpStatus, code, message) triple in its own error envelope.
 //
-//   RouterError
+//   ProxyError
 //   ├── ClientRequestError        — the caller's request cannot be served as sent
 //   │   ├── InvalidRequestError       400 invalid_request
 //   │   ├── UnsupportedFeatureError   400 unsupported_feature
@@ -18,9 +18,9 @@
 //   │   ├── UpstreamUnreachableError  502 upstream_unreachable (DNS, refused, reset: no HTTP answer at all)
 //   │   └── UpstreamError             <upstream status> upstream_error
 //   └── InternalError             500 internal_error (a defect; the message is logged, the client sees a fixed text)
-import { SUBSCRIPTION_PROVIDERS, type ProviderId } from "@inference-router/core/domain/models.ts";
+import { SUBSCRIPTION_PROVIDERS, type ProviderId } from "@accounts-proxy/core/domain/models.ts";
 
-export type RouterErrorCode =
+export type ProxyErrorCode =
   | "invalid_request"
   | "unsupported_feature"
   | "unauthorized"
@@ -36,8 +36,8 @@ export type RouterErrorCode =
   | "upstream_error"
   | "internal_error";
 
-export abstract class RouterError extends Error {
-  abstract readonly code: RouterErrorCode;
+export abstract class ProxyError extends Error {
+  abstract readonly code: ProxyErrorCode;
   abstract readonly httpStatus: number;
   /** Seconds the client should wait before retrying, when known. */
   readonly retryAfterSeconds: number | undefined = undefined;
@@ -48,8 +48,8 @@ export abstract class RouterError extends Error {
   }
 }
 
-export abstract class ClientRequestError extends RouterError {}
-export abstract class ProviderError extends RouterError {}
+export abstract class ClientRequestError extends ProxyError {}
+export abstract class ProviderError extends ProxyError {}
 
 export class InvalidRequestError extends ClientRequestError {
   readonly code = "invalid_request";
@@ -74,7 +74,7 @@ export class UnauthorizedError extends ClientRequestError {
   readonly code = "unauthorized";
   readonly httpStatus = 401;
   constructor() {
-    super("missing or invalid inference-router token");
+    super("missing or invalid accounts-proxy token");
   }
 }
 
@@ -138,11 +138,11 @@ export class UpstreamUnreachableError extends ProviderError {
   }
 }
 
-export class InternalError extends RouterError {
+export class InternalError extends ProxyError {
   readonly code = "internal_error";
   readonly httpStatus = 500;
   constructor() {
-    super("internal router error (details are in the router log)");
+    super("internal proxy error (details are in the proxy log)");
   }
 }
 
@@ -153,7 +153,7 @@ export class ProviderAuthRequiredError extends ProviderError {
     readonly provider: ProviderId,
     readonly detail: string,
   ) {
-    super(`${provider}: ${detail}; run \`inference-router login ${provider}\``);
+    super(`${provider}: ${detail}; run \`accounts-proxy login ${provider}\``);
   }
 }
 
@@ -161,7 +161,7 @@ export class ProviderDisabledError extends ProviderError {
   readonly code = "provider_disabled";
   readonly httpStatus = 503;
   constructor(readonly provider: ProviderId) {
-    super(`${provider} is disabled; enable it with ${SUBSCRIPTION_PROVIDERS.includes(provider) ? "acknowledgeTermsRisk: true" : "enabled: true"} in router.yaml`);
+    super(`${provider} is disabled; enable it with ${SUBSCRIPTION_PROVIDERS.includes(provider) ? "acknowledgeTermsRisk: true" : "enabled: true"} in proxy.yaml`);
   }
 }
 
@@ -201,12 +201,12 @@ export function isTransientUpstream(error: unknown): boolean {
   return error instanceof UpstreamTimeoutError || error instanceof UpstreamUnreachableError || (error instanceof UpstreamError && error.httpStatus >= 500);
 }
 
-/** The error a client is shown: a RouterError as it is, anything else (a defect) as the fixed InternalError. */
-export function asRouterError(error: unknown): RouterError {
-  return error instanceof RouterError ? error : new InternalError();
+/** The error a client is shown: a ProxyError as it is, anything else (a defect) as the fixed InternalError. */
+export function asProxyError(error: unknown): ProxyError {
+  return error instanceof ProxyError ? error : new InternalError();
 }
 
-/** The headers of a router error answer in every dialect: JSON, and `retry-after` when the error carries one. */
-export function errorHeaders(error: RouterError): Readonly<Record<string, string>> {
+/** The headers of a proxy error answer in every dialect: JSON, and `retry-after` when the error carries one. */
+export function errorHeaders(error: ProxyError): Readonly<Record<string, string>> {
   return { "content-type": "application/json", ...(error.retryAfterSeconds !== undefined ? { "retry-after": String(error.retryAfterSeconds) } : {}) };
 }

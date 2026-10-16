@@ -1,5 +1,5 @@
 {
-  "name": "@inference-router/scripts",
+  "name": "@accounts-proxy/scripts",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -9,20 +9,20 @@
     "./*": "./*"
   },
   "dependencies": {
-    "@inference-router/core": "workspace:*",
-    "@inference-router/provider-antigravity": "workspace:*",
-    "@inference-router/provider-cheaper-inference": "workspace:*",
-    "@inference-router/provider-claude": "workspace:*",
-    "@inference-router/provider-gateway": "workspace:*",
-    "@inference-router/provider-openai": "workspace:*",
-    "@inference-router/provider-opencode": "workspace:*",
-    "@inference-router/provider-openrouter": "workspace:*",
-    "@inference-router/router": "workspace:*"
+    "@accounts-proxy/core": "workspace:*",
+    "@accounts-proxy/provider-antigravity": "workspace:*",
+    "@accounts-proxy/provider-cheaper-inference": "workspace:*",
+    "@accounts-proxy/provider-claude": "workspace:*",
+    "@accounts-proxy/provider-gateway": "workspace:*",
+    "@accounts-proxy/provider-openai": "workspace:*",
+    "@accounts-proxy/provider-opencode": "workspace:*",
+    "@accounts-proxy/provider-openrouter": "workspace:*",
+    "@accounts-proxy/proxy": "workspace:*"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.133.0",
     "@google/genai": "2.28.0",
-    "@inference-router/test-support": "workspace:*",
+    "@accounts-proxy/test-support": "workspace:*",
     "openai": "7.32.0"
   }
 }

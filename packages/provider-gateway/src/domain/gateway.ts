@@ -1,11 +1,11 @@
 // Shared rules of the API-key gateways (plan P4.6 §2 item 6; rules document 2026-10-12-15-35-gateway-provider-rules.md
 // §5 G1–G4). Pure: a vendor package supplies a GatewaySpec; the adapters do the I/O.
-import { InvalidRequestError, UnsupportedFeatureError } from "@inference-router/core/domain/errors.ts";
-import { isJsonObject, type JsonObject } from "@inference-router/core/domain/json.ts";
-import type { ModelDetails } from "@inference-router/core/domain/model-details.ts";
-import type { ProviderId, WireFormat } from "@inference-router/core/domain/models.ts";
-import { parseJsonBody } from "@inference-router/core/domain/services/json-body.ts";
-import type { RawRequest } from "@inference-router/core/domain/wire.ts";
+import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
+import type { ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
+import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 
 /** Every gateway takes its key as `Authorization: Bearer <key>` (R1, C1, Z14). */
 export type Endpoint = {
@@ -31,7 +31,7 @@ export type GatewaySpec = {
   readonly forwardHeaders?: readonly string[];
   /**
    * The vendor's per-conversation session header (OpenCode's `x-opencode-session`, Z24): when the client did not send it,
-   * the router sends the conversation's own id, else a stable id derived from the conversation's first user turn.
+   * the proxy sends the conversation's own id, else a stable id derived from the conversation's first user turn.
    */
   readonly sessionHeader?: string;
 };
@@ -84,7 +84,7 @@ export function upstreamCall(spec: GatewaySpec, model: string, request: RawReque
 
 function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
   const endpoint = spec.endpoints[request.format];
-  if (endpoint === undefined) throw new UnsupportedFeatureError([`${request.format}_format`], `${spec.provider} (no native endpoint for this format; the router does not translate between formats)`);
+  if (endpoint === undefined) throw new UnsupportedFeatureError([`${request.format}_format`], `${spec.provider} (no native endpoint for this format; the proxy does not translate between formats)`);
   if (request.format === "anthropic-messages") {
     if (request.path === "/v1/messages") return endpoint;
     if (request.path === "/v1/messages/count_tokens") {
@@ -204,7 +204,7 @@ export function fieldsText(title: string, data: JsonObject, fields: readonly str
  * Z24: a stable id for the conversation a request belongs to (clients resend the whole history, so its first user turn is
  * the same on every request of a conversation). The client's own conversation id wins: Claude Code's session in
  * `metadata.user_id` (`…_session_<uuid>`, L3 capture 2026-10-13) and the Responses `prompt_cache_key` (opencode sets it
- * to its session affinity, model-request.ts). Otherwise `rtr_` + a 64-bit FNV-1a hash of the first user turn; undefined
+ * to its session affinity, model-request.ts). Otherwise `ap_` + a 64-bit FNV-1a hash of the first user turn; undefined
  * when the body has none.
  */
 export function conversationId(format: WireFormat, body: string): string | undefined {
@@ -221,7 +221,7 @@ export function conversationId(format: WireFormat, body: string): string | undef
   const cacheKey = parsed["prompt_cache_key"];
   if (format === "openai-responses" && typeof cacheKey === "string" && cacheKey !== "") return cacheKey;
   const first = firstUserTurn(format, parsed);
-  return first === undefined ? undefined : `rtr_${fnv1a64(JSON.stringify(first))}`;
+  return first === undefined ? undefined : `ap_${fnv1a64(JSON.stringify(first))}`;
 }
 
 /** A user turn: role `user`, or (Gemini contents) neither role nor item type. */
