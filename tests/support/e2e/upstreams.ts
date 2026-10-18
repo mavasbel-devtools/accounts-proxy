@@ -61,6 +61,19 @@ export const captured = (relative: string, index = 0) => {
   return { status: exchange.status, contentType: exchange.headers["content-type"] ?? "text/event-stream", body: exchange.chunks.map((c) => c.text).join("") };
 };
 
+/**
+ * A captured ChatGPT plan-usage answer with the headers it had: its `content-type` only when it sent one (its streams
+ * carry none, rule I7) and its `x-oai-request-id`. A stream body, so the replay server adds no content type of its own.
+ */
+function openaiCapture(relative: string, index = 0): Response {
+  const exchange = capture(relative).exchanges[index]!.response;
+  const headers: Record<string, string> = { "x-oai-request-id": exchange.headers["x-oai-request-id"]! };
+  if (exchange.headers["content-type"] !== undefined) headers["content-type"] = exchange.headers["content-type"];
+  const bytes = new TextEncoder().encode(exchange.chunks.map((c) => c.text).join(""));
+  const body = new ReadableStream<Uint8Array>({ start: (controller) => (controller.enqueue(bytes), controller.close()) });
+  return new Response(body, { status: exchange.status, headers });
+}
+
 /** A captured OpenCode Console answer with its status, content type and request id. */
 function consoleCapture(relative: string, index = 0): Response {
   const answer = captured(relative, index);
@@ -200,11 +213,11 @@ export class ReplayUpstreams {
       case "/v1/responses": {
         const input = Array.isArray(parsed["input"]) ? (parsed["input"] as Record<string, unknown>[]) : [];
         const answer = input.some((i) => i["type"] === "function_call_output")
-          ? captured("l1/openai-resp-s4-tool-loop.json", 1)
+          ? openaiCapture("l1/openai-resp-s4-tool-loop.json", 1)
           : Array.isArray(parsed["tools"])
-            ? captured("l1/openai-resp-s4-tool-loop.json", 0)
-            : captured("l1/openai-resp-s2-plain-stream.json");
-        return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, "x-request-id": "req_e2e" } });
+            ? openaiCapture("l1/openai-resp-s4-tool-loop.json", 0)
+            : openaiCapture("l1/openai-resp-s2-plain-stream.json");
+        return answer;
       }
       case "/.well-known/jwks.json":
         return json(jwks());

@@ -382,6 +382,16 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     expect(logger.lines.at(-1)).toBe("INFO openai: stream closed by the client model=m terminal=response.completed");
   });
 
+  test("I7: a stream sent without a content type gets text/event-stream and keeps x-oai-request-id; a sent type is kept", async () => {
+    const live = make(() => ({ status: 200, headers: { "x-oai-request-id": "req_oai", "set-cookie": "x" }, body: [STREAM] }));
+    const streamed = await live.provider.passthrough("m", raw({ input: "hi", stream: true }));
+    expect([streamed.headers, await readAll(streamed.body)]).toEqual([{ "content-type": "text/event-stream", "x-oai-request-id": "req_oai" }, STREAM]);
+    const merged = await live.provider.passthrough("m", raw({ input: "hi" }));
+    expect(merged.headers).toEqual({ "content-type": "application/json", "x-oai-request-id": "req_oai" });
+    const typed = make(() => ({ status: 200, headers: { "content-type": "text/event-stream; charset=utf-8" }, body: [STREAM] }));
+    expect((await typed.provider.passthrough("m", raw({ input: "hi", stream: true }))).headers).toEqual({ "content-type": "text/event-stream; charset=utf-8" });
+  });
+
   test("a stream without a terminal event is passed on and logged as such", async () => {
     const { provider, logger } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: sse({ type: "response.created", response: {} }) }));
     await readAll((await provider.passthrough("m", raw({ input: [], stream: true }))).body);
@@ -428,7 +438,7 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
   });
 
   test("helpers: forwarded headers and SSE event parsing", () => {
-    expect(forwardedResponseHeaders({ "Content-Type": "a", "Retry-After": "1", "X-Request-Id": "r", other: "x" })).toEqual({ "content-type": "a", "retry-after": "1", "x-request-id": "r" });
+    expect(forwardedResponseHeaders({ "Content-Type": "a", "Retry-After": "1", "X-Request-Id": "r", "X-Oai-Request-Id": "o", other: "x" })).toEqual({ "content-type": "a", "retry-after": "1", "x-request-id": "r", "x-oai-request-id": "o" });
     expect(sseEvents('data: {"type":"a"}\n\ndata: [DONE]\n\ndata: 3\n\ndata: {"type":"b"}')).toEqual([{ type: "a" }, { type: "b" }]);
   });
 });

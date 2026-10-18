@@ -184,7 +184,7 @@ route, error and header sections moved into the API reference (the README links 
 
 Open point for the user (no code change made): ChatGPT plan usage answers a stream without `content-type` and with its
 request id in `x-oai-request-id` (live 2026-10-17; capture `l1/openai-resp-s2-plain-stream.json`), so a streaming
-`openai` client receives neither header; the providers reference states it.
+`openai` client receives neither header; the providers reference states it. (Decided 2026-10-17, see rule I7 below.)
 
 Execution record:
 - 2026-10-17 19:26 documents, generator and checks written; `apps/proxy` gains the devDependency
@@ -192,3 +192,12 @@ Execution record:
   old order; equal as data otherwise, checked by parsing both).
 - 2026-10-17 `bun run verify`: GATE PASS (700 unit+component, 221 e2e, 100% lines, statements, functions and branches
   on unit+component, e2e alone and merged; docs lint 39 files).
+- 2026-10-17 commit cf0da1f (C7).
+- 2026-10-17 user decision on the open point (the recommendation): rule I7 in the
+  [OpenAI rules](../reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md). A streaming `openai` client gets
+  `content-type: text/event-stream` when plan usage sends none (the upstream's own value otherwise), and every answer
+  forwards `x-oai-request-id`. The e2e replay now answers `/v1/responses` with the captured headers as they were (no
+  content type, the captured `x-oai-request-id`) instead of a made-up `content-type`/`x-request-id`; the e2e test checks
+  both headers on the SDK's merged answer and on a raw stream; a component test covers the live shape and an upstream
+  that sends its own type. AGENTS.md §3, the providers and format-fields references updated.
+- 2026-10-17 rule I7 `bun run verify`: GATE PASS (701 unit+component, 221 e2e, 100% on all four).

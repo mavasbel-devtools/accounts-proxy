@@ -4,7 +4,10 @@
 // and is aggregated into one response for the others (O8).
 // The request carries opencode's session headers `session-id`, `thread-id`, `x-client-request-id` (I5, decision O9).
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
-// status, body and request id (E1–E2).
+// status, body and request id (E1–E2). Rule I7 (live 2026-10-13 and 2026-10-17, captures
+// tests/fixtures/captures/p0-live/l1/openai-resp-*.json): plan usage answers its event stream with no `content-type` and
+// names the request in `x-oai-request-id`; a streaming client gets `content-type: text/event-stream` (the upstream's own
+// value when it sends one) and the request id.
 import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
 import { withDetails } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ModelCatalog, WireFormat } from "@accounts-proxy/core/domain/models.ts";
@@ -19,13 +22,16 @@ import { aggregate, prepareRequest, StreamRepair } from "@accounts-proxy/provide
 import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAISessionPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 export const NATIVE_PATH = "/v1/responses";
+const FORWARDED = ["content-type", "retry-after", "x-request-id", "x-oai-request-id"];
+/** I7: the type of a stream the upstream sent without one. */
+export const STREAM_CONTENT_TYPE = "text/event-stream";
 
-/** E1–E2: the status, body type, retry hint and request id reach the client. */
+/** E1–E2, I7: the status, body type, retry hint and request id (`x-request-id`, plan usage's `x-oai-request-id`) reach the client. */
 export function forwardedResponseHeaders(headers: Readonly<Record<string, string>>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [name, value] of Object.entries(headers)) {
     const key = name.toLowerCase();
-    if (key === "content-type" || key === "retry-after" || key === "x-request-id") out[key] = value;
+    if (FORWARDED.includes(key)) out[key] = value;
   }
   return out;
 }
@@ -101,7 +107,7 @@ export class OpenAIProvider extends ProviderPort {
     if (prepared.dropped.length > 0) headers[DROPPED_HEADER] = prepared.dropped.join(",");
     this.logger.info(`${this.id}: ${NATIVE_PATH} model=${model} (${prepared.clientStream ? "stream" : "aggregated"}) -> HTTP ${response.status}`);
     if (response.status !== 200) return { status: response.status, headers, body: response.body };
-    if (prepared.clientStream) return { status: 200, headers, body: this.observe(response.body, model) };
+    if (prepared.clientStream) return { status: 200, headers: { "content-type": STREAM_CONTENT_TYPE, ...headers }, body: this.observe(response.body, model) };
     const result = aggregate(sseEvents(await readAll(response.body)));
     const json = { ...headers, "content-type": "application/json" };
     if (result.kind === "error") {

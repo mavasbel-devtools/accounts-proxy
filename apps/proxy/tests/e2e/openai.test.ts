@@ -208,7 +208,12 @@ describe("the native Responses cell (rules I1–I6, E1–E3, O7–O9)", () => {
     expect([request.headers["thread-id"], request.headers["x-client-request-id"]]).toEqual([request.headers["session-id"], request.headers["session-id"]]);
 
     const { data, response } = await client(s).responses.create({ model: "openai/gpt-5.6-luna", input: "Reply with the single word OK." }).withResponse();
-    expect([data.output_text, response.headers.get("content-type"), response.headers.get("x-request-id")]).toEqual(["OK", "application/json", "req_e2e"]);
+    // I7: the captured stream has no content-type and names the request in x-oai-request-id.
+    const REQUEST_ID = "req_06c5df075a924d639a6e38a569ce2159";
+    expect([data.output_text, response.headers.get("content-type"), response.headers.get("x-oai-request-id")]).toEqual(["OK", "application/json", REQUEST_ID]);
+    const raw = await fetch(`${s.url}/openai/v1/responses`, { method: "POST", headers: { authorization: `Bearer ${s.token}`, "content-type": "application/json" }, body: JSON.stringify({ model: "openai/gpt-5.6-luna", input: "Reply with the single word OK.", stream: true }) });
+    expect([raw.status, raw.headers.get("content-type"), raw.headers.get("x-oai-request-id")]).toEqual([200, "text/event-stream", REQUEST_ID]);
+    expect(await raw.text()).toContain("event: response.completed");
 
     const tool = { type: "function" as const, name: "get_time", description: "time", parameters: { type: "object", properties: { timezone: { type: "string" } }, required: ["timezone"] }, strict: false };
     const first = await client(s, { "session-id": "ses_client", "thread-id": "thr_client" }).responses.create({ model: "openai/gpt-5.6-luna", input: "time in Tokyo?", tools: [tool] });
