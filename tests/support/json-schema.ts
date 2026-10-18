@@ -1,7 +1,8 @@
 // A JSON Schema (2020-12) checker for the keywords opencode's published configuration schema uses
 // (docs/reference/specs/opencode-config-schema.json: type, properties, required, additionalProperties, items, enum,
-// anyOf, allOf, $ref to #/$defs). Any other keyword in a visited schema is an error, so the checker never passes a
-// document by ignoring a rule it does not know.
+// anyOf, allOf, $ref to #/$defs) and the proxy's OpenAPI document uses ($ref to #/components/schemas). Any other keyword,
+// or a `type` that is not one string, in a visited schema is an error, so the checker never passes a document by
+// ignoring a rule it does not know.
 type Schema = boolean | { readonly [key: string]: unknown };
 
 const KNOWN = new Set(["$schema", "$id", "$defs", "type", "properties", "required", "additionalProperties", "items", "enum", "anyOf", "allOf", "$ref", "allowComments", "allowTrailingCommas", "description", "title", "default", "examples", "deprecated"]);
@@ -9,9 +10,13 @@ const KNOWN = new Set(["$schema", "$id", "$defs", "type", "properties", "require
 const typeOf = (v: unknown): string => (v === null ? "null" : Array.isArray(v) ? "array" : typeof v === "number" ? (Number.isInteger(v) ? "integer" : "number") : typeof v);
 const matchesType = (v: unknown, t: string): boolean => typeOf(v) === t || (t === "number" && typeOf(v) === "integer");
 
-export function validate(root: Schema, value: unknown): string[] {
+export function validate(root: Schema, value: unknown, start: Schema = root): string[] {
   let errors: string[] = [];
-  const defs = (typeof root === "object" ? root["$defs"] : undefined) as Readonly<Record<string, Schema>> | undefined;
+  const definitions = (kind: string): Readonly<Record<string, Schema>> | undefined => {
+    if (typeof root !== "object") return undefined;
+    if (kind === "$defs") return root["$defs"] as Readonly<Record<string, Schema>> | undefined;
+    return (root["components"] as { schemas?: Readonly<Record<string, Schema>> } | undefined)?.schemas;
+  };
   const check = (schema: Schema, v: unknown, at: string): void => {
     if (schema === true) return;
     if (schema === false) {
@@ -20,11 +25,12 @@ export function validate(root: Schema, value: unknown): string[] {
     }
     for (const key of Object.keys(schema)) if (!KNOWN.has(key)) throw new Error(`${at}: unsupported schema keyword ${key}`);
     if (typeof schema["$ref"] === "string") {
-      const name = /^#\/\$defs\/(.+)$/.exec(schema["$ref"])?.[1];
-      const target = name === undefined ? undefined : defs?.[name];
+      const match = /^#\/(\$defs|components\/schemas)\/(.+)$/.exec(schema["$ref"]);
+      const target = match === null ? undefined : definitions(match[1]!)?.[match[2]!];
       if (target === undefined) throw new Error(`${at}: unresolved $ref ${schema["$ref"]}`);
       check(target, v, at);
     }
+    if (schema["type"] !== undefined && typeof schema["type"] !== "string") throw new Error(`${at}: unsupported type ${JSON.stringify(schema["type"])}`);
     if (typeof schema["type"] === "string" && !matchesType(v, schema["type"])) errors.push(`${at}: expected ${schema["type"]}, got ${typeOf(v)}`);
     if (Array.isArray(schema["enum"]) && !schema["enum"].some((e) => e === v)) errors.push(`${at}: ${JSON.stringify(v)} not in ${JSON.stringify(schema["enum"])}`);
     if (Array.isArray(schema["allOf"])) for (const s of schema["allOf"] as Schema[]) check(s, v, at);
@@ -49,6 +55,6 @@ export function validate(root: Schema, value: unknown): string[] {
     }
     if (typeOf(v) === "array" && schema["items"] !== undefined) (v as unknown[]).forEach((item, i) => check(schema["items"] as Schema, item, `${at}[${i}]`));
   };
-  check(root, value, "$");
+  check(start, value, "$");
   return errors;
 }

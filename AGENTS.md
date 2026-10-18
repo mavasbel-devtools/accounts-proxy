@@ -71,7 +71,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 | Gateway credential: `Authorization: Bearer` on every endpoint of every gateway (OpenCode since its 2026-10-12 Console migration) | rules R1, C1, Z14 |
 | OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the proxy's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
 | OpenCode Console cells without a client `x-opencode-session`: the conversation's own id (Claude Code's `metadata.user_id` session, the Responses `prompt_cache_key`), else `ap_` + a 64-bit FNV-1a hash of the first user turn (rule Z24) | [live validation F3](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
-| Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from models.dev `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
+| Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from the reference catalog's (models.opencode.ai, formerly models.dev) `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
 ## 4. Behaviour laws
 - **Evidence only.** Every translation rule cites a spec in `docs/reference/specs/` or a capture in
@@ -163,6 +163,14 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - Files under `docs/{plans,research,issues,reference,temp}` are named `YYYY-MM-DD-HH-MM-<name>.md`, using the system clock.
 - Session records are `docs/sessions/<session-id>.md`.
 - README, this file, plans and diagrams are kept in exact sync with the code and the measured results after every change.
+- **Reference documentation** (plan 2026-10-16 C7, decisions D2–D4): the [API](docs/reference/2026-10-17-19-26-proxy-api.md),
+  [OpenAPI 3.1](docs/reference/2026-10-17-19-26-proxy-openapi.json), [providers](docs/reference/2026-10-17-19-26-providers.md),
+  [format fields](docs/reference/2026-10-17-19-26-format-fields.md), [models](docs/reference/2026-10-17-19-26-models.md) and
+  [client setup](docs/reference/2026-10-17-19-26-client-setup.md) references are kept current in place with every change.
+  `apps/proxy/tests/unit/docs-in-step.test.ts` checks them against the code's routes, error codes and statuses, headers,
+  commands, environment variables, limits and providers; `apps/proxy/tests/e2e/docs.test.ts` calls every OpenAPI
+  operation on a real daemon and checks the answers against the document. The model reference is generated
+  (`bun scripts/docs/models-reference.ts`) and must equal a fresh generation.
 - **Name.** The project is `accounts-proxy` (prefix `ap`, environment `ACCOUNTS_PROXY_*`), renamed on 2026-10-16
   ([record](docs/reference/2026-10-16-14-40-project-rename.md)). No tracked path or live file carries a former name;
   historical records (dated docs, captures, vendored sources) keep the names of their time. Enforced by

@@ -109,6 +109,6 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P4.6 amendment A (OpenCode Console) | done; live-validated 2026-10-13 |
 | Live validation L0–L4 (all seven providers) | done 2026-10-13 |
 | P5 (translation) | cancelled 2026-10-14 (D1-A); translation-only code removed 2026-10-16 (C1) |
-| Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0–C6 done 2026-10-16 (C2–C5 commit 98f610f; C6 live with opencode v2.0.26, rule O6); C7 documentation next |
+| Model catalog + opencode config + documentation ([plan](../plans/2026-10-16-00-08-model-catalog-docs-plan.md)) | C0–C6 done 2026-10-16 (C2–C5 commit 98f610f; C6 live with opencode v2.0.26, rule O6); C7 done 2026-10-17: six reference documents (API, OpenAPI 3.1, providers, format fields, generated models, client setup) with docs-in-step unit and e2e checks in `verify` (GATE PASS) |
 | Project rename to `accounts-proxy` ([record](../reference/2026-10-16-14-40-project-rename.md), plan amendment R) | done 2026-10-17: R0–R7 (commit 427c395; repository and directory renamed; live check on the user's daemon: 7 providers, opencode `ap-<provider>`) |
 | P6–P9 | not started |

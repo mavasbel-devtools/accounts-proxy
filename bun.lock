@@ -39,9 +39,10 @@
         "@accounts-proxy/provider-openrouter": "workspace:*",
       },
       "devDependencies": {
+        "@accounts-proxy/scripts": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
         "@anthropic-ai/sdk": "0.133.0",
         "@google/genai": "2.28.0",
-        "@accounts-proxy/test-support": "workspace:*",
         "openai": "7.32.0",
       },
     },
@@ -168,9 +169,9 @@
         "@accounts-proxy/proxy": "workspace:*",
       },
       "devDependencies": {
+        "@accounts-proxy/test-support": "workspace:*",
         "@anthropic-ai/sdk": "0.133.0",
         "@google/genai": "2.28.0",
-        "@accounts-proxy/test-support": "workspace:*",
         "openai": "7.32.0",
       },
     },
@@ -183,6 +184,36 @@
     },
   },
   "packages": {
+    "@accounts-proxy/core": ["@accounts-proxy/core@workspace:packages/core"],
+
+    "@accounts-proxy/dialect-anthropic": ["@accounts-proxy/dialect-anthropic@workspace:packages/dialect-anthropic"],
+
+    "@accounts-proxy/dialect-gemini": ["@accounts-proxy/dialect-gemini@workspace:packages/dialect-gemini"],
+
+    "@accounts-proxy/dialect-openai": ["@accounts-proxy/dialect-openai@workspace:packages/dialect-openai"],
+
+    "@accounts-proxy/dialect-opencode": ["@accounts-proxy/dialect-opencode@workspace:packages/dialect-opencode"],
+
+    "@accounts-proxy/provider-antigravity": ["@accounts-proxy/provider-antigravity@workspace:packages/provider-antigravity"],
+
+    "@accounts-proxy/provider-cheaper-inference": ["@accounts-proxy/provider-cheaper-inference@workspace:packages/provider-cheaper-inference"],
+
+    "@accounts-proxy/provider-claude": ["@accounts-proxy/provider-claude@workspace:packages/provider-claude"],
+
+    "@accounts-proxy/provider-gateway": ["@accounts-proxy/provider-gateway@workspace:packages/provider-gateway"],
+
+    "@accounts-proxy/provider-openai": ["@accounts-proxy/provider-openai@workspace:packages/provider-openai"],
+
+    "@accounts-proxy/provider-opencode": ["@accounts-proxy/provider-opencode@workspace:packages/provider-opencode"],
+
+    "@accounts-proxy/provider-openrouter": ["@accounts-proxy/provider-openrouter@workspace:packages/provider-openrouter"],
+
+    "@accounts-proxy/proxy": ["@accounts-proxy/proxy@workspace:apps/proxy"],
+
+    "@accounts-proxy/scripts": ["@accounts-proxy/scripts@workspace:scripts"],
+
+    "@accounts-proxy/test-support": ["@accounts-proxy/test-support@workspace:tests/support"],
+
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.133.0", "", { "dependencies": { "json-schema-to-ts": "^3.1.1", "standardwebhooks": "^1.0.0" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-jlqUN8p8ESTJj+GJnA4KjzbEfF1waEoGzRT8jwytlYGFFgv+/DUQOxlYGvYw10UzhD1kwLqYzxvA3FrTB2YWuQ=="],
 
     "@babel/code-frame": ["@babel/code-frame@8.0.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^8.0.6", "js-tokens": "^10.0.0" } }, "sha512-uMHhvmDmwFiLuiozaoRYTZHqMFuu3fem/X9JY78lohAuLoh8LSGGC8JqUzo2cVuBsBxkjMZNk56CE7ock8Xxkw=="],
@@ -238,36 +269,6 @@
     "@babel/types": ["@babel/types@8.0.6", "", { "dependencies": { "@babel/helper-string-parser": "^8.0.6", "@babel/helper-validator-identifier": "^8.0.6" } }, "sha512-c+xgSWboV2pdwXP67BUWDVRHi2BO5Q3KwxyFVs7taVTY+fsK47/L51ZXQoV9rozHJDNHvJ4v4WEsI/IlxV2l2A=="],
 
     "@google/genai": ["@google/genai@2.28.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"] }, "sha512-hyNAJj+ywu3L46qlZod6KO/JvcT3QONz6VCiPevC/FWOjAD+LQb7DMLUoV8vzoLpt61Q0ruQX99iqbxEjPJWmw=="],
-
-    "@accounts-proxy/core": ["@accounts-proxy/core@workspace:packages/core"],
-
-    "@accounts-proxy/dialect-anthropic": ["@accounts-proxy/dialect-anthropic@workspace:packages/dialect-anthropic"],
-
-    "@accounts-proxy/dialect-gemini": ["@accounts-proxy/dialect-gemini@workspace:packages/dialect-gemini"],
-
-    "@accounts-proxy/dialect-openai": ["@accounts-proxy/dialect-openai@workspace:packages/dialect-openai"],
-
-    "@accounts-proxy/dialect-opencode": ["@accounts-proxy/dialect-opencode@workspace:packages/dialect-opencode"],
-
-    "@accounts-proxy/provider-antigravity": ["@accounts-proxy/provider-antigravity@workspace:packages/provider-antigravity"],
-
-    "@accounts-proxy/provider-cheaper-inference": ["@accounts-proxy/provider-cheaper-inference@workspace:packages/provider-cheaper-inference"],
-
-    "@accounts-proxy/provider-claude": ["@accounts-proxy/provider-claude@workspace:packages/provider-claude"],
-
-    "@accounts-proxy/provider-gateway": ["@accounts-proxy/provider-gateway@workspace:packages/provider-gateway"],
-
-    "@accounts-proxy/provider-openai": ["@accounts-proxy/provider-openai@workspace:packages/provider-openai"],
-
-    "@accounts-proxy/provider-opencode": ["@accounts-proxy/provider-opencode@workspace:packages/provider-opencode"],
-
-    "@accounts-proxy/provider-openrouter": ["@accounts-proxy/provider-openrouter@workspace:packages/provider-openrouter"],
-
-    "@accounts-proxy/proxy": ["@accounts-proxy/proxy@workspace:apps/proxy"],
-
-    "@accounts-proxy/scripts": ["@accounts-proxy/scripts@workspace:scripts"],
-
-    "@accounts-proxy/test-support": ["@accounts-proxy/test-support@workspace:tests/support"],
 
     "@isaacs/cliui": ["@isaacs/cliui@8.0.2", "", { "dependencies": { "string-width": "^5.1.2", "string-width-cjs": "npm:string-width@^4.2.0", "strip-ansi": "^7.0.1", "strip-ansi-cjs": "npm:strip-ansi@^6.0.1", "wrap-ansi": "^8.1.0", "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0" } }, "sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA=="],
 

@@ -1,0 +1,1671 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "accounts-proxy",
+    "version": "0.1.0",
+    "summary": "The local daemon's HTTP API: four request formats in front of seven providers.",
+    "description": "Served on http://127.0.0.1:<port> (proxy.yaml `port`, default 4141). Every route except `GET /health` and `GET /.well-known/opencode` needs the proxy token (`bun run proxy token`) in one of the four carriers of the security schemes. A request body that names a model uses `<provider>/<model>` (or an alias from proxy.yaml). The proxy does not translate between formats: a model answers only the formats it accepts natively, any other format is 400 `unsupported_feature`. Pass-through answers (status, body, selected headers) are the provider's own; the proxy's own errors use the error shape of the route's dialect. The prose reference is docs/reference/2026-10-17-19-26-proxy-api.md; `apps/proxy/tests/e2e/docs.test.ts` checks every operation of this document against the real daemon.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4141",
+      "description": "default port; proxy.yaml `port` changes it"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    },
+    {
+      "anthropicKey": []
+    },
+    {
+      "googleKey": []
+    },
+    {
+      "queryKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "proxy",
+      "description": "The proxy's own routes (plain JSON errors)."
+    },
+    {
+      "name": "anthropic",
+      "description": "Anthropic Messages dialect, prefix /anthropic (Anthropic error shape)."
+    },
+    {
+      "name": "openai",
+      "description": "OpenAI dialect, prefix /openai: Chat Completions and Responses (OpenAI error shape)."
+    },
+    {
+      "name": "gemini",
+      "description": "Gemini dialect, prefix /gemini (Google error shape)."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "health",
+        "summary": "Liveness and the enabled providers.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The daemon answers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/opencode": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "opencodeWellKnown",
+        "summary": "The manifest `opencode auth login http://127.0.0.1:<port>` reads (decision E1, rule O5). It carries no secret: the command that prints the token and the configuration URL.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpencodeManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opencode/config.json": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "opencodeConfig",
+        "summary": "The opencode v2 configuration of every model of every enabled provider: one provider `ap-<provider>` each (rules O1–O6).",
+        "responses": {
+          "200": {
+            "description": "An opencode v2 configuration document; it validates against opencode's published schema (docs/reference/specs/opencode-config-schema.json, https://opencode.ai/config.json).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpencodeConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/PlainError"
+          }
+        }
+      }
+    },
+    "/proxy/v1/models": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "detailedModels",
+        "summary": "Every enabled provider's models in detail, each field with its source (rules M1–M6).",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "description": "Only this provider.",
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One catalog per provider.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailedModels"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PlainError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PlainError"
+          }
+        }
+      }
+    },
+    "/anthropic/v1/messages": {
+      "post": {
+        "tags": [
+          "anthropic"
+        ],
+        "operationId": "anthropicMessages",
+        "summary": "Anthropic Messages, passed to the model's provider (native on claude, openrouter and the Messages models of opencode, opencode-go, cheaper-inference).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Lossy"
+          },
+          {
+            "name": "anthropic-version",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "claude: only 2023-06-01 (else 400 unsupported_feature, or dropped with x-proxy-lossy: 1); gateways: forwarded."
+          },
+          {
+            "name": "anthropic-beta",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "claude: only names of the model's captured beta set (rule F4); gateways: forwarded."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnthropicMessagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "413": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "504": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/anthropic/v1/messages/count_tokens": {
+      "post": {
+        "tags": [
+          "anthropic"
+        ],
+        "operationId": "anthropicCountTokens",
+        "summary": "Anthropic Count Tokens, where the provider has it (claude, cheaper-inference; other providers answer 400 unsupported_feature).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Lossy"
+          },
+          {
+            "name": "anthropic-version",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anthropic-beta",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnthropicMessagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "413": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "504": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/AnthropicError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/anthropic/v1/models": {
+      "get": {
+        "tags": [
+          "anthropic"
+        ],
+        "operationId": "anthropicModels",
+        "summary": "Every enabled provider's models in the Anthropic ListModels shape.",
+        "responses": {
+          "200": {
+            "description": "The list.",
+            "headers": {
+              "x-proxy-models-source": {
+                "$ref": "#/components/headers/ModelsSource"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnthropicModelList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AnthropicError"
+          }
+        }
+      }
+    },
+    "/openai/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "openai"
+        ],
+        "operationId": "openaiChatCompletions",
+        "summary": "OpenAI Chat Completions, passed to the model's provider (native on openrouter and the Chat models of opencode, opencode-go, cheaper-inference).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Lossy"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "401": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "404": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "413": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "502": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "503": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "504": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "500": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/openai/v1/responses": {
+      "post": {
+        "tags": [
+          "openai"
+        ],
+        "operationId": "openaiResponses",
+        "summary": "OpenAI Responses, passed to the model's provider (native on openai, openrouter and the Responses models of opencode, opencode-go, cheaper-inference).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Lossy"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponsesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "401": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "404": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "413": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "502": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "503": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "504": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "500": {
+            "$ref": "#/components/responses/OpenAIError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/openai/v1/models": {
+      "get": {
+        "tags": [
+          "openai"
+        ],
+        "operationId": "openaiModels",
+        "summary": "Every enabled provider's models in the OpenAI ListModelsResponse shape.",
+        "responses": {
+          "200": {
+            "description": "The list.",
+            "headers": {
+              "x-proxy-models-source": {
+                "$ref": "#/components/headers/ModelsSource"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAIModelList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/OpenAIError"
+          }
+        }
+      }
+    },
+    "/gemini/v1beta/models/{model}:generateContent": {
+      "post": {
+        "tags": [
+          "gemini"
+        ],
+        "operationId": "geminiGenerateContent",
+        "summary": "Gemini generateContent (native on antigravity and the Gemini models of opencode). antigravity merges its stream into one answer (decision Q4).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GeminiModel"
+          },
+          {
+            "$ref": "#/components/parameters/Lossy"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "401": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "404": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "413": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "429": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "502": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "503": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "504": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "500": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/gemini/v1beta/models/{model}:streamGenerateContent": {
+      "post": {
+        "tags": [
+          "gemini"
+        ],
+        "operationId": "geminiStreamGenerateContent",
+        "summary": "Gemini streamGenerateContent: Server-Sent Events with `?alt=sse`, else one JSON array written as the stream arrives.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GeminiModel"
+          },
+          {
+            "$ref": "#/components/parameters/Lossy"
+          },
+          {
+            "name": "alt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sse"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PassThrough"
+          },
+          "400": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "401": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "404": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "413": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "429": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "502": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "503": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "504": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "500": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "default": {
+            "$ref": "#/components/responses/UpstreamAnswer"
+          }
+        }
+      }
+    },
+    "/gemini/v1beta/models/{model}:countTokens": {
+      "post": {
+        "tags": [
+          "gemini"
+        ],
+        "operationId": "geminiCountTokens",
+        "summary": "Gemini countTokens: 400 unsupported_feature on every provider (Antigravity has no token-count endpoint; the gateways serve only generateContent and streamGenerateContent).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GeminiModel"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "401": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "404": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "503": {
+            "$ref": "#/components/responses/GoogleError"
+          },
+          "500": {
+            "$ref": "#/components/responses/GoogleError"
+          }
+        }
+      }
+    },
+    "/gemini/v1beta/models": {
+      "get": {
+        "tags": [
+          "gemini"
+        ],
+        "operationId": "geminiModels",
+        "summary": "Every enabled provider's models in the Gemini ListModels shape.",
+        "responses": {
+          "200": {
+            "description": "The list.",
+            "headers": {
+              "x-proxy-models-source": {
+                "$ref": "#/components/headers/ModelsSource"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiModelList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/GoogleError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "`Authorization: Bearer <token>` (OpenAI SDK, opencode)."
+      },
+      "anthropicKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "The Anthropic SDK's carrier."
+      },
+      "googleKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-goog-api-key",
+        "description": "The Google Gen AI SDK's carrier."
+      },
+      "queryKey": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "key",
+        "description": "`?key=<token>`; removed from the query before the request goes upstream."
+      }
+    },
+    "parameters": {
+      "Lossy": {
+        "name": "x-proxy-lossy",
+        "in": "header",
+        "required": false,
+        "description": "`1`: what the target cannot carry is dropped (and listed in `x-proxy-dropped`) instead of answering 400 unsupported_feature.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "GeminiModel": {
+        "name": "model",
+        "in": "path",
+        "required": true,
+        "description": "`<provider>/<model>`, URL-encoded (`antigravity%2Fgemini-3.5-flash-lite`) or raw; the route takes the model up to the last `:`.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "headers": {
+      "Dropped": {
+        "description": "Every feature or element removed from the request, comma-separated: lossy drops and the always-applied wire laws.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ModelsSource": {
+        "description": "One `provider=source` pair per enabled provider, comma-separated; source is live, cache, static or unavailable.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "RetryAfter": {
+        "description": "Seconds to wait, when the provider or the error states it.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "PassThrough": {
+        "description": "The provider's own answer: its status, its body (JSON, or the event stream as it arrives) and the response headers listed per provider in the providers reference.",
+        "headers": {
+          "x-proxy-dropped": {
+            "$ref": "#/components/headers/Dropped"
+          },
+          "retry-after": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {}
+          },
+          "text/event-stream": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpstreamAnswer": {
+        "description": "Any other status is the provider's own answer, passed through with its body (e.g. 429 with `retry-after`).",
+        "headers": {
+          "retry-after": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {}
+          }
+        }
+      },
+      "PlainError": {
+        "description": "A proxy error on the proxy's own routes or outside every dialect prefix.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PlainError"
+            }
+          }
+        }
+      },
+      "AnthropicError": {
+        "description": "A proxy error in Anthropic's shape.",
+        "headers": {
+          "retry-after": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AnthropicError"
+            }
+          }
+        }
+      },
+      "OpenAIError": {
+        "description": "A proxy error in OpenAI's shape.",
+        "headers": {
+          "retry-after": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OpenAIError"
+            }
+          }
+        }
+      },
+      "GoogleError": {
+        "description": "A proxy error in Google's shape (an Antigravity error body that already is one is passed verbatim).",
+        "headers": {
+          "retry-after": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/GoogleError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ProviderId": {
+        "type": "string",
+        "enum": [
+          "claude",
+          "antigravity",
+          "openai",
+          "openrouter",
+          "opencode",
+          "opencode-go",
+          "cheaper-inference"
+        ]
+      },
+      "WireFormat": {
+        "type": "string",
+        "enum": [
+          "anthropic-messages",
+          "openai-chat",
+          "openai-responses",
+          "gemini"
+        ]
+      },
+      "Modality": {
+        "type": "string",
+        "enum": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "invalid_request",
+          "unsupported_feature",
+          "unauthorized",
+          "unknown_model",
+          "unknown_account",
+          "not_found",
+          "payload_too_large",
+          "provider_auth_required",
+          "provider_disabled",
+          "quota_exhausted",
+          "upstream_timeout",
+          "upstream_unreachable",
+          "upstream_error",
+          "internal_error"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "status",
+          "providers"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        }
+      },
+      "OpencodeManifest": {
+        "type": "object",
+        "required": [
+          "auth",
+          "remote_config"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "auth": {
+            "type": "object",
+            "required": [
+              "command",
+              "env"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "`env ACCOUNTS_PROXY_HOME=<data> <bun> <entry> token`: prints the proxy token."
+              },
+              "env": {
+                "type": "string",
+                "enum": [
+                  "ACCOUNTS_PROXY_TOKEN"
+                ]
+              }
+            }
+          },
+          "remote_config": {
+            "type": "object",
+            "required": [
+              "url",
+              "headers"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "`http://127.0.0.1:<port>/opencode/config.json`"
+              },
+              "headers": {
+                "type": "object",
+                "required": [
+                  "authorization"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "authorization": {
+                    "type": "string",
+                    "enum": [
+                      "Bearer {env:ACCOUNTS_PROXY_TOKEN}"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "OpencodeConfig": {
+        "type": "object",
+        "required": [
+          "$schema",
+          "providers"
+        ],
+        "description": "opencode v2 configuration (`providers` key, pinned to opencode v2.0.26); the full rules are opencode's published schema.",
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "providers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "name",
+                "settings",
+                "models"
+              ]
+            }
+          }
+        }
+      },
+      "DetailedModels": {
+        "type": "object",
+        "required": [
+          "catalogs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "catalogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetailedCatalog"
+            }
+          }
+        }
+      },
+      "DetailedCatalog": {
+        "type": "object",
+        "required": [
+          "provider",
+          "source",
+          "models"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "live",
+              "cache",
+              "static",
+              "unavailable"
+            ],
+            "description": "Where the provider's list came from: fetched now, the stored copy (24 h), the built-in list, or unavailable (see `error`)."
+          },
+          "referenceSource": {
+            "type": "string",
+            "enum": [
+              "live",
+              "cache",
+              "static"
+            ],
+            "description": "Where the reference catalog (models.opencode.ai) came from; absent for a provider with no reference provider (cheaper-inference)."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetailedModel"
+            }
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "DetailedModel": {
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "model",
+          "name",
+          "formats",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The routable `<provider>/<model>`."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId"
+          },
+          "model": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WireFormat"
+            },
+            "description": "Native formats; empty when no source states them (the request is forwarded as sent, rule Z6)."
+          },
+          "contextWindow": {
+            "type": "integer"
+          },
+          "maxOutputTokens": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "releaseDate": {
+            "type": "string"
+          },
+          "knowledge": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "alpha",
+              "beta",
+              "deprecated"
+            ]
+          },
+          "inputLimit": {
+            "type": "integer"
+          },
+          "input": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modality"
+            }
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modality"
+            }
+          },
+          "toolCall": {
+            "type": "boolean"
+          },
+          "structuredOutput": {
+            "type": "boolean"
+          },
+          "temperature": {
+            "type": "boolean"
+          },
+          "reasoning": {
+            "type": "boolean"
+          },
+          "reasoningOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReasoningOption"
+            }
+          },
+          "interleavedField": {
+            "type": "string"
+          },
+          "openWeights": {
+            "type": "boolean"
+          },
+          "aiSdkPackage": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelCost"
+            },
+            "description": "USD per million tokens; the first entry is the base price, later entries context tiers."
+          },
+          "sources": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Per stated field: `provider:<id>` or `models.opencode.ai:<reference provider>/<model>` (rule M3)."
+          }
+        }
+      },
+      "ReasoningOption": {
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "values"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "effort"
+                ]
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "toggle"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "budget_tokens"
+                ]
+              },
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      },
+      "ModelCost": {
+        "type": "object",
+        "required": [
+          "input",
+          "output"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "type": "number"
+          },
+          "output": {
+            "type": "number"
+          },
+          "cacheRead": {
+            "type": "number"
+          },
+          "cacheWrite": {
+            "type": "number"
+          },
+          "tier": {
+            "type": "object",
+            "required": [
+              "type",
+              "size"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "context"
+                ]
+              },
+              "size": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "NullableInteger": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "NullableString": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "AnthropicModelList": {
+        "type": "object",
+        "required": [
+          "data",
+          "first_id",
+          "has_more",
+          "last_id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "id",
+                "display_name",
+                "created_at",
+                "max_input_tokens",
+                "max_tokens",
+                "capabilities",
+                "line"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "model"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "display_name": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "description": "RFC 3339; 1970-01-01T00:00:00Z when the provider states no date (decision Q5)."
+                },
+                "max_input_tokens": {
+                  "$ref": "#/components/schemas/NullableInteger"
+                },
+                "max_tokens": {
+                  "$ref": "#/components/schemas/NullableInteger"
+                },
+                "capabilities": {
+                  "type": "null"
+                },
+                "line": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          "first_id": {
+            "$ref": "#/components/schemas/NullableString"
+          },
+          "has_more": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "last_id": {
+            "$ref": "#/components/schemas/NullableString"
+          }
+        }
+      },
+      "OpenAIModelList": {
+        "type": "object",
+        "required": [
+          "object",
+          "data"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "object",
+                "created",
+                "owned_by"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "object": {
+                  "type": "string",
+                  "enum": [
+                    "model"
+                  ]
+                },
+                "created": {
+                  "type": "integer",
+                  "description": "Unix seconds; 0 when the provider states no date (decision Q5)."
+                },
+                "owned_by": {
+                  "$ref": "#/components/schemas/ProviderId"
+                }
+              }
+            }
+          }
+        }
+      },
+      "GeminiModelList": {
+        "type": "object",
+        "required": [
+          "models"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "baseModelId",
+                "version",
+                "displayName",
+                "supportedGenerationMethods"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "`models/<provider>/<model>`"
+                },
+                "baseModelId": {
+                  "type": "string",
+                  "description": "The routable `<provider>/<model>`."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "The provider id (no catalog states a version; decision Q5)."
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "inputTokenLimit": {
+                  "type": "integer"
+                },
+                "outputTokenLimit": {
+                  "type": "integer"
+                },
+                "supportedGenerationMethods": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "generateContent",
+                      "streamGenerateContent"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlainError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "AnthropicError": {
+        "type": "object",
+        "required": [
+          "type",
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "type",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "invalid_request_error",
+                  "authentication_error",
+                  "billing_error",
+                  "permission_error",
+                  "not_found_error",
+                  "conflict_error",
+                  "request_too_large",
+                  "rate_limit_error",
+                  "api_error",
+                  "timeout_error",
+                  "overloaded_error"
+                ],
+                "description": "From the status (docs/reference/specs/anthropic-errors.md); a status outside the table is api_error."
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "OpenAIError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "message",
+              "type",
+              "param",
+              "code"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "type": {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              "param": {
+                "type": "null"
+              },
+              "code": {
+                "$ref": "#/components/schemas/ErrorCode"
+              }
+            }
+          }
+        }
+      },
+      "GoogleError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "description": "The google.rpc.Code name of the status (UNKNOWN when it has none)."
+              }
+            }
+          }
+        }
+      },
+      "AnthropicMessagesRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "description": "An Anthropic Messages request body (docs/reference/specs/anthropic-messages.md); `model` is `<provider>/<model>` or an alias. The per-provider field rules are in the format-fields reference.",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array"
+          }
+        }
+      },
+      "ChatCompletionsRequest": {
+        "type": "object",
+        "required": [
+          "model"
+        ],
+        "description": "An OpenAI Chat Completions request body (docs/reference/specs/openai-openapi.yaml); `model` is `<provider>/<model>` or an alias.",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array"
+          }
+        }
+      },
+      "ResponsesRequest": {
+        "type": "object",
+        "required": [
+          "model"
+        ],
+        "description": "An OpenAI Responses request body (docs/reference/specs/openai-openapi.yaml); `model` is `<provider>/<model>` or an alias.",
+        "properties": {
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "GeminiRequest": {
+        "type": "object",
+        "description": "A Gemini GenerateContentRequest body (docs/reference/specs/gemini-generate-content.md); the model is in the path.",
+        "properties": {
+          "contents": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  }
+}
