@@ -22,7 +22,8 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 > cell through the daemon: all pass and stream incrementally ([results](docs/reference/2026-10-18-20-07-p6-live-results.md)). Plans:
 > [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
 > [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md),
-> [live validation](docs/plans/2026-10-13-01-42-live-validation-plan.md), [P6](docs/plans/2026-10-17-22-59-p6-live-results-plan.md).
+> [live validation](docs/plans/2026-10-13-01-42-live-validation-plan.md), [P6](docs/plans/2026-10-17-22-59-p6-live-results-plan.md),
+> [P7](docs/plans/2026-10-18-22-09-p7-documentation-sweep-plan.md).
 
 > **Terms risk.** The subscription providers' terms restrict third-party clients. The verbatim quotes are in
 > [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md) §3
@@ -47,8 +48,19 @@ const claude = new Anthropic({ apiKey: TOKEN, baseURL: "http://127.0.0.1:4141/an
 await claude.messages.create({ model: "claude/claude-haiku-4-5-20251001", max_tokens: 256, messages: [{ role: "user", content: "hi" }] });
 ```
 
-Models are addressed as `<provider>/<model>` (or an alias from `proxy.yaml`). opencode connects with
-`opencode auth login http://127.0.0.1:4141`; Claude Code with `ANTHROPIC_BASE_URL=http://127.0.0.1:4141/anthropic`.
+Models are addressed as `<provider>/<model>` (or an alias from `proxy.yaml`).
+
+## Use it from
+
+| Client | How | Setup |
+|---|---|---|
+| Anthropic SDK | `baseURL` `…/anthropic`, the token as `apiKey` | [client setup §2](docs/reference/2026-10-17-19-26-client-setup.md#2-sdks-typescript-the-versions-the-tests-pin) |
+| OpenAI SDK, Chat Completions and Responses | `baseURL` `…/openai/v1`, the token as `apiKey` | [§2](docs/reference/2026-10-17-19-26-client-setup.md#2-sdks-typescript-the-versions-the-tests-pin) |
+| Google Gen AI SDK | `httpOptions.baseUrl` `…/gemini`, the token as `apiKey` | [§2](docs/reference/2026-10-17-19-26-client-setup.md#2-sdks-typescript-the-versions-the-tests-pin) |
+| Tools built on these SDKs (OpenAI-compatible and others) | the SDK's own environment variables | [§3](docs/reference/2026-10-17-19-26-client-setup.md#3-from-the-environment-tools-built-on-the-sdks) |
+| HTTP (`curl`) | any of the four token carriers | [§4](docs/reference/2026-10-17-19-26-client-setup.md#4-http-directly) |
+| Claude Code | `ANTHROPIC_BASE_URL` | [§5](docs/reference/2026-10-17-19-26-client-setup.md#5-claude-code-anthropic-messages) |
+| opencode v2 | `opencode auth login http://127.0.0.1:4141` | [§6](docs/reference/2026-10-17-19-26-client-setup.md#6-opencode-v2) |
 
 ## Documentation
 
@@ -119,8 +131,9 @@ flowchart LR
   C -.wires.-> H & S & PC & PA & PO & PG
 ```
 
-The full component diagram is [docs/architecture.drawio](docs/architecture.drawio). The architecture rules are in
-[AGENTS.md](AGENTS.md).
+[docs/architecture.drawio](docs/architecture.drawio) has four pages: the full components, the request flow (each
+check and the error it answers), renewal under locks, and the format × provider matrix; `bun run verify` checks it
+against the code. The architecture rules are in [AGENTS.md](AGENTS.md).
 
 Workspaces:
 

@@ -195,6 +195,55 @@ describe("daemon: model lists in the three dialects", () => {
   });
 });
 
+/** Runs `work` with exactly these variables set (undefined = unset) and every name restored afterwards. */
+async function withEnv(vars: Readonly<Record<string, string | undefined>>, work: () => Promise<void>): Promise<void> {
+  const saved = Object.fromEntries(Object.keys(vars).map((name) => [name, process.env[name]]));
+  const assign = (values: Readonly<Record<string, string | undefined>>) => {
+    for (const [name, value] of Object.entries(values)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
+  assign(vars);
+  try {
+    await work();
+  } finally {
+    assign(saved);
+  }
+}
+
+describe("daemon: SDKs configured only from the environment (client setup §3: tools built on the SDKs)", () => {
+  test("Anthropic SDK: ANTHROPIC_BASE_URL with ANTHROPIC_API_KEY (x-api-key), or with ANTHROPIC_AUTH_TOKEN (Bearer)", async () => {
+    const base = { ANTHROPIC_BASE_URL: `${daemon.url}/anthropic`, ANTHROPIC_API_KEY: token, ANTHROPIC_AUTH_TOKEN: undefined };
+    await withEnv(base, async () => {
+      const message = await new Anthropic({ maxRetries: 0 }).messages.create({ model: HAIKU, max_tokens: 64, messages: [{ role: "user", content: "hi" }] });
+      expect(message.content[0]!.type).toBe("text");
+    });
+    await withEnv({ ...base, ANTHROPIC_API_KEY: undefined, ANTHROPIC_AUTH_TOKEN: token }, async () => {
+      const message = await new Anthropic({ maxRetries: 0 }).messages.create({ model: HAIKU, max_tokens: 64, messages: [{ role: "user", content: "hi" }] });
+      expect(message.content[0]!.type).toBe("text");
+    });
+  });
+
+  test("OpenAI SDK: OPENAI_BASE_URL and OPENAI_API_KEY", async () => {
+    await withEnv({ OPENAI_BASE_URL: `${daemon.url}/openai/v1`, OPENAI_API_KEY: token }, async () => {
+      expect((await new OpenAI({ maxRetries: 0 }).models.list()).data.map((m) => m.id)).toContain(GEMINI);
+    });
+  });
+
+  test("Gen AI SDK: GOOGLE_GEMINI_BASE_URL with GEMINI_API_KEY, or with GOOGLE_API_KEY", async () => {
+    const base = { GOOGLE_GEMINI_BASE_URL: `${daemon.url}/gemini`, GOOGLE_GENAI_USE_VERTEXAI: undefined, GOOGLE_API_KEY: undefined, GEMINI_API_KEY: token };
+    await withEnv(base, async () => {
+      const answer = await new GoogleGenAI({}).models.generateContent({ model: GEMINI, contents: "hi" });
+      expect(answer.candidates?.length).toBeGreaterThan(0);
+    });
+    await withEnv({ ...base, GEMINI_API_KEY: undefined, GOOGLE_API_KEY: token }, async () => {
+      const answer = await new GoogleGenAI({}).models.generateContent({ model: GEMINI, contents: "hi" });
+      expect(answer.candidates?.length).toBeGreaterThan(0);
+    });
+  });
+});
+
 describe("daemon: shutdown", () => {
   test("SIGTERM drains and exits 0 through the normal path", async () => {
     const stopped = await daemon.stop();

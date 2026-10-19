@@ -1,5 +1,5 @@
 <mxfile host="accounts-proxy" version="2">
-  <diagram id="components" name="Components (2026-10-16; P5 cancelled)">
+  <diagram id="components" name="Components (2026-10-18; P5 cancelled)">
     <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="2100" pageHeight="1000">
       <root>
         <mxCell id="0"/>
@@ -37,7 +37,7 @@
         <mxCell id="outbound" value="apps/proxy · adapters/outbound&#10;FileCredentialStore · FileKeyValueStore · FileProxyTokenStore · FileLock · FetchTransport (explicit idle timeout) · ModelReferenceCatalog (models.opencode.ai: live → stored copy 24 h → built-in copy) · LoopbackCallbackServer(+Factory) · SystemBrowserLauncher · TerminalManualCode · TerminalSecretPrompt (hidden API-key prompt) · OpencodeAuthFile (reads OpenCode's API keys, --from-opencode) · YamlConfigFile · SystemClock · SystemTimer · CryptoRandom · NodeHash · FileLogger" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
           <mxGeometry x="960" y="640" width="340" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="composition" value="apps/proxy · composition/container.ts&#10;the ONLY place adapters are constructed; providers wired only when enabled (+ acknowledgeTermsRisk for subscription providers); ACCOUNTS_PROXY_TEST_UPSTREAM_* seams (incl. GATEWAYS) accepted only as http://127.0.0.1 origins" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+        <mxCell id="composition" value="apps/proxy · composition/container.ts&#10;buildGraph (providers) · buildRoutes (request handling; also served in-process by scripts/evidence/live) · buildCli · main; the ONLY place adapters are constructed; providers wired only when enabled (+ acknowledgeTermsRisk for subscription providers); ACCOUNTS_PROXY_TEST_UPSTREAM_* seams (incl. GATEWAYS) accepted only as http://127.0.0.1 origins" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
           <mxGeometry x="640" y="120" width="260" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="support" value="tests/support · @accounts-proxy/test-support (no layers)&#10;port fakes · removeTemporary guard · e2e: replay upstreams, proxy process runner, fake xdg-open" style="rounded=1;whiteSpace=wrap;fillColor=#eeeeee;" vertex="1" parent="1">
@@ -78,6 +78,231 @@
         <mxCell id="e22" value="extends gateway ports; implements OAuthClientPort, DeviceLoginClientPort, ApiKeyLoginPort, UsageReporterPort; ConsoleSession extends OAuthSessionBase" edge="1" parent="1" source="vendors" target="gateway" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e23" value="wires" edge="1" parent="1" source="composition" target="openai" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="e24" value="wires" edge="1" parent="1" source="composition" target="vendors" style="endArrow=open;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="request-flow" name="Request flow (2026-10-18)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="2100" pageHeight="500">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="f-client" value="Client&#10;Anthropic SDK · OpenAI SDK · Google GenAI SDK · Claude Code · opencode · HTTP&#10;POST /anthropic/v1/messages · /openai/v1/chat/completions · /openai/v1/responses · /gemini/v1beta/models/&lt;model&gt;:&lt;method&gt;" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-server" value="apps/proxy · NodeHttpServer&#10;binds 127.0.0.1:&lt;port&gt; only&#10;body over MAX_BODY_BYTES = 32_000_000 → 413 payload_too_large&#10;a client that disconnects aborts its upstream call&#10;SIGTERM/SIGINT: in-flight answers get SHUTDOWN_GRACE_MS = 10_000" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="330" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-route" value="apps/proxy · RouteHandler&#10;AccessPort.authorize: the token from Bearer · x-api-key · x-goog-api-key · ?key=, compared in constant time → else 401 unauthorized (/health and /.well-known/opencode need none)&#10;the route gives the WireFormat and the model → else 404 not_found&#10;the dialect&#x27;s codec renders every ProxyError in its own error shape" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="620" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-pass" value="apps/proxy · PassthroughService&#10;resolveModelAddress: &lt;provider&gt;/&lt;model&gt; or a proxy.yaml alias → else 404 unknown_model&#10;the provider is enabled → else 503 provider_disabled&#10;ProviderPort.nativeFormats(model) has the format → else 400 unsupported_feature (no translation); undefined = forwarded as sent (rule Z6)" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="910" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-provider" value="packages/provider-* · ProviderPort.passthrough&#10;the credential: OAuthSessionPort.active() (page Renewal under locks) or the gateway key → none usable: 401 provider_auth_required&#10;the provider&#x27;s wire rules (Claude envelope, Antigravity envelope, OpenAI I6/I7, gateway G1–G4)&#10;a field the cell cannot carry → 400 unsupported_feature, or dropped with x-proxy-lossy: 1 and listed in x-proxy-dropped" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-transport" value="apps/proxy · HttpTransportPort ← FetchTransport&#10;idle longer than UPSTREAM_IDLE_TIMEOUT_MS = 600_000 → 504 upstream_timeout&#10;no HTTP answer (DNS, refused, reset) → 502 upstream_unreachable" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-upstream" value="Upstream&#10;api.anthropic.com · daily-cloudcode-pa.googleapis.com · api.openai.com · openrouter.ai · opencode.ai · api.cheaperinference.com" style="rounded=1;whiteSpace=wrap;fillColor=#eeeeee;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="80" width="250" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-f-client-f-server" value="request" edge="1" parent="1" source="f-client" target="f-server" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-f-server-f-route" value="request" edge="1" parent="1" source="f-server" target="f-route" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-f-route-f-pass" value="request" edge="1" parent="1" source="f-route" target="f-pass" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-f-pass-f-provider" value="request" edge="1" parent="1" source="f-pass" target="f-provider" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-f-provider-f-transport" value="request" edge="1" parent="1" source="f-provider" target="f-transport" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-f-transport-f-upstream" value="request" edge="1" parent="1" source="f-transport" target="f-upstream" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-answer" value="Answer path (right to left): the upstream&#x27;s answer is streamed back to the client as it arrives, with its status, body, content-type, retry-after and request id.&#10;An upstream error keeps its status and body (claude, openai, gateways); Antigravity maps 429 to 429 quota_exhausted with retry-after. There is no automatic account rotation.&#10;claude and antigravity: an upstream 401 renews once (forceRenew) and retries, only before anything reached the client." style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="2010" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-answer" value="answer" edge="1" parent="1" source="f-upstream" target="f-answer" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-answer-client" value="answer" edge="1" parent="1" source="f-answer" target="f-client" style="endArrow=block;dashed=1;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="renewal" name="Renewal under locks (2026-10-18)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="1200" pageHeight="860">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="r-caller" value="ProviderPort.passthrough → OAuthSessionPort.active()&#10;OAuthSessionBase (packages/core ports/outbound/session.ts), the session of claude, antigravity, openai and opencode (ConsoleSession, shared with opencode-go); API keys never renew" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-load" value="load: the active account of CredentialStorePort.load(provider)&#10;no account, or needsLogin set → 401 provider_auth_required at once (no token call)" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="40" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-fresh" value="expiresAt − now &gt; EXPIRY_BUFFER_MS = 120_000 (every provider), or this token is cooling down → the stored token is used" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="800" y="40" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-flight" value="single flight: every caller in this process waits on the one renewal in progress" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="190" width="330" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-lock" value="LockPort.withLock(&lt;provider&gt;-refresh) ← FileLock&#10;lock names: claude-refresh · antigravity-refresh · openai-refresh · opencode-refresh&#10;per name: one queue in the process, then &lt;data&gt;/locks/&lt;name&gt;.lock created exclusively (wx, 0600, &quot;pid time&quot;)&#10;DEFAULT_LOCK_OPTIONS: a lock file older than staleMs = 60_000 is removed; waiting longer than timeoutMs = 90_000 → LockTimeoutError; retried every pollMs = 50" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="300" width="330" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-reread" value="under the lock, the pool is read again: an account another process renewed meanwhile is used as it is (the refresh token is not spent twice)" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="800" y="320" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-renew" value="renew(account): one token-endpoint call, bounded by TOKEN_ENDPOINT_TIMEOUT_MS = 30_000 (below staleMs, so a held lock never goes stale during the call)" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="800" y="460" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-rejected" value="grant rejected → CredentialStorePort.update marks the account needsLogin → 401 provider_auth_required until a new login" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-transient" value="transient failure (timeout, unreachable, 5xx) while the stored token is still valid → the stored token is used; no new attempt for that token during RENEWAL_RETRY_AFTER_MS = 30_000" style="rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="420" y="620" width="330" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-store" value="renewed → CredentialStorePort.update(provider) ← FileCredentialStore under the lock accounts-&lt;provider&gt;: read again, replace the account only while it still holds the token that was renewed (a login or account use meanwhile is kept), then writeJsonAtomic (temp file + rename, 0600)" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="800" y="620" width="330" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-force" value="forceRenew(seen) (claude and antigravity after an upstream 401): the same path under the lock; a token renewed after seen is reused" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="330" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="r-order" value="Lock order: &lt;provider&gt;-refresh → accounts-&lt;provider&gt;, never the reverse. Every account-file write goes through CredentialStorePort.update; there is no blind save." style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="780" width="1090" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="re0" value="" edge="1" parent="1" source="r-caller" target="r-load" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re1" value="valid" edge="1" parent="1" source="r-load" target="r-fresh" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re2" value="expiring" edge="1" parent="1" source="r-load" target="r-flight" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re3" value="" edge="1" parent="1" source="r-flight" target="r-lock" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re4" value="" edge="1" parent="1" source="r-force" target="r-lock" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re5" value="" edge="1" parent="1" source="r-lock" target="r-reread" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re6" value="still expiring" edge="1" parent="1" source="r-reread" target="r-renew" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re7" value="rejected" edge="1" parent="1" source="r-renew" target="r-rejected" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re8" value="transient" edge="1" parent="1" source="r-renew" target="r-transient" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="re9" value="renewed" edge="1" parent="1" source="r-renew" target="r-store" style="endArrow=block;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="matrix" name="Format × provider matrix (2026-10-18)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="1440" pageHeight="400">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="m-r0-c0" value="Inbound format \ Provider" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c1" value="claude" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="210" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c2" value="antigravity" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="380" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c3" value="openai" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="550" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c4" value="openrouter" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="720" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c5" value="opencode" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="890" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c6" value="opencode-go" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r0-c7" value="cheaper-inference" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="40" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c0" value="Anthropic Messages" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c1" value="native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="210" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c2" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c3" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="550" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c4" value="native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="720" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c5" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="890" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c6" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r1-c7" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="90" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c0" value="OpenAI Chat Completions" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c1" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="210" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c2" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c3" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="550" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c4" value="native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="720" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c5" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="890" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c6" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r2-c7" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="140" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c0" value="OpenAI Responses" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c1" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="210" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c2" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c3" value="native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="550" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c4" value="native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="720" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c5" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="890" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c6" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r3-c7" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="190" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c0" value="Gemini generateContent" style="whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c1" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="210" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c2" value="near-native" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="380" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c3" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="550" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c4" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="720" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c5" value="native per model" style="whiteSpace=wrap;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="890" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c6" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-r4-c7" value="—" style="whiteSpace=wrap;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="240" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="m-note" value="Native per model: the models whose list entry names that format (docs/reference/2026-10-17-19-26-models.md). —: 400 unsupported_feature (the proxy does not translate between formats)." style="rounded=1;whiteSpace=wrap;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="310" width="1360" height="50" as="geometry"/>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

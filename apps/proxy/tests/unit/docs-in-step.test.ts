@@ -2,7 +2,8 @@
 // document, the providers, format-fields, models and client-setup references state the routes, error codes and
 // statuses, headers, commands, environment variables, limits and providers the code has. A change on either side that
 // the other does not follow fails here, inside `bun run verify`. (The OpenAPI document is also checked against the real
-// daemon by apps/proxy/tests/e2e/docs.test.ts.)
+// daemon by apps/proxy/tests/e2e/docs.test.ts.) The architecture diagram (docs/architecture.drawio, plan P7) names only
+// declared code, states the code's constants and lock names, and its matrix page is the README's matrix.
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -32,16 +33,20 @@ import { DROPPED_HEADER, UPSTREAM_IDLE_TIMEOUT_MS } from "@accounts-proxy/core/d
 import { AnthropicCodec, anthropicErrorType } from "@accounts-proxy/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
 import { GeminiCodec } from "@accounts-proxy/dialect-gemini/adapters/inbound/gemini-codec.ts";
 import { OpenAiCodec } from "@accounts-proxy/dialect-openai/adapters/inbound/openai-codec.ts";
+import { REFRESH_LOCK as ANTIGRAVITY_REFRESH_LOCK } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-session.ts";
 import { EXPIRY_BUFFER_MS as ANTIGRAVITY_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { REFRESH_LOCK as CLAUDE_REFRESH_LOCK } from "@accounts-proxy/provider-claude/adapters/outbound/claude-session.ts";
 import { NATIVE_PATHS as CLAUDE_NATIVE_PATHS } from "@accounts-proxy/provider-claude/adapters/outbound/claude-subscription-provider.ts";
 import { CATALOG as CLAUDE_CATALOG, EXPIRY_BUFFER_MS as CLAUDE_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import { CATALOG_TTL_MS } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 import { NATIVE_PATH as OPENAI_NATIVE_PATH } from "@accounts-proxy/provider-openai/adapters/outbound/openai-provider.ts";
+import { REFRESH_LOCK as OPENAI_REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
 import { CATALOG as OPENAI_CATALOG, EXPIRY_BUFFER_MS as OPENAI_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-openai/domain/constants.ts";
-import { EXPIRY_BUFFER_MS as OPENCODE_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-session.ts";
+import { EXPIRY_BUFFER_MS as OPENCODE_EXPIRY_BUFFER_MS, REFRESH_LOCK as OPENCODE_REFRESH_LOCK } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-session.ts";
 import { DEFAULT_LOGIN_TIMEOUT_S, SHUTDOWN_GRACE_MS, USAGE } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
 import { MAX_BODY_BYTES } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
 import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
+import { DEFAULT_LOCK_OPTIONS } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
 import { REFERENCE_TTL_MS } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
 import { STATUS_TIMEOUT_MS } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
 
@@ -206,5 +211,119 @@ describe("the documentation is in step with the code", () => {
     expect(refs.length).toBeGreaterThan(50);
     const components = openapi.components as unknown as Record<string, Record<string, unknown>>;
     for (const [, kind, name] of refs) expect([kind, name, components[kind!]?.[name!] !== undefined]).toEqual([kind, name, true]);
+  });
+});
+
+/** The diagram's pages: name → the decoded text of every cell (vertex and edge labels). */
+function diagramPages(): Map<string, { cells: Map<string, string> }> {
+  const xml = readFileSync(join(repo, "docs", "architecture.drawio"), "utf8");
+  const decode = (text: string) => text.replaceAll("&#10;", "\n").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", '"').replaceAll("&#x27;", "'").replaceAll("&amp;", "&");
+  const pages = new Map<string, { cells: Map<string, string> }>();
+  for (const page of xml.matchAll(/<diagram id="[^"]+" name="([^"]+)">([\s\S]*?)<\/diagram>/g)) {
+    const cells = new Map<string, string>();
+    for (const cell of page[2]!.matchAll(/<mxCell id="([^"]+)" value="([^"]*)"/g)) cells.set(cell[1]!, decode(cell[2]!));
+    pages.set(decode(page[1]!), { cells });
+  }
+  return pages;
+}
+
+/** Every top-level declaration name of the workspaces' sources. */
+function declaredNames(): Set<string> {
+  const names = new Set<string>();
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (entry.endsWith(".ts")) for (const m of readFileSync(path, "utf8").matchAll(/\b(?:class|type|interface|function|const|enum) ([A-Za-z_][A-Za-z0-9_]*)/g)) names.add(m[1]!);
+    }
+  };
+  for (const root of ["apps", "packages"]) for (const workspace of readdirSync(join(repo, root))) walk(join(repo, root, workspace, "src"));
+  return names;
+}
+
+/** Product names on the diagram that are not code. */
+const PRODUCT_NAMES = new Set(["ChatGPT", "GenAI", "OpenAI", "OpenCode"]);
+const underscored = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "_");
+
+describe("the architecture diagram is in step with the code", () => {
+  const pages = diagramPages();
+  const page = (prefix: string) => {
+    const found = [...pages.entries()].find(([name]) => name.startsWith(prefix));
+    expect(found).toBeDefined();
+    return [...found![1].cells.values()].join("\n");
+  };
+
+  test("pages: components, request flow, renewal under locks, format × provider matrix", () => {
+    expect([...pages.keys()].map((name) => name.replace(/ \(.*\)$/, ""))).toEqual(["Components", "Request flow", "Renewal under locks", "Format × provider matrix"]);
+  });
+
+  test("every code name on the diagram is declared in a source file", () => {
+    const declared = declaredNames();
+    const text = [...pages.values()].flatMap((p) => [...p.cells.values()]).join("\n");
+    const named = new Set([...text.matchAll(/\b[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+\b/g)].map((m) => m[0]));
+    expect(named.size).toBeGreaterThan(100);
+    const missing = [...named].filter((name) => !declared.has(name) && !PRODUCT_NAMES.has(name));
+    expect(missing).toEqual([]);
+  });
+
+  test("every constant the diagram states has the code's value, and the lock names are the code's", () => {
+    const constants: Readonly<Record<string, number>> = {
+      MAX_BODY_BYTES,
+      SHUTDOWN_GRACE_MS,
+      UPSTREAM_IDLE_TIMEOUT_MS,
+      EXPIRY_BUFFER_MS: CLAUDE_EXPIRY_BUFFER_MS,
+      TOKEN_ENDPOINT_TIMEOUT_MS,
+      RENEWAL_RETRY_AFTER_MS,
+      staleMs: DEFAULT_LOCK_OPTIONS.staleMs,
+      timeoutMs: DEFAULT_LOCK_OPTIONS.timeoutMs,
+      pollMs: DEFAULT_LOCK_OPTIONS.pollMs,
+    };
+    for (const buffer of [ANTIGRAVITY_EXPIRY_BUFFER_MS, OPENAI_EXPIRY_BUFFER_MS, OPENCODE_EXPIRY_BUFFER_MS]) expect(buffer).toBe(CLAUDE_EXPIRY_BUFFER_MS);
+    const text = [...pages.values()].flatMap((p) => [...p.cells.values()]).join("\n");
+    const stated = [...text.matchAll(/\b([A-Za-z_]+) = ([0-9_]+)\b/g)].map((m) => [m[1]!, m[2]!] as const);
+    expect(stated.length).toBe(Object.keys(constants).length);
+    for (const [name, value] of stated) expect([name, value]).toEqual([name, underscored(constants[name]!)]);
+    const renewal = page("Renewal under locks");
+    for (const lock of [CLAUDE_REFRESH_LOCK, ANTIGRAVITY_REFRESH_LOCK, OPENAI_REFRESH_LOCK, OPENCODE_REFRESH_LOCK]) expect(renewal).toContain(lock);
+    expect(renewal).toContain("accounts-<provider>");
+  });
+
+  test("the matrix page is the README's format × provider matrix", () => {
+    const readme = readFileSync(join(repo, "README.md"), "utf8");
+    const section = readme.slice(readme.indexOf("## Format × provider matrix"));
+    const rows = section
+      .split("\n")
+      .filter((line) => line.startsWith("|") && !line.startsWith("|---"))
+      .slice(0, 5)
+      .map((line) => line.slice(1, -1).split(" | ").map((cell) => cell.trim()));
+    const cells = [...pages.entries()].find(([name]) => name.startsWith("Format × provider matrix"))![1].cells;
+    const drawn = rows.map((row, r) => row.map((_, c) => cells.get(`m-r${r}-c${c}`)));
+    expect(rows.length).toBe(5);
+    expect(drawn).toEqual(rows);
+  });
+});
+
+describe("client setup §3 cites the pinned SDKs' own environment reads", () => {
+  const clients = read(DOCS.clients);
+  const modules = join(repo, "apps", "proxy", "node_modules");
+  const reads: readonly { file: string; cite: string; line: number; names: readonly string[] }[] = [
+    { file: "@anthropic-ai/sdk/client.mjs", cite: "`client.mjs:71`", line: 71, names: ["ANTHROPIC_BASE_URL"] },
+    { file: "@anthropic-ai/sdk/client.mjs", cite: "`:78`", line: 78, names: ["ANTHROPIC_API_KEY"] },
+    { file: "@anthropic-ai/sdk/client.mjs", cite: "`:81`", line: 81, names: ["ANTHROPIC_AUTH_TOKEN"] },
+    { file: "openai/client.mjs", cite: "`client.mjs:180`", line: 180, names: ["OPENAI_BASE_URL", "OPENAI_API_KEY"] },
+    { file: "@google/genai/dist/node/index.mjs", cite: "`dist/node/index.mjs:27615`", line: 27615, names: ["GOOGLE_GEMINI_BASE_URL"] },
+    { file: "@google/genai/dist/node/index.mjs", cite: "`:27665–27668`", line: 27665, names: ["GOOGLE_API_KEY"] },
+    { file: "@google/genai/dist/node/index.mjs", cite: "`:27665–27668`", line: 27666, names: ["GEMINI_API_KEY"] },
+  ];
+
+  test("each cited line reads the variable the document names", () => {
+    for (const { file, cite, line, names } of reads) {
+      const source = readFileSync(join(modules, file), "utf8").split("\n")[line - 1]!;
+      expect(clients).toContain(cite);
+      for (const name of names) {
+        expect([file, line, name, source.includes(`'${name}'`)]).toEqual([file, line, name, true]);
+        expect(clients).toContain(`\`${name}=`);
+      }
+    }
   });
 });

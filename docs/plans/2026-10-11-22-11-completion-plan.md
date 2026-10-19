@@ -161,3 +161,7 @@ seven providers (main plan "Changes v4 → v4.1").
   there are no translated cells): final run 72/72 pass, every cell streams incrementally, timing per cell in the
   [final results](../reference/2026-10-18-20-07-p6-live-results.md); the one proxy defect found (Claude
   count_tokens, deviation F10) fixed in 79a4a36.
+- 2026-10-18 P7 done ([P7 plan](2026-10-18-22-09-p7-documentation-sweep-plan.md)): README "Use it from" table, client
+  setup §3 (SDKs configured from the environment, run by the e2e tier), diagram pages request flow, renewal under
+  locks and matrix, checked against the code in `verify`; the docs lint checks link fragments. Next: P8 (plugin
+  migration).

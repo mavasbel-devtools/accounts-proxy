@@ -255,3 +255,9 @@ inference-router/                       (Bun workspace)
 
 ## 6. Open item before lock
 - **C1.** "No API keys" is read as excluding **all** API-key providers, including Cheaper Inference. As a result the OpenAI dialect has no native cell, and both of its cells are translated. Confirm, or keep Cheaper as an OpenAI-native provider (which would restore `provider-openai-compat` and a 3rd column).
+
+## 7. Status record (added 2026-10-18; nothing above is rewritten)
+
+- 2026-10-18: P6 done on every native cell
+  ([P6](2026-10-17-22-59-p6-live-results-plan.md)), P7 done ([P7](2026-10-18-22-09-p7-documentation-sweep-plan.md));
+  P5 stays cancelled; next is plan v4 P8.

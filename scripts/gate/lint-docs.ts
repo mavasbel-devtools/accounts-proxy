@@ -1,7 +1,8 @@
 // Documentation lint (part of verify):
 //  - docs/{plans,research,issues,reference,temp}/*.md follow YYYY-MM-DD-HH-MM-<kebab-name>.md (AGENTS.md naming law);
 //  - docs/sessions/*.md are named <session-id>.md (ses_<alnum>);
-//  - every relative Markdown link in README.md, AGENTS.md and docs/**/*.md resolves to an existing file;
+//  - every relative Markdown link in README.md, AGENTS.md and docs/**/*.md resolves to an existing file, and its
+//    `#fragment` (also a same-file `#fragment`) to a heading of the target Markdown file (GitHub's heading ids);
 //  - every *.drawio file is an <mxfile> document.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -35,15 +36,38 @@ function walk(dir: string, suffix: string): string[] {
   });
 }
 
+/** GitHub's heading ids (github-slugger): lower case, punctuation removed, spaces → `-`, repeats get `-1`, `-2`, …. */
+function headingIds(markdownText: string): Set<string> {
+  const ids = new Set<string>();
+  const seen = new Map<string, number>();
+  for (const line of markdownText.replace(/```[\s\S]*?```/g, "").split("\n")) {
+    const heading = /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line);
+    if (heading === null) continue;
+    const text = heading[1]!.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+    const base = text.toLowerCase().replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, "").replace(/ /g, "-");
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    ids.add(count === 0 ? base : `${base}-${count}`);
+  }
+  return ids;
+}
+
 const markdown = [join(repositoryRoot, "README.md"), join(repositoryRoot, "AGENTS.md"), ...walk(docs, ".md")].filter(existsSync);
 const LINK = /\]\(([^)\s]+)\)/g;
 for (const file of markdown) {
   const text = readFileSync(file, "utf8").replace(/```[\s\S]*?```/g, "");
   for (const match of text.matchAll(LINK)) {
     const target = match[1]!;
-    if (/^[a-z]+:/i.test(target) || target.startsWith("#")) continue;
-    const path = resolve(dirname(file), decodeURIComponent(target.split("#")[0]!));
-    if (!existsSync(path)) problems.push(`${relative(repositoryRoot, file)}: broken link ${target}`);
+    if (/^[a-z]+:/i.test(target)) continue;
+    const [pathPart, fragment] = target.split("#") as [string, string | undefined];
+    const path = pathPart === "" ? file : resolve(dirname(file), decodeURIComponent(pathPart));
+    if (!existsSync(path)) {
+      problems.push(`${relative(repositoryRoot, file)}: broken link ${target}`);
+      continue;
+    }
+    if (fragment !== undefined && path.endsWith(".md") && !headingIds(readFileSync(path, "utf8")).has(decodeURIComponent(fragment))) {
+      problems.push(`${relative(repositoryRoot, file)}: link ${target} names no heading of ${relative(repositoryRoot, path)}`);
+    }
   }
 }
 

@@ -2,7 +2,9 @@
 
 Plan: [docs/plans/2026-10-06-00-23-inference-router-plan.md](docs/plans/2026-10-06-00-23-inference-router-plan.md),
 extended by [plan v4](docs/plans/2026-10-11-22-11-completion-plan.md) and
-[P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md) (with amendment A, the OpenCode Console) ·
+[P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md) (with amendment A, the OpenCode Console),
+[model catalog and docs](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md), [P6](docs/plans/2026-10-17-22-59-p6-live-results-plan.md)
+and [P7](docs/plans/2026-10-18-22-09-p7-documentation-sweep-plan.md) ·
 Research: [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md)
 
 ## 1. What this is
@@ -11,7 +13,8 @@ Gemini `generateContent` formats and routes each request to one of seven provide
 - subscription providers: `claude` (Anthropic Messages upstream), `antigravity` (Google Cloud Code Assist envelope
   upstream), `openai` (ChatGPT plan usage, OpenAI Responses upstream; plan v4 P4.5);
 - API-key gateways (plan P4.6; the 2026-10-06 "no API-key providers" decision was reversed on 2026-10-12, N1):
-  `openrouter`, `opencode` (OpenCode Zen), `opencode-go`, `cheaper-inference`.
+  `openrouter`, `opencode` (the OpenCode Console's inference gateway, `opencode.ai/inference`), `opencode-go`,
+  `cheaper-inference`.
 
 A model accepts some formats natively (one fixed format per subscription provider; per model, or uniformly, on a
 gateway); a request in any other format answers 400 `unsupported_feature`. The proxy does not translate between
@@ -103,8 +106,8 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   `CredentialStorePort.update` (a locked read → change → write); there is no blind save. Lock order is always renewal
   lock → store lock. A token-endpoint call is bounded by `TOKEN_ENDPOINT_TIMEOUT_MS` (30 s), which must stay below the
   lock staleness (60 s). A rejected refresh marks the account `needsLogin` (fast 401 until a new login); a transient
-  renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude retries once after renewing on an
-  upstream 401, only before anything reaches the client.
+  renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude and Antigravity retry once after
+  renewing on an upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
   Every route except `/health` and `/.well-known/opencode` requires the proxy token (`<data>/token.json`, 0600),
   compared in constant time. The well-known manifest carries no secret: the command that prints the token and the
@@ -165,6 +168,11 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - Files under `docs/{plans,research,issues,reference,temp}` are named `YYYY-MM-DD-HH-MM-<name>.md`, using the system clock.
 - Session records are `docs/sessions/<session-id>.md`.
 - README, this file, plans and diagrams are kept in exact sync with the code and the measured results after every change.
+- **Diagram** (plan P7): `docs/architecture.drawio` has the pages Components, Request flow, Renewal under locks and
+  Format × provider matrix. `apps/proxy/tests/unit/docs-in-step.test.ts` fails when a code name on it is not declared
+  in a source file, a constant or lock name it states differs from the code, or its matrix differs from the README's.
+- **Links.** The docs lint (`scripts/gate/lint-docs.ts`) fails on a relative link to a missing file and on a
+  `#fragment` that names no heading of the target Markdown file.
 - **Reference documentation** (plan 2026-10-16 C7, decisions D2–D4): the [API](docs/reference/2026-10-17-19-26-proxy-api.md),
   [OpenAPI 3.1](docs/reference/2026-10-17-19-26-proxy-openapi.json), [providers](docs/reference/2026-10-17-19-26-providers.md),
   [format fields](docs/reference/2026-10-17-19-26-format-fields.md), [models](docs/reference/2026-10-17-19-26-models.md) and
