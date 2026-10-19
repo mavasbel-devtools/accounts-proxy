@@ -75,7 +75,9 @@ import { OpenRouterKeyLogin } from "@accounts-proxy/provider-openrouter/adapters
 import { OpenRouterQuota } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-quota.ts";
 import { OPENROUTER_BUILTIN } from "@accounts-proxy/provider-openrouter/domain/builtin-models.ts";
 import { AUTH_URL as OPENROUTER_AUTH_URL, OPENROUTER_SPEC } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
-import { CliDriver, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
+import { CliDriver, type CliPorts, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
+import type { HttpHandler } from "@accounts-proxy/proxy/adapters/inbound/http/http-handler.ts";
+import type { ErrorReporterPort } from "@accounts-proxy/core/ports/inbound/diagnostics.ts";
 import type { Driver } from "@accounts-proxy/proxy/adapters/inbound/driver.ts";
 import { MAX_BODY_BYTES, NodeHttpServer } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
 import { RouteHandler } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
@@ -464,28 +466,51 @@ function buildGateways(deps: GatewayDeps): GatewayGraph[] {
   return out;
 }
 
+/** The daemon's request handling over a provider graph: also used by scripts/evidence/live to serve a graph in-process. */
+export type Routes = {
+  readonly handler: HttpHandler;
+  readonly errors: ErrorReporterPort;
+  readonly ports: Pick<CliPorts, "models" | "opencode" | "origin" | "access" | "health">;
+};
+
+export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly string[]): Routes {
+  const providers: ProviderPort[] = [];
+  for (const wired of [graph.claude, graph.antigravity, graph.openai]) if (wired !== undefined) providers.push(wired.provider);
+  for (const gateway of graph.gateways) providers.push(gateway.provider);
+  const access = new AccessService(new FileProxyTokenStore(home), graph.random, new NodeHash());
+  const models = new ListModelsService(providers);
+  const describe = new DescribeModelsService(models, graph.reference);
+  const opencode = new OpencodeConfigCodec();
+  const origin: OpencodeOrigin = {
+    origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
+    // Absolute, with the data directory, so opencode can spawn it from any directory (rule O5).
+    tokenCommand: ["env", `ACCOUNTS_PROXY_HOME=${home}`, ...entry, "token"],
+  };
+  const health = new HealthService(graph.enabled);
+  const errors = new LoggingErrorReporter(graph.logger);
+  const handler = new RouteHandler(
+    [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
+    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, opencode, origin },
+    errors,
+  );
+  return { handler, errors, ports: { models: describe, opencode, origin, access, health } };
+}
+
 export async function buildCli(options: ContainerOptions): Promise<{ readonly config: ProxyConfig; readonly driver: Driver }> {
   const graph = await buildGraph(options);
   const clients: OAuthClientPort[] = [];
-  const providers: ProviderPort[] = [];
   const reporters: UsageReporterPort[] = [];
-  for (const wired of [graph.claude, graph.antigravity, graph.openai]) {
-    if (wired === undefined) continue;
-    clients.push(wired.oauth);
-    providers.push(wired.provider);
-  }
+  for (const wired of [graph.claude, graph.antigravity, graph.openai]) if (wired !== undefined) clients.push(wired.oauth);
   if (graph.antigravity) reporters.push(graph.antigravity.quota);
   const keyClients: ApiKeyLoginPort[] = [];
   const devices: DeviceLoginClientPort[] = [];
   for (const gateway of graph.gateways) {
-    providers.push(gateway.provider);
     if (gateway.oauth) clients.push(gateway.oauth);
     keyClients.push(gateway.keyLogin);
     if (gateway.device) devices.push(gateway.device);
     if (gateway.quota) reporters.push(gateway.quota);
   }
 
-  const hash = new NodeHash();
   const login = new LoginService({
     clients,
     devices,
@@ -497,38 +522,19 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     secrets: new TerminalSecretPrompt(options.stdin, options.stdout),
     store: graph.store,
     random: graph.random,
-    hash,
+    hash: new NodeHash(),
     clock: graph.clock,
     timer: graph.timer,
     logger: graph.logger,
   });
-  const access = new AccessService(new FileProxyTokenStore(options.home), graph.random, hash);
-  const models = new ListModelsService(providers);
-  const describe = new DescribeModelsService(models, graph.reference);
-  const opencode = new OpencodeConfigCodec();
-  const origin: OpencodeOrigin = {
-    origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
-    // Absolute, with the data directory, so opencode can spawn it from any directory (rule O5).
-    tokenCommand: ["env", `ACCOUNTS_PROXY_HOME=${options.home}`, ...options.entry, "token"],
-  };
-  const health = new HealthService(graph.enabled);
-  const errors = new LoggingErrorReporter(graph.logger);
-  const handler = new RouteHandler(
-    [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
-    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, opencode, origin },
-    errors,
-  );
+  const { handler, errors, ports } = buildRoutes(graph, options.home, options.entry);
   const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
   const driver = new CliDriver(
     {
       login,
       accounts: new AccountAdminService(graph.store),
       usage: new UsageService(graph.enabled, reporters),
-      models: describe,
-      opencode,
-      origin,
-      access,
-      health,
+      ...ports,
       status: new DaemonStatusService(graph.transport, `http://${LOOPBACK_HOST}:${graph.config.port}`),
     },
     { server, shutdown: options.shutdown },

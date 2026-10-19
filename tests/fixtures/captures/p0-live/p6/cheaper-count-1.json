@@ -1,0 +1,63 @@
+{
+  "id": "cheaper-count-1",
+  "target": "cheaper-inference",
+  "scenario": "cheaper-count",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-19T02:09:18.939Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/messages/count_tokens",
+        "headers": {
+          "content-type": "application/json",
+          "anthropic-version": "2023-06-01",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 40, separated by spaces. Output only the numbers."
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-allow-headers": "Authorization, X-Api-Key, Content-Type, Anthropic-Version, Anthropic-Beta",
+          "access-control-allow-methods": "POST, OPTIONS",
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "Retry-After, WWW-Authenticate, X-Cheaper-Inference-Request-Id, x-ci-request-id",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Mon, 19 Oct 2026 02:09:19 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/messages/count_tokens",
+          "x-nextjs-rewritten-path": "/api/v1/messages/count_tokens",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "yul1::yul1::dth27-1792375759170-bae46d3430aa"
+        },
+        "headersAtMs": 432.2,
+        "doneAtMs": 432.7,
+        "chunks": [
+          {
+            "atMs": 432.6,
+            "text": "{\"input_tokens\":16}"
+          }
+        ]
+      }
+    }
+  ]
+}

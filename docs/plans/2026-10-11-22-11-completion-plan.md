@@ -156,3 +156,8 @@ seven providers (main plan "Changes v4 → v4.1").
   validated live ([plan](2026-10-13-01-42-live-validation-plan.md),
   [findings](../reference/2026-10-13-02-52-live-validation-findings.md)); the live-only e2e deferrals are cleared. P6
   is still due for the translated cells after P5.
+
+- 2026-10-18 P6 done for every native cell ([P6 plan](2026-10-17-22-59-p6-live-results-plan.md); P5 cancelled, so
+  there are no translated cells): final run 72/72 pass, every cell streams incrementally, timing per cell in the
+  [final results](../reference/2026-10-18-20-07-p6-live-results.md); the one proxy defect found (Claude
+  count_tokens, deviation F10) fixed in 79a4a36.

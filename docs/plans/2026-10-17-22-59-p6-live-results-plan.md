@@ -70,8 +70,8 @@ Pass criteria (stated before the run, applied by the script):
 | P6-2 | **User:** restart the daemon (`bun run proxy serve`) so it runs 2079b9f | done (16:31, pid 3289100) |
 | P6-3 | Live run; results document `docs/reference/<ts>-p6-live-results.md` (generated, secret-scanned) | run 1 done: [results](../reference/2026-10-18-18-37-p6-live-results.md); final run after the F10 fix (P6-6) |
 | P6-4 | Findings: any failure or non-incremental cell is investigated to its cause; a proxy defect is fixed with tests; a provider behaviour is documented with the evidence | done: F10 fixed; cheaper-inference burst is the upstream's |
-| P6-5 | README, AGENTS.md (if a law changes), providers reference, plan v4 record, session record; `bun run verify`; commit; push | |
-| P6-6 | Added 2026-10-18 (§6): after the user restarts the daemon on the F10 commit, the full run again; the final results document | |
+| P6-5 | README, AGENTS.md (if a law changes), providers reference, plan v4 record, session record; `bun run verify`; commit; push | done (79a4a36 for run 1 and F10; the final run's records with P6-6) |
+| P6-6 | Added 2026-10-18 (§6): after the user restarts the daemon on the F10 commit, the full run again; the final results document | done: [final results](../reference/2026-10-18-20-07-p6-live-results.md) |
 
 ## 4. Safety
 
@@ -105,3 +105,12 @@ Pass criteria (stated before the run, applied by the script):
 The user's daemon runs 2079b9f, before F10, so run 1 cannot show count_tokens passing through the daemon. After the
 F10 commit the user restarts the daemon once more and the full run is repeated unchanged (P6-6); its document is the
 final P6 result, run 1 stays as the record of the finding.
+- 2026-10-18 20:07 P6-6 final run ([results](../reference/2026-10-18-20-07-p6-live-results.md)) on the user's daemon
+  restarted at 19:59 on 79a4a36: 72/72 pass (count_tokens on `claude` 200), no 429/402, 50 of 51 streamed runs
+  incremental. Findings, each probed with captures under `tests/fixtures/captures/p0-live/p6/`: `opencode-gem` stream#3
+  arrived in 2 reads; `scripts/evidence/live/p6-upstream-probe.ts --via=proxy` serves the daemon's own request handling
+  in-process (`buildRoutes`, extracted from `buildCli` for this) and records both sides of each request: the client
+  read exactly the upstream's chunks in 6 of 6 runs, and the upstream's own chunk count varies (3–6), so the
+  chunking is the upstream's ([probe](../reference/2026-10-18-20-11-p6-upstream-probe-opencode-gem-sse-via-proxy.md)).
+  `cheaper-inference` count_tokens answers carry no `x-ci-request-id` upstream
+  ([probe](../reference/2026-10-18-20-09-p6-upstream-probe-cheaper-count.md)). P6 is complete.

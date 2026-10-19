@@ -18,10 +18,11 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 > request in another format answers 400 `unsupported_feature`: the proxy does not translate between formats (P5
 > cancelled 2026-10-14, [plan](docs/plans/2026-10-16-00-08-model-catalog-docs-plan.md)). All seven
 > providers were validated live on 2026-10-13 with the official SDKs, Claude Code and opencode, MCP tools included
-> ([findings](docs/reference/2026-10-13-02-52-live-validation-findings.md)). Plans:
+> ([findings](docs/reference/2026-10-13-02-52-live-validation-findings.md)); P6 on 2026-10-18 measured every native
+> cell through the daemon: all pass and stream incrementally ([results](docs/reference/2026-10-18-20-07-p6-live-results.md)). Plans:
 > [main](docs/plans/2026-10-06-00-23-inference-router-plan.md), [v4](docs/plans/2026-10-11-22-11-completion-plan.md),
 > [P4.6](docs/plans/2026-10-12-15-35-p46-gateway-providers-plan.md),
-> [live validation](docs/plans/2026-10-13-01-42-live-validation-plan.md).
+> [live validation](docs/plans/2026-10-13-01-42-live-validation-plan.md), [P6](docs/plans/2026-10-17-22-59-p6-live-results-plan.md).
 
 > **Terms risk.** The subscription providers' terms restrict third-party clients. The verbatim quotes are in
 > [docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md](docs/research/2026-10-05-20-07-llm-router-from-auth-plugins.md) §3
