@@ -6,7 +6,7 @@
 // (key exchange, key info, Chat / Responses / Messages answers), the captured OpenCode gateway refusal (probe z0), and
 // the OpenCode Console's captured answers (amendment A probes c0–c3) and documented config example.
 // Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
-// non-streamed capture exists); count_tokens answers the spec's example (anthropic-count-tokens.md Response 200).
+// non-streamed capture exists); count_tokens answers the P6 probe's captures (p6/c1 refusal, p6/c2 count).
 // OpenAI (live validation L4): the live model list (l4/openai-models) for an e2e access token, the live Responses streams
 // (L1 openai-resp-*), and the key set of the replay's signing key (openai-signing.ts; OpenAI's own private key cannot sign).
 // Every request is recorded so tests can assert what the daemon really sent.
@@ -56,6 +56,9 @@ const claudeFixture = (name: string) => readFileSync(join(repo, "packages", "pro
 const antigravityFixture = (name: string) => readFileSync(join(repo, "packages", "provider-antigravity", "tests", "fixtures", "plugin-5c6f7c2", name), "utf8");
 type Capture = { exchanges: { response: { status: number; headers: Record<string, string>; chunks: { text: string }[] } }[] };
 const capture = (relative: string): Capture => JSON.parse(readFileSync(join(repo, "tests", "fixtures", "captures", "p0-live", relative), "utf8")) as Capture;
+/** The body parameters of count_tokens (anthropic-count-tokens.md "Body parameters"). */
+const COUNT_TOKENS_FIELDS = ["messages", "model", "cache_control", "output_config", "system", "thinking", "tool_choice", "tools"];
+
 export const captured = (relative: string, index = 0) => {
   const exchange = capture(relative).exchanges[index]!.response;
   return { status: exchange.status, contentType: exchange.headers["content-type"] ?? "text/event-stream", body: exchange.chunks.map((c) => c.text).join("") };
@@ -221,8 +224,12 @@ export class ReplayUpstreams {
       }
       case "/.well-known/jwks.json":
         return json(jwks());
-      case "/v1/messages/count_tokens":
-        return json({ input_tokens: 2095 });
+      case "/v1/messages/count_tokens": {
+        // P6 probe: a body key outside the spec's body parameters is refused (the captured 400), else counted.
+        const extra = Object.keys(parsed).some((key) => !COUNT_TOKENS_FIELDS.includes(key));
+        const answer = captured(`p6/${extra ? "c1-without-max-tokens" : "c2-spec-fields"}.json`);
+        return new Response(answer.body, { status: answer.status, headers: { "content-type": answer.contentType, "request-id": "req_e2e" } });
+      }
       case "/v1/messages": {
         if (parsed["model"] === "claude-rate-limited") {
           return json({ type: "error", error: { type: "rate_limit_error", message: "Number of request tokens has exceeded your rate limit." } }, 429, { "retry-after": "17", "request-id": "req_e2e" });

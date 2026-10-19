@@ -1,0 +1,88 @@
+{
+  "id": "c4-spec-fields-no-identity",
+  "target": "claude",
+  "scenario": "c4-spec-fields-no-identity",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-19T00:39:14.010Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages/count_tokens?beta=true",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept": "text/event-stream",
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "x-app": "cli",
+          "x-cc-session-id": "<REDACTED:claude_session_id>",
+          "x-client-request-id": "663dd9de-32cc-479f-bb1d-45b9f3cf9f62",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Windows",
+          "x-stainless-package-version": "0.112.1",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "user-agent": "claude-cli/2.1.280.b1a (external, sdk-cli)"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "messages": [
+            {
+              "role": "user",
+              "content": "What time is it in Tokyo?"
+            }
+          ],
+          "tools": [
+            {
+              "name": "get_time",
+              "description": "Current local time in an IANA timezone.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a4cbb9a37b65ac90-YYZ",
+          "connection": "keep-alive",
+          "content-length": "20",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Mon, 19 Oct 2026 00:39:20 GMT",
+          "request-id": "req_011CgAfSe6SPVJNGsYmxKBPG",
+          "server": "cloudflare",
+          "server-timing": "x-originResponse;dur=61",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 167.3,
+        "doneAtMs": 167.4,
+        "chunks": [
+          {
+            "atMs": 167.4,
+            "text": "{\"input_tokens\":567}"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -147,9 +147,14 @@ describe("thinking (F9 / Q6) and the per-model envelope", () => {
 });
 
 describe("upstream answers", () => {
-  test("count_tokens passes through", async () => {
-    const count = await post("/v1/messages/count_tokens", { model: HAIKU, messages: [{ role: "user", content: "hi" }] });
-    expect([count.status, count.body]).toEqual([200, { input_tokens: 2095 }]);
+  test("count_tokens gets only the spec's body parameters (F10); a client's own extra field reaches the upstream, which refuses it", async () => {
+    const thinking = { type: "enabled", budget_tokens: 2048 };
+    const count = await post("/v1/messages/count_tokens", { model: HAIKU, thinking, messages: [{ role: "user", content: "hi" }] });
+    expect([count.status, count.body]).toEqual([200, { input_tokens: 654 }]);
+    const body = JSON.parse(upstreams.find("/v1/messages/count_tokens").at(-1)!.body) as Record<string, unknown>;
+    expect([Object.keys(body).sort(), body["thinking"]]).toEqual([["messages", "model", "system", "thinking"], thinking]);
+    const refused = await post("/v1/messages/count_tokens", { model: HAIKU, max_tokens: 10, messages: [{ role: "user", content: "hi" }] });
+    expect([refused.status, error(refused)]).toEqual([400, { type: "invalid_request_error", message: "diagnostics: Extra inputs are not permitted" }]);
   });
 
   test("an upstream error passes through with its status and body; a refusal stream is passed and logged", async () => {

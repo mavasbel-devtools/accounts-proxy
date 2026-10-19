@@ -153,22 +153,36 @@ function systemBlocks(system: WireRequestBody["system"], ccPromptId: string): re
   return [billing, identity, ...(typeof system === "string" ? [{ type: "text", text: system }] : system)];
 }
 
-/** Captured-claude body envelope around the guarded messages (host values win; captured defaults fill absence). */
-export function envelope(body: WireRequestBody, messages: readonly WireMessage[], ctx: TransformContext, lookup: CatalogLookup): Record<string, unknown> {
+/** The upstream path that counts tokens instead of answering (anthropic-count-tokens.md). */
+export const COUNT_TOKENS_PATH = "/v1/messages/count_tokens";
+
+/**
+ * Captured-claude body envelope around the guarded messages (host values win; captured defaults fill absence).
+ * `counting` (difference F10, P6): count_tokens takes only the spec's body parameters, so the Messages-only fields the envelope
+ * adds (`max_tokens`, `context_management`, `diagnostics`, `metadata`) are left out; the upstream answered 400
+ * "Extra inputs are not permitted" to `max_tokens` and `diagnostics`, and 200 without them
+ * (docs/reference/2026-10-18-18-39-p6-count-tokens-probe.md). The client's own fields still pass as sent.
+ */
+export function envelope(body: WireRequestBody, messages: readonly WireMessage[], ctx: TransformContext, lookup: CatalogLookup, counting: boolean): Record<string, unknown> {
   const env = envelopeFor(body.model, lookup(body.model));
   const outputConfig = sanitizeOutputConfig(body.output_config, env.outputConfig);
   const thinking = body.thinking === undefined ? undefined : sanitizeThinking(body.thinking, env.thinking);
   const thinkingOn = thinking !== undefined && thinking.type !== "disabled";
+  const messagesOnly = !counting;
   return {
     ...body,
     messages,
     system: systemBlocks(body.system, ctx.ccPromptId),
-    ...(body.max_tokens === undefined ? { max_tokens: env.maxTokens } : {}),
+    ...(messagesOnly && body.max_tokens === undefined ? { max_tokens: env.maxTokens } : {}),
     ...(thinking !== undefined ? { thinking } : {}),
-    ...(thinkingOn ? { context_management: { edits: [{ type: "clear_thinking_20251015", keep: "all" }] } } : {}),
+    ...(messagesOnly && thinkingOn ? { context_management: { edits: [{ type: "clear_thinking_20251015", keep: "all" }] } } : {}),
     ...(outputConfig ? { output_config: outputConfig } : {}),
-    diagnostics: { previous_message_id: ctx.previousMessageId },
-    metadata: { user_id: JSON.stringify({ device_id: ctx.deviceId, account_uuid: ctx.accountUuid, session_id: ctx.sessionId }) },
+    ...(messagesOnly
+      ? {
+          diagnostics: { previous_message_id: ctx.previousMessageId },
+          metadata: { user_id: JSON.stringify({ device_id: ctx.deviceId, account_uuid: ctx.accountUuid, session_id: ctx.sessionId }) },
+        }
+      : {}),
   };
 }
 
@@ -235,6 +249,6 @@ export function transformRequest(
   return {
     headers: upstreamHeaders(ctx, input.betaHeader),
     url: apiUrl(input.path, apiBase),
-    body: JSON.stringify(envelope(input.body, messages, ctx, lookup)),
+    body: JSON.stringify(envelope(input.body, messages, ctx, lookup, input.path === COUNT_TOKENS_PATH)),
   };
 }

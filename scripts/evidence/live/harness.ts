@@ -253,7 +253,7 @@ export function writeCapture(live: Live, relativePath: string, record: CaptureRe
   return path;
 }
 
-export function writeDoc(live: Live, relativePath: string, text: string): void {
+export function writeDoc(live: Pick<Live, "redactor">, relativePath: string, text: string): void {
   const hits = live.redactor.scan(text);
   if (hits.length > 0) throw new Error(`secret scan failed for ${relativePath}: ${hits.join(", ")} (nothing written)`);
   const path = join(repositoryRoot, relativePath);

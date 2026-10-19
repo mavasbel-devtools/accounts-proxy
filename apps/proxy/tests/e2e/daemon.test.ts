@@ -81,8 +81,10 @@ describe("daemon: Anthropic SDK → claude (native cell)", () => {
     const first = await anthropic().messages.create({ model: HAIKU, max_tokens: 256, tools, messages: [{ role: "user", content: "time?" }] });
     expect(first.stop_reason).toBe("tool_use");
     const count = await anthropic().messages.countTokens({ model: HAIKU, messages: [{ role: "user", content: "hi" }] });
-    expect(count.input_tokens).toBe(2095);
-    expect(lastUpstream("/v1/messages/count_tokens").search).toBe("?beta=true");
+    expect(count.input_tokens).toBe(654);
+    const upstream = lastUpstream("/v1/messages/count_tokens");
+    expect(upstream.search).toBe("?beta=true");
+    expect(Object.keys(JSON.parse(upstream.body) as object).sort()).toEqual(["messages", "model", "system"]);
   });
 
   test("anthropic-beta: a captured name is accepted, an unproven one is a 400 unless x-proxy-lossy reports it", async () => {

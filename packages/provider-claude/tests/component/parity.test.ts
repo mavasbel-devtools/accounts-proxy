@@ -1,6 +1,6 @@
 // P3 parity gate: for the same input, the proxy's outbound Claude request (url, headers, body bytes) must equal
 // the reference implementation's (opencode-claude-auth @ 6292741, tests/reference/plugin-6292741). Any difference
-// is a defect, except the deliberate fixes listed (and asserted) at the bottom of this file. F9 (Q6) changes every
+// is a defect, except the deliberate fixes listed (and asserted) at the bottom of this file (F10: count_tokens). F9 (Q6) changes every
 // request whose thinking is absent or disabled, so `both` applies exactly that change to the reference output before
 // the byte comparison; the F9 tests below assert the reference really differs there.
 import { describe, expect, test } from "bun:test";
@@ -156,11 +156,6 @@ describe("parity with opencode-claude-auth @ 6292741 (url, headers, body bytes)"
     });
   }
 
-  test.each([["/v1/messages/count_tokens"]])("path %p", (path) => {
-    const { expected, actual } = both(captured, path);
-    expect(actual).toEqual(expected);
-  });
-
   test("previous_message_id and a custom api base", () => {
     const { expected, actual } = both(captured, "/v1/messages", "msg_chain_7", "http://127.0.0.1:9");
     expect(actual).toEqual(expected);
@@ -206,6 +201,22 @@ describe("deliberate differences (each one asserted, nothing else may differ)", 
     const actual = JSON.parse(both(body).actual.body) as Record<string, unknown>;
     expect(actual["thinking"]).toEqual({ type: "disabled" });
     expect("context_management" in actual).toBe(false);
+  });
+
+  test("F10: count_tokens — the reference sends the Messages-only fields, which the upstream refuses there; the proxy leaves them out", () => {
+    const messagesOnly = ["max_tokens", "context_management", "diagnostics", "metadata"];
+    for (const thinking of [undefined, { type: "enabled", budget_tokens: 2048 }]) {
+      const body: WireRequestBody = { model: "claude-opus-4-8", messages: user, ...(thinking !== undefined ? { thinking } : {}) };
+      const { expected, actual } = both(body, "/v1/messages/count_tokens");
+      const source = JSON.parse(expected.body) as Record<string, unknown>;
+      expect(messagesOnly.filter((key) => key in source)).toEqual(thinking === undefined ? ["max_tokens", "diagnostics", "metadata"] : messagesOnly);
+      for (const key of messagesOnly) delete source[key];
+      expect(JSON.parse(actual.body)).toEqual(source);
+      expect([actual.url, actual.headers]).toEqual([expected.url, expected.headers]);
+    }
+    // The client's own fields pass as sent (the captured Claude Code body carries max_tokens, metadata and diagnostics).
+    const { expected, actual } = both(captured, "/v1/messages/count_tokens");
+    expect(actual).toEqual(expected);
   });
 
   test("F9: enabled or adaptive thinking keeps the captured clear-thinking edit", () => {
