@@ -60,6 +60,63 @@ export function parseCatalogEntry(raw: ModelsApiEntry): CatalogModelEntry | null
   };
 }
 
+export function parseModelSelectorEntry(raw: unknown): CatalogModelEntry | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const m = raw as Record<string, unknown>;
+  if (typeof m["id"] !== "string" || m["id"] === "") return null;
+  const runtime = (typeof m["runtime"] === "object" && m["runtime"] !== null ? m["runtime"] : {}) as Record<string, unknown>;
+  const caps = (typeof m["capabilities"] === "object" && m["capabilities"] !== null ? m["capabilities"] : {}) as Record<string, unknown>;
+  const thinking = (typeof m["thinking"] === "object" && m["thinking"] !== null ? m["thinking"] : {}) as Record<string, unknown>;
+  const effortLevels = Array.isArray(runtime["effort_levels"]) ? (runtime["effort_levels"] as string[]) : [];
+  const capabilities: ModelCapabilities = {
+    thinking: {
+      supported: thinking["type"] !== "none",
+      types: { enabled: true, adaptive: true },
+    },
+    effort: {
+      supported: effortLevels.length > 0,
+      levels: effortLevels,
+    },
+    batch: true,
+    citations: true,
+    codeExecution: true,
+    imageInput: caps["mm_images"] === true,
+    pdfInput: caps["mm_pdf"] === true,
+    structuredOutputs: true,
+    contextManagement: {
+      clearToolUses: true,
+      clearThinking: true,
+      compact: true,
+    },
+  };
+  const rawName = typeof m["name"] === "string" ? m["name"] : m["id"];
+  const displayName = typeof rawName === "string" && !rawName.startsWith("Claude ") && rawName !== m["id"] ? `Claude ${rawName}` : String(rawName);
+  return {
+    id: m["id"],
+    displayName,
+    createdAt: "",
+    maxInputTokens: typeof runtime["max_input_tokens"] === "number" ? runtime["max_input_tokens"] : 1_000_000,
+    maxTokens: typeof runtime["max_output_tokens"] === "number" ? runtime["max_output_tokens"] : 128_000,
+    capabilities,
+  };
+}
+
+export function parseModelSelector(raw: unknown): CatalogModelEntry[] {
+  if (typeof raw !== "object" || raw === null) return [];
+  const config = (raw as Record<string, unknown>)["model_selector_config"];
+  if (!Array.isArray(config) || config.length === 0) return [];
+  const cc = config.find((c) => typeof c === "object" && c !== null && (c as Record<string, unknown>)["id"] === "cc") ?? config[0];
+  if (typeof cc !== "object" || cc === null) return [];
+  const models = (cc as Record<string, unknown>)["models"];
+  if (!Array.isArray(models)) return [];
+  const entries: CatalogModelEntry[] = [];
+  for (const m of models) {
+    const parsed = parseModelSelectorEntry(m);
+    if (parsed) entries.push(parsed);
+  }
+  return entries;
+}
+
 /** Next pagination cursor: `last_id`, else the last parsed id (source contract); undefined ends paging. */
 export function nextCursor(page: ModelsPage, parsedSoFar: readonly CatalogModelEntry[]): string | undefined {
   if (page.has_more !== true) return undefined;

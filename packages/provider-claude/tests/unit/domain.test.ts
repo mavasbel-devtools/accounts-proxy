@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { entryDetails, isSnapshot, nextCursor, parseCatalogEntry, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
+import { entryDetails, isSnapshot, nextCursor, parseCatalogEntry, parseModelSelector, parseModelSelectorEntry, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
 import { API_BASE, AUTHORIZE_SCOPES, REFRESH_SCOPES } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import { fromAccount, hasScope, toAccount, tokensFromResponse, type ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
 import { capabilitiesEnvelope, envelopeFor, FALLBACK_ENVELOPE, MODEL_ENVELOPES, STATIC_CATALOG, type CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
@@ -82,6 +82,35 @@ describe("catalog parsing", () => {
     expect(nextCursor({ has_more: true, last_id: "" }, parsed)).toBe("b");
     expect(nextCursor({ has_more: true }, [])).toBeUndefined();
   });
+  test("parseModelSelector and parseModelSelectorEntry", () => {
+    expect(parseModelSelector(null)).toEqual([]);
+    expect(parseModelSelector({})).toEqual([]);
+    expect(parseModelSelector({ model_selector_config: [] })).toEqual([]);
+    expect(parseModelSelector({ model_selector_config: [null] })).toEqual([]);
+    expect(parseModelSelector({ model_selector_config: [{ id: "cc", models: null }] })).toEqual([]);
+    expect(parseModelSelector({ model_selector_config: [{ id: "other", models: [{ id: "" }] }] })).toEqual([]);
+    expect(parseModelSelectorEntry(null)).toBeNull();
+    expect(parseModelSelectorEntry({})).toBeNull();
+    expect(parseModelSelectorEntry({ id: "" })).toBeNull();
+    expect(parseModelSelectorEntry({ id: "custom-1" })).toEqual({
+      id: "custom-1",
+      displayName: "custom-1",
+      createdAt: "",
+      maxInputTokens: 1_000_000,
+      maxTokens: 128_000,
+      capabilities: {
+        thinking: { supported: true, types: { enabled: true, adaptive: true } },
+        effort: { supported: false, levels: [] },
+        batch: true,
+        citations: true,
+        codeExecution: true,
+        imageInput: false,
+        pdfInput: false,
+        structuredOutputs: true,
+        contextManagement: { clearToolUses: true, clearThinking: true, compact: true },
+      },
+    });
+  });
   test.each([
     [{ version: 2, fetchedAt: 1, models: [{}] }, true],
     [{ version: 1, fetchedAt: 1, models: [{}] }, false],
@@ -150,8 +179,12 @@ describe("request-transform edge branches", () => {
   });
   test("production api base", () => {
     expect(apiUrl("/v1/messages", API_BASE)).toBe("https://api.anthropic.com/v1/messages?beta=true");
-    const ctx = { accessToken: "a", accountUuid: "", deviceId: "d", sessionId: "s", previousMessageId: null, ccPromptId: "p", clientRequestId: "c" };
-    expect(transformRequest({ body: { model: "m", messages: [] }, path: "/v1/messages", betaHeader: "b" }, ctx, () => undefined, API_BASE).url).toBe("https://api.anthropic.com/v1/messages?beta=true");
+    const ctx = { accessToken: "a", accountUuid: "", deviceId: "d", sessionId: "s", previousMessageId: null, ccPromptId: "p", clientRequestId: "c", prevToolDurations: "Bash=83" };
+    const res = transformRequest({ body: { model: "m", messages: [], system: [{ type: "text", text: "custom" }] }, path: "/v1/messages", betaHeader: "b" }, ctx, () => undefined, API_BASE);
+    expect(res.url).toBe("https://api.anthropic.com/v1/messages?beta=true");
+    expect(res.headers["x-claude-code-prev-tool-durations"]).toBe("Bash=83");
+    expect(res.body).toContain("cc_version=2.1.304;");
+    expect(res.body).toContain("custom");
   });
 });
 

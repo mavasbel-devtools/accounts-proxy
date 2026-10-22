@@ -28,32 +28,34 @@ HTTP/1.1 parser with split reads and chunked bodies, both cell mappings, the rep
 
 ## 2. Results
 
-| Capture run | Seq | Proxy | Differences |
-|---|---|---|---|
-| `claude/2026-10-22-02-04-42/workflow` | 18 | refused | 23 |
-| `claude/2026-10-20-22-26-06/workflow` | 14 | refused | 23 |
-| `claude/2026-10-20-22-26-06/workflow` | 34 | refused | 23 |
-| `claude/2026-10-20-22-27-09/workflow` | 15 | refused | 23 |
-| `claude/2026-10-20-22-27-09/workflow` | 16 | refused | 24 |
-| `antigravity/2026-10-21-23-59-49/login` | 3287 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3306 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3313 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3343 | accepted | 34 |
+| Capture run | Seq | Proxy (before R6) | Differences (before R6) | Proxy (after R6) | Differences (after R6) |
+|---|---|---|---|---|---|
+| `claude/2026-10-22-02-04-42/workflow` | 18 | refused | 23 | accepted | **0** |
+| `claude/2026-10-20-22-26-06/workflow` | 14 | refused | 23 | accepted | **0** |
+| `claude/2026-10-20-22-26-06/workflow` | 34 | refused | 23 | accepted | **0** |
+| `claude/2026-10-20-22-27-09/workflow` | 15 | refused | 23 | accepted | **0** |
+| `claude/2026-10-20-22-27-09/workflow` | 16 | refused | 24 | accepted | **0** |
+| `antigravity/2026-10-21-23-59-49/login` | 3287 | accepted | 34 | accepted | 34 |
+| `antigravity/2026-10-21-23-59-49/login` | 3306 | accepted | 34 | accepted | 34 |
+| `antigravity/2026-10-21-23-59-49/login` | 3313 | accepted | 34 | accepted | 34 |
+| `antigravity/2026-10-21-23-59-49/login` | 3343 | accepted | 34 | accepted | 34 |
 
 ## 3. Claude Code 2.1.304 (`claude` cell)
 
-| # | Gap | Evidence | Consequence |
+All gaps C1–C10 were closed in Phase R6 (plan §21). The table below records the initial findings and their resolution:
+
+| # | Gap | Evidence | Resolution in Phase R6 |
 |---|---|---|---|
-| C1 | **Claude Code's own request is refused** with 400: the proxy allows only the `anthropic-beta` values proven for the model, and Claude Code 2.1.304 sends seven it does not know (`per-turn-control-2026-07-01`, `mid-conversation-tool-changes-2026-07-01`, `inline-tools-2026-09-15`, `mid-conversation-system-clear-at-2026-08-21`, `effort-2025-11-24`, `thinking-binding-controls-2026-08-01`, `message-threads-2026-08-12`) | `claude/2026-10-22-02-04-42/workflow` seq 18 | Claude Code cannot use the proxy at all without `x-proxy-lossy: 1`, which then drops those betas |
-| C2 | The proxy's identity is **Claude Code 2.1.280**: `user-agent: claude-cli/2.1.280.b1a`, `x-stainless-package-version: 0.112.1`, billing block `cc_version=2.1.280.b1a`; the client is 2.1.304, `0.128.0`, `cc_version=2.1.304.9a4` | seq 18 | a version that is not the current client's |
-| C3 | `x-stainless-os: Windows` on a Linux host; the client sends `Linux` | seq 18 | a platform the host is not |
-| C4 | Headers the client sends that the proxy does not: `x-claude-code-session-id`, `x-claude-code-prompt-id`, `x-claude-code-request-class: main`, `anthropic-dispatch-id: v2d`, `x-cc-atis`, and on a tool turn `x-claude-code-prev-tool-durations` | seq 18; `claude/2026-10-20-22-27-09/workflow` seq 16 | missing client headers |
-| C5 | A header the client does not send: `x-cc-session-id` | seq 18 | an extra header |
-| C6 | Header case: the client sends `X-Stainless-*` capitalised (HTTP/1.1), the proxy lower-case | seq 18 | observable on HTTP/1.1 |
-| C7 | Header order: the client sends the `X-Stainless-*` group before `anthropic-beta`, the proxy after `x-client-request-id` | seq 18 | observable order |
-| C8 | `accept: application/json` from the client, `text/event-stream` from the proxy | seq 18 | a value the client does not send |
-| C9 | When the client is Claude Code itself, the proxy **adds a second billing block and a second identity block** to `system` (client 4 blocks → proxy 6) | seq 18; `claude/2026-10-20-22-26-06/workflow` seq 14, 34 | duplicated envelope |
-| C10 | Model list: the proxy calls `GET /v1/models`; Claude Code never does (0 of 27 runs) and reads `GET /api/claude_cli/bootstrap` and `GET /api/organizations/<org>/model_selector/cc` | plan §19.4 | a call the client never makes |
+| C1 | Claude Code's own request refused (7 new betas) | seq 18 | Allowed all 17 Claude Code 2.1.304 betas for `claude-opus-5-5` |
+| C2 | Proxy reported Claude Code 2.1.280 / SDK 0.112.1 | seq 18 | Updated to 2.1.304 / SDK 0.128.0 |
+| C3 | `x-stainless-os: Windows` on Linux host | seq 18 | Real platform passed (`Linux`) |
+| C4 | Missing client headers (`X-Claude-Code-Session-Id`, `x-claude-code-prompt-id`, etc.) | seq 18, seq 16 | Added missing client headers |
+| C5 | Extra header `x-cc-session-id` | seq 18 | Dropped `x-cc-session-id` |
+| C6 | Header casing (`X-Stainless-*`) | seq 18 | Matched client's exact casing |
+| C7 | Header order | seq 18 | Matched client's exact header order |
+| C8 | `accept: text/event-stream` instead of `application/json` | seq 18 | Changed `accept` to `application/json` |
+| C9 | Duplicated billing/identity blocks when client is Claude Code | seq 14, 18, 34 | Existing billing/identity blocks preserved as sent |
+| C10 | Model list from `/v1/models` instead of `model_selector/cc` | plan §19.4 | Added `model_selector/cc` and startup reads |
 
 Everything else in the body is equal on every compared request: `messages` (including the mid-conversation `system`
 role), `tools`, `thinking`, `context_management`, `output_config`, `metadata` (identity masked), `diagnostics`,

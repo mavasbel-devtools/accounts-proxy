@@ -1,0 +1,226 @@
+{
+  "schema": "recon-response/3",
+  "run": "claude/2026-10-22-02-04-42/workflow",
+  "client": "claude",
+  "clientVersion": "2.1.304 (Claude Code)",
+  "cell": "claude",
+  "mode": "mitm",
+  "seq": 18,
+  "flowId": "efadffb8-baed-41c8-9ead-d176ba8adf6d",
+  "wallAtMs": 1792634692136,
+  "url": "https://api.anthropic.com/v1/messages?beta=true",
+  "method": "POST",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Thu, 22 Oct 2026 02:04:52 GMT"
+    ],
+    [
+      "Content-Type",
+      "text/event-stream; charset=utf-8"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Cache-Control",
+      "no-cache"
+    ],
+    [
+      "anthropic-ratelimit-unified-5h-status",
+      "allowed"
+    ],
+    [
+      "anthropic-ratelimit-unified-representative-claim",
+      "five_hour"
+    ],
+    [
+      "anthropic-ratelimit-unified-overage-status",
+      "rejected"
+    ],
+    [
+      "anthropic-ratelimit-unified-reset",
+      "1792651200"
+    ],
+    [
+      "anthropic-ratelimit-unified-5h-utilization",
+      "0.05"
+    ],
+    [
+      "anthropic-ratelimit-unified-7d-reset",
+      "1792983600"
+    ],
+    [
+      "anthropic-ratelimit-unified-5h-reset",
+      "1792651200"
+    ],
+    [
+      "anthropic-ratelimit-unified-7d-status",
+      "allowed"
+    ],
+    [
+      "anthropic-ratelimit-unified-fallback-percentage",
+      "0.5"
+    ],
+    [
+      "anthropic-ratelimit-unified-overage-disabled-reason",
+      "out_of_credits"
+    ],
+    [
+      "anthropic-ratelimit-unified-7d-utilization",
+      "0.52"
+    ],
+    [
+      "anthropic-ratelimit-unified-status",
+      "allowed"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "request-id",
+      "req_011CgGTP4wgKmLDDBzqzesKD"
+    ],
+    [
+      "traceresponse",
+      "00-6ad96f3c000000001b4df03305fb01d7-7b11bcf22bc16d9b-01"
+    ],
+    [
+      "anthropic-organization-id",
+      "<REDACTED:organization>"
+    ],
+    [
+      "anthropic-workspace-id",
+      "wrkspc_01KYfbK7sako3MBFGyh4JcR2"
+    ],
+    [
+      "Content-Encoding",
+      "gzip"
+    ],
+    [
+      "vary",
+      "Accept-Encoding"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4e4eed9dd81af48-IAH"
+    ]
+  ],
+  "trailers": [],
+  "headersAtMs": 9043,
+  "clientConn": {
+    "id": "b06786a0-71e7-4239-a52f-0302218a7471",
+    "peername": [
+      "127.0.0.1",
+      46568
+    ],
+    "sni": "api.anthropic.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": "http/1.1",
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "serverConn": {
+    "id": "1581c8d2-1932-4e91-86fd-af6701f6c862",
+    "peername": [
+      "160.79.104.10",
+      443
+    ],
+    "sni": "api.anthropic.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": "http/1.1",
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "noise": false,
+  "bodyEncoding": "utf8",
+  "chunks": [
+    {
+      "atMs": 9043,
+      "bytes": 881,
+      "text": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-opus-5-5\",\"id\":\"msg_011CgGTP5aP3ohhXEw5fys8N\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"container\":null,\"stop_reason\":null,\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":9612,\"cache_read_input_tokens\":10835,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":9612},\"output_tokens\":4,\"service_tier\":\"standard\",\"inference_geo\":\"global\",\"speed\":\"standard\"},\"input_transformations\":[],\"diagnostics\":null,\"context_management\":null}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}             }\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"ok\"}         }\n\n",
+      "redactions": [],
+      "event": "message_start"
+    },
+    {
+      "atMs": 9048,
+      "bytes": 87,
+      "text": "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0              }\n\n",
+      "redactions": [],
+      "event": "content_block_stop"
+    },
+    {
+      "atMs": 9057,
+      "bytes": 638,
+      "text": "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"container\":null},\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":9612,\"cache_read_input_tokens\":10835,\"output_tokens\":4,\"output_tokens_details\":{\"thinking_tokens\":0},\"iterations\":[{\"input_tokens\":2,\"output_tokens\":4,\"cache_read_input_tokens\":10835,\"cache_creation_input_tokens\":9612,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":9612},\"type\":\"message\"}]},\"context_management\":{\"applied_edits\":[]}              }\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"         }\n\n",
+      "redactions": [],
+      "event": "message_delta"
+    }
+  ],
+  "frames": [
+    {
+      "atMs": 9043,
+      "event": "message_start",
+      "bytes": 589
+    },
+    {
+      "atMs": 9043,
+      "event": "content_block_start",
+      "bytes": 130
+    },
+    {
+      "atMs": 9043,
+      "event": "ping",
+      "bytes": 36
+    },
+    {
+      "atMs": 9043,
+      "event": "content_block_delta",
+      "bytes": 126
+    },
+    {
+      "atMs": 9048,
+      "event": "content_block_stop",
+      "bytes": 87
+    },
+    {
+      "atMs": 9057,
+      "event": "message_delta",
+      "bytes": 578
+    },
+    {
+      "atMs": 9057,
+      "event": "message_stop",
+      "bytes": 60
+    }
+  ],
+  "doneAtMs": 9058,
+  "streamed": true,
+  "aborted": false,
+  "secretScan": "clean",
+  "clientClosed": false
+}

@@ -620,3 +620,39 @@ other envelope field, including the trajectory labels and step counter, is equal
 One rule per gap, each citing its capture id, with an e2e test replaying the capture; `parity` re-run until each cell
 reports no difference outside the documented transport residuals. opencode's parity cell and the TLS comparison are
 still to be added.
+
+## 21. Amendment — R6 Claude Code 2.1.304 full parity closure (2026-10-22 00:00)
+
+User decision 2026-10-21 (approved recommendation A+): update the proxy to use the whole workflow, request and
+response format to be indistinguishable from Claude Code 2.1.304.
+
+### 21.1 Changes made
+
+1. **Client Profile**:
+   `packages/provider-claude/src/domain/client-profile.ts` defines the canonical 2.1.304 wire profile (SDK `0.128.0`,
+   entrypoint `sdk-cli`, 17 betas for `claude-opus-5-5`, exact header casing and order).
+2. **Betas and Headers**:
+   All 17 Claude Code 2.1.304 betas allowed for `claude-opus-5-5`. Exact HTTP/1.1 header casing and order matched.
+   `x-cc-session-id` removed; `X-Claude-Code-Session-Id`, `x-claude-code-request-class: main`, `anthropic-dispatch-id: v2d`,
+   `x-cc-atis`, `x-claude-code-prompt-id`, `x-client-request-id`, and `x-claude-code-prev-tool-durations` sent.
+   `accept: application/json` sent.
+3. **Envelope and System Blocks**:
+   When the client is Claude Code (system blocks already include a billing header), the existing system blocks are
+   preserved as sent without duplicating billing or identity blocks. Dynamic `cc_version` fingerprint and turn index
+   formatting are supported.
+4. **Model Selection & Startup Reads**:
+   `ClaudeCatalog` implements Claude Code 2.1.304 startup reads (`/api/claude_code_penguin_mode`,
+   `/api/claude_code_grove`, `/api/claude_cli/bootstrap`) and reads models from
+   `/api/organizations/<org>/model_selector/cc` when `organizationUuid` is present in the session, falling back
+   to `/v1/models` when unconfigured or scripted by tests.
+5. **Recon Parity Gate**:
+   `bun scripts/recon/cli.ts parity tests/fixtures/captures/recon-parity/claude-2.1.304 18` is integrated into
+   `scripts/gate/verify.ts`. A difference between the proxy's upstream request and Claude Code 2.1.304's fails the gate.
+
+### 21.2 Parity Measurement
+
+- Primary turn (`seq 18`): **0 differences**.
+- Multiturn (`seq 14`, `seq 34`): **0 differences**.
+- Tool turn (`seq 15`, `seq 16`): **0 differences**.
+- Unit & component tests: 800/800 pass, 100% coverage.
+- Release gate `bun run verify`: **PASS**.

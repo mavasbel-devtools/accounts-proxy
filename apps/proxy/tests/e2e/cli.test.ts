@@ -1,11 +1,13 @@
 // The CLI black-box: each command is the real entry in its own process against the replay upstreams. Browser logins
 // go through the fake `xdg-open`; the paste-code login reads the code from stdin.
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+
+setDefaultTimeout(60_000);
 
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());

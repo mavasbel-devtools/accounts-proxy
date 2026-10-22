@@ -321,6 +321,83 @@ describe("ClaudeCatalog", () => {
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=100");
   });
 
+  test("fetches via model_selector/cc and performs startup reads when organizationUuid is present", async () => {
+    class OrgSession extends FixedSession {
+      override async active(): Promise<Session<ClaudeTokens>> {
+        return { id: "acct", account: { accessToken: "at", refreshToken: "rt", expiresAt: 0, scopes: "", organizationUuid: "org-123" } };
+      }
+    }
+    const transport = new ScriptedTransport((req) => {
+      if (req.url.includes("model_selector/cc")) {
+        return ok({
+          model_selector_config: [
+            {
+              id: "cc",
+              models: [
+                {
+                  id: "claude-opus-5-5",
+                  name: "Opus 5.5",
+                  runtime: { max_input_tokens: 1_000_000, max_output_tokens: 128_000, effort_levels: ["low", "high"] },
+                  capabilities: { mm_images: true, mm_pdf: true },
+                  thinking: { type: "effort" },
+                },
+              ],
+            },
+          ],
+        });
+      }
+      return ok({ ok: true });
+    });
+    const kv = new MemoryKeyValueStore();
+    const clock = new FixedClock(100_000_000);
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), kv, clock, new MemoryLogger(), "http://up");
+    const entries = await catalog.entries();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.id).toBe("claude-opus-5-5");
+    expect(entries[0]!.displayName).toBe("Claude Opus 5.5");
+    expect(transport.requests.map((r) => r.url)).toEqual([
+      "http://up/api/claude_code_penguin_mode",
+      "http://up/api/claude_code_grove",
+      "http://up/api/claude_cli/bootstrap?entrypoint=sdk-cli&model=claude-opus-5-5",
+      "http://up/api/organizations/org-123/model_selector/cc",
+    ]);
+  });
+
+  test("model_selector failure falls back to /v1/models", async () => {
+    class OrgSession extends FixedSession {
+      override async active(): Promise<Session<ClaudeTokens>> {
+        return { id: "acct", account: { accessToken: "at", refreshToken: "rt", expiresAt: 0, scopes: "", organizationUuid: "org-123" } };
+      }
+    }
+    const transport = new ScriptedTransport((req) => {
+      if (req.url.includes("model_selector/cc")) {
+        return { status: 404, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: "not found" }) };
+      }
+      return ok({ data: [{ id: "fallback-model" }], has_more: false });
+    });
+    const logger = new MemoryLogger();
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), logger, "http://up");
+    const entries = await catalog.entries();
+    expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
+  });
+
+  test("model_selector 200 with empty models falls back to /v1/models", async () => {
+    class OrgSession extends FixedSession {
+      override async active(): Promise<Session<ClaudeTokens>> {
+        return { id: "acct", account: { accessToken: "at", refreshToken: "rt", expiresAt: 0, scopes: "", organizationUuid: "org-123" } };
+      }
+    }
+    const transport = new ScriptedTransport((req) => {
+      if (req.url.includes("model_selector/cc")) {
+        return ok({ model_selector_config: [{ id: "cc", models: [] }] });
+      }
+      return ok({ data: [{ id: "fallback-model" }], has_more: false });
+    });
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), new MemoryLogger(), "http://up");
+    const entries = await catalog.entries();
+    expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
+  });
+
   test("listing reports where the list came from: live (and memoized), disk cache, stale cache, static", async () => {
     const live = make(() => ok({ data: [{ id: "live" }] }));
     expect((await live.catalog.listing()).source).toBe("live");
@@ -571,5 +648,23 @@ describe("ClaudeSubscriptionProvider", () => {
     const controller = new AbortController();
     await provider.passthrough("m", { ...raw({ messages: [] }), signal: controller.signal });
     expect(transport.requests[0]!.signal).toBe(controller.signal);
+  });
+
+  test("client headers x-claude-code-* and x-client-request-id pass through to upstream request", async () => {
+    const { provider, transport } = make(ok({}));
+    await provider.passthrough(
+      "m",
+      raw({ messages: [] }, "/v1/messages", {
+        "x-claude-code-session-id": "client-ses-1",
+        "x-claude-code-prompt-id": "client-prompt-1",
+        "x-client-request-id": "client-req-1",
+        "x-claude-code-prev-tool-durations": "Bash=42",
+      }),
+    );
+    const sent = transport.requests[0]!;
+    expect(sent.headers["x-claude-code-session-id"]).toBe("client-ses-1");
+    expect(sent.headers["x-claude-code-prompt-id"]).toBe("client-prompt-1");
+    expect(sent.headers["x-client-request-id"]).toBe("client-req-1");
+    expect(sent.headers["x-claude-code-prev-tool-durations"]).toBe("Bash=42");
   });
 });

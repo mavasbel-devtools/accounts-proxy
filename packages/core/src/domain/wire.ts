@@ -1,12 +1,21 @@
 // Transport-neutral HTTP message shapes used by ports (bodies are bytes; streaming bodies are async iterables).
 import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
 
+export type HeaderPairs = readonly (readonly [string, string])[] & Readonly<Record<string, string>>;
 export type Headers = Readonly<Record<string, string>>;
+
+export function orderedHeaders(pairs: readonly (readonly [string, string])[]): HeaderPairs {
+  const result = [...pairs] as unknown as (readonly [string, string])[] & Record<string, string>;
+  for (const [k, v] of pairs) {
+    result[k.toLowerCase()] = v;
+  }
+  return result as unknown as HeaderPairs;
+}
 
 export type HttpRequest = {
   readonly method: "GET" | "POST";
   readonly url: string;
-  readonly headers: Headers;
+  readonly headers: Headers | HeaderPairs;
   readonly body?: string;
   /** Abort the request (including the body read) after this many milliseconds. */
   readonly timeoutMs?: number;

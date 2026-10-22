@@ -5,7 +5,7 @@
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
-import { makeTemporary } from "@accounts-proxy/test-support/temporary.ts";
+import { makeTemporary, temporaryRoot } from "@accounts-proxy/test-support/temporary.ts";
 
 const repo = join(import.meta.dir, "..", "..", "..");
 export const ENTRY = join(repo, "apps", "proxy", "src", "main", "cli.ts");
@@ -13,12 +13,22 @@ const PRELOAD = join(repo, "scripts", "gate", "e2e-coverage-preload.ts");
 
 export type Home = { readonly dir: string; readonly port: number; readonly browserLog: string; readonly bin: string };
 
+const claimDir = join(temporaryRoot(), "accounts-proxy-claimed-ports");
+mkdirSync(claimDir, { recursive: true });
+
 export async function freePort(): Promise<number> {
-  const probe = createServer();
-  await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", () => resolve()));
-  const port = (probe.address() as { port: number }).port;
-  await new Promise<void>((resolve) => probe.close(() => resolve()));
-  return port;
+  while (true) {
+    const probe = createServer();
+    await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", () => resolve()));
+    const port = (probe.address() as { port: number }).port;
+    await new Promise<void>((resolve) => probe.close(() => resolve()));
+    try {
+      mkdirSync(join(claimDir, String(port)));
+      return port;
+    } catch {
+      await Bun.sleep(5);
+    }
+  }
 }
 
 export const BOTH_PROVIDERS = "providers:\n  claude: {enabled: true, acknowledgeTermsRisk: true}\n  antigravity: {enabled: true, acknowledgeTermsRisk: true}\n";

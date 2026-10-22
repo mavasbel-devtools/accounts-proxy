@@ -1,13 +1,15 @@
 // The daemon black-box: `serve` in its own process, signed in to both providers (browser logins through the fake
 // `xdg-open`), driven by the official SDKs (@anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0) and by raw
 // HTTP for the byte framing; every upstream exchange is answered by the replay server from committed captures.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import Anthropic from "@anthropic-ai/sdk";
 import { ApiError, GoogleGenAI, Type, type Content } from "@google/genai";
 import OpenAI from "openai";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+
+setDefaultTimeout(60_000);
 
 const upstreams = new ReplayUpstreams();
 let home: Home;

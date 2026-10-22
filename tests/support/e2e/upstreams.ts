@@ -53,6 +53,7 @@ function openRouterStream(path: string): string {
   return `${frame.event !== undefined ? `event: ${frame.event}\n` : ""}data: ${JSON.stringify(frame.data)}\n\n`;
 }
 const claudeFixture = (name: string) => readFileSync(join(repo, "packages", "provider-claude", "tests", "fixtures", "plugin-6292741", name), "utf8");
+const recon21304Fixture = (name: string) => readFileSync(join(repo, "packages", "provider-claude", "tests", "fixtures", "recon-2.1.304", name), "utf8");
 const antigravityFixture = (name: string) => readFileSync(join(repo, "packages", "provider-antigravity", "tests", "fixtures", "plugin-5c6f7c2", name), "utf8");
 type Capture = { exchanges: { response: { status: number; headers: Record<string, string>; chunks: { text: string }[] } }[] };
 const capture = (relative: string): Capture => JSON.parse(readFileSync(join(repo, "tests", "fixtures", "captures", "p0-live", relative), "utf8")) as Capture;
@@ -213,7 +214,19 @@ export class ReplayUpstreams {
         ? new Response(openRouterStream(orInference), { headers: { "content-type": "text/event-stream", ...headers } })
         : json(openRouterExample(orInference, "post", "200", "application/json"), 200, headers);
     }
+    if (url.pathname.includes("/model_selector/cc")) {
+      if (this.scripted.has("/v1/models") && (this.scripted.get("/v1/models")?.length ?? 0) > 0) {
+        return new Response(JSON.stringify({ error: "not found" }), { status: 404, headers: { "content-type": "application/json" } });
+      }
+      return json(recon21304Fixture("model-selector-response.json"));
+    }
     switch (url.pathname) {
+      case "/api/claude_code_penguin_mode":
+        return json(recon21304Fixture("penguin-mode-response.json"));
+      case "/api/claude_code_grove":
+        return json(recon21304Fixture("grove-response.json"));
+      case "/api/claude_cli/bootstrap":
+        return json(recon21304Fixture("bootstrap-response.json"));
       case "/v1/oauth/token":
         return json(claudeFixture("refresh-response.json"));
       case "/v1/models":

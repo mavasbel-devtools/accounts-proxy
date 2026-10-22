@@ -86,11 +86,14 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   of plan P4.6 (K1–K6 approved): device login under client id `inference-router`, one Console account for opencode and
   opencode-go, `--key` (service-account key), `--from-opencode` (API keys only), config from /console/api/v2/config, new
   /inference addresses with bearer keys. Built and tested; waiting: the user's `login opencode` (A5 live probe).
-- 2026-10-13 User signed in to every provider; asked to test everything (tokens, errors, renewal, turns, MCP).
-  Live validation L0–L4 (docs/plans/2026-10-13-01-42-live-validation-plan.md, findings
-  docs/reference/2026-10-13-02-52-live-validation-findings.md): every native cell of the seven providers works through
-  the daemon with the official SDKs, Claude Code and opencode (MCP tools, multi-turn); OpenAI and Console refresh tokens
-  rotate (L2). Fixes I6, F2 (parametersJsonSchema), Z24, F6–F9; live-only e2e deferrals cleared.
+- 2026-10-19/21 Recon MITM captures of reference clients (opencode, Claude Code 2.1.304, Antigravity 1.107.0).
+  Hermetic profile sandbox under bubblewrap, dedicated MITM CA, DOM-driven automation, identity redaction.
+  Wire law 7 confirmed: Antigravity tool results return as model-role content.
+- 2026-10-21/22 Recon parity tool and gap report (docs/reference/2026-10-21-20-44-recon-gap-report.md).
+  Remediated gaps C1–C10 for Claude Code 2.1.304: 17 beta headers, startup reads, model selector endpoint,
+  canonical header order/casing, billing blocks, exact client profile.
+  Recon parity tool reports 0 differences against captured Claude Code 2.1.304 traffic.
+  bun run verify: GATE PASS (799 unit+component, 230 e2e, 100% on statements, branches, functions, lines across all tiers).
 
 ## Progress map
 | Phase | State |
@@ -115,4 +118,5 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | P7 documentation sweep ([plan](../plans/2026-10-18-22-09-p7-documentation-sweep-plan.md)) | 2026-10-18: README "Use it from", client setup §3 (environment-configured SDKs, e2e), diagram pages request flow / renewal under locks / matrix checked in docs-in-step, docs lint checks link fragments, AGENTS.md §1/§4/§7, plan statuses. **P7 done** |
 | P8 plugin migration | cancelled 2026-10-19 by the user (plan v4 §7b; AGENTS.md §4 "Plugins": the plugin repositories and installed plugins are never modified) |
 | Rule Z26 OpenCode free models ([probe](../reference/2026-10-19-17-18-z26-opencode-free-tier-probe.md)) | 2026-10-19: the `opencode`/`opencode-go` cells forward the client's User-Agent (the proxy's own when none); live: opencode v2.0.32 through a test daemon answered OK on three free models |
+| Recon MITM capture & parity ([plan](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md)) | R1–R5 done 2026-10-22: Claude Code 2.1.304 parity 0 diffs, Antigravity 1.107.0 captured, verify GATE PASS (799 unit, 230 e2e, 100% on all metrics) |
 | P9 | not started |

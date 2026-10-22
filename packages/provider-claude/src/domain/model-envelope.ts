@@ -1,6 +1,8 @@
 // Port of opencode-claude-auth @ 6292741 src/domain/services/ModelEnvelope.ts (git blob ef95776e).
 // Data is byte-identical to the source; only formatting follows this repository's style.
 
+import { BETA_OPUS_5_5 } from "@accounts-proxy/provider-claude/domain/client-profile.ts";
+
 export type ThinkingSpec = { readonly type: string; readonly display: string; readonly budget_tokens?: number };
 
 export type ModelEnvelopeSpec = {
@@ -52,6 +54,10 @@ const ADAPTIVE: ThinkingSpec = { type: "adaptive", display: "omitted" };
 const ENABLED: ThinkingSpec = { type: "enabled", display: "omitted", budget_tokens: 31999 };
 
 export const MODEL_ENVELOPES: Readonly<Record<string, ModelEnvelopeSpec>> = {
+  "claude-opus-5-5": { betaHeader: BETA_OPUS_5_5, thinking: ADAPTIVE, maxTokens: 128_000, outputConfig: { effort: "high" }, limit: { context: 1_000_000, output: 128_000 } },
+  "claude-sonnet-5-5": { betaHeader: BETA_OPUS_5_5, thinking: ADAPTIVE, maxTokens: 128_000, outputConfig: { effort: "high" }, limit: { context: 1_000_000, output: 128_000 } },
+  "claude-haiku-5-5": { betaHeader: BETA_OPUS_5_5, thinking: ADAPTIVE, maxTokens: 128_000, outputConfig: { effort: "high" }, limit: { context: 1_000_000, output: 128_000 } },
+  "claude-fable-5-1": { betaHeader: BETA_OPUS_5_5, thinking: ADAPTIVE, maxTokens: 128_000, outputConfig: { effort: "high" }, limit: { context: 1_000_000, output: 128_000 } },
   "claude-opus-5": { betaHeader: BETA_OPUS_5, thinking: ADAPTIVE, maxTokens: 64_000, outputConfig: { effort: "high" }, limit: { context: 200_000, output: 64_000 } },
   "claude-fable-5": { betaHeader: BETA_FABLE_5, thinking: ADAPTIVE, maxTokens: 64_000, outputConfig: { effort: "high" }, limit: { context: 200_000, output: 64_000 } },
   "claude-sonnet-5": { betaHeader: BETA_SONNET_5, thinking: ADAPTIVE, maxTokens: 64_000, outputConfig: { effort: "high" }, limit: { context: 200_000, output: 64_000 } },

@@ -152,6 +152,7 @@ describe("accounts and upstream answers", () => {
   test("an unreadable catalog copy is logged and replaced; the live catalog stops after 10 pages", async () => {
     home = await makeHome();
     await login();
+    setTokens({ organizationUuid: undefined });
     mkdirSync(join(home.dir, "state", "claude"), { recursive: true });
     writeFileSync(join(home.dir, "state", "claude", "model-catalog.json"), "{oops");
     const page = (n: number) => () => jsonResponse({ data: [{ type: "model", id: `claude-page-${n}`, display_name: `Page ${n}` }], has_more: true, last_id: `claude-page-${n}` });
@@ -172,6 +173,70 @@ describe("accounts and upstream answers", () => {
     chmodSync(join(home.dir, "state", "claude"), 0o700);
     expect(listed.stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(live catalog\)$/);
     expect(proxyLog()).toContain("WARN claude: catalog cache write failed: Error: EACCES");
+  });
+
+  test("model_selector failure falls back to /v1/models in live catalog", async () => {
+    home = await makeHome();
+    await login();
+    const page = () => jsonResponse({ data: [{ type: "model", id: "claude-fallback-1", display_name: "Fallback 1" }], has_more: false });
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => new Response("error", { status: 500 }));
+    upstreams.script("/v1/models", page);
+    const listed = await run(["models", "claude"]);
+    expect(listed.stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
+    expect(proxyLog()).toContain("INFO claude: model_selector failed (model_selector HTTP 500), trying /v1/models");
+  });
+
+  test("model_selector with empty or malformed entries parses valid entries and falls back if empty", async () => {
+    home = await makeHome();
+    await login();
+    const config = {
+      model_selector_config: [
+        {
+          id: "cc",
+          models: [
+            null,
+            { id: "" },
+            { id: "claude-custom-1", name: "Custom 1", runtime: { effort_levels: ["high"] }, capabilities: { mm_images: true, mm_pdf: true } },
+            { id: "claude-custom-2", name: "Claude 2", runtime: { max_input_tokens: 500_000, max_output_tokens: 64_000 } },
+            { id: "claude-custom-3" },
+          ],
+        },
+      ],
+    };
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse(config));
+    const listed = await run(["models", "claude"]);
+    expect(listed.stdout.split("\n")[0]).toBe("# claude: 3 models (live catalog)");
+
+    // Test non-array / empty configs falling back to /v1/models
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse(null));
+    upstreams.script("/v1/models", () => jsonResponse({ data: [{ type: "model", id: "claude-fb-null", display_name: "FBN" }], has_more: false }));
+    const cache = join(home.dir, "state", "claude", "model-catalog.json");
+    rmSync(cache);
+    expect((await run(["models", "claude"])).stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
+
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse("not-object"));
+    upstreams.script("/v1/models", () => jsonResponse({ data: [{ type: "model", id: "claude-fb0", display_name: "FB0" }], has_more: false }));
+    rmSync(cache);
+    expect((await run(["models", "claude"])).stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
+
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse({ model_selector_config: "not-array" }));
+    upstreams.script("/v1/models", () => jsonResponse({ data: [{ type: "model", id: "claude-fb1", display_name: "FB1" }], has_more: false }));
+    rmSync(cache);
+    const listedFallback = await run(["models", "claude"]);
+    expect(listedFallback.stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
+
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse({ model_selector_config: [null] }));
+    upstreams.script("/v1/models", () => jsonResponse({ data: [{ type: "model", id: "claude-fb2", display_name: "FB2" }], has_more: false }));
+    rmSync(cache);
+    expect((await run(["models", "claude"])).stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
+
+    // And when models is empty, it falls back to /v1/models
+    const emptyConfig = { model_selector_config: [{ id: "not-cc", models: "not-array" }] };
+    upstreams.script("/api/organizations/e7ac4584-ce93-4714-9ffb-0553b2897eea/model_selector/cc", () => jsonResponse(emptyConfig));
+    upstreams.script("/v1/models", () => jsonResponse({ data: [{ type: "model", id: "claude-fb", display_name: "FB" }], has_more: false }));
+    rmSync(cache);
+    const listed2 = await run(["models", "claude"]);
+    expect(listed2.stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
   });
 
   test("a held refresh lock is waited for and the token rotated meanwhile is used", async () => {

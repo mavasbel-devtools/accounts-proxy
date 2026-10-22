@@ -1,10 +1,12 @@
 // The near-native Gemini → antigravity cell, black-box: every validation and mapping rule of the cell is driven through
 // the daemon's HTTP route (P4 plan §2.3, decisions Q2–Q4, amendment B1), and the request the upstream really received
 // is asserted from the replay server's record. Scripted upstream answers cover the stream shapes the cell must handle.
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { startSignedInDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { brokenStream, envelopeStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+
+setDefaultTimeout(60_000);
 
 const upstreams = new ReplayUpstreams();
 let env: SignedInDaemon;

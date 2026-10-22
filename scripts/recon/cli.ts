@@ -260,12 +260,14 @@ async function main(argv: readonly string[]): Promise<number> {
       if (!runDir || seqs.length === 0 || seqs.some((seq) => !Number.isInteger(seq))) throw new Error("parity needs a run directory and one or more capture seq numbers");
       const jsonArg = rest.find((arg) => arg.startsWith("--json="));
       const results: unknown[] = [];
+      let totalDifferences = 0;
       for (const comparison of await compare(runDir, seqs)) {
         results.push(comparison);
         console.log(markdown(comparison));
+        totalDifferences += comparison.gaps.length;
       }
       if (jsonArg !== undefined) writeFileSync(jsonArg.slice("--json=".length), `${JSON.stringify(results, null, 2)}\n`);
-      return 0;
+      return totalDifferences === 0 ? 0 : 1;
     }
     case "isolation": {
       const ids = rest.filter((arg) => !arg.startsWith("-"));

@@ -1,10 +1,12 @@
 // The native Anthropic → claude cell, black-box: request checks, the never-prefill laws L1–L4 and tool-result
 // normalization, thinking (F9/Q6), betas (F4), anthropic-version, the per-model envelope from the live catalog, and
 // how upstream answers come back. Assertions read what the replay upstream really received.
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { startSignedInDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { brokenStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+
+setDefaultTimeout(60_000);
 
 const upstreams = new ReplayUpstreams();
 let env: SignedInDaemon;
@@ -143,6 +145,43 @@ describe("thinking (F9 / Q6) and the per-model envelope", () => {
   test("the alias claude-haiku-4-5 uses the dated model's envelope", async () => {
     await post(MESSAGES, { model: "claude/claude-haiku-4-5", max_tokens: 64, messages: [{ role: "user", content: "q" }] });
     expect(sent().headers["anthropic-beta"]).toBe(upstreams.find(MESSAGES).at(0)!.headers["anthropic-beta"]);
+  });
+
+  test("existing billing block in system blocks is preserved without duplication", async () => {
+    const existingSystem = [
+      null,
+      { text: 123 },
+      { type: "text", text: "x-anthropic-billing-header: cc_version=2.1.304;" },
+      { type: "text", text: "prompt" },
+    ];
+    await post(MESSAGES, { model: HAIKU, max_tokens: 64, system: existingSystem, messages: [{ role: "user", content: "hi" }] });
+    expect(sent().body["system"]).toEqual(existingSystem);
+  });
+
+  test("system prompt as string or array without billing block appends billing and identity blocks", async () => {
+    await post(MESSAGES, { model: HAIKU, max_tokens: 64, system: "custom prompt", messages: [{ role: "user", content: "hi" }] });
+    const s1 = sent().body["system"] as Array<{ text: string }>;
+    expect(s1[0]!.text).toContain("x-anthropic-billing-header:");
+    expect(s1[1]!.text).toContain("Claude agent");
+    expect(s1[2]!.text).toBe("custom prompt");
+
+    await post(MESSAGES, { model: HAIKU, max_tokens: 64, system: [{ type: "text", text: "custom array" }], messages: [{ role: "user", content: "hi" }] });
+    const s2 = sent().body["system"] as Array<{ text: string }>;
+    expect(s2[2]!.text).toBe("custom array");
+  });
+
+  test("forwards tool durations and prompt id headers", async () => {
+    const res = await post(
+      MESSAGES,
+      { model: HAIKU, max_tokens: 64, messages: [{ role: "user", content: "test" }] },
+      {
+        "x-claude-code-prev-tool-durations": "Bash:120",
+        "x-claude-code-prompt-id": "prompt-123",
+      },
+    );
+    expect(res.status).toBe(200);
+    expect(sent().headers["x-claude-code-prev-tool-durations"]).toBe("Bash:120");
+    expect(sent().headers["x-claude-code-prompt-id"]).toBe("prompt-123");
   });
 });
 

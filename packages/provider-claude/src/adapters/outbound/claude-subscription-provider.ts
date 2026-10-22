@@ -95,11 +95,21 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
     const lookup = (id: string) => entries.find((e) => e.id === id);
     const betas = mergeBetaHeader(request.headers["anthropic-beta"], capturedBetaHeader(model, lookup), request.lossy);
     dropped.push(...betas.dropped);
-    const ids = { deviceId: await this.identity.deviceId(), previousMessageId: this.identity.previousMessageId(), ccPromptId: this.random.uuid(), clientRequestId: this.random.uuid() };
+    const clientSessionId = request.headers["x-claude-code-session-id"] ?? request.headers["x-cc-session-id"];
+    const clientPromptId = request.headers["x-claude-code-prompt-id"];
+    const clientRequestId = request.headers["x-client-request-id"];
+    const prevToolDurations = request.headers["x-claude-code-prev-tool-durations"];
+    const ids = {
+      deviceId: await this.identity.deviceId(),
+      previousMessageId: this.identity.previousMessageId(),
+      ccPromptId: clientPromptId ?? this.random.uuid(),
+      clientRequestId: clientRequestId ?? this.random.uuid(),
+      ...(prevToolDurations !== undefined ? { prevToolDurations } : {}),
+    };
     const send = (tokens: ClaudeTokens) => {
       const upstream = transformRequest(
         { body, path, betaHeader: betas.header },
-        { ...ids, accessToken: tokens.accessToken, accountUuid: tokens.accountUuid ?? "", sessionId: this.identity.sessionId },
+        { ...ids, accessToken: tokens.accessToken, accountUuid: tokens.accountUuid ?? "", sessionId: clientSessionId ?? this.identity.sessionId },
         lookup,
         this.apiBase,
       );

@@ -6,7 +6,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { capturedBetaHeader, transformRequest, type TransformContext, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
+import { orderedHeaders, type HeaderPairs } from "@accounts-proxy/core/domain/wire.ts";
+import { CLAUDE_PROFILE } from "@accounts-proxy/provider-claude/domain/client-profile.ts";
+import { ANTHROPIC_VERSION_HEADER, CLAUDE_ENTRYPOINT, CLAUDE_VERSION, SDK_PACKAGE_VERSION } from "@accounts-proxy/provider-claude/domain/constants.ts";
+import { capturedBetaHeader, hasBillingBlock, transformRequest, type TransformContext, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
 import type { CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
 // Loaded through a computed specifier so the typecheck does not compile the verbatim (differently linted) source.
 type ReferenceService = new (
@@ -72,10 +75,56 @@ function reference(body: WireRequestBody, path: string, previousMessageId: strin
   return service.transform({ headers: {}, body: body as never, path }, { ...BASE, previousMessageId });
 }
 
+function with21304Headers(source: Record<string, string>, ctx: TransformContext): HeaderPairs {
+  return orderedHeaders([
+    ["Accept", "application/json"],
+    ["Authorization", source["authorization"]!],
+    ["Content-Type", "application/json"],
+    ["User-Agent", `claude-cli/${CLAUDE_VERSION} (external, ${CLAUDE_ENTRYPOINT})`],
+    ["X-Claude-Code-Session-Id", ctx.sessionId],
+    ["X-Stainless-Arch", CLAUDE_PROFILE.arch],
+    ["X-Stainless-Lang", "js"],
+    ["X-Stainless-OS", CLAUDE_PROFILE.os],
+    ["X-Stainless-Package-Version", SDK_PACKAGE_VERSION],
+    ["X-Stainless-Retry-Count", "0"],
+    ["X-Stainless-Runtime", "node"],
+    ["X-Stainless-Runtime-Version", "v26.3.0"],
+    ["X-Stainless-Timeout", "600"],
+    ["anthropic-beta", source["anthropic-beta"]!],
+    ["anthropic-dangerous-direct-browser-access", "true"],
+    ["anthropic-dispatch-id", "v2d"],
+    ["anthropic-version", ANTHROPIC_VERSION_HEADER],
+    ["x-app", "cli"],
+    ["x-cc-atis", "711efd76d10f17e5"],
+    ["x-claude-code-prompt-id", ctx.ccPromptId],
+    ["x-claude-code-request-class", "main"],
+    ["x-client-request-id", ctx.clientRequestId],
+  ]);
+}
+
+function withC9(referenceBody: string, client: WireRequestBody): string {
+  if (!hasBillingBlock(client.system)) return referenceBody;
+  const parsed = JSON.parse(referenceBody) as { system?: unknown[] };
+  if (Array.isArray(parsed.system) && parsed.system.length >= 2) {
+    parsed.system = parsed.system.slice(2);
+  }
+  return JSON.stringify(parsed);
+}
+
+function with21304Body(sourceBody: string): string {
+  return sourceBody
+    .replaceAll("cc_version=2.1.280.b1a; cc_entrypoint=sdk-cli; cch=ae63b;", `cc_version=${CLAUDE_VERSION}; cc_entrypoint=${CLAUDE_ENTRYPOINT}; cch=a3181;`)
+    .replaceAll("; cc_prompt_id=uuid-1;", "; cc_prompt_id=uuid-1; cc_turn_origin=sdk; cc_prompt_index=0; cc_turn_index=1;");
+}
+
 function both(body: WireRequestBody, path = "/v1/messages", previousMessageId: string | null = null, apiBase = "https://api.anthropic.com") {
   const source = reference(body, path, previousMessageId, apiBase);
-  const expected = { ...source, body: withF9(source.body, body) };
   const ctx: TransformContext = { ...BASE, previousMessageId, ccPromptId: "uuid-1", clientRequestId: "uuid-2" };
+  const expected = {
+    url: source.url,
+    headers: with21304Headers(source.headers, ctx),
+    body: with21304Body(withC9(withF9(source.body, body), body)),
+  };
   const actual = transformRequest({ body, path, betaHeader: capturedBetaHeader(body.model, lookup) }, ctx, lookup, apiBase);
   return { expected, actual };
 }
@@ -224,5 +273,35 @@ describe("deliberate differences (each one asserted, nothing else may differ)", 
       const actual = JSON.parse(both({ model: "claude-opus-4-8", thinking, messages: user }).actual.body) as Record<string, unknown>;
       expect(actual["context_management"]).toEqual({ edits: [{ type: "clear_thinking_20251015", keep: "all" }] });
     }
+  });
+
+  test("F11: upgrade to Claude Code 2.1.304: user-agent, package version, accept and canonical header order", () => {
+    const raw = reference({ model: "claude-haiku-4-5-20251001", messages: user }, "/v1/messages", null, "https://api.anthropic.com");
+    expect(raw.headers["user-agent"]).toBe("claude-cli/2.1.280.b1a (external, sdk-cli)");
+    expect(raw.headers["x-stainless-package-version"]).toBe("0.112.1");
+    expect(raw.headers["accept"]).toBe("text/event-stream");
+    expect(raw.headers["x-cc-session-id"]).toBeDefined();
+
+    const actual = both({ model: "claude-haiku-4-5-20251001", messages: user }).actual;
+    expect(actual.headers["user-agent"]).toBe("claude-cli/2.1.304 (external, sdk-cli)");
+    expect(actual.headers["x-stainless-package-version"]).toBe("0.128.0");
+    expect(actual.headers["accept"]).toBe("application/json");
+    expect(actual.headers["x-claude-code-session-id"]).toBeDefined();
+    expect(actual.headers["x-cc-session-id"]).toBeUndefined();
+    expect(actual.headers["anthropic-dispatch-id"]).toBe("v2d");
+    expect(actual.headers["x-cc-atis"]).toBe("711efd76d10f17e5");
+    expect(actual.headers["x-claude-code-request-class"]).toBe("main");
+  });
+
+  test("C9: client requests already containing a billing header do not get duplicate billing and identity blocks", () => {
+    const raw = reference(captured, "/v1/messages", null, "https://api.anthropic.com");
+    const rawBody = JSON.parse(raw.body) as { system: { text: string }[] };
+    expect(rawBody.system[0]!.text).toStartWith("x-anthropic-billing-header: cc_version=2.1.280.b1a");
+    expect(rawBody.system[2]!.text).toStartWith("x-anthropic-billing-header: cc_version=2.1.251.b1a");
+
+    const actual = both(captured).actual;
+    const actualBody = JSON.parse(actual.body) as { system: { text: string }[] };
+    expect(actualBody.system[0]!.text).toStartWith("x-anthropic-billing-header: cc_version=2.1.251.b1a");
+    expect(actualBody.system.length).toBe(rawBody.system.length - 2);
   });
 });

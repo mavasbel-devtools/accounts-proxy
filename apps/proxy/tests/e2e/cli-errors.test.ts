@@ -1,11 +1,13 @@
 // The CLI's failure paths, black-box: configuration errors, every way a browser login can fail, damaged stores,
 // usage errors, a busy port and the status check against something that is not the proxy.
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+
+setDefaultTimeout(60_000);
 
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());

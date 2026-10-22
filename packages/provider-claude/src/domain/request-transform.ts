@@ -10,6 +10,8 @@
 //       strategy requires thinking to be enabled or adaptive" (P0-LIVE L2; Q6 probe: without it → 200).
 //   F4  the client's `anthropic-beta` is honoured within this model's captured beta set (mergeBetaHeader).
 import { UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
+import { type HeaderPairs, orderedHeaders } from "@accounts-proxy/core/domain/wire.ts";
+import { CLAUDE_PROFILE } from "@accounts-proxy/provider-claude/domain/client-profile.ts";
 import {
   ANTHROPIC_IDENTITY,
   ANTHROPIC_VERSION_HEADER,
@@ -50,11 +52,13 @@ export type TransformContext = {
   readonly ccPromptId: string;
   /** Fresh uuid for x-client-request-id (the source draws it second). */
   readonly clientRequestId: string;
+  readonly prevToolDurations?: string;
+  readonly turnIndex?: number;
 };
 
 export type CatalogLookup = (modelId: string) => CatalogModelEntry | undefined;
 
-export type UpstreamRequest = { readonly url: string; readonly headers: Record<string, string>; readonly body: string };
+export type UpstreamRequest = { readonly url: string; readonly headers: HeaderPairs; readonly body: string };
 
 /** Never-prefill laws L1–L4 (source AGENTS.md §5). */
 export function guardAndNormalize(messages: readonly WireMessage[]): WireMessage[] {
@@ -143,10 +147,22 @@ export function sanitizeOutputConfig(outputConfig: unknown, fallback?: { readonl
   return fallback?.effort ? { effort: fallback.effort } : undefined;
 }
 
-function systemBlocks(system: WireRequestBody["system"], ccPromptId: string): readonly WireSystemBlock[] {
+export function hasBillingBlock(system: WireRequestBody["system"]): boolean {
+  if (!Array.isArray(system)) return false;
+  return system.some(
+    (b) =>
+      typeof b === "object" &&
+      b !== null &&
+      typeof (b as { text?: unknown }).text === "string" &&
+      (b as { text: string }).text.startsWith("x-anthropic-billing-header:"),
+  );
+}
+
+function systemBlocks(system: WireRequestBody["system"], ccPromptId: string, turnIndex = 1): readonly WireSystemBlock[] {
+  if (hasBillingBlock(system)) return system as readonly WireSystemBlock[];
   const billing = {
     type: "text",
-    text: `x-anthropic-billing-header: cc_version=${CLAUDE_VERSION}; cc_entrypoint=${CLAUDE_ENTRYPOINT}; cch=${CLAUDE_CCH}; cc_prompt_id=${ccPromptId};`,
+    text: `x-anthropic-billing-header: cc_version=${CLAUDE_VERSION}; cc_entrypoint=${CLAUDE_ENTRYPOINT}; cch=${CLAUDE_CCH}; cc_prompt_id=${ccPromptId}; cc_turn_origin=sdk; cc_prompt_index=0; cc_turn_index=${turnIndex};`,
   };
   const identity = { type: "text", text: ANTHROPIC_IDENTITY };
   if (system === undefined) return [billing, identity];
@@ -172,7 +188,7 @@ export function envelope(body: WireRequestBody, messages: readonly WireMessage[]
   return {
     ...body,
     messages,
-    system: systemBlocks(body.system, ctx.ccPromptId),
+    system: systemBlocks(body.system, ctx.ccPromptId, ctx.turnIndex),
     ...(messagesOnly && body.max_tokens === undefined ? { max_tokens: env.maxTokens } : {}),
     ...(thinking !== undefined ? { thinking } : {}),
     ...(messagesOnly && thinkingOn ? { context_management: { edits: [{ type: "clear_thinking_20251015", keep: "all" }] } } : {}),
@@ -180,7 +196,7 @@ export function envelope(body: WireRequestBody, messages: readonly WireMessage[]
     ...(messagesOnly
       ? {
           diagnostics: { previous_message_id: ctx.previousMessageId },
-          metadata: { user_id: JSON.stringify({ device_id: ctx.deviceId, account_uuid: ctx.accountUuid, session_id: ctx.sessionId }) },
+          metadata: (body["metadata"] as Record<string, unknown> | undefined) ?? { user_id: JSON.stringify({ device_id: ctx.deviceId, account_uuid: ctx.accountUuid, session_id: ctx.sessionId }) },
         }
       : {}),
   };
@@ -215,28 +231,38 @@ export function capturedBetaHeader(model: string, lookup: CatalogLookup): string
 }
 
 /** Captured-claude request header set; authorization carries the proxy's fresh OAuth token, `betaHeader` the merged
- * beta set (mergeBetaHeader over capturedBetaHeader). */
-export function upstreamHeaders(ctx: TransformContext, betaHeader: string): Record<string, string> {
-  return {
-    authorization: `Bearer ${ctx.accessToken}`,
-    "content-type": "application/json",
-    accept: "text/event-stream",
-    "anthropic-version": ANTHROPIC_VERSION_HEADER,
-    "anthropic-beta": betaHeader,
-    "anthropic-dangerous-direct-browser-access": "true",
-    "x-app": "cli",
-    "x-cc-session-id": ctx.sessionId,
-    "x-client-request-id": ctx.clientRequestId,
-    "x-stainless-arch": "x64",
-    "x-stainless-lang": "js",
-    "x-stainless-os": "Windows",
-    "x-stainless-package-version": SDK_PACKAGE_VERSION,
-    "x-stainless-retry-count": "0",
-    "x-stainless-runtime": "node",
-    "x-stainless-runtime-version": "v26.3.0",
-    "x-stainless-timeout": "600",
-    "user-agent": `claude-cli/${CLAUDE_VERSION} (external, ${CLAUDE_ENTRYPOINT})`,
-  };
+ * beta set (mergeBetaHeader over capturedBetaHeader). Header order and casing match Claude Code 2.1.304. */
+export function upstreamHeaders(ctx: TransformContext, betaHeader: string): HeaderPairs {
+  const pairs: (readonly [string, string])[] = [
+    ["Accept", "application/json"],
+    ["Authorization", `Bearer ${ctx.accessToken}`],
+    ["Content-Type", "application/json"],
+    ["User-Agent", `claude-cli/${CLAUDE_VERSION} (external, ${CLAUDE_ENTRYPOINT})`],
+    ["X-Claude-Code-Session-Id", ctx.sessionId],
+    ["X-Stainless-Arch", CLAUDE_PROFILE.arch],
+    ["X-Stainless-Lang", "js"],
+    ["X-Stainless-OS", CLAUDE_PROFILE.os],
+    ["X-Stainless-Package-Version", SDK_PACKAGE_VERSION],
+    ["X-Stainless-Retry-Count", "0"],
+    ["X-Stainless-Runtime", "node"],
+    ["X-Stainless-Runtime-Version", "v26.3.0"],
+    ["X-Stainless-Timeout", "600"],
+    ["anthropic-beta", betaHeader],
+    ["anthropic-dangerous-direct-browser-access", "true"],
+    ["anthropic-dispatch-id", "v2d"],
+    ["anthropic-version", ANTHROPIC_VERSION_HEADER],
+    ["x-app", "cli"],
+    ["x-cc-atis", "711efd76d10f17e5"],
+  ];
+  if (ctx.prevToolDurations) {
+    pairs.push(["x-claude-code-prev-tool-durations", ctx.prevToolDurations]);
+  }
+  pairs.push(
+    ["x-claude-code-prompt-id", ctx.ccPromptId],
+    ["x-claude-code-request-class", "main"],
+    ["x-client-request-id", ctx.clientRequestId],
+  );
+  return orderedHeaders(pairs);
 }
 
 export function transformRequest(

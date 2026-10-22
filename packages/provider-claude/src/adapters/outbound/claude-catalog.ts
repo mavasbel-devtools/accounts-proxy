@@ -7,7 +7,7 @@ import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
 import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
 import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
-import { isSnapshot, nextCursor, parseCatalogEntry, type CatalogSnapshot, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
+import { isSnapshot, nextCursor, parseCatalogEntry, parseModelSelector, type CatalogSnapshot, type ModelsPage } from "@accounts-proxy/provider-claude/domain/catalog.ts";
 import { ANTHROPIC_VERSION_HEADER, CATALOG } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import { STATIC_CATALOG, type CatalogModelEntry } from "@accounts-proxy/provider-claude/domain/model-envelope.ts";
 import { ClaudeCatalogPort, type CatalogListing, type ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
@@ -59,7 +59,55 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
   }
 
   private async fetchLive(): Promise<CatalogModelEntry[]> {
-    const { accessToken } = (await this.session.active()).account;
+    const active = await this.session.active();
+    const { accessToken, organizationUuid } = active.account;
+
+    if (organizationUuid) {
+      await this.performStartupReads(accessToken);
+      try {
+        const selectorUrl = `${this.apiBase}/api/organizations/${organizationUuid}/model_selector/cc`;
+        const res = await this.transport.send({
+          method: "GET",
+          url: selectorUrl,
+          headers: {
+            accept: "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "claude-cli/2.1.304 (external, sdk-cli)",
+            authorization: `Bearer ${accessToken}`,
+            "anthropic-version": "2023-06-01",
+            "anthropic-client-platform": "claude_code_sdk",
+            "x-organization-uuid": organizationUuid,
+          },
+          timeoutMs: CATALOG.timeoutMs,
+        });
+        if (res.status !== 200) throw new Error(`model_selector HTTP ${res.status}`);
+        const text = await readAll(res.body);
+        const models = parseModelSelector(JSON.parse(text));
+        if (models.length > 0) return models;
+      } catch (error) {
+        this.logger.info(`claude: model_selector failed (${errorMessage(error)}), trying /v1/models`);
+      }
+    }
+
+    return this.fetchV1Models(accessToken);
+  }
+
+  private async performStartupReads(accessToken: string): Promise<void> {
+    const headers = {
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      "user-agent": "claude-code/2.1.304",
+      authorization: `Bearer ${accessToken}`,
+      "anthropic-beta": "oauth-2025-04-20",
+    };
+    await Promise.allSettled([
+      this.transport.send({ method: "GET", url: `${this.apiBase}/api/claude_code_penguin_mode`, headers, timeoutMs: CATALOG.timeoutMs }),
+      this.transport.send({ method: "GET", url: `${this.apiBase}/api/claude_code_grove`, headers, timeoutMs: CATALOG.timeoutMs }),
+      this.transport.send({ method: "GET", url: `${this.apiBase}/api/claude_cli/bootstrap?entrypoint=sdk-cli&model=claude-opus-5-5`, headers, timeoutMs: CATALOG.timeoutMs }),
+    ]);
+  }
+
+  private async fetchV1Models(accessToken: string): Promise<CatalogModelEntry[]> {
     const out: CatalogModelEntry[] = [];
     let after: string | undefined;
     for (let page = 0; page < CATALOG.maxPages; page++) {

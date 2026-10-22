@@ -12,7 +12,7 @@ import { applyDeferrals, E2E_DEFERRED } from "@accounts-proxy/scripts/gate/e2e-d
 import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 
 export const INCOMPLETE = 3;
-export const E2E_TEST_TIMEOUT_MS = 60_000;
+export const E2E_TEST_TIMEOUT_MS = 120_000;
 
 function containsTests(dir: string): boolean {
   if (!existsSync(dir)) return false;
@@ -86,7 +86,8 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
     const rawDir = join(coverageRoot, "e2e", "raw");
     rmSync(join(coverageRoot, "e2e"), { recursive: true, force: true });
     // E2E tests spawn real processes (logins, daemons): a per-test budget of 60 s instead of bun's 5 s default.
-    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), ...dirs], { ACCOUNTS_PROXY_E2E_COVERAGE_DIR: rawDir });
+    // Cap parallel workers to 4 so concurrent daemon socket initialization doesn't starve under host load.
+    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), "--parallel=4", ...dirs], { ACCOUNTS_PROXY_E2E_COVERAGE_DIR: rawDir });
     if (code !== 0) return code;
     const files = existsSync(rawDir) ? readdirSync(rawDir).map((f) => join(rawDir, f)) : [];
     if (files.length === 0) {

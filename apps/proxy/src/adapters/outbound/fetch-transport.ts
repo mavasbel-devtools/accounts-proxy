@@ -38,7 +38,7 @@ export class FetchTransport extends HttpTransportPort {
     try {
       res = await this.fetchImpl(request.url, {
         method: request.method,
-        headers: request.headers,
+        headers: request.headers as FetchInit["headers"],
         ...(request.body !== undefined ? { body: request.body } : {}),
         signal: AbortSignal.any(signals),
         timeout: idleMs,
