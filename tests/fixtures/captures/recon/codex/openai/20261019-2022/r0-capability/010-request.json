@@ -1,0 +1,78 @@
+{
+  "schema": "recon-request/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "atMs": 8423,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://api.openai.com/v1/responses",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Host",
+      "api.openai.com"
+    ],
+    [
+      "Connection",
+      "Upgrade"
+    ],
+    [
+      "Upgrade",
+      "websocket"
+    ],
+    [
+      "Sec-WebSocket-Version",
+      "13"
+    ],
+    [
+      "Sec-WebSocket-Key",
+      "ojCADx6PWgRsYV8zd9KULg=="
+    ],
+    [
+      "user-agent",
+      "codex_exec/0.163.0 (Kali Linux 2026.3.0; x86_64) herdr/0.9.5 (codex_exec; 0.163.0)"
+    ],
+    [
+      "originator",
+      "codex_exec"
+    ],
+    [
+      "openai-beta",
+      "responses_websockets=2026-02-06"
+    ],
+    [
+      "x-codex-turn-metadata",
+      "{\"installation_id\":\"4be6076f-0a5d-4273-83cb-8703d7c7ec52\",\"session_id\":\"01a1571c-fd3b-7443-9c56-3c6cc85bed0b\",\"thread_id\":\"01a1571c-fd3b-7443-9c56-3c6cc85bed0b\",\"agent_name\":\"/root\",\"turn_id\":\"01a1571c-fd75-73a1-91cc-1742f69ea09c\",\"window_id\":\"01a1571c-fd3b-7443-9c56-3c6cc85bed0b:0\",\"window_number\":0,\"context_window_id\":\"01a1571c-fd3d-7cd0-8f9e-e413091a185a\",\"request_kind\":\"turn\",\"history_initialization\":\"new\",\"root_turn_id\":\"01a1571c-fd75-73a1-91cc-1742f69ea09c\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seccomp\",\"sandbox_mode\":\"read-only\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792462880117,\"analytics_enabled\":true,\"model\":\"gpt-6.1-sol\",\"reasoning_effort\":\"low\"}"
+    ],
+    [
+      "x-codex-window-id",
+      "01a1571c-fd3b-7443-9c56-3c6cc85bed0b:0"
+    ],
+    [
+      "version",
+      "0.163.0"
+    ],
+    [
+      "x-codex-beta-features",
+      "remote_compaction_v2"
+    ],
+    [
+      "x-client-request-id",
+      "01a1571c-fd3b-7443-9c56-3c6cc85bed0b"
+    ],
+    [
+      "session-id",
+      "01a1571c-fd3b-7443-9c56-3c6cc85bed0b"
+    ],
+    [
+      "thread-id",
+      "01a1571c-fd3b-7443-9c56-3c6cc85bed0b"
+    ],
+    [
+      "sec-websocket-extensions",
+      "permessage-deflate; client_max_window_bits"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 10
+}

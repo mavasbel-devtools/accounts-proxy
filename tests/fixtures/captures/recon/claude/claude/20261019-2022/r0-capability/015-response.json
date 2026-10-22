@@ -1,0 +1,65 @@
+{
+  "schema": "recon-response/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "requestUrl": "https://api.anthropic.com/api/event_logging/v2/batch",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:21:07 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "accept-encoding",
+      "zstd,gzip"
+    ],
+    [
+      "request-id",
+      "req_011CgCh1fvrjtEXkdauVwbyj"
+    ],
+    [
+      "vary",
+      "Accept-Encoding"
+    ],
+    [
+      "Content-Encoding",
+      "br"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4d48c16cbd4cd3f-DFW"
+    ]
+  ],
+  "bodyBytes": 44,
+  "durationMs": 213,
+  "seq": 15
+}

@@ -1,0 +1,61 @@
+{
+  "schema": "recon-response/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "requestUrl": "https://api.anthropic.com/api/eval/sdk-zAZezfDKGoZuXXKe",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:21:05 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "request-id",
+      "req_011CgCh1ZuTV4JjCB66dWWrn"
+    ],
+    [
+      "vary",
+      "Accept-Encoding"
+    ],
+    [
+      "Content-Encoding",
+      "br"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4d48c0eabb74ace-DFW"
+    ]
+  ],
+  "bodyBytes": 16748,
+  "durationMs": 136,
+  "seq": 3
+}

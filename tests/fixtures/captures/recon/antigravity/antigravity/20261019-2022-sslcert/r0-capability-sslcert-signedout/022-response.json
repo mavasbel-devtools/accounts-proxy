@@ -1,0 +1,61 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://mobile.events.data.microsoft.com/OneCollector/1.0?cors=true&content-type=application/x-json-stream",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Server",
+      "Microsoft-HTTPAPI/2.0"
+    ],
+    [
+      "Strict-Transport-Security",
+      "max-age=31536000"
+    ],
+    [
+      "time-delta-millis",
+      "5345"
+    ],
+    [
+      "Access-Control-Allow-Headers",
+      "Strict-Transport-Security,time-delta-millis,Content-Type,Content-Length"
+    ],
+    [
+      "Access-Control-Allow-Methods",
+      "POST"
+    ],
+    [
+      "Access-Control-Allow-Credentials",
+      "true"
+    ],
+    [
+      "Access-Control-Allow-Origin",
+      "*"
+    ],
+    [
+      "Access-Control-Expose-Headers",
+      "time-delta-millis"
+    ],
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:18:49 GMT"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "Content-Length",
+      "9"
+    ]
+  ],
+  "bodyBytes": 9,
+  "durationMs": 69,
+  "seq": 22
+}

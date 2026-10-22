@@ -1,0 +1,61 @@
+{
+  "schema": "recon-response/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "requestUrl": "https://api.anthropic.com/api/claude_code/settings",
+  "status": 401,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:21:05 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Content-Length",
+      "130"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "Cache-Control",
+      "no-store"
+    ],
+    [
+      "request-id",
+      "req_011CgCh1Yj1zysCMZNNrVy7W"
+    ],
+    [
+      "x-should-retry",
+      "false"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4d48c0cfcdf3590-DFW"
+    ]
+  ],
+  "bodyBytes": 130,
+  "durationMs": 89,
+  "seq": 2
+}

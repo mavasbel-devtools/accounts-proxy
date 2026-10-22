@@ -21,6 +21,7 @@
     "lint:docs": "bun scripts/gate/lint-docs.ts",
     "verify": "bun scripts/gate/verify.ts",
     "fetch:specs": "bun scripts/evidence/fetch-specs.ts",
+    "recon": "bun scripts/recon/cli.ts",
     "proxy": "bun apps/proxy/src/main/cli.ts"
   },
   "devDependencies": {

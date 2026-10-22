@@ -1,0 +1,65 @@
+{
+  "schema": "recon-response/0",
+  "client": "opencode",
+  "run": "r0-capability",
+  "requestUrl": "https://api.anthropic.com/v1/chat/completions",
+  "status": 401,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:13:24 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "x-request-id",
+      "req_011CgCgRauHgV9f1XYGwvsqE"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "vary",
+      "Accept-Encoding"
+    ],
+    [
+      "Content-Encoding",
+      "br"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4d480cce9b9d41c-DFW"
+    ]
+  ],
+  "bodyBytes": 119,
+  "durationMs": 174,
+  "seq": 2
+}

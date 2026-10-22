@@ -1,0 +1,46 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 5963,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://api.anthropic.com/api/claude_code/policy_limits",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept",
+      "application/json, text/plain, */*"
+    ],
+    [
+      "User-Agent",
+      "claude-code/2.1.304"
+    ],
+    [
+      "Cache-Control",
+      "no-cache"
+    ],
+    [
+      "Pragma",
+      "no-cache"
+    ],
+    [
+      "x-api-key",
+      "<redacted>"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, compress, deflate, br"
+    ],
+    [
+      "Host",
+      "api.anthropic.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 1
+}

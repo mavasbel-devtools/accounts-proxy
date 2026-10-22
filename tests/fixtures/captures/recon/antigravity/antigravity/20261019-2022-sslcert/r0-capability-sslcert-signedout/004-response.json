@@ -1,0 +1,73 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://registry.npmjs.org/npm",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:18:39 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/vnd.npm.install-v1+json"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "CF-Ray",
+      "a4d4887b9ff04666-DFW"
+    ],
+    [
+      "CF-Cache-Status",
+      "HIT"
+    ],
+    [
+      "ETag",
+      "W/\"2769728d3367c69022b456c652c1613e\""
+    ],
+    [
+      "Access-Control-Allow-Origin",
+      "*"
+    ],
+    [
+      "Age",
+      "125"
+    ],
+    [
+      "Cache-Control",
+      "public, max-age=300"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "Last-Modified",
+      "Thu, 15 Oct 2026 17:40:15 GMT"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "Vary",
+      "accept-encoding, accept"
+    ],
+    [
+      "Content-Encoding",
+      "gzip"
+    ]
+  ],
+  "bodyBytes": 296936,
+  "durationMs": 209,
+  "seq": 4
+}

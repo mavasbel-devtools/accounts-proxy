@@ -1,0 +1,73 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability",
+  "requestUrl": "https://daily-cloudcode-pa.googleapis.com/v1internal:onboardUser",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "x-cloudaicompanion-trace-id",
+      "89c00dceba0c5b77"
+    ],
+    [
+      "Content-Type",
+      "application/json; charset=UTF-8"
+    ],
+    [
+      "Vary",
+      "Origin"
+    ],
+    [
+      "Vary",
+      "X-Origin"
+    ],
+    [
+      "Vary",
+      "Referer"
+    ],
+    [
+      "Content-Encoding",
+      "gzip"
+    ],
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:16:11 GMT"
+    ],
+    [
+      "Server",
+      "ESF"
+    ],
+    [
+      "X-XSS-Protection",
+      "0"
+    ],
+    [
+      "X-Frame-Options",
+      "SAMEORIGIN"
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff"
+    ],
+    [
+      "Server-Timing",
+      "gfet5t7;dur=309, gfet4t7; dur=633"
+    ],
+    [
+      "Alt-Svc",
+      "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ]
+  ],
+  "bodyBytes": 155,
+  "durationMs": 1135,
+  "seq": 20
+}

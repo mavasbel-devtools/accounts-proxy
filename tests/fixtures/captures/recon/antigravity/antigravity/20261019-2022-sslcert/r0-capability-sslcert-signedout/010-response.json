@@ -1,0 +1,45 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://playwright-verizon.azureedge.net/builds/driver/playwright-1.57.0-linux.zip",
+  "status": 404,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:18:40 GMT"
+    ],
+    [
+      "content-type",
+      "application/xml"
+    ],
+    [
+      "content-length",
+      "215"
+    ],
+    [
+      "vary",
+      "Origin"
+    ],
+    [
+      "x-ms-request-id",
+      "2a9c07a4-701e-0005-7e39-602889000000"
+    ],
+    [
+      "x-ms-version",
+      "2009-09-19"
+    ],
+    [
+      "x-azure-ref",
+      "20261020T021840Z-17bc69c9fccs6qkghC1YMQr88n00000012h0000000003uba"
+    ],
+    [
+      "x-cache",
+      "CONFIG_NOCACHE"
+    ]
+  ],
+  "bodyBytes": 215,
+  "durationMs": 243,
+  "seq": 10
+}

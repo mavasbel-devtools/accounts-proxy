@@ -1,0 +1,84 @@
+{
+  "schema": "recon-redaction/2",
+  "note": "Single source of truth for recon redaction. The capture addon (Python) and the TypeScript redactor both read this file. Credential fields protect secrets; identity fields and patterns protect the operator's account (email, names, device and account identifiers) so a promoted golden carries protocol shape, never a person.",
+  "credentialHeaders": [
+    "authorization",
+    "proxy-authorization",
+    "x-api-key",
+    "x-goog-api-key",
+    "cookie",
+    "set-cookie"
+  ],
+  "credentialFields": [
+    "access_token",
+    "refresh_token",
+    "id_token",
+    "code_verifier",
+    "client_secret"
+  ],
+  "queryCredentialFields": [
+    "access_token",
+    "refresh_token",
+    "id_token",
+    "code",
+    "code_verifier",
+    "client_secret"
+  ],
+  "tokenPrefixes": [
+    "sk-ant-",
+    "ya29.",
+    "1//",
+    "eyJhbGci",
+    "sk-or-",
+    "oc_sk_",
+    "ci_live_",
+    "ir_live_"
+  ],
+  "forbiddenMarkers": [
+    "BEGIN RSA PRIVATE KEY",
+    "BEGIN PRIVATE KEY",
+    "BEGIN OPENSSH PRIVATE KEY"
+  ],
+  "tokenBodyMinTail": 8,
+  "identityFields": [
+    "email",
+    "given_name",
+    "family_name",
+    "verified_email",
+    "picture",
+    "account_uuid",
+    "device_id",
+    "preferred_username",
+    "organization_uuid",
+    "organizationUUID",
+    "accountUUID"
+  ],
+  "identityPatterns": [
+    {
+      "name": "email",
+      "regex": "[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}"
+    },
+    {
+      "name": "organization",
+      "regex": "(?<=/organizations/)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    }
+  ],
+  "identityScoped": [
+    {
+      "host": "www.googleapis.com",
+      "pathPrefix": "/oauth2/",
+      "fields": [
+        "id",
+        "name"
+      ]
+    },
+    {
+      "host": "opencode.ai",
+      "pathPrefix": "/console/api/user",
+      "fields": [
+        "id",
+        "name"
+      ]
+    }
+  ]
+}

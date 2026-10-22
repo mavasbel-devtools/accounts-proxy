@@ -1,0 +1,49 @@
+{
+  "schema": "recon-response/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "requestUrl": "https://http-intake.logs.us5.datadoghq.com/api/v2/logs",
+  "status": 202,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "content-length",
+      "2"
+    ],
+    [
+      "cross-origin-resource-policy",
+      "cross-origin"
+    ],
+    [
+      "vary",
+      "origin"
+    ],
+    [
+      "accept-encoding",
+      "identity,gzip,x-gzip,deflate,x-deflate,zstd"
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:21:07 GMT"
+    ],
+    [
+      "connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 2,
+  "durationMs": 274,
+  "seq": 14
+}

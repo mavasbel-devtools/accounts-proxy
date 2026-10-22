@@ -1,0 +1,22 @@
+{
+  "schema": "recon-run/0",
+  "run": "antigravity/20261019-2022/account",
+  "client": "antigravity",
+  "clientVersion": "1.107.0",
+  "cell": "antigravity",
+  "captureMode": "mitm",
+  "mitmproxy": "12.2.3",
+  "capturedAt": "2026-10-19T20:15:00-06:00",
+  "isolation": {
+    "HOME": "real (not isolated)",
+    "user-data-dir": "temp",
+    "extensions-dir": "temp"
+  },
+  "proxy": {
+    "HTTPS_PROXY": "http://127.0.0.1:8909",
+    "NODE_EXTRA_CA_CERTS": "run ca.pem",
+    "chromium": "--proxy-server --ignore-certificate-errors"
+  },
+  "scenario": "r0-capability-account",
+  "notes": "Auth completed during the run. 31 exchanges: oauth2 token, loadCodeAssist, onboardUser, fetchUserInfo, fetchAvailableModels, setUserSettings (all 200). 14 client TLS alerts from the Go language server to daily-cloudcode-pa.googleapis.com (bad certificate), plus unleash/play hosts. This is the run that explains \"Agent execution terminated due to error\"."
+}

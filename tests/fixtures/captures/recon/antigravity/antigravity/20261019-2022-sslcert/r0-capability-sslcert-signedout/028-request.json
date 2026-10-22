@@ -1,0 +1,54 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 69724,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://antigravity-unleash.goog/api/client/features",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "unleash-interval",
+      "60000"
+    ],
+    [
+      "user-agent",
+      "codeium-language-server"
+    ],
+    [
+      "unleash-client-spec",
+      "4.3.1"
+    ],
+    [
+      "authorization",
+      "<redacted>"
+    ],
+    [
+      "unleash-connection-id",
+      "e4dcd464-675b-4bc7-b91d-321118936407"
+    ],
+    [
+      "if-none-match",
+      "W/\"5a0df-L0dRxIpPYrBmSXGK2sL5eQ==\""
+    ],
+    [
+      "unleash-appname",
+      "codeium-language-server"
+    ],
+    [
+      "unleash-sdk",
+      "unleash-client-go:4.5.0"
+    ],
+    [
+      "unleash-instanceid",
+      "mavasbel-mk15"
+    ],
+    [
+      "accept-encoding",
+      "gzip"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 28
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 10546,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://playwright-akamai.azureedge.net/builds/driver/playwright-1.57.0-linux.zip",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "accept-encoding",
+      "gzip"
+    ],
+    [
+      "user-agent",
+      "Go-http-client/2.0"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 8
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "recon-run/0",
+  "run": "codex/20261019-2022",
+  "client": "codex-cli",
+  "clientVersion": "0.163.0",
+  "cell": "openai",
+  "captureMode": "mitm",
+  "mitmproxy": "12.2.3",
+  "capturedAt": "2026-10-19T20:21:00-06:00",
+  "isolation": {
+    "HOME": "temp",
+    "CODEX_HOME": "temp"
+  },
+  "proxy": {
+    "HTTPS_PROXY": "http://127.0.0.1:8912",
+    "SSL_CERT_FILE": "run ca.pem"
+  },
+  "scenario": "r0-capability",
+  "notes": "Dummy OPENAI_API_KEY. 18 exchanges. Codex tries WebSocket wss://api.openai.com/v1/responses first (GET upgrade entries), falls back to POST https. Zero TLS failures. WebSocket frames are NOT captured by the current HTTP-only addon: R1 must add websocket capture."
+}

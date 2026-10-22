@@ -1,0 +1,42 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 6596,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://api.anthropic.com/api/claude_cli/bootstrap?entrypoint=sdk-cli&model=claude-sonnet-5-5",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept",
+      "application/json, text/plain, */*"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "User-Agent",
+      "claude-code/2.1.304"
+    ],
+    [
+      "x-api-key",
+      "<redacted>"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, compress, deflate, br"
+    ],
+    [
+      "Host",
+      "api.anthropic.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 6
+}

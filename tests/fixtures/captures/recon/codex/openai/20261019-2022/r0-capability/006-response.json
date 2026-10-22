@@ -1,0 +1,109 @@
+{
+  "schema": "recon-response/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "requestUrl": "https://api.github.com/repos/openai/plugins/zipball/0722921d5542fc593105c27bd52630babd8b8c2a",
+  "status": 302,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:20:14 GMT"
+    ],
+    [
+      "content-type",
+      "text/html;charset=utf-8"
+    ],
+    [
+      "content-length",
+      "0"
+    ],
+    [
+      "cache-control",
+      "public, must-revalidate, max-age=0"
+    ],
+    [
+      "expires",
+      "Tue, 20 Oct 2026 02:20:14 GMT"
+    ],
+    [
+      "location",
+      "https://codeload.github.com/openai/plugins/legacy.zip/0722921d5542fc593105c27bd52630babd8b8c2a"
+    ],
+    [
+      "x-github-api-version-selected",
+      "2022-11-28"
+    ],
+    [
+      "x-ratelimit-limit",
+      "60"
+    ],
+    [
+      "x-ratelimit-remaining",
+      "60"
+    ],
+    [
+      "x-ratelimit-reset",
+      "1792466414"
+    ],
+    [
+      "x-ratelimit-used",
+      "0"
+    ],
+    [
+      "x-ratelimit-resource",
+      "core"
+    ],
+    [
+      "access-control-expose-headers",
+      "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning"
+    ],
+    [
+      "access-control-allow-origin",
+      "*"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubdomains; preload"
+    ],
+    [
+      "x-frame-options",
+      "deny"
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "x-xss-protection",
+      "0"
+    ],
+    [
+      "referrer-policy",
+      "origin-when-cross-origin, strict-origin-when-cross-origin"
+    ],
+    [
+      "content-security-policy",
+      "default-src 'none'"
+    ],
+    [
+      "vary",
+      "Accept-Encoding, Accept, X-Requested-With"
+    ],
+    [
+      "server",
+      "github.com"
+    ],
+    [
+      "x-github-request-id",
+      "9620:EB82A:153E8F:44F383:6AD6D020"
+    ],
+    [
+      "x-github-edge-region",
+      "iad"
+    ]
+  ],
+  "bodyBytes": 0,
+  "durationMs": 116,
+  "seq": 6
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability",
+  "atMs": 9689,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "user-agent",
+      "npm/11.20.0 node/v26.11.1 linux x64 workspaces/false"
+    ],
+    [
+      "npm-auth-type",
+      "web"
+    ],
+    [
+      "npm-command",
+      "exec"
+    ],
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "content-encoding",
+      "gzip"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ],
+    [
+      "Content-Length",
+      "54"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip,deflate"
+    ],
+    [
+      "Host",
+      "registry.npmjs.org"
+    ],
+    [
+      "connection",
+      "keep-alive"
+    ]
+  ],
+  "bodyBytes": 54,
+  "seq": 5
+}

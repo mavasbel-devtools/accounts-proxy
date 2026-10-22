@@ -1,0 +1,45 @@
+#!/bin/sh
+# Private D-Bus session and keyring for a sandboxed client.
+#
+# A client that keeps credentials in the OS keyring (Antigravity, through VS Code secret storage) has nowhere to put
+# them in a sandbox with no session bus, and falls back to memory: the login is lost when the process exits. This
+# launcher gives the profile its own bus and its own keyring, unlocked with a per-profile passphrase, so a credential
+# written by the client lands in the profile's keyrings directory and survives the run.
+#
+# Both are private to the sandbox: the bus socket is inside XDG_RUNTIME_DIR (a 0700 directory in the profile) and the
+# keyring files are inside the profile, never the operator's ~/.local/share/keyrings.
+set -eu
+
+runtime=${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is required}
+mkdir -p "$runtime" "$HOME/.local/share/keyrings"
+chmod 700 "$runtime" "$HOME/.local/share/keyrings"
+
+socket="$runtime/bus"
+rm -f "$socket"
+dbus-daemon --session --nofork --nopidfile --address="unix:path=$socket" >"$runtime/dbus.log" 2>&1 &
+dbus_pid=$!
+trap 'kill "$dbus_pid" 2>/dev/null || true' EXIT INT TERM
+
+tries=0
+while [ ! -S "$socket" ]; do
+  tries=$((tries + 1))
+  if [ "$tries" -gt 200 ]; then
+    echo "recon-session: the private session bus did not start" >&2
+    exit 1
+  fi
+  sleep 0.05
+done
+
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$socket"
+
+env_file="$runtime/keyring.env"
+: >"$env_file"
+printf '%s' "${RECON_KEYRING_PASSPHRASE:-recon-sandbox}" |
+  gnome-keyring-daemon --unlock --components=secrets --daemonize >"$env_file" 2>"$runtime/keyring.log" || true
+# The daemon prints `NAME=value` lines; they are paths, so sourcing them is safe.
+if [ -s "$env_file" ]; then
+  . "$env_file"
+  export GNOME_KEYRING_CONTROL
+fi
+
+exec "$@"

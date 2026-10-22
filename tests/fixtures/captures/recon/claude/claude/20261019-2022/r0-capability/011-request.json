@@ -1,0 +1,38 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 7175,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://api.anthropic.com/api/claude_code/organizations/metrics_enabled",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept",
+      "application/json, text/plain, */*"
+    ],
+    [
+      "User-Agent",
+      "claude-cli/2.1.304 (external, sdk-cli)"
+    ],
+    [
+      "x-api-key",
+      "<redacted>"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, compress, deflate, br"
+    ],
+    [
+      "Host",
+      "api.anthropic.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 11
+}

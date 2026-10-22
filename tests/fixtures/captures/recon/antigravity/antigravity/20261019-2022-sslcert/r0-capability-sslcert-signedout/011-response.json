@@ -1,0 +1,33 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://antigravity-ide-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/ecfbad74d93962fc8ca485d93ab9b4f3d4cb6cf8/dd3b05b865501fd68a91cfb9faf0b80fa76929d30b4dcf5ace70a9c64dcfcb8b",
+  "status": 204,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "content-type",
+      "text/html; charset=utf-8"
+    ],
+    [
+      "x-cloud-trace-context",
+      "5fef1dbebb9dc6069c4e82631f4b9bd6"
+    ],
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:18:40 GMT"
+    ],
+    [
+      "server",
+      "Google Frontend"
+    ],
+    [
+      "alt-svc",
+      "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+    ]
+  ],
+  "bodyBytes": 0,
+  "durationMs": 90,
+  "seq": 11
+}

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Browser opener of the recon sandbox.
+#
+# A sandboxed client must never reach the operator's browser profile, and a GUI app must not fail when it tries to.
+# This stub records the URL so the operator can open it on the host instead; the OAuth loopback listener stays inside
+# the shared network namespace, so the callback still reaches the client.
+target=$*
+if [ -n "${RECON_OPEN_URL_FILE:-}" ]; then
+  printf '%s\n' "$target" >> "$RECON_OPEN_URL_FILE"
+fi
+printf '[recon] open on the host: %s\n' "$target"
+exit 0

@@ -1,0 +1,85 @@
+{
+  "schema": "recon-response/0",
+  "client": "opencode",
+  "run": "r0-capability",
+  "requestUrl": "https://rr2---sn-cxnuxa-hxm6.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1792462443,&mh=7g&mip=148.205.56.10&mm=28&mn=sn-cxnuxa-hxm6&ms=nvh&mt=1792461634&mv=u&mvi=2&pl=21&rmhost=rr1---sn-cxnuxa-hxm6.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=rr2---sn-cxnuxa-hxml.gvt1.com",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept-Ranges",
+      "bytes"
+    ],
+    [
+      "Cache-Control",
+      "max-age=86400"
+    ],
+    [
+      "Content-Disposition",
+      "attachment"
+    ],
+    [
+      "Content-Length",
+      "451968"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'"
+    ],
+    [
+      "Content-Type",
+      "application/octet-stream"
+    ],
+    [
+      "Etag",
+      "\"cb08eb\""
+    ],
+    [
+      "Server",
+      "downloads"
+    ],
+    [
+      "Vary",
+      "Accept-Encoding"
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff"
+    ],
+    [
+      "X-Frame-Options",
+      "SAMEORIGIN"
+    ],
+    [
+      "X-Identity-Content-Length",
+      "451968"
+    ],
+    [
+      "X-Xss-Protection",
+      "0"
+    ],
+    [
+      "Date",
+      "Mon, 19 Oct 2026 19:57:53 GMT"
+    ],
+    [
+      "Alt-Svc",
+      "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+    ],
+    [
+      "Last-Modified",
+      "Mon, 07 Mar 2022 21:59:30 GMT"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Alt-Svc",
+      "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46\""
+    ]
+  ],
+  "bodyBytes": 451968,
+  "durationMs": 92,
+  "seq": 4
+}

@@ -1,0 +1,121 @@
+{
+  "schema": "recon-response/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "requestUrl": "https://api.github.com/repos/openai/plugins/git/ref/heads/main",
+  "status": 200,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:21:11 GMT"
+    ],
+    [
+      "cache-control",
+      "public, max-age=60, s-maxage=60"
+    ],
+    [
+      "vary",
+      "Accept,Accept-Encoding, Accept, X-Requested-With"
+    ],
+    [
+      "last-modified",
+      "Tue, 20 Oct 2026 01:16:02 GMT"
+    ],
+    [
+      "x-github-api-version-selected",
+      "2022-11-28"
+    ],
+    [
+      "access-control-expose-headers",
+      "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning"
+    ],
+    [
+      "access-control-allow-origin",
+      "*"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubdomains; preload"
+    ],
+    [
+      "x-frame-options",
+      "deny"
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "x-xss-protection",
+      "0"
+    ],
+    [
+      "referrer-policy",
+      "origin-when-cross-origin, strict-origin-when-cross-origin"
+    ],
+    [
+      "content-security-policy",
+      "default-src 'none'"
+    ],
+    [
+      "server",
+      "github.com"
+    ],
+    [
+      "content-type",
+      "application/json; charset=utf-8"
+    ],
+    [
+      "x-poll-interval",
+      "300"
+    ],
+    [
+      "x-github-media-type",
+      "github.v3; format=json"
+    ],
+    [
+      "etag",
+      "W/\"2fddd9430cf6495e42101af847bb40fcaf8c6590cc01a3e1bc885627b867d87d\""
+    ],
+    [
+      "accept-ranges",
+      "bytes"
+    ],
+    [
+      "x-ratelimit-limit",
+      "60"
+    ],
+    [
+      "x-ratelimit-remaining",
+      "55"
+    ],
+    [
+      "x-ratelimit-used",
+      "5"
+    ],
+    [
+      "x-ratelimit-resource",
+      "core"
+    ],
+    [
+      "x-ratelimit-reset",
+      "1792464983"
+    ],
+    [
+      "content-length",
+      "326"
+    ],
+    [
+      "x-github-request-id",
+      "9620:EB82A:153E1E:44F20F:6AD6D020"
+    ],
+    [
+      "x-github-edge-region",
+      "iad"
+    ]
+  ],
+  "bodyBytes": 326,
+  "durationMs": 76,
+  "seq": 5
+}

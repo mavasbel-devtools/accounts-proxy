@@ -44,6 +44,40 @@ describe("Redactor", () => {
     expect(redactor().body("grant_type=refresh_token&refresh_token=1%2F%2Fabc&code=xyz")).toBe("grant_type=refresh_token&refresh_token=<REDACTED:field>&code=<REDACTED:field>");
   });
 
+  test("identity: emails anywhere, identity fields, nested JSON strings, and only endpoint-scoped names", () => {
+    expect(redactor().text("write to ada@example.org")).toBe("write to <REDACTED:email>");
+
+    const profile = JSON.stringify({ id: "101", email: "ada@example.org", name: "Ada", given_name: "Ada", picture: "https://p/x.png", verified_email: true });
+    expect(JSON.parse(redactor().body(profile, "https://www.googleapis.com/oauth2/v2/userinfo"))).toEqual({
+      id: "<REDACTED:id>",
+      email: "<REDACTED:email>",
+      name: "<REDACTED:name>",
+      given_name: "<REDACTED:given_name>",
+      picture: "<REDACTED:picture>",
+      verified_email: true,
+    });
+
+    // Claude's metadata.user_id is a JSON document carried as a string.
+    const wrapped = JSON.parse(redactor().body(JSON.stringify({ metadata: { user_id: JSON.stringify({ device_id: "d-1", account_uuid: "u-1", session_id: "s" }) } }))) as { metadata: { user_id: string } };
+    expect(JSON.parse(wrapped.metadata.user_id)).toEqual({ device_id: "<REDACTED:device_id>", account_uuid: "<REDACTED:account_uuid>", session_id: "s" });
+
+    // Claude Code's organisation UUID: in the path and in three body spellings; an unrelated `uuid` is kept.
+    const org = "e60f8b6d-0000-4000-8000-000000000001";
+    expect(redactor().text(`https://api.anthropic.com/api/organizations/${org}/model_selector/cc`)).toBe(
+      "https://api.anthropic.com/api/organizations/<REDACTED:organization>/model_selector/cc",
+    );
+    expect(JSON.parse(redactor().body(JSON.stringify({ organization_uuid: org, organizationUUID: org, accountUUID: org, uuid: "kept-1" })))).toEqual({
+      organization_uuid: "<REDACTED:organization_uuid>",
+      organizationUUID: "<REDACTED:organizationUUID>",
+      accountUUID: "<REDACTED:accountUUID>",
+      uuid: "kept-1",
+    });
+
+    // `name` is a model name off a profile route: scoped redaction must not touch it.
+    const model = JSON.stringify({ model: { name: "claude-opus-5-5" } });
+    expect(redactor().body(model, "https://api.anthropic.com/v1/messages")).toBe(model);
+  });
+
   test("scan reports surviving secrets and token prefixes", () => {
     const r = redactor();
     expect(r.scan("clean")).toEqual([]);

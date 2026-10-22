@@ -1,0 +1,30 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 25631,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://play.googleapis.com/log",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "content-type",
+      "application/octet-stream"
+    ],
+    [
+      "content-length",
+      "4203"
+    ],
+    [
+      "accept-encoding",
+      "gzip"
+    ],
+    [
+      "user-agent",
+      "Go-http-client/2.0"
+    ]
+  ],
+  "bodyBytes": 4203,
+  "seq": 25
+}

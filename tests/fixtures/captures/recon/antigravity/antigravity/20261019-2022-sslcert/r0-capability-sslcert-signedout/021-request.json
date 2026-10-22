@@ -1,0 +1,62 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 21233,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://main.vscode-cdn.net/extensions/chat.json",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "sec-ch-ua-platform",
+      "\"Linux\""
+    ],
+    [
+      "user-agent",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) AntigravityIDE/1.107.0 Chrome/142.0.7444.175 Electron/39.2.3 Safari/537.36"
+    ],
+    [
+      "sec-ch-ua",
+      "\"Not_A Brand\";v=\"99\", \"Chromium\";v=\"142\""
+    ],
+    [
+      "sec-ch-ua-mobile",
+      "?0"
+    ],
+    [
+      "accept",
+      "*/*"
+    ],
+    [
+      "origin",
+      "vscode-file://vscode-app"
+    ],
+    [
+      "sec-fetch-site",
+      "cross-site"
+    ],
+    [
+      "sec-fetch-mode",
+      "cors"
+    ],
+    [
+      "sec-fetch-dest",
+      "empty"
+    ],
+    [
+      "accept-encoding",
+      "gzip, deflate, br, zstd"
+    ],
+    [
+      "accept-language",
+      "en-US"
+    ],
+    [
+      "priority",
+      "u=1, i"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 21
+}

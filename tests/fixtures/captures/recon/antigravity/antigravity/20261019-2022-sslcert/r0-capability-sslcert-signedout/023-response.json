@@ -1,0 +1,65 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://browser.events.data.microsoft.com/OneCollector/1.0/?cors=true&content-type=application/x-json-stream",
+  "status": 401,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "server",
+      "Microsoft-HTTPAPI/2.0"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000"
+    ],
+    [
+      "collector-error",
+      "Invalid Tenant Token."
+    ],
+    [
+      "kill-tokens",
+      "antigravity-ide:all"
+    ],
+    [
+      "kill-duration",
+      "86400"
+    ],
+    [
+      "access-control-allow-headers",
+      "Strict-Transport-Security,Collector-Error,kill-tokens,kill-duration,Content-Type,Content-Length"
+    ],
+    [
+      "access-control-allow-methods",
+      "POST"
+    ],
+    [
+      "access-control-allow-credentials",
+      "true"
+    ],
+    [
+      "access-control-allow-origin",
+      "*"
+    ],
+    [
+      "access-control-expose-headers",
+      "kill-tokens,kill-duration,Collector-Error"
+    ],
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:18:50 GMT"
+    ],
+    [
+      "content-length",
+      "44"
+    ]
+  ],
+  "bodyBytes": 44,
+  "durationMs": 235,
+  "seq": 23
+}

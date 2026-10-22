@@ -1,0 +1,46 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability",
+  "atMs": 27906,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://oauth2.googleapis.com/token",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "accept",
+      "*/*"
+    ],
+    [
+      "accept-encoding",
+      "gzip, deflate, br"
+    ],
+    [
+      "content-length",
+      "305"
+    ],
+    [
+      "content-type",
+      "application/x-www-form-urlencoded;charset=UTF-8"
+    ],
+    [
+      "user-agent",
+      "google-api-nodejs-client/10.3.0"
+    ],
+    [
+      "x-goog-api-client",
+      "gl-node/22.21.1"
+    ],
+    [
+      "Host",
+      "oauth2.googleapis.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 305,
+  "seq": 16
+}

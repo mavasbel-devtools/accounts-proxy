@@ -1,0 +1,20 @@
+{
+  "schema": "recon-run/0",
+  "run": "claude/20261019-2022",
+  "client": "claude-code",
+  "clientVersion": "2.1.304",
+  "cell": "claude",
+  "captureMode": "mitm",
+  "mitmproxy": "12.2.3",
+  "capturedAt": "2026-10-19T20:20:00-06:00",
+  "isolation": {
+    "HOME": "temp",
+    "CLAUDE_CONFIG_DIR": "temp"
+  },
+  "proxy": {
+    "HTTPS_PROXY": "http://127.0.0.1:8911",
+    "NODE_EXTRA_CA_CERTS": "run ca.pem"
+  },
+  "scenario": "r0-capability",
+  "notes": "Dummy ANTHROPIC_API_KEY (no real credential). 15 exchanges: policy_limits, settings, bootstrap, MCP registry, event_logging, Datadog intake, and POST /v1/messages?beta=true (401). Zero TLS failures."
+}

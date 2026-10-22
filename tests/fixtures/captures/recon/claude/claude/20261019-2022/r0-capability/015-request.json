@@ -1,0 +1,50 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 7534,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://api.anthropic.com/api/event_logging/v2/batch",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept",
+      "application/json, text/plain, */*"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "User-Agent",
+      "claude-code/2.1.304"
+    ],
+    [
+      "x-service-name",
+      "claude-code"
+    ],
+    [
+      "x-api-key",
+      "<redacted>"
+    ],
+    [
+      "Content-Length",
+      "177677"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, compress, deflate, br"
+    ],
+    [
+      "Host",
+      "api.anthropic.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 177677,
+  "seq": 15
+}

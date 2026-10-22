@@ -1,0 +1,46 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 7522,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://http-intake.logs.us5.datadoghq.com/api/v2/logs",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Accept",
+      "application/json, text/plain, */*"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "DD-API-KEY",
+      "pubea5604404508cdd34afb69e6f42a05bc"
+    ],
+    [
+      "User-Agent",
+      "axios/1.15.2"
+    ],
+    [
+      "Content-Length",
+      "41099"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, compress, deflate, br"
+    ],
+    [
+      "Host",
+      "http-intake.logs.us5.datadoghq.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 41099,
+  "seq": 14
+}

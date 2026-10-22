@@ -1,0 +1,29 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://antigravity-unleash.goog/api/client/features",
+  "status": 304,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "vary",
+      "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+    ],
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:19:43 GMT"
+    ],
+    [
+      "via",
+      "1.1 google"
+    ],
+    [
+      "alt-svc",
+      "h3=\":443\"; ma=2592000"
+    ]
+  ],
+  "bodyBytes": 0,
+  "durationMs": 54,
+  "seq": 30
+}

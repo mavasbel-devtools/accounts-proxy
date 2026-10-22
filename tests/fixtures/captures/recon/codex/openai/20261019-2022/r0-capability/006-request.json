@@ -1,0 +1,30 @@
+{
+  "schema": "recon-request/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "atMs": 6379,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://api.github.com/repos/openai/plugins/zipball/0722921d5542fc593105c27bd52630babd8b8c2a",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "originator",
+      "codex_exec"
+    ],
+    [
+      "user-agent",
+      "codex_exec/0.163.0 (Kali Linux 2026.3.0; x86_64) herdr/0.9.5 (codex_exec; 0.163.0)"
+    ],
+    [
+      "accept",
+      "application/vnd.github+json"
+    ],
+    [
+      "x-github-api-version",
+      "2022-11-28"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 6
+}

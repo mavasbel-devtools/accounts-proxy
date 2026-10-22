@@ -1,0 +1,58 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 10651,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://registry.npmjs.org/chrome-devtools-mcp/-/chrome-devtools-mcp-1.11.0.tgz",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "user-agent",
+      "npm/11.20.0 node/v26.11.1 linux x64 workspaces/false"
+    ],
+    [
+      "pacote-version",
+      "21.5.1"
+    ],
+    [
+      "pacote-req-type",
+      "tarball"
+    ],
+    [
+      "pacote-pkg-id",
+      "remote:chrome-devtools-mcp@https://registry.npmjs.org/chrome-devtools-mcp/-/chrome-devtools-mcp-1.11.0.tgz"
+    ],
+    [
+      "pacote-integrity",
+      "sha512-CytJ/5tnzrS+J/74be2P5aCOsS/mmGRHys/Si+IYC4ucrbnWAmES/dYdxGJjeUCECRcoFUilZAysdjlwqUjXIA=="
+    ],
+    [
+      "npm-auth-type",
+      "web"
+    ],
+    [
+      "npm-command",
+      "exec"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip,deflate"
+    ],
+    [
+      "Host",
+      "registry.npmjs.org"
+    ],
+    [
+      "connection",
+      "keep-alive"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 9
+}

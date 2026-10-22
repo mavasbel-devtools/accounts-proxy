@@ -1,0 +1,77 @@
+{
+  "schema": "recon-response/0",
+  "client": "opencode",
+  "run": "r0-capability",
+  "requestUrl": "https://main.vscode-cdn.net/extensions/chat.json",
+  "status": 200,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:14:31 GMT"
+    ],
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "content-length",
+      "4817"
+    ],
+    [
+      "cache-control",
+      "max-age=3600"
+    ],
+    [
+      "last-modified",
+      "Mon, 05 Oct 2026 23:34:32 GMT"
+    ],
+    [
+      "etag",
+      "\"0x8DF2339356029A8\""
+    ],
+    [
+      "x-ms-request-id",
+      "0f3767c4-f01e-00c8-0ed0-5ff4d7000000"
+    ],
+    [
+      "x-ms-version",
+      "2018-03-28"
+    ],
+    [
+      "x-azure-ref",
+      "20261020T021431Z-17bc69c9fcc6xps8hC1YMQug28000000062g000000002pt0"
+    ],
+    [
+      "x-fd-int-roxy-purgeid",
+      "3"
+    ],
+    [
+      "x-cache",
+      "TCP_HIT"
+    ],
+    [
+      "vary",
+      "Origin"
+    ],
+    [
+      "cross-origin-resource-policy",
+      "cross-origin"
+    ],
+    [
+      "access-control-allow-origin",
+      "*"
+    ],
+    [
+      "access-control-allow-methods",
+      "GET"
+    ],
+    [
+      "accept-ranges",
+      "bytes"
+    ]
+  ],
+  "bodyBytes": 4817,
+  "durationMs": 97,
+  "seq": 11
+}

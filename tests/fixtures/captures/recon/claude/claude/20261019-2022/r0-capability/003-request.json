@@ -1,0 +1,46 @@
+{
+  "schema": "recon-request/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "atMs": 6230,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://api.anthropic.com/api/eval/sdk-zAZezfDKGoZuXXKe",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "User-Agent",
+      "claude-code/2.1.304"
+    ],
+    [
+      "x-api-key",
+      "<redacted>"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ],
+    [
+      "Host",
+      "api.anthropic.com"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, deflate, br, zstd"
+    ],
+    [
+      "Content-Length",
+      "355"
+    ]
+  ],
+  "bodyBytes": 355,
+  "seq": 3
+}

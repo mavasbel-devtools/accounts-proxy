@@ -1,0 +1,89 @@
+{
+  "schema": "recon-response/0",
+  "client": "claude-code",
+  "run": "r0-capability",
+  "requestUrl": "https://api.anthropic.com/mcp-registry/v0/servers?version=latest&limit=100&visibility=commercial%2Cgsuite%2Centerprise%2Chealth&cursor=com.mercury.mcp%2Fmercury%3A1.0.0",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:21:06 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Content-Length",
+      "38762"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "x-request-id",
+      "ac723ef6-4af1-41fd-a574-0ffc90af8a73"
+    ],
+    [
+      "access-control-allow-origin",
+      "*"
+    ],
+    [
+      "access-control-allow-methods",
+      "GET, OPTIONS"
+    ],
+    [
+      "access-control-allow-headers",
+      "*"
+    ],
+    [
+      "Cache-Control",
+      "public, max-age=300, stale-while-revalidate=3600, stale-if-error=3600"
+    ],
+    [
+      "vary",
+      "Accept-Encoding"
+    ],
+    [
+      "Content-Encoding",
+      "br"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "Accept-Ranges",
+      "bytes"
+    ],
+    [
+      "X-Robots-Tag",
+      "none"
+    ],
+    [
+      "last-modified",
+      "Tue, 20 Oct 2026 02:16:37 GMT"
+    ],
+    [
+      "Age",
+      "269"
+    ],
+    [
+      "cf-cache-status",
+      "HIT"
+    ],
+    [
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'"
+    ],
+    [
+      "CF-RAY",
+      "a4d48c139dd35618-DFW"
+    ]
+  ],
+  "bodyBytes": 38762,
+  "durationMs": 45,
+  "seq": 10
+}

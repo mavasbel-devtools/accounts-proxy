@@ -1,0 +1,22 @@
+{
+  "schema": "recon-run/0",
+  "run": "opencode/20261019-2022",
+  "client": "opencode",
+  "clientVersion": "2.0.32",
+  "cell": "opencode",
+  "captureMode": "mitm",
+  "mitmproxy": "12.2.3",
+  "capturedAt": "2026-10-19T20:12:00-06:00",
+  "isolation": {
+    "HOME": "temp",
+    "XDG_CONFIG_HOME": "temp",
+    "XDG_DATA_HOME": "temp",
+    "XDG_CACHE_HOME": "temp"
+  },
+  "proxy": {
+    "HTTPS_PROXY": "http://127.0.0.1:8899",
+    "NODE_EXTRA_CA_CERTS": "run ca.pem"
+  },
+  "scenario": "r0-capability",
+  "notes": "Custom provider recon/probe -> https://api.anthropic.com/v1 with a dummy key. Two POST /v1/chat/completions, both 401. Proves TLS interception and header capture."
+}

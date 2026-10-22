@@ -1,0 +1,81 @@
+{
+  "schema": "recon-response/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "requestUrl": "https://chatgpt.com/backend-api/plugins/featured?platform=codex",
+  "status": 401,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:21:20 GMT"
+    ],
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "content-length",
+      "25"
+    ],
+    [
+      "server",
+      "cloudflare"
+    ],
+    [
+      "x-oai-request-id",
+      "45b23b96-a7ed-41c1-8b23-84d668480e3e"
+    ],
+    [
+      "x-build",
+      "d07acb51c2a7"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "nel",
+      "{\"report_to\":\"cf-nel\",\"success_fraction\":0.01,\"max_age\":604800}"
+    ],
+    [
+      "report-to",
+      "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=6tNSIxAj6QoA2%2FjCpsGMgD87KFDhCvRjGFL4%2FLQIOg1CPMebJ6GOUmh%2Fby%2FQl%2FPiA%2BqiEUI8PKNGp9w1yLrftI3RWOYo5CKvMz4IeAMcHjpuieubVpyKYUO05cbw\"}]}"
+    ],
+    [
+      "referrer-policy",
+      "strict-origin-when-cross-origin"
+    ],
+    [
+      "cross-origin-opener-policy",
+      "same-origin-allow-popups"
+    ],
+    [
+      "cf-ray",
+      "a4d48c69bf8e6719-DFW"
+    ]
+  ],
+  "bodyBytes": 25,
+  "durationMs": 108,
+  "seq": 1
+}

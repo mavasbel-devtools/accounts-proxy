@@ -1,0 +1,42 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "atMs": 13715,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://antigravity-ide-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/ecfbad74d93962fc8ca485d93ab9b4f3d4cb6cf8/dd3b05b865501fd68a91cfb9faf0b80fa76929d30b4dcf5ace70a9c64dcfcb8b",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "sec-fetch-site",
+      "none"
+    ],
+    [
+      "sec-fetch-mode",
+      "no-cors"
+    ],
+    [
+      "sec-fetch-dest",
+      "empty"
+    ],
+    [
+      "user-agent",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) AntigravityIDE/1.107.0 Chrome/142.0.7444.175 Electron/39.2.3 Safari/537.36"
+    ],
+    [
+      "accept-encoding",
+      "gzip, deflate, br, zstd"
+    ],
+    [
+      "accept-language",
+      "en-US"
+    ],
+    [
+      "priority",
+      "u=4, i"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 13
+}

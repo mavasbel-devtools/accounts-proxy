@@ -1,0 +1,26 @@
+{
+  "schema": "recon-request/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "atMs": 5802,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://chatgpt.com/backend-api/plugins/featured?platform=codex",
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "originator",
+      "codex_exec"
+    ],
+    [
+      "user-agent",
+      "codex_exec/0.163.0 (Kali Linux 2026.3.0; x86_64) herdr/0.9.5"
+    ],
+    [
+      "accept",
+      "*/*"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 1
+}

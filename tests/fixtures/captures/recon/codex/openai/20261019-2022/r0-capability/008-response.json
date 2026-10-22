@@ -1,0 +1,73 @@
+{
+  "schema": "recon-response/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "requestUrl": "https://codeload.github.com/openai/plugins/legacy.zip/0722921d5542fc593105c27bd52630babd8b8c2a",
+  "status": 200,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "access-control-allow-origin",
+      "https://render.githubusercontent.com"
+    ],
+    [
+      "content-disposition",
+      "attachment; filename=openai-plugins-0722921.zip"
+    ],
+    [
+      "content-length",
+      "29660236"
+    ],
+    [
+      "content-security-policy",
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    ],
+    [
+      "content-type",
+      "application/zip"
+    ],
+    [
+      "cross-origin-resource-policy",
+      "cross-origin"
+    ],
+    [
+      "etag",
+      "\"6205eb8690b788755c96a17d023e1978e2298b52f6d270395216dd171e8ca354\""
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000"
+    ],
+    [
+      "vary",
+      "Authorization,Accept-Encoding"
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "x-frame-options",
+      "deny"
+    ],
+    [
+      "x-xss-protection",
+      "1; mode=block"
+    ],
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:21:21 GMT"
+    ],
+    [
+      "x-github-request-id",
+      "8F8C:36C33F:F0E4:130EA:6AD6D021"
+    ],
+    [
+      "x-github-edge-region",
+      "iad"
+    ]
+  ],
+  "bodyBytes": 29660236,
+  "durationMs": 9145,
+  "seq": 8
+}

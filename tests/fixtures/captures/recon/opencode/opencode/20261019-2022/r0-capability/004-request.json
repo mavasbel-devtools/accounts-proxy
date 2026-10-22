@@ -1,0 +1,46 @@
+{
+  "schema": "recon-request/0",
+  "client": "opencode",
+  "run": "r0-capability",
+  "atMs": 45031,
+  "mode": "mitm",
+  "method": "GET",
+  "url": "https://rr2---sn-cxnuxa-hxm6.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1792462443,&mh=7g&mip=148.205.56.10&mm=28&mn=sn-cxnuxa-hxm6&ms=nvh&mt=1792461634&mv=u&mvi=2&pl=21&rmhost=rr1---sn-cxnuxa-hxm6.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=rr2---sn-cxnuxa-hxml.gvt1.com",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Host",
+      "rr2---sn-cxnuxa-hxm6.gvt1.com"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Sec-Fetch-Site",
+      "none"
+    ],
+    [
+      "Sec-Fetch-Mode",
+      "no-cors"
+    ],
+    [
+      "Sec-Fetch-Dest",
+      "empty"
+    ],
+    [
+      "User-Agent",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) AntigravityIDE/1.107.0 Chrome/142.0.7444.175 Electron/39.2.3 Safari/537.36"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, deflate, br, zstd"
+    ],
+    [
+      "Accept-Language",
+      "en-US"
+    ]
+  ],
+  "bodyBytes": 0,
+  "seq": 4
+}

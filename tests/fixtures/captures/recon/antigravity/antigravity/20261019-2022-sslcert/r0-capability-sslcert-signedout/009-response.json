@@ -1,0 +1,69 @@
+{
+  "schema": "recon-response/0",
+  "client": "antigravity",
+  "run": "r0-capability-sslcert",
+  "requestUrl": "https://registry.npmjs.org/chrome-devtools-mcp/-/chrome-devtools-mcp-1.11.0.tgz",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Date",
+      "Tue, 20 Oct 2026 02:18:39 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/octet-stream"
+    ],
+    [
+      "Content-Length",
+      "2606605"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "CF-Ray",
+      "a4d4887e2d03f0a0-DFW"
+    ],
+    [
+      "CF-Cache-Status",
+      "HIT"
+    ],
+    [
+      "Accept-Ranges",
+      "bytes"
+    ],
+    [
+      "Access-Control-Allow-Origin",
+      "*"
+    ],
+    [
+      "Age",
+      "389602"
+    ],
+    [
+      "Cache-Control",
+      "public, immutable, max-age=31557600"
+    ],
+    [
+      "ETag",
+      "\"622e0ad12896e1b735ccc2906fb449f1\""
+    ],
+    [
+      "Last-Modified",
+      "Thu, 15 Oct 2026 14:05:17 GMT"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ]
+  ],
+  "bodyBytes": 2606605,
+  "durationMs": 496,
+  "seq": 9
+}

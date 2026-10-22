@@ -6,3 +6,7 @@ dist/
 docs/temp/*
 !docs/temp/.gitkeep
 .cortexkit/
+
+# recon
+__pycache__/
+*.pyc

@@ -1,0 +1,85 @@
+{
+  "schema": "recon-response/0",
+  "client": "codex",
+  "run": "r0-capability",
+  "requestUrl": "https://api.openai.com/v1/responses",
+  "status": 401,
+  "httpVersion": "HTTP/2.0",
+  "headers": [
+    [
+      "date",
+      "Tue, 20 Oct 2026 02:21:29 GMT"
+    ],
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "content-length",
+      "160"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "set-cookie",
+      "<redacted>"
+    ],
+    [
+      "cf-ray",
+      "a4d48ca4f96a9815-DFW"
+    ],
+    [
+      "cf-cache-status",
+      "DYNAMIC"
+    ],
+    [
+      "server",
+      "cloudflare"
+    ],
+    [
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "www-authenticate",
+      "Bearer realm=\"OpenAI API\""
+    ],
+    [
+      "x-content-type-options",
+      "nosniff"
+    ],
+    [
+      "access-control-expose-headers",
+      "X-Request-ID"
+    ],
+    [
+      "access-control-expose-headers",
+      "CF-Ray"
+    ],
+    [
+      "access-control-expose-headers",
+      "CF-Ray"
+    ],
+    [
+      "openai-processing-ms",
+      "5"
+    ],
+    [
+      "openai-version",
+      "2020-10-01"
+    ],
+    [
+      "x-request-id",
+      "req_04433eb079544e59aa99f0d93933af2e"
+    ],
+    [
+      "alt-svc",
+      "h3=\":443\"; ma=86400"
+    ]
+  ],
+  "bodyBytes": 160,
+  "durationMs": 312,
+  "seq": 14
+}

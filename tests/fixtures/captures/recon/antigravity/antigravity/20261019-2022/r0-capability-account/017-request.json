@@ -1,0 +1,50 @@
+{
+  "schema": "recon-request/0",
+  "client": "antigravity",
+  "run": "r0-capability",
+  "atMs": 28239,
+  "mode": "mitm",
+  "method": "POST",
+  "url": "https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "accept",
+      "*/*"
+    ],
+    [
+      "accept-encoding",
+      "gzip, deflate, br"
+    ],
+    [
+      "authorization",
+      "<redacted>"
+    ],
+    [
+      "content-length",
+      "86"
+    ],
+    [
+      "content-type",
+      "application/json"
+    ],
+    [
+      "user-agent",
+      "antigravity/2.5.5 linux/amd64 google-api-nodejs-client/10.3.0"
+    ],
+    [
+      "x-goog-api-client",
+      "gl-node/22.21.1"
+    ],
+    [
+      "Host",
+      "cloudcode-pa.googleapis.com"
+    ],
+    [
+      "Connection",
+      "close"
+    ]
+  ],
+  "bodyBytes": 86,
+  "seq": 17
+}

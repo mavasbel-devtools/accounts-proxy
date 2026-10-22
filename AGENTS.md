@@ -188,3 +188,27 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   ([record](docs/reference/2026-10-16-14-40-project-rename.md)). No tracked path or live file carries a former name;
   historical records (dated docs, captures, vendored sources) keep the names of their time. Enforced by
   `tests/arch/legacy-names.test.ts`.
+- **Recon facility** (plan [2026-10-19-20-04](docs/plans/2026-10-19-20-04-recon-mitm-capture-plan.md) §15): every
+  reference client (opencode, Antigravity, Claude Code, Codex) runs only inside the bubblewrap profile sandbox
+  (`scripts/recon/`). The operator's home is never bound; each profile owns `HOME`, the XDG tree, `/etc/machine-id`,
+  `/etc/hostname`, `/etc/passwd`, `/etc/group` and its own per-run CA. The in-sandbox probe
+  (`bun scripts/recon/cli.ts isolation`) is the acceptance check and must report `clean` with an `unchanged` guard for
+  all four. Credentials are created only by an interactive login inside the profile; a client's files are never copied
+  into a profile when that client rotates refresh tokens. The record is
+  [2026-10-19-22-01-recon-full-isolation.md](docs/reference/2026-10-19-22-01-recon-full-isolation.md).
+- **Recon capture** (plan §16): the addon (`scripts/recon/mitm/recon_addon.py`) records ordered header pairs, exact
+  bodies, per-chunk SSE timing and every WebSocket frame. Redaction runs before any write from the single manifest
+  `scripts/recon/shared/redaction.json`, which the live-evidence redactor also reads; a body that still matches a secret
+  rule is refused, never stored, and the refusal is counted. Noise flows are labelled `noise: true`, never dropped.
+  The operator's identity (account fields, identifiers inside JSON strings, the organisation UUID in URL paths) is
+  redacted from the same manifest; a run recorded before a rule existed is not promotable. A workflow names the
+  request it exists to produce (`expects`, per client `turnRequest`), and a run without it exits 1.
+  Record: [2026-10-20-00-00-recon-capture-pipeline.md](docs/reference/2026-10-20-00-00-recon-capture-pipeline.md).
+- **Recon login** (plan §18): credentials are created only by `bun scripts/recon/cli.ts run <client> --login`,
+  interactively, inside the profile sandbox; the profile's home is stable and every later run reuses it, so tokens are
+  never copied, exported or snapshotted (Claude and OpenAI rotate refresh tokens). opencode logs in with `--standalone`
+  and every opencode run merges a free loopback `service.port` into the profile, so the sandbox never binds the
+  operator's 49374. A client bundle is never patched for capture: a patched binary would not be the client whose bytes
+  the goldens record. The run CA reaches every TLS stack through the environment plus a merged system bundle, and the
+  probe asserts it is in the bundle. Record:
+  [2026-10-20-12-13-recon-login-profiles.md](docs/reference/2026-10-20-12-13-recon-login-profiles.md).
