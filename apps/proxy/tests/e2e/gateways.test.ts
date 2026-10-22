@@ -4,6 +4,7 @@
 // the answer unchanged), translated cells refused, and the captured OpenCode gateway refusal passed through.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
@@ -169,14 +170,14 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     expect((await run(["account", "list", "opencode-go"])).stdout).toMatch(/^\* key-[0-9a-f]{8}\n$/);
   });
 
-  test("native cells (Z12–Z15): bearer key on every route, the proxy's User-Agent, the workspace headers, the client's x-opencode-session; captured Console answers passed through", async () => {
+  test("native cells (Z12–Z15, Z26): bearer key on every route, the client's User-Agent, the workspace headers, the client's x-opencode-session; captured Console answers passed through", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");
     writeKeyAccount("opencode", { apiKey: "oc_sk_e2e", workspaceHeaders: { opencode: { "x-opencode-org-id": "org_e2e" } } });
     const s = await serve();
-    const chat = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_e2e" }, { model: "opencode/big-pickle", messages: [{ role: "user", content: "hi" }] });
+    const chat = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_e2e", "user-agent": "client-e2e/1" }, { model: "opencode/big-pickle", messages: [{ role: "user", content: "hi" }] });
     expect([chat.status, chat.headers.get("x-opencode-log-id"), ((await chat.json()) as { error: { type: string } }).error.type]).toEqual([403, expect.any(String), "FreeTierError"]);
     const sent = upstreams.find("/inference/openai/v1/chat/completions")[0]!;
-    expect([sent.headers["authorization"], sent.headers["user-agent"], sent.headers["x-opencode-org-id"], sent.headers["x-opencode-session"], JSON.parse(sent.body).model]).toEqual(["Bearer oc_sk_e2e", "accounts-proxy/0.1.0", "org_e2e", "ses_e2e", "big-pickle"]);
+    expect([sent.headers["authorization"], sent.headers["user-agent"], sent.headers["x-opencode-org-id"], sent.headers["x-opencode-session"], JSON.parse(sent.body).model]).toEqual(["Bearer oc_sk_e2e", "client-e2e/1", "org_e2e", "ses_e2e", "big-pickle"]);
     const messages = await post(`${s.url}/anthropic/v1/messages`, { "x-api-key": s.token }, { model: "opencode/claude-haiku-4-5", max_tokens: 8, messages: [] });
     expect(messages.status).toBe(401);
     expect([upstreams.find("/inference/anthropic/v1/messages")[0]!.headers["authorization"], upstreams.find("/inference/anthropic/v1/messages")[0]!.headers["x-api-key"]]).toEqual(["Bearer oc_sk_e2e", undefined]);
@@ -195,9 +196,38 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     const go = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_go" }, { model: "opencode-go/glm-5.3-flash", messages: [] });
     expect(go.status).toBe(401);
     const goSent = upstreams.find("/inference/go/v1/chat/completions").at(-1)!;
-    expect([goSent.headers["x-opencode-session"], goSent.headers["x-opencode-org-id"], goSent.headers["authorization"]]).toEqual(["ses_go", undefined, "Bearer oc_sk_e2e"]);
+    expect([goSent.headers["x-opencode-session"], goSent.headers["x-opencode-org-id"], goSent.headers["authorization"], goSent.headers["user-agent"]]).toEqual(["ses_go", undefined, "Bearer oc_sk_e2e", `Bun/${Bun.version}`]);
     const goGemini = await post(`${s.url}/gemini/v1beta/models/opencode-go%2Fnew-model:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
     expect([goGemini.status, ((await goGemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "opencode-go (no native endpoint for this format; the proxy does not translate between formats) cannot carry: gemini_format"]);
+  });
+
+  test("Z26: OpenCode's free models answer opencode through the proxy; another client or none gets the FreeTierError", async () => {
+    home = await makeHome("providers:\n  opencode: {enabled: true}\n");
+    writeKeyAccount("opencode", { apiKey: "oc_sk_e2e" });
+    const s = await serve();
+    // opencode v2.0.32's own recorded request (probe Z26), sent to the proxy as opencode sends it.
+    const recorded = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "p0-live", "z26", "opencode-client-request.json"), "utf8")) as { headers: Record<string, string>; body: string };
+    const body = { ...(JSON.parse(recorded.body) as Record<string, unknown>), model: "opencode/minimax-m3.1-flash-free" };
+    const opencode = await post(`${s.url}/openai/v1/chat/completions`, { ...recorded.headers, authorization: `Bearer ${s.token}` }, body);
+    const stream = await opencode.text();
+    const answer = stream.split("\n").filter((l) => l.startsWith("data:") && !l.includes("[DONE]")).map((l) => (JSON.parse(l.slice(5)) as { choices: Array<{ delta?: { content?: string } }> }).choices[0]?.delta?.content ?? "").join("");
+    expect([opencode.status, opencode.headers.get("content-type"), answer.trim()]).toEqual([200, "text/event-stream", "Exact OK response request"]);
+    const sent = upstreams.find("/inference/openai/v1/chat/completions").at(-1)!;
+    expect([sent.headers["user-agent"], sent.headers["x-opencode-session"], JSON.parse(sent.body).model]).toEqual([recorded.headers["user-agent"], recorded.headers["x-opencode-session"], "minimax-m3.1-flash-free"]);
+    const other = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "user-agent": "curl/8.11.1" }, body);
+    expect([other.status, ((await other.json()) as { error: { type: string } }).error.type]).toEqual([403, "FreeTierError"]);
+    // A client that sends no User-Agent (node:http adds none): the proxy's own is sent.
+    const bare = await new Promise<{ status: number; text: string }>((resolve, reject) => {
+      const target = new URL(`${s.url}/openai/v1/chat/completions`);
+      const req = request({ host: target.hostname, port: target.port, path: target.pathname, method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${s.token}` } }, (res) => {
+        let text = "";
+        res.on("data", (chunk: Buffer) => (text += chunk.toString()));
+        res.on("end", () => resolve({ status: res.statusCode!, text }));
+      });
+      req.on("error", reject);
+      req.end(JSON.stringify(body));
+    });
+    expect([bare.status, (JSON.parse(bare.text) as { error: { type: string } }).error.type, upstreams.find("/inference/openai/v1/chat/completions").at(-1)!.headers["user-agent"]]).toEqual([403, "FreeTierError", "accounts-proxy/0.1.0"]);
   });
 
   test("Z24: a client without x-opencode-session gets its conversation's own id or one derived from the first user turn", async () => {

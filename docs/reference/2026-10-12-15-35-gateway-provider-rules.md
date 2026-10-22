@@ -106,13 +106,14 @@ manifest.json); opencode `packages/console/app/src/lib/inference-proxy.ts` @ `b9
 | Z23 | Upstream error bodies of the inference routes keep each format's own shape (OpenAI `{"error":{…}}`, Anthropic `{"type":"error",…}`, Gemini `{"error":{"code","status","message"}}`) | live c0 |
 | Z24 | Go refuses a request without `x-opencode-session` (400 `MissingSessionID`); Claude Code sends none, only `metadata.user_id` ending in `_session_<uuid>`. Router rule: without a client header the router sends the conversation's own id (that session, or the Responses `prompt_cache_key`), else `rtr_` + a 64-bit FNV-1a hash of the first user turn. | live 2026-10-13 L3: [findings F3](2026-10-13-02-52-live-validation-findings.md); `opencode-console-go.html` "Where can I use it?" |
 | Z25 | Zen `deepseek-v4-flash` and `kimi-k2.6` answer 404/410 "Upstream request failed: Endpoint is unavailable." on the documented Chat path and on models.dev's base while `glm-5.1` answers 200: a model's availability is the vendor's, passed through unchanged. | live 2026-10-13: `tests/fixtures/captures/p0-live/l1/opencode-z*.json` |
+| Z26 | The free `*-free` models (opencode and Go price 0) answer only OpenCode's own requests, with the key `public` or a Console sign-in alike: a `User-Agent` of the form `opencode/<version>` (`opencode/latest/2.0.32/cli`, `opencode/2.0.32` pass; `accounts-proxy/0.1.0`, `opencode/x` get **403** `FreeTierError`) and OpenCode's own prompts (its User-Agent with another client's short system prompt also gets 403). Go's free models answer any User-Agent. Proxy rule: the `opencode` and `opencode-go` cells forward the client's `User-Agent` and send the proxy's own only when the client sends none, so opencode through the proxy gets the answers opencode gets; any other client still gets OpenCode's 403. | live 2026-10-19 [probe Z26](2026-10-19-17-18-z26-opencode-free-tier-probe.md) f1–f9; opencode v2.0.32's request `p0-live/z26/opencode-client-request.json` |
 
 Router rules added by amendment A:
 
 | # | Rule |
 |---|---|
 | G7 | Every gateway's key travels as `Authorization: Bearer` (R1, C1, Z14); the per-endpoint headers of Z3 are gone. |
-| G8 | OpenCode requests carry, besides G2, the router's `User-Agent` (Z15), the workspace's config headers for that provider (Z20) and the client's `x-opencode-session` when it sent one (Z15). |
+| G8 | OpenCode requests carry, besides G2, the router's `User-Agent` (Z15; since 2026-10-19 the client's own when it sends one, Z26), the workspace's config headers for that provider (Z20) and the client's `x-opencode-session` when it sent one (Z15). |
 | G9 | `opencode` and `opencode-go` use one account pool (`accounts-opencode.json`, decision K2): a device sign-in (renewed under the Phase H rules, Z18) or a service-account key (never renewed). |
 | G10 | `login <gateway> --from-opencode` imports the provider's entry of OpenCode's `auth.json` only when it is an API key (Z22); a sign-in entry is refused. |
 
@@ -130,4 +131,5 @@ Router rules added by amendment A:
 The project is now `accounts-proxy` ([project rename](2026-10-16-14-40-project-rename.md)). The rules above stand with the new names: the Console device login
 and its renewals send `client_id=accounts-proxy` (Z17, Z18), requests carry `User-Agent: accounts-proxy/0.1.0` (G8),
 the derived session id is `ap_` + the FNV-1a hash (Z24), the OpenRouter key label is `accounts-proxy`, and the
-headers are `x-proxy-lossy`/`x-proxy-dropped`. The captures keep the values sent when they were recorded.
+headers are `x-proxy-lossy`/`x-proxy-dropped`. The captures keep the values sent when they were recorded. Since
+2026-10-19 `accounts-proxy/0.1.0` is the User-Agent only of a client that sends none (Z26).

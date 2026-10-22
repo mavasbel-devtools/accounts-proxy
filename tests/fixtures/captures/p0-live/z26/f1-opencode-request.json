@@ -1,0 +1,161 @@
+{
+  "id": "f1-opencode-request",
+  "target": "opencode",
+  "scenario": "f1-opencode-request",
+  "model": "minimax-m3.1-flash-free",
+  "capturedAt": "2026-10-19T23:18:25.563Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "accept": "*/*",
+          "content-type": "application/json",
+          "user-agent": "opencode/latest/2.0.32/cli",
+          "x-opencode-client": "cli",
+          "x-opencode-project": "64c0cb5806390f2db676efbd393da58e41be7d1a",
+          "x-opencode-session": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-opencode-session-id": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-session-affinity": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-session-id": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "x-opencode-org-id": "<REDACTED:orgid>"
+        },
+        "body": {
+          "model": "minimax-m3.1-flash-free",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a title generator. You output ONLY a thread title. Nothing else.\n\n<task>\nGenerate a brief title that would help the user find this conversation later.\n\nFollow all rules in <rules>\nUse the <examples> so you know what a good title looks like.\nYour output must be:\n- A single line\n- <=50 characters\n- No explanations\n</task>\n\n<rules>\n- you MUST use the same language as the user message you are summarizing\n- Title must be grammatically correct and read naturally - no word salad\n- Never include tool names in the title (e.g. \"read tool\", \"bash tool\", \"edit tool\")\n- Focus on the main topic or question the user needs to retrieve\n- Vary your phrasing - avoid repetitive patterns like always starting with \"Analyzing\"\n- When a file is mentioned, focus on WHAT the user wants to do WITH the file, not just that they shared it\n- Keep exact: technical terms, numbers, filenames, HTTP codes\n- Remove: the, this, my, a, an\n- Never assume tech stack\n- Never use tools\n- NEVER respond to questions, just generate a title for the conversation\n- The title should NEVER include \"summarizing\" or \"generating\" when generating a title\n- DO NOT SAY YOU CANNOT GENERATE A TITLE OR COMPLAIN ABOUT THE INPUT\n- Always output something meaningful, even if the input is minimal.\n- If the user message is short or conversational (e.g. \"hello\", \"lol\", \"what's up\", \"hey\"):\n  -> create a title that reflects the user's tone or intent (such as Greeting, Quick check-in, Light chat, Intro message, etc.)\n</rules>\n\n<examples>\n\"debug 500 errors in production\" -> Debugging production 500 errors\n\"refactor user service\" -> Refactoring user service\n\"why is app.js failing\" -> app.js failure investigation\n\"implement rate limiting\" -> Rate limiting implementation\n\"how do I connect postgres to my API\" -> Postgres API connection\n\"best practices for React hooks\" -> React hooks best practices\n\"@src/credential.ts can you add refresh token support\" -> Credential refresh token support\n\"@utils/parser.ts this is broken\" -> Parser bug fix\n\"look at @config.json\" -> Config review\n\"@App.tsx add dark mode toggle\" -> Dark mode toggle in App\n</examples>"
+            },
+            {
+              "role": "user",
+              "content": "\"Reply with exactly: OK\""
+            }
+          ],
+          "stream": true,
+          "stream_options": {
+            "include_usage": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-cache",
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a4d3807c48be6a70-PIT",
+          "connection": "keep-alive",
+          "content-type": "text/event-stream",
+          "date": "Mon, 19 Oct 2026 23:18:26 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a15675-89c7-7c06-bf12-4c464cbcecfe",
+          "x-zen-model": "minimax-m3.1-flash-free"
+        },
+        "headersAtMs": 1251.7,
+        "doneAtMs": 2271.8,
+        "chunks": [
+          {
+            "atMs": 1252.3,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"We\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1448.4,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" need title\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" based\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" on user message.\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" They want\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" reply\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948d"
+          },
+          {
+            "atMs": 1456.2,
+            "text": "dff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" exactly OK\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\", but our\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" task title only\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\". Need same\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1479.4,
+            "text": "data: {\"id\":\"0725d8425948ddf"
+          },
+          {
+            "atMs": 1625,
+            "text": "f2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" language English\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1625.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\". Brief\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" title perhaps \\\"\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"Exact\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1625.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" OK\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1625.6,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" reply\\\" but\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1647.1,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" title\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1686.8,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" should represent\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1742.9,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" intent\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1742.9,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\", not\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1746.6,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" actually\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1833.8,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" answer. &\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1833.9,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"lt;=50\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1872.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\".\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1872.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" Maybe \\\"\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1880.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"Confirm\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 1895.8,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" exact OK response\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 2035.5,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"\\\". Need\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" only\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 2035.6,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\" line\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddf"
+          },
+          {
+            "atMs": 2035.6,
+            "text": "f2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\".\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Exact OK\"}}],\"usage\":null}\n\ndata: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" response request\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 2127.2,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"delta\":{\"role\":\"assistant\"}}],\"usage\":null}\n\n"
+          },
+          {
+            "atMs": 2131.4,
+            "text": "data: {\"id\":\"0725d8425948ddff2fae37940d1aa399\",\"object\":\"chat.completion.chunk\",\"created\":1792451906,\"model\":\"minimax-m3.1-flash-free\",\"choices\":[],\"usage\":{\"prompt_tokens\":707,\"completion_tokens\":66,\"total_tokens\":773,\"prompt_tokens_details\":{\"cached_tokens\":706},\"completion_tokens_details\":{\"reasoning_tokens\":59}}}\n\ndata: [DONE]\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

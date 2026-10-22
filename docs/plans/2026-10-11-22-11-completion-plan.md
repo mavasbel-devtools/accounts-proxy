@@ -139,6 +139,15 @@ pending. Planned in [P4.6](2026-10-12-15-35-p46-gateway-providers-plan.md) (deci
 the P4.5 live part follows when the user signs in to OpenAI. §3–§4 above stay as written; P5's matrix grows to the
 seven providers (main plan "Changes v4 → v4.1").
 
+## 7b. Amendment 2026-10-19: P8 cancelled (user decision, option A)
+
+P8 (§5) is cancelled; §5 and decision O12 stay as written above. Reasons: the two plugins would depend on this
+repository's packages, which are published nowhere, so they would stop being self-contained; the proxy has moved away
+from them (it does not translate between formats, and its Claude thinking rule F9 differs on purpose); and the proxy
+already lives beside them without conflict (its own credentials in `~/.local/share/accounts-proxy/`). From now on
+this project never modifies the plugin repositories (`opencode-claude-auth`, `opencode-antigravity-auth`,
+`opencode-cheaper-inference-auth`) or the plugin files installed in OpenCode (AGENTS.md §4 "Plugins"). Next: P9.
+
 ## 8. Execution record
 - 2026-10-11 22:11 plan written and approved.
 - 2026-10-11 23:06 **Phase H done** (H-a…H-h). `OAuthSessionBase` (`packages/core/src/ports/outbound/session.ts`) is the
@@ -165,3 +174,10 @@ seven providers (main plan "Changes v4 → v4.1").
   setup §3 (SDKs configured from the environment, run by the e2e tier), diagram pages request flow, renewal under
   locks and matrix, checked against the code in `verify`; the docs lint checks link fragments. Next: P8 (plugin
   migration).
+- 2026-10-19 rule Z26 ([probe](../reference/2026-10-19-17-18-z26-opencode-free-tier-probe.md)): OpenCode's free `*-free` models answered 403 `FreeTierError` through the
+  proxy while opencode itself got answers. OpenCode serves them only to a request with its own User-Agent
+  (`opencode/<version>`) and its own prompts; the proxy replaced the client's User-Agent with `accounts-proxy/0.1.0`.
+  The `opencode` and `opencode-go` cells now forward the client's User-Agent (the proxy's own when it sends none).
+  Live: real opencode v2.0.32 through a test daemon answered OK on `ap-opencode/minimax-m3.1-flash-free`,
+  `ap-opencode/glm-5.3-flash-free` and `ap-opencode-go/minimax-m3.1-flash-free`.
+- 2026-10-19 P8 cancelled (§7b). Next: P9.

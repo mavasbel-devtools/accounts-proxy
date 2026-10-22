@@ -184,7 +184,12 @@ export class ReplayUpstreams {
     const queued = this.scripted.get(url.pathname)?.shift();
     if (queued !== undefined) return queued(parsed, this.requests.at(-1)!);
     // OpenCode Console inference (amendment A): the Console's captured answers without an accepted credential (probe
-    // c0/c1): Go without x-opencode-session, the free chat model, and each paid route.
+    // c0/c1): Go without x-opencode-session, the free chat model, and each paid route. Probe Z26: a free model answers
+    // only OpenCode's own User-Agent (f4), any other one gets the FreeTierError (c1, f5). The accepted shapes are the
+    // probed ones: `opencode/latest/2.0.32/cli` (f1, f4) and `opencode/2.0.32` (f8) answered, `opencode/x` (f9) did not.
+    if (req.method === "POST" && url.pathname === "/inference/openai/v1/chat/completions" && String(parsed["model"]).endsWith("-free")) {
+      return consoleCapture(/^opencode\/(?:[^/]+\/)?\d+\.\d+/.test(headers["user-agent"] ?? "") ? "z26/f4-zen-client-agent.json" : "z26/f5-zen-no-agent.json");
+    }
     if (req.method === "POST" && url.pathname.startsWith("/inference/")) {
       const name = url.pathname.startsWith("/inference/go/")
         ? headers["x-opencode-session"] === undefined

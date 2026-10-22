@@ -74,7 +74,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 | OpenAI Responses cell headers: a streaming client gets `content-type: text/event-stream` when plan usage sends none, and every answer forwards `x-oai-request-id` (rule I7) | [OpenAI rules](docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md), captures `l1/openai-resp-*.json` |
 | Gateway native cells: the body `model` (or Gemini path model) becomes the bare id; upstream headers are only the key header, `content-type`, the client's `accept` and, on Messages, `anthropic-version`/`anthropic-beta`; the answer streams back with `content-type`, `retry-after` and the vendor's request id | [gateway rules G1–G4](docs/reference/2026-10-12-15-35-gateway-provider-rules.md) |
 | Gateway credential: `Authorization: Bearer` on every endpoint of every gateway (OpenCode since its 2026-10-12 Console migration) | rules R1, C1, Z14 |
-| OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the proxy's own `User-Agent`; the client's `x-opencode-session` forwarded; the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20 |
+| OpenCode Console cells: addresses `opencode.ai/inference/{openai/v1, anthropic/v1, google/v1beta}` and `/inference/go/v1`; the client's `User-Agent` and `x-opencode-session` forwarded (the proxy's own `User-Agent` only when the client sends none, so OpenCode's free models answer opencode through the proxy); the workspace's config headers (`x-opencode-org-id`) sent | rules Z12–Z15, Z20, [Z26](docs/reference/2026-10-19-17-18-z26-opencode-free-tier-probe.md) |
 | OpenCode Console cells without a client `x-opencode-session`: the conversation's own id (Claude Code's `metadata.user_id` session, the Responses `prompt_cache_key`), else `ap_` + a 64-bit FNV-1a hash of the first user turn (rule Z24) | [live validation F3](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | Gateway model formats: OpenRouter every model Chat/Responses/Messages; OpenCode per model from the reference catalog's (models.opencode.ai, formerly models.dev) `provider.npm`; Cheaper Inference per model from `supported_endpoints`/`endpoint`; a model whose formats are unknown is forwarded as sent | rules R2, Z5–Z6, C3 |
 
@@ -101,6 +101,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   writes Claude Code's, OpenCode's or the plugins' credential files, and reads one only for
   `login <gateway> --from-opencode` (decision K5): OpenCode's `auth.json`, read once, from which an **API key** only is
   imported, never a sign-in token (rule Z22).
+- **Plugins** (user decision 2026-10-19, plan v4 §7b: P8 cancelled). This project never modifies the plugin
+  repositories `opencode-claude-auth`, `opencode-antigravity-auth` and `opencode-cheaper-inference-auth`, nor the
+  plugin files installed in OpenCode; the plugins and the proxy stay independent of each other.
 - **Sessions** (plan v4 Phase H). Every provider session extends `OAuthSessionBase`
   (`packages/core/src/ports/outbound/session.ts`). Account files are written only through
   `CredentialStorePort.update` (a locked read → change → write); there is no blind save. Lock order is always renewal

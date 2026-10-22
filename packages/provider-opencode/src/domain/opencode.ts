@@ -22,10 +22,12 @@ export const USER_PATH = "/api/user";
 export const ORGS_PATH = "/api/orgs";
 export const CONFIG_PATH = "/api/v2/config";
 
-/** Z15: Go wants the client's own User-Agent (the proxy's name and version, as in apps/proxy/package.json). */
+/** Z15, Z26: the proxy's name and version (apps/proxy/package.json), sent when the client sends no User-Agent. */
 export const USER_AGENT = "accounts-proxy/0.1.0";
 /** Z15: the conversation id the client sends, forwarded as it is. */
 export const SESSION_HEADER = "x-opencode-session";
+/** Z26: the client's own User-Agent, forwarded as it is (the free models answer only OpenCode's own). */
+const CLIENT_HEADERS = [SESSION_HEADER, "user-agent"];
 /** Z9: the gateway's request id response header. */
 const LOG_ID = "x-opencode-log-id";
 
@@ -41,7 +43,7 @@ export const ZEN_SPEC: GatewaySpec = {
   },
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
-  forwardHeaders: [SESSION_HEADER],
+  forwardHeaders: CLIENT_HEADERS,
   sessionHeader: SESSION_HEADER,
 };
 
@@ -56,7 +58,7 @@ export const GO_SPEC: GatewaySpec = {
   },
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
-  forwardHeaders: [SESSION_HEADER],
+  forwardHeaders: CLIENT_HEADERS,
   sessionHeader: SESSION_HEADER,
 };
 

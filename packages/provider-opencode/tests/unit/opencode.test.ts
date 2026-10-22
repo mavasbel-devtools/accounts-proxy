@@ -22,7 +22,7 @@ import {
 const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", file), "utf8"));
 
 describe("OpenCode Zen and Go rules", () => {
-  test("Z12–Z15, Z9: Console addresses, bearer everywhere, the proxy's User-Agent and the client's x-opencode-session; Go has no Gemini route", () => {
+  test("Z12–Z15, Z9, Z26: Console addresses, bearer everywhere, the client's User-Agent (else the proxy's) and x-opencode-session; Go has no Gemini route", () => {
     expect([ZEN_SPEC.apiBase, GO_SPEC.apiBase]).toEqual(["https://opencode.ai/inference", "https://opencode.ai/inference/go"]);
     expect(ZEN_SPEC.endpoints).toEqual({
       "openai-chat": { path: "/openai/v1/chat/completions" },
@@ -36,7 +36,7 @@ describe("OpenCode Zen and Go rules", () => {
       "anthropic-messages": { path: "/v1/messages" },
     });
     for (const spec of [ZEN_SPEC, GO_SPEC]) {
-      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardHeaders]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "accounts-proxy/0.1.0" }, ["x-opencode-session"]]);
+      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardHeaders]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "accounts-proxy/0.1.0" }, ["x-opencode-session", "user-agent"]]);
     }
   });
 

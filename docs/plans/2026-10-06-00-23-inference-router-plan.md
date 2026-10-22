@@ -261,3 +261,5 @@ inference-router/                       (Bun workspace)
 - 2026-10-18: P6 done on every native cell
   ([P6](2026-10-17-22-59-p6-live-results-plan.md)), P7 done ([P7](2026-10-18-22-09-p7-documentation-sweep-plan.md));
   P5 stays cancelled; next is plan v4 P8.
+- 2026-10-19: P8 cancelled by the user (plan v4 §7b; the plugin repositories and installed plugins are never modified);
+  rule Z26 added (plan v4 record). Next is plan v4 P9.

@@ -1,0 +1,68 @@
+{
+  "id": "f3-other-prompt",
+  "target": "opencode",
+  "scenario": "f3-other-prompt",
+  "model": "minimax-m3.1-flash-free",
+  "capturedAt": "2026-10-19T23:18:25.563Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "accept": "*/*",
+          "content-type": "application/json",
+          "user-agent": "opencode/latest/2.0.32/cli",
+          "x-opencode-client": "cli",
+          "x-opencode-project": "64c0cb5806390f2db676efbd393da58e41be7d1a",
+          "x-opencode-session": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-opencode-session-id": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-session-affinity": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "x-session-id": "ses_ea99a508fffeLLa6uRy4z8THti",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "x-opencode-org-id": "<REDACTED:orgid>"
+        },
+        "body": {
+          "model": "minimax-m3.1-flash-free",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are helpful."
+            },
+            {
+              "role": "user",
+              "content": "Reply with exactly: OK"
+            }
+          ],
+          "stream": true,
+          "stream_options": {
+            "include_usage": true
+          }
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "cf-placement": "remote-IAD",
+          "cf-ray": "a4d380d17b6f6a70-PIT",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Mon, 19 Oct 2026 23:18:39 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a15675-bf10-7bea-a621-dc747bfa96be"
+        },
+        "headersAtMs": 223.7,
+        "doneAtMs": 223.8,
+        "chunks": [
+          {
+            "atMs": 223.8,
+            "text": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"OpenCode's free tier can only be used from within OpenCode. Download it at https://opencode.ai and keep building.\"}}"
+          }
+        ]
+      }
+    }
+  ]
+}

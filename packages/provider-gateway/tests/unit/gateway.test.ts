@@ -62,6 +62,10 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
     const own = { ...SPEC, headers: { "user-agent": "accounts-proxy/0.1.0" }, forwardHeaders: ["x-opencode-session"] };
     expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { "x-opencode-session": "ses_1", "user-agent": "client/1" } })).headers).toEqual({ "user-agent": "accounts-proxy/0.1.0", "content-type": "application/json", "x-opencode-session": "ses_1" });
     expect(upstreamCall(own, "m", raw({ format: "openai-chat", path: "/v1/chat/completions" })).headers).toEqual({ "user-agent": "accounts-proxy/0.1.0", "content-type": "application/json" });
+    // Z26: a forwarded client header replaces the vendor's own value; without it the vendor's own is sent.
+    const agent = { ...own, forwardHeaders: ["x-opencode-session", "user-agent"] };
+    expect(upstreamCall(agent, "m", raw({ format: "openai-chat", path: "/v1/chat/completions", headers: { "user-agent": "opencode/latest/2.0.32/cli" } })).headers["user-agent"]).toBe("opencode/latest/2.0.32/cli");
+    expect(upstreamCall(agent, "m", raw({ format: "openai-chat", path: "/v1/chat/completions" })).headers["user-agent"]).toBe("accounts-proxy/0.1.0");
   });
 
   test("Z24: the session header is the client's, else the conversation's own id, else a hash of the first user turn", () => {
