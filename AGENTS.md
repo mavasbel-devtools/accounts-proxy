@@ -204,6 +204,11 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   redacted from the same manifest; a run recorded before a rule existed is not promotable. A workflow names the
   request it exists to produce (`expects`, per client `turnRequest`), and a run without it exits 1.
   Record: [2026-10-20-00-00-recon-capture-pipeline.md](docs/reference/2026-10-20-00-00-recon-capture-pipeline.md).
+- **Recon parity** (plan §20): `bun scripts/recon/cli.ts parity <run-dir> <seq>...` compares the proxy's upstream
+  request with the client's for the same call, hermetically (e2e daemon, replay upstreams, a TCP tap that keeps header
+  order and case). The proxy makes only calls its client makes, in the client's shape and cadence; it never generates
+  the clients' telemetry or feature-flag traffic (user decision 2026-10-21). Record:
+  [2026-10-21-20-44-recon-gap-report.md](docs/reference/2026-10-21-20-44-recon-gap-report.md).
 - **Recon login** (plan §18): credentials are created only by `bun scripts/recon/cli.ts run <client> --login`,
   interactively, inside the profile sandbox; the profile's home is stable and every later run reuses it, so tokens are
   never copied, exported or snapshotted (Claude and OpenAI rotate refresh tokens). opencode logs in with `--standalone`

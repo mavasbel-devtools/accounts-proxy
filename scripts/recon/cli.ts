@@ -15,10 +15,11 @@
  * operator opens it on the host, and the tokens are written only inside the profile.
  */
 
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { clientById, detectVersion, type ReconClient } from "@accounts-proxy/scripts/recon/clients.ts";
 import { readLoginRecord } from "@accounts-proxy/scripts/recon/login.ts";
+import { compare, markdown } from "@accounts-proxy/scripts/recon/parity/compare.ts";
 import { runClient } from "@accounts-proxy/scripts/recon/run.ts";
 import { fingerprintPath, type PathFingerprint } from "@accounts-proxy/scripts/recon/sandbox/guard.ts";
 import { writeTimeline } from "@accounts-proxy/scripts/recon/timeline.ts";
@@ -50,6 +51,9 @@ const USAGE = `usage: bun scripts/recon/cli.ts <command>
   workflows [client]          list the workflow catalogue and what each one is evidence for
   workflow <client> <id>      run one workflow and write its timeline
   timeline <run-dir>          rebuild timeline.json for a finished run
+  parity <run-dir> <seq>... [--json=<file>]
+                              replay each captured request through a signed-in proxy (hermetic) and list every
+                              difference between the client's upstream request and the proxy's
   reset <client> --yes        delete one profile and everything a login stored in it
 `;
 
@@ -248,6 +252,19 @@ async function main(argv: readonly string[]): Promise<number> {
       if (!runDir) throw new Error("timeline needs a run directory");
       const timeline = writeTimeline(runDir);
       console.log(`timeline    ${timeline.steps.length} step(s), summary ${JSON.stringify(timeline.summary)}`);
+      return 0;
+    }
+    case "parity": {
+      const runDir = rest[0];
+      const seqs = rest.slice(1).filter((arg) => !arg.startsWith("--")).map(Number);
+      if (!runDir || seqs.length === 0 || seqs.some((seq) => !Number.isInteger(seq))) throw new Error("parity needs a run directory and one or more capture seq numbers");
+      const jsonArg = rest.find((arg) => arg.startsWith("--json="));
+      const results: unknown[] = [];
+      for (const comparison of await compare(runDir, seqs)) {
+        results.push(comparison);
+        console.log(markdown(comparison));
+      }
+      if (jsonArg !== undefined) writeFileSync(jsonArg.slice("--json=".length), `${JSON.stringify(results, null, 2)}\n`);
       return 0;
     }
     case "isolation": {

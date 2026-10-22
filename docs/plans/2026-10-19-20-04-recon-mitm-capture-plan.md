@@ -591,3 +591,32 @@ These are the first entries of the R5 gap report.
 
 R3 (promote reviewed goldens), R4 (canonicalise and diff the router's outbound calls against them), R5 (gap report,
 one rule per gap, each citing one capture id) for opencode, Claude Code and Antigravity.
+
+## 20. Amendment — R5 parity tool and first gap report (2026-10-21 20:44)
+
+User decision 2026-10-21 (option A): every call the proxy makes must be one the client makes, in the client's shape
+and cadence; the clients' telemetry and feature-flag traffic is not generated. Record:
+[2026-10-21-20-44-recon-gap-report.md](../reference/2026-10-21-20-44-recon-gap-report.md).
+
+### 20.1 What was built
+
+`bun scripts/recon/cli.ts parity <run-dir> <seq>...` replays captured client requests through a signed-in proxy daemon
+(the e2e harness; no provider is contacted) and records the proxy's outbound requests with a TCP tap, so header order
+and case survive. `scripts/recon/parity/`: `canon.ts` (canonical form; the planned `volatile.ts` is its masking half),
+`diff.ts` (difference kinds, array alignment), `tap.ts` (wire tap and HTTP/1.1 parser), `cells.ts` (client request →
+proxy request, per client), `compare.ts` (driver and report). The captures of one conversation share one daemon, so
+per-session state evolves as it did for the client.
+
+### 20.2 First results
+
+Claude Code 2.1.304: its own request is refused by the proxy (seven `anthropic-beta` values not proven for the model),
+the proxy presents Claude Code 2.1.280 on Windows, six client headers are missing and one is extra, header case and
+order differ, and when the client is Claude Code the proxy duplicates the billing and identity system blocks.
+Antigravity 1.107.0: `os_type=windows`, tools merged into one entry, and Bun's transport headers and order; every
+other envelope field, including the trajectory labels and step counter, is equal.
+
+### 20.3 Next (R6)
+
+One rule per gap, each citing its capture id, with an e2e test replaying the capture; `parity` re-run until each cell
+reports no difference outside the documented transport residuals. opencode's parity cell and the TLS comparison are
+still to be added.
