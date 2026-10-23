@@ -34,7 +34,7 @@ Date: 2026-10-06 00:23 · Status: **LOCKED v3.1 — APPROVED 2026-10-06 ("Confir
 | Item | Before (Windows) | Now (Linux, measured 2026-10-10) |
 |---|---|---|
 | Repo | `C:\Users\Marco\Dev\AIML\inference-router` | `/home/mavasbel/Dev/repos/inference-router` |
-| Plugin repos | `…\Dev\AIML\tools\opencode-{claude,antigravity}-auth` | `/home/mavasbel/Dev/repos/opencode/opencode-{claude,antigravity}-auth` (pinned commits `6292741`, `5c6f7c2` present) |
+| Plugin repos | `…\Dev\AIML\tools\opencode-{claude,antigravity}-auth` | `/home/mavasbel/Dev/repos/devtools/opencode-{claude,antigravity}-auth` (pinned commits `6292741`, `5c6f7c2` present) |
 | Data directory | `~/.local/share/inference-router/` | same path under `/home/mavasbel` |
 | Scratch directory | `%TEMP%\opencode` | `/tmp/opencode` |
 | Pre-repo docs (`AIML/tools/docs/…`: v1 plan, first session record) | present | **not present on this machine**; the repo's own `docs/` holds the plan, research and session record |

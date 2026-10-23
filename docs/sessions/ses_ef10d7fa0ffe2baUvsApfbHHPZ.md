@@ -44,7 +44,7 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   two browser logins.
 
 - 2026-10-10 18:45 Moved to Linux: repo `/home/mavasbel/Dev/repos/inference-router`, plugins
-  `/home/mavasbel/Dev/repos/opencode/opencode-{claude,antigravity}-auth`. Validated (docs/reference/2026-10-10-18-45-
+  `/home/mavasbel/Dev/repos/devtools/opencode-{claude,antigravity}-auth`. Validated (docs/reference/2026-10-10-18-45-
   linux-migration-validation.md): clean `bun install`, gate identical to Windows. Provider id `claude-subscription` →
   `claude` (plan v3.1); created dirs 0700, lock/log files 0600. router.yaml recreated on Linux. Next: decisions in
   docs/plans/2026-10-10-18-45-continuation-plan.md (P0-LIVE approval + logins; amendment A2 = P4 first; P4 start).
