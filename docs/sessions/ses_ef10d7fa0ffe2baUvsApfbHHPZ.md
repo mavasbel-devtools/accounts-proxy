@@ -123,3 +123,12 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 | Rule Z26 OpenCode free models ([probe](../reference/2026-10-19-17-18-z26-opencode-free-tier-probe.md)) | 2026-10-19: the `opencode`/`opencode-go` cells forward the client's User-Agent (the proxy's own when none); live: opencode v2.0.32 through a test daemon answered OK on three free models |
 | Recon MITM capture & parity ([plan](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md)) | R1–R6 done 2026-10-22: Claude Code 2.1.304 parity 0 diffs, Antigravity 1.107.0 parity 0 diffs, verify GATE PASS (800 unit, 230 e2e, 100% on all metrics) |
 | P9 | not started |
+
+## 2026-10-22 22:40 — OpenCode v2.1.1 parity closed; OpenAI next
+
+- Committed `fa0967d` (Antigravity R6) and `e55572f` (OpenCode R6: O1–O5, 13 requests 0 differences, verify GATE PASS:
+  803 unit+component+arch, 230 e2e, merged 100% 3527/3527 statements, 2592/2592 branches).
+- Plan §23, gap report §7. New manifest pattern `workspace` (`wrk_` + 26).
+- Open: OpenAI cell against opencode's "Sign in with ChatGPT" (option A). A sign-in inside the opencode recon profile
+  (`run opencode --login -- … auth login --standalone openai --method chatgpt-token-sharing`) waits for the
+  operator's browser approval; then record turns with `--model=openai/<model>`, add the `openai` parity cell, fix gaps.
