@@ -49,7 +49,9 @@ const USAGE = `usage: bun scripts/recon/cli.ts <command>
                               each one is the next turn of the same conversation),
                               --fresh moves the profile aside so the client starts as a first launch
   workflows [client]          list the workflow catalogue and what each one is evidence for
-  workflow <client> <id>      run one workflow and write its timeline
+  workflow <client> <id> [--timeout=<ms>] [--model=<provider/model>]
+                              run one workflow and write its timeline; --model (opencode only) names the
+                              client's own model instead of the profile's default
   timeline <run-dir>          rebuild timeline.json for a finished run
   parity <run-dir> <seq>... [--json=<file>]
                               replay each captured request through a signed-in proxy (hermetic) and list every
@@ -212,7 +214,8 @@ async function main(argv: readonly string[]): Promise<number> {
       const clientId = rest[0];
       const id = rest[1];
       if (!clientId || !id) throw new Error("workflow needs a client id and a workflow id");
-      const workflow = workflowById(clientId, id);
+      const modelArg = rest.find((arg) => arg.startsWith("--model="));
+      const workflow = workflowById(clientId, id, modelArg === undefined ? {} : { model: modelArg.slice("--model=".length) });
       if (workflow.unsupported !== undefined) {
         throw new Error(`workflow ${clientId}/${id} is unsupported: ${workflow.unsupported}`);
       }

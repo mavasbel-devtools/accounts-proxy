@@ -455,7 +455,7 @@ function buildGateways(deps: GatewayDeps): GatewayGraph[] {
     ] as const) {
       if (!deps.enabled.includes(base.provider)) continue;
       const provider = base.provider as OpencodeProvider;
-      const g = wire(base, (spec) => new OpencodeCatalogSource(provider, transport, reference, spec.apiBase), builtin, new ConsoleGatewaySession(provider, consoleSession, store));
+      const g = wire(base, () => new OpencodeCatalogSource(provider, reference), builtin, new ConsoleGatewaySession(provider, consoleSession, store));
       out.push({ ...g, keyLogin: new OpencodeKeyLogin(provider, hash, api), device: new OpencodeDeviceLogin(provider, api), console: { api, session: consoleSession } });
     }
   }

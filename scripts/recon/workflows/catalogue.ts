@@ -30,12 +30,19 @@ function exec(argv: readonly string[], timeoutMs?: number): WorkflowStep {
   };
 }
 
+/** Choices a caller may make for one recording without changing what the workflow is evidence for. */
+export type WorkflowOptions = {
+  /** The client's own model id (opencode `--model <provider>/<model>`); absent: the profile's default model. */
+  readonly model?: string;
+};
+
 /** The opencode workflows (`opencode` cell plus its Console/Go control plane). */
-function opencodeWorkflows(client: ReconClient): WorkflowDefinition[] {
+function opencodeWorkflows(client: ReconClient, options: WorkflowOptions): WorkflowDefinition[] {
   const bin = client.binary.target;
+  const model = options.model === undefined ? [] : ["--model", options.model];
   // Every opencode command talks to a background service by default, which a fresh profile does not have; without
   // `--standalone` the command fails to bind the service port (measured in R2) and no request is made.
-  const run = (...args: string[]): string[] => [bin, "run", "--standalone", ...args];
+  const run = (...args: string[]): string[] => [bin, "run", "--standalone", ...model, ...args];
   return [
     {
       id: "bootstrap",
@@ -79,7 +86,7 @@ function opencodeWorkflows(client: ReconClient): WorkflowDefinition[] {
       client: client.id,
       title: "Unknown model",
       purpose: "the client's own request shape on a model the provider refuses",
-      steps: [exec(run("--model", "recon/not-a-model", OK))],
+      steps: [exec([bin, "run", "--standalone", "--model", "recon/not-a-model", OK])],
     },
   ];
 }
@@ -257,23 +264,27 @@ function antigravityWorkflows(client: ReconClient): WorkflowDefinition[] {
   ];
 }
 
-const BUILDERS: Record<string, (client: ReconClient) => WorkflowDefinition[]> = {
+const BUILDERS: Record<string, (client: ReconClient, options: WorkflowOptions) => WorkflowDefinition[]> = {
   opencode: opencodeWorkflows,
   claude: claudeWorkflows,
   codex: codexWorkflows,
   antigravity: antigravityWorkflows,
 };
 
-/** Every workflow of one installed client. Throws when the client is not installed. */
-export function workflowsFor(clientId: string): WorkflowDefinition[] {
+/** Clients whose workflows take a `--model` choice. */
+const MODEL_CHOICE: ReadonlySet<string> = new Set(["opencode"]);
+
+/** Every workflow of one installed client. Throws when the client is not installed or cannot take an option. */
+export function workflowsFor(clientId: string, options: WorkflowOptions = {}): WorkflowDefinition[] {
   const build = BUILDERS[clientId];
   if (build === undefined) throw new Error(`no workflow catalogue for ${clientId}`);
-  return build(clientById(clientId));
+  if (options.model !== undefined && !MODEL_CHOICE.has(clientId)) throw new Error(`${clientId} workflows take no --model`);
+  return build(clientById(clientId), options);
 }
 
 /** One workflow by client and id. Throws when either is unknown. */
-export function workflowById(clientId: string, id: string): WorkflowDefinition {
-  const found = workflowsFor(clientId).find((workflow) => workflow.id === id);
+export function workflowById(clientId: string, id: string, options: WorkflowOptions = {}): WorkflowDefinition {
+  const found = workflowsFor(clientId, options).find((workflow) => workflow.id === id);
   if (found === undefined) {
     throw new Error(`unknown workflow ${id} for ${clientId}; expected ${workflowsFor(clientId).map((w) => w.id).join(", ")}`);
   }

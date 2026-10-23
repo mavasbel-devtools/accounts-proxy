@@ -679,3 +679,35 @@ R6 execution for the `antigravity` cell using captured traffic from Antigravity 
 - Turn 1 (`seq 3287`): **0 differences**.
 - Multiturn / Tool runs (`seq 3306`, `seq 3313`, `seq 3343`): **0 body differences** outside of the client's internal step counter increments from un-synthesized side calls.
 - Release gate `bun run verify`: **PASS** (100% coverage unit+e2e+merged, both recon parity gates pass).
+
+## 23. Amendment — OpenCode v2.1.1 parity (2026-10-22 22:19)
+
+R6 for the `opencode` and `opencode-go` cells against OpenCode v2.1.1, recorded in its profile sandbox on 2026-10-22 21:37–21:56 local
+(run ids are UTC, `2026-10-23-03-…`; the OpenCode this session runs on the host is never touched: the client runs only inside bubblewrap, and every run
+reported isolation probe `clean` and guard `unchanged`). Gap report:
+[§7](../reference/2026-10-21-20-44-recon-gap-report.md#7-opencode-v211-opencode-and-opencode-go-cells).
+
+### 23.1 Changes made
+
+1. **Recording**: `workflow opencode <id> --model=<provider>/<model>` names OpenCode's own model (opencode only; the
+   unknown-model workflow keeps its own model). Unit test: `scripts/tests/unit/recon-workflows.test.ts`.
+2. **Redaction**: the shared manifest masks the OpenCode Console workspace id (`identityPatterns` `workspace`,
+   `wrk_` + 26 characters) in headers, URLs and bodies; checked by `selfcheck.py` (85 checks) and
+   `scripts/tests/unit/live-evidence.test.ts`. Runs recorded before this rule are not promotable (AGENTS.md rule).
+3. **Parity tool**: an `opencode` cell (every Zen and Go endpoint family; a test Console sign-in for the parity
+   daemon); the manifest's identity patterns are masked on both planes.
+4. **Adapters** (O1–O5): Go uses the same four endpoint families as Zen under `/inference/go/`; OpenCode's own
+   request headers are forwarded as sent; no explicit `accept`; Gemini endpoints carry `x-goog-api-key`; the model
+   lists are the reference catalog's (the gateway's `/v1/models` is no longer read).
+5. **Gate**: six committed conversations under `tests/fixtures/captures/recon-parity/opencode-2.1.1/` replayed by
+   `bun run verify`.
+
+### 23.2 Parity measurement
+
+13 requests in 6 conversations (Go Chat with a tool loop, Go Responses, Go Messages, Go Gemini, Zen Gemini, Zen
+Messages, Zen Responses): **0 differences**; 14 more recorded requests also 0 (not committed).
+
+### 23.3 Next
+
+OpenAI (`openai` cell): the reference client is opencode's own "Sign in with ChatGPT" (user decision of 2026-10-22,
+option A). It needs a ChatGPT sign-in inside the opencode recon profile, which the operator approves in the browser.

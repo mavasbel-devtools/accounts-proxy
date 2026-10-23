@@ -166,6 +166,43 @@ describe("cells", () => {
     });
     expect(() => cellFor("codex")).toThrow(/no parity cell for codex/);
   });
+
+  test("opencode maps every endpoint family of Zen and Go to the proxy route, keeps its headers in order, swaps only the key", () => {
+    const cell = cellFor("opencode");
+    const headers = [
+      ["Authorization", "Bearer <REDACTED:authorization>"],
+      ["Content-Type", "application/json"],
+      ["User-Agent", "opencode/latest/2.1.1/cli"],
+      ["b3", "t-s-1-p"],
+      ["x-opencode-org-id", "<REDACTED:workspace>"],
+      ["x-opencode-session", "ses_1"],
+      ["Connection", "keep-alive"],
+      ["Accept", "*/*"],
+      ["Host", "opencode.ai"],
+      ["Accept-Encoding", "gzip"],
+      ["Content-Length", "10"],
+    ] as const;
+    const map = (url: string, body: unknown = { model: "m", messages: [] }) => cell.input({ method: "POST", url, headers, body: JSON.stringify(body) }, "tok");
+    const chat = map("https://opencode.ai/inference/go/openai/v1/chat/completions");
+    expect(chat).toEqual({
+      target: "/openai/v1/chat/completions",
+      headers: [["Authorization", "Bearer tok"], ["Content-Type", "application/json"], ["User-Agent", "opencode/latest/2.1.1/cli"], ["b3", "t-s-1-p"], ["x-opencode-session", "ses_1"]],
+      body: JSON.stringify({ model: "opencode-go/m", messages: [] }),
+    });
+    expect([map("https://opencode.ai/inference/openai/v1/responses").target, JSON.parse(map("https://opencode.ai/inference/openai/v1/responses").body).model]).toEqual(["/openai/v1/responses", "opencode/m"]);
+    expect(map("https://opencode.ai/inference/go/anthropic/v1/messages").target).toBe("/anthropic/v1/messages");
+    const gemini = cell.input({ method: "POST", url: "https://opencode.ai/inference/go/google/v1beta/models/g-1:streamGenerateContent?alt=sse", headers: [["x-goog-api-key", "<REDACTED:x-goog-api-key>"]], body: '{"contents":[]}' }, "tok");
+    expect(gemini).toEqual({ target: "/gemini/v1beta/models/opencode-go%2Fg-1:streamGenerateContent?alt=sse", headers: [["x-goog-api-key", "tok"]], body: '{"contents":[]}' });
+    expect(() => map("https://opencode.ai/inference/openai/v1/embeddings")).toThrow("no proxy route for the OpenCode request /inference/openai/v1/embeddings");
+    expect([cell.isCounterpart!("/inference/go/openai/v1/responses"), cell.isCounterpart!("/inference/go/v1/models"), cell.isCounterpart!("/console/api/v2/config")]).toEqual([true, false, false]);
+    expect(cell.daemon!.providers).toBe("  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");
+  });
+
+  test("identity patterns of the manifest are masked on both sides: the OpenCode workspace id and its redacted mark compare equal", () => {
+    expect(maskString("wrk_01PARITYPARITYPARITYPARITY")).toBe(REDACTED);
+    expect(maskString("<REDACTED:workspace>")).toBe(REDACTED);
+    expect(maskString("see ada@example.org")).toBe(`see ${REDACTED}`);
+  });
 });
 
 describe("report", () => {

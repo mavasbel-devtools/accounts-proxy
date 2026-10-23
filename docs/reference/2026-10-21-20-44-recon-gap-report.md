@@ -81,8 +81,7 @@ counter), `request.contents` (including `functionCall` / `functionResponse` in m
 
 ## 5. Not covered here
 
-- **opencode**: the proxy's opencode cells need a Console sign-in the e2e harness does not create; its parity cell is
-  the next one to add.
+- **opencode**: covered since 2026-10-22 (§7): the parity daemon gets a test Console sign-in (`cells.ts` `daemon`).
 - **TLS**: the ClientHello (JA3/JA4) is recorded on plane A since R2; plane B goes to a loopback HTTP tap, so the
   proxy's TLS fingerprint is not compared yet.
 - **HTTP version**: both captured clients used HTTP/1.1 to these hosts; the proxy's loopback leg is HTTP/1.1 as well.
@@ -453,3 +452,189 @@ Antigravity speaks the Cloud Code envelope itself; a Gemini client of the proxy 
 | 32 | body-missing | `/request/tools/11` | `893 chars, sha256 cb10c0aa72e6: {"functionDeclarations":[{"name":"search_web","description":"Performs a web sear…` | — |
 | 33 | body-missing | `/request/tools/12` | `2553 chars, sha256 48021d626d46: {"functionDeclarations":[{"name":"view_file","description":"View the contents of…` | — |
 | 34 | body-missing | `/request/tools/13` | `2646 chars, sha256 588f7ddf8a6b: {"functionDeclarations":[{"name":"write_to_file","description":"Use this tool to…` | — |
+
+## 7. OpenCode v2.1.1 (`opencode` and `opencode-go` cells)
+
+Added 2026-10-22 (plan [§23](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md#23-amendment--opencode-v211-parity-2026-10-22-2219)).
+Recordings: `bun scripts/recon/cli.ts workflow opencode <turn|turn-tools|multiturn> --model=<provider>/<model>` in the
+opencode profile sandbox (isolation probe `clean`, guard `unchanged` on every run). One conversation per endpoint
+family is committed under `tests/fixtures/captures/recon-parity/opencode-2.1.1/` and replayed by `bun run verify`.
+
+The comparison maps OpenCode's request to the proxy's route for its format: OpenCode's own headers in its order, the
+proxy token in the captured credential header, the model named `opencode/<model>` or `opencode-go/<model>`. The
+workspace header `x-opencode-org-id` is left out of the input (OpenCode adds it on its own Console providers only; the
+proxy adds the signed-in workspace's), and so are the hop headers Bun sets on both sides. The workspace id is
+redacted by a new manifest pattern (`identityPatterns` `workspace`, `wrk_` + 26) and masked on both sides.
+
+| # | Gap | Evidence | Resolution |
+|---|---|---|---|
+| O1 | Go addresses: OpenCode posts to `/inference/go/openai/v1/{chat/completions,responses}`, `/inference/go/anthropic/v1/messages` and `/inference/go/google/v1beta/models/<model>:streamGenerateContent`; the proxy posted to `/inference/go/v1/…` and had no Go Gemini route | `opencode/2026-10-23-03-50-16/workflow` seq 2 | `GO_SPEC` uses the same four families as Zen under `/inference/go/` (models.opencode.ai `api` per package states the same addresses) |
+| O2 | OpenCode's own headers not forwarded: `b3`, `traceparent`, `x-opencode-client`, `x-opencode-project`, `x-opencode-session-id`, `x-session-affinity`, `x-session-id` (7 per request); source `packages/core/src/session/model-request.ts:281-292` at opencode tag v2.1.1 also names `x-opencode-parent-session-id` and `x-parent-session-id` for child sessions | seq 2 | forwarded as sent when present (`CLIENT_HEADERS`); never invented |
+| O3 | `accept`: OpenCode sets none, its HTTP stack sends `Accept: */*` after `Connection`; the proxy forwarded the client's `accept` first in the header list | seq 2 | `forwardAccept: false` on both specs: Bun's own `Accept: */*` then goes on the wire in the same place |
+| O4 | Gemini key header: OpenCode sends `x-goog-api-key`, the proxy sent `Authorization: Bearer` | `opencode/2026-10-23-03-51-14/workflow` seq 2 | `Endpoint.keyHeader: "x-goog-api-key"` on the Gemini endpoints |
+| O5 | Model list: OpenCode never reads the gateway's `GET /inference[/go]/v1/models` (0 of the opencode runs); it loads models.opencode.ai `api.json` and the Console `api/v2/config` | every opencode run | the lists are the reference catalog's `opencode` / `opencode-go` providers (124 / 31 built-in); the gateway list is no longer read |
+
+| Capture run | Seq | Endpoint | Differences (before) | Differences (after) |
+|---|---|---|---|---|
+| `opencode/2026-10-23-03-50-16/workflow` (turn-tools, `opencode-go/minimax-m3.1-flash`) | 2, 3, 4 | Go Chat, Go Responses (title), Go Chat (tool result) | 9, 9, 9 | **0, 0, 0** |
+| `opencode/2026-10-23-03-50-40/workflow` (multiturn, `opencode-go/gpt-6-luna`) | 2, 4 | Go Responses | 9, 9 | **0, 0** |
+| `opencode/2026-10-23-03-51-02/workflow` (multiturn, `opencode-go/claude-haiku-5-5`) | 2, 4 | Go Messages | 9, 9 | **0, 0** |
+| `opencode/2026-10-23-03-55-59/workflow` (turn, `opencode-go/gemini-4-argon-contributor`) | 3, 4 | Go Gemini, Go Responses | not measured (recorded after the fix began) | **0, 0** |
+| `opencode/2026-10-23-03-51-14/workflow` (turn, `opencode/gemini-3.5-flash`) | 2, 3 | Zen Gemini, Zen Responses | 10, 8 | **0, 0** |
+| `opencode/2026-10-23-03-51-20/workflow` (turn, `opencode/claude-haiku-5-5`) | 2, 3 | Zen Messages, Zen Responses | 8, 8 | **0, 0** |
+
+Before: the 9 Go differences were O1 (path), the seven O2 headers and the O3 order; Zen 8 were the O2 headers and O3;
+the Zen Gemini 10 added O4 (`x-goog-api-key` missing, `authorization` extra). Further recorded runs compared with
+0 differences after the fix and are not committed: `-03-50-10`, `-03-50-24`, `-03-50-33`, `-03-50-49`, `-03-50-55`,
+`-03-51-25` (14 requests).
+
+Not compared: the Console `api/v2/config` and models.opencode.ai reads OpenCode makes at every start (control plane,
+option A), and the free models: `opencode/deepseek-v4.1-flash-free` and `opencode/glm-5.3-flash-free` answered 429
+`FreeUsageLimitError` on 2026-10-22, and `opencode-go/minimax-m3.1-flash-free` is not in the account's model list
+("Model unavailable"), so no free-model turn was recorded on v2.1.1.
+
+### Generated results (OpenCode)
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-50-16/workflow` seq 2
+
+Client request: `https://opencode.ai/inference/go/openai/v1/chat/completions` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-50-16/workflow` seq 3
+
+Client request: `https://opencode.ai/inference/go/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-50-16/workflow` seq 4
+
+Client request: `https://opencode.ai/inference/go/openai/v1/chat/completions` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-50-40/workflow` seq 2
+
+Client request: `https://opencode.ai/inference/go/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-50-40/workflow` seq 4
+
+Client request: `https://opencode.ai/inference/go/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-02/workflow` seq 2
+
+Client request: `https://opencode.ai/inference/go/anthropic/v1/messages` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-02/workflow` seq 4
+
+Client request: `https://opencode.ai/inference/go/anthropic/v1/messages` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-55-59/workflow` seq 3
+
+Client request: `https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:streamGenerateContent` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-55-59/workflow` seq 4
+
+Client request: `https://opencode.ai/inference/go/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-14/workflow` seq 2
+
+Client request: `https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash:streamGenerateContent` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-14/workflow` seq 3
+
+Client request: `https://opencode.ai/inference/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-20/workflow` seq 2
+
+Client request: `https://opencode.ai/inference/anthropic/v1/messages` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-23-03-51-20/workflow` seq 3
+
+Client request: `https://opencode.ai/inference/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
+
+OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+

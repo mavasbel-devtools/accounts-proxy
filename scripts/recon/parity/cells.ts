@@ -12,11 +12,23 @@ export type ProxyInput = {
 
 export type Cell = {
   readonly client: string;
-  /** The upstream path of the proxy's counterpart request. */
+  /** The upstream path of the proxy's counterpart request (described in reports). */
   readonly upstreamPath: string;
+  /**
+   * Whether a request the proxy sent upstream is the counterpart of the captured one; absent: its path equals
+   * `upstreamPath`. A cell whose client uses several endpoints matches by family, so a wrong path is a reported gap.
+   */
+  readonly isCounterpart?: (path: string) => boolean;
   /** Plain-language statement of what the mapping changes, printed in every report. */
   readonly mapping: string;
   readonly input: (captured: WireRequest, token: string) => ProxyInput;
+  /** What the signed-in parity daemon needs beyond its Claude and Antigravity sign-ins. */
+  readonly daemon?: {
+    /** `providers:` entries appended to the daemon's proxy.yaml. */
+    readonly providers: string;
+    /** Account files placed in the data directory before the daemon starts (a test account, never a real one). */
+    readonly accountFiles: Readonly<Record<string, unknown>>;
+  };
   /** Transport residual headers or ordering differences precluded by runtime language difference (Go vs Bun). */
   readonly ignoreHeaders?: ReadonlySet<string>;
 };
@@ -72,7 +84,75 @@ const antigravity: Cell = {
   ignoreHeaders: new Set(["transfer-encoding", "connection", "accept", "content-length", "header-order"]),
 };
 
-export const CELLS: Readonly<Record<string, Cell>> = { claude, antigravity };
+/** OpenCode's own request headers that a client of the proxy sends it too; the workspace header is the proxy's. */
+const OPENCODE_WORKSPACE_HEADER = "x-opencode-org-id";
+/** OpenCode's credential header per endpoint family (captured: Bearer on Chat, Responses and Messages; Gemini's key). */
+const OPENCODE_KEY_HEADERS = new Set(["authorization", "x-goog-api-key"]);
+
+/** The proxy route and model name for one captured OpenCode inference URL (Zen or Go, four families). */
+function opencodeTarget(url: URL, body: Record<string, unknown>): { readonly target: string; readonly body: Record<string, unknown> } {
+  const provider = url.pathname.startsWith("/inference/go/") ? "opencode-go" : "opencode";
+  const gemini = /\/google\/v1beta\/models\/([^/:]+):([A-Za-z]+)$/.exec(url.pathname);
+  if (gemini !== null) {
+    return { target: `/gemini/v1beta/models/${encodeURIComponent(`${provider}/${decodeURIComponent(gemini[1]!)}`)}:${gemini[2]!}${url.search}`, body };
+  }
+  const family = /\/(openai\/v1\/chat\/completions|openai\/v1\/responses|anthropic\/v1\/messages)$/.exec(url.pathname)?.[1];
+  if (family === undefined) throw new Error(`no proxy route for the OpenCode request ${url.pathname}`);
+  const prefix = family.startsWith("anthropic/") ? "/anthropic" : "/openai";
+  return { target: `${prefix}/${family.slice(family.indexOf("/") + 1)}`, body: { ...body, model: `${provider}/${String(body["model"])}` } };
+}
+
+const opencode: Cell = {
+  client: "opencode",
+  upstreamPath: "/inference/…",
+  isCounterpart: (path) => path.startsWith("/inference/") && !path.endsWith("/models"),
+  mapping:
+    "OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format " +
+    "(`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) " +
+    "with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the " +
+    "captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` " +
+    "(OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop " +
+    "headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on " +
+    "both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.",
+  daemon: {
+    providers: "  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n",
+    accountFiles: {
+      "accounts-opencode.json": {
+        activeId: "parity/workspace",
+        accounts: [
+          {
+            provider: "opencode",
+            id: "parity/workspace",
+            label: "parity",
+            data: {
+              accessToken: "parity-console-access",
+              refreshToken: "parity-console-refresh",
+              expiresAt: 4_102_444_800_000,
+              orgId: "wrk_01PARITYPARITYPARITYPARITY",
+              workspaceHeaders: { opencode: { "x-opencode-org-id": "wrk_01PARITYPARITYPARITYPARITY" }, "opencode-go": { "x-opencode-org-id": "wrk_01PARITYPARITYPARITYPARITY" } },
+            },
+          },
+        ],
+      },
+    },
+  },
+  input(captured, token) {
+    const url = new URL(captured.url);
+    const mapped = opencodeTarget(url, parse(captured.body));
+    return {
+      target: mapped.target,
+      headers: captured.headers
+        .filter(([name]) => !HOP.has(name.toLowerCase()) && name.toLowerCase() !== OPENCODE_WORKSPACE_HEADER && name.toLowerCase() !== "accept")
+        .map(([name, value]) => {
+          if (!OPENCODE_KEY_HEADERS.has(name.toLowerCase())) return [name, value] as const;
+          return [name, name.toLowerCase() === "authorization" ? `Bearer ${token}` : token] as const;
+        }),
+      body: JSON.stringify(mapped.body),
+    };
+  },
+};
+
+export const CELLS: Readonly<Record<string, Cell>> = { claude, antigravity, opencode };
 
 export function cellFor(client: string): Cell {
   const cell = CELLS[client];

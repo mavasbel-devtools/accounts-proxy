@@ -55,7 +55,7 @@ export class GatewayProvider extends ProviderPort {
     const response = await this.transport.send({
       method: "POST",
       url: call.url,
-      headers: { ...headers, ...call.headers, ...keyHeaders(key) },
+      headers: { ...headers, ...call.headers, ...keyHeaders(key, call.keyHeader) },
       body: call.body,
       signal: request.signal,
     });

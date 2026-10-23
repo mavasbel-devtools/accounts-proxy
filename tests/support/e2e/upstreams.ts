@@ -271,10 +271,6 @@ export class ReplayUpstreams {
         return this.generate(parsed);
       case "/api/v1/models":
         return json(spec("openrouter-models.json"));
-      case "/inference/v1/models":
-        return json(spec("opencode-zen-models.json"));
-      case "/inference/go/v1/models":
-        return json(spec("opencode-go-models.json"));
       case "/console/auth/device/code":
         return consoleCapture("console/c2-device-flow.json", 0);
       case "/console/auth/device/token":

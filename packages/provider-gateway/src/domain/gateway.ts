@@ -7,10 +7,14 @@ import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.
 import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
 import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 
-/** Every gateway takes its key as `Authorization: Bearer <key>` (R1, C1, Z14). */
+/** The request header that carries a gateway key: `Authorization: Bearer <key>` (R1, C1, Z14) or Gemini's own key header. */
+export type KeyHeader = "authorization" | "x-goog-api-key";
+
 export type Endpoint = {
   /** Path under the spec's `apiBase`; for `gemini`, the prefix `/<model>:<method>` is appended to. */
   readonly path: string;
+  /** Absent: `authorization` (Bearer). */
+  readonly keyHeader?: KeyHeader;
 };
 
 export type GatewaySpec = {
@@ -29,6 +33,11 @@ export type GatewaySpec = {
   readonly headers?: Readonly<Record<string, string>>;
   /** Client request headers forwarded as they are, when present (OpenCode's `x-opencode-session`, Z15). */
   readonly forwardHeaders?: readonly string[];
+  /**
+   * Absent or true: the client's `accept` is forwarded (G2). False when the client the provider stands for never sets
+   * one: the HTTP stack's default then goes on the wire in its own place (OpenCode, recon gap O3).
+   */
+  readonly forwardAccept?: boolean;
   /**
    * The vendor's per-conversation session header (OpenCode's `x-opencode-session`, Z24): when the client did not send it,
    * the proxy sends the conversation's own id, else a stable id derived from the conversation's first user turn.
@@ -53,6 +62,8 @@ export type UpstreamCall = {
   /** Every request header except the key (G2). */
   readonly headers: Readonly<Record<string, string>>;
   readonly body: string;
+  /** The endpoint's key header. */
+  readonly keyHeader: KeyHeader;
 };
 
 const GEMINI_METHODS = ["generateContent", "streamGenerateContent"];
@@ -62,7 +73,9 @@ const GEMINI_ROUTE = /^\/v1beta\/models\/.+:([A-Za-z]+)$/;
 export function upstreamCall(spec: GatewaySpec, model: string, request: RawRequest): UpstreamCall {
   const endpoint = endpointFor(spec, request);
   const headers: Record<string, string> = { ...spec.headers, "content-type": "application/json" };
-  const forwarded = request.format === "anthropic-messages" ? ["accept", "anthropic-version", "anthropic-beta"] : ["accept"];
+  const accept = spec.forwardAccept === false ? [] : ["accept"];
+  const forwarded = request.format === "anthropic-messages" ? [...accept, "anthropic-version", "anthropic-beta"] : accept;
+  const keyHeader = endpoint.keyHeader ?? "authorization";
   for (const name of [...forwarded, ...(spec.forwardHeaders ?? [])]) {
     const value = request.headers[name];
     if (value !== undefined) headers[name] = value;
@@ -75,11 +88,11 @@ export function upstreamCall(spec: GatewaySpec, model: string, request: RawReque
     const method = GEMINI_ROUTE.exec(request.path)![1]!;
     const alt = request.query["alt"];
     const url = `${spec.apiBase}${endpoint.path}/${encodeURIComponent(model)}:${method}${alt !== undefined ? `?alt=${encodeURIComponent(alt)}` : ""}`;
-    return { url, headers, body: request.body };
+    return { url, headers, body: request.body, keyHeader };
   }
   // The route handler forwards only a JSON object with a string `model` on these formats.
   const parsed = parseJsonBody(request.body) as JsonObject;
-  return { url: `${spec.apiBase}${endpoint.path}`, headers, body: JSON.stringify({ ...parsed, model }) };
+  return { url: `${spec.apiBase}${endpoint.path}`, headers, body: JSON.stringify({ ...parsed, model }), keyHeader };
 }
 
 function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
@@ -101,9 +114,9 @@ function endpointFor(spec: GatewaySpec, request: RawRequest): Endpoint {
   return endpoint;
 }
 
-/** The key's request header (R1, C1, Z14). */
-export function keyHeaders(key: string): Record<string, string> {
-  return { authorization: `Bearer ${key}` };
+/** The key's request header (R1, C1, Z14; `x-goog-api-key` where the endpoint takes Gemini's key header). */
+export function keyHeaders(key: string, header: KeyHeader): Record<string, string> {
+  return header === "authorization" ? { authorization: `Bearer ${key}` } : { [header]: key };
 }
 
 /** G3: the status and body pass through; these response headers reach the client. */

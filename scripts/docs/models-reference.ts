@@ -58,8 +58,8 @@ const LIST_SOURCE: Readonly<Record<string, { readonly from: string; readonly dae
   antigravity: { from: "the committed capture `tests/fixtures/captures/p0-live/e5/fetch-available-models.json` (live answer of 2026-10-12; Antigravity has no built-in list)", daemon: "24, live" },
   openai: { from: "the built-in list `STATIC_CATALOG` (`packages/provider-openai/src/domain/catalog.ts`; no account in the generation)", daemon: "7, stored copy" },
   openrouter: { from: "the committed vendor list `docs/reference/specs/openrouter-models.json`", daemon: "467, stored copy" },
-  opencode: { from: "the committed vendor list `docs/reference/specs/opencode-zen-models.json`", daemon: "88, stored copy" },
-  "opencode-go": { from: "the committed vendor list `docs/reference/specs/opencode-go-models.json`", daemon: "37, stored copy" },
+  opencode: { from: "the reference catalog's `opencode` provider (`docs/reference/specs/models-opencode-reference.json`; recon gap O5: the list OpenCode itself loads)", daemon: "88, stored copy" },
+  "opencode-go": { from: "the reference catalog's `opencode-go` provider (`docs/reference/specs/models-opencode-reference.json`; recon gap O5)", daemon: "37, stored copy" },
   "cheaper-inference": { from: "the committed vendor list `docs/reference/specs/cheaper-inference-public-models.json`", daemon: "91, stored copy" },
 };
 

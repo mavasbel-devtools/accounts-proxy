@@ -19,37 +19,32 @@ class Hash extends HashPort {
 }
 
 const CONSOLE = "http://gw/console";
-const LIST = JSON.stringify({ object: "list", data: [{ id: "big-pickle" }, { id: "new" }] });
 /** The Console API page's config example (opencode-console-api.html "Workspace config"). */
 const CONFIG = JSON.stringify({ providers: { opencode: { name: "OpenCode", headers: { "x-opencode-org-id": "org_..." }, models: { "kimi-k2.6": { name: "Kimi K2.6" } } } } });
 const AUTHORIZATION: DeviceAuthorization = { deviceCode: "dc", userCode: "U", verificationUrl: "http://gw/console/device", intervalMs: 5000, expiresInMs: 600_000 };
 const TOKENS: ConsoleTokens = { accessToken: "at", refreshToken: "rt", expiresAt: 1_800_000_000_000 + 3_600_000, orgId: "org_1" };
 
 class Reference extends ModelReferencePort {
+  constructor(private readonly source: ReferenceListing["source"] = "live") {
+    super();
+  }
   async reference(): Promise<ReferenceListing> {
-    return { source: "live", catalog: new Map([["opencode", new Map([["big-pickle", { name: "Big Pickle", aiSdkPackage: "@ai-sdk/openai-compatible" }]])]]) };
+    return { source: this.source, catalog: new Map([["opencode", new Map([["big-pickle", { name: "Big Pickle", aiSdkPackage: "@ai-sdk/openai-compatible" }], ["new", {}]])]]) };
   }
 }
 
-describe("OpencodeCatalogSource (Z4, Z5, Z12, Z13)", () => {
-  test("the Console's ids with the reference catalog's formats; a model it does not know keeps none (Z6)", async () => {
-    const transport = new ScriptedTransport(() => ({ status: 200, body: LIST }));
-    const source = new OpencodeCatalogSource("opencode", transport, new Reference(), "http://gw/inference");
-    expect(await source.fetch()).toEqual([
+describe("OpencodeCatalogSource (Z5, recon gap O5)", () => {
+  test("the reference catalog's ids and formats, as OpenCode loads them; a model without a known package keeps none (Z6)", async () => {
+    expect(await new OpencodeCatalogSource("opencode", new Reference()).fetch()).toEqual([
       { id: "big-pickle", displayName: "big-pickle", formats: ["openai-chat"] },
       { id: "new", displayName: "new" },
     ]);
-    expect(transport.requests.map((r) => [r.url, r.headers])).toEqual([["http://gw/inference/v1/models", { accept: "application/json" }]]);
+    await expect(new OpencodeCatalogSource("opencode-go", new Reference()).fetch()).rejects.toThrow("the reference model catalog has no opencode-go provider");
   });
 
-  test("the Console list failing fails the fetch; Go has no reference entries here", async () => {
-    const down = new ScriptedTransport(() => ({ status: 500 }));
-    await expect(new OpencodeCatalogSource("opencode-go", down, new Reference(), "http://gw/inference/go").fetch()).rejects.toThrow("GET http://gw/inference/go/v1/models HTTP 500");
-    const up = new ScriptedTransport(() => ({ status: 200, body: LIST }));
-    expect(await new OpencodeCatalogSource("opencode-go", up, new Reference(), "http://gw/inference/go").fetch()).toEqual([
-      { id: "big-pickle", displayName: "big-pickle" },
-      { id: "new", displayName: "new" },
-    ]);
+  test("a stored reference is the list; only the reference's built-in copy fails the fetch, so the gateway catalog uses its own stored or built-in copy", async () => {
+    expect(await new OpencodeCatalogSource("opencode", new Reference("cache")).fetch()).toHaveLength(2);
+    await expect(new OpencodeCatalogSource("opencode", new Reference("static")).fetch()).rejects.toThrow("the reference model catalog is unavailable (built-in copy only)");
   });
 });
 

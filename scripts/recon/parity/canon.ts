@@ -38,8 +38,18 @@ const EPOCH_MS = /(?<![0-9])1[0-9]{12}(?![0-9])/g;
 const INT64 = /^-?[0-9]{15,20}$/;
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
-type Manifest = { readonly credentialHeaders: readonly string[]; readonly credentialFields: readonly string[]; readonly identityFields: readonly string[] };
+type Manifest = {
+  readonly credentialHeaders: readonly string[];
+  readonly credentialFields: readonly string[];
+  readonly identityFields: readonly string[];
+  readonly identityPatterns: readonly { readonly name: string; readonly regex: string }[];
+};
 const manifest = JSON.parse(readFileSync(join(import.meta.dir, "..", "shared", "redaction.json"), "utf8")) as Manifest;
+/**
+ * The manifest's identity patterns (an e-mail, the organisation in a path, the OpenCode workspace id) are masked on
+ * both sides too: the capture holds the redacted mark, the proxy the test account's own value.
+ */
+const IDENTITY_PATTERNS = manifest.identityPatterns.map(({ regex }) => new RegExp(regex, "g"));
 const CREDENTIAL_HEADERS = new Set(manifest.credentialHeaders.map((name) => name.toLowerCase()));
 /**
  * Fields that name a person, an install or a secret are compared by presence and type only, on both sides: a capture
@@ -56,8 +66,9 @@ const MESSAGE_ID = /\bmsg_[A-Za-z0-9]{16,}\b/g;
 const TRANSPORT_VALUE_HEADERS = new Set(["host", "content-length"]);
 
 /** A string value with per-run parts named instead of compared. */
-export function maskString(value: string): string {
-  if (REDACTED_MARK.test(value)) return REDACTED;
+export function maskString(raw: string): string {
+  const value = IDENTITY_PATTERNS.reduce((text, pattern) => text.replace(pattern, REDACTED), raw);
+  if (value === REDACTED || REDACTED_MARK.test(value)) return REDACTED;
   if (ISO_TIME.test(value)) return "<iso-time>";
   if (INT64.test(value)) return "<int64>";
   return value.replace(UUID, "<uuid>").replace(EPOCH_MS, "<epoch-ms>").replace(MESSAGE_ID, "<message-id>").replace(/<REDACTED:[^>]*>/g, REDACTED);

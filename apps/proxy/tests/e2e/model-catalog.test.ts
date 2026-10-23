@@ -110,7 +110,11 @@ describe("detailed model list and opencode configuration", () => {
     expect([unknown.status, await unknown.json()]).toEqual([400, { error: { code: "invalid_request", message: 'unknown provider "nope"' } }]);
     // A model whose lists state no limits has none in the Anthropic list either.
     const anthropic = (await (await fetch(`${daemon.url}/anthropic/v1/models`, { headers: { "x-api-key": token } })).json()) as { data: { id: string; max_input_tokens: number | null; max_tokens: number | null }[] };
-    expect(anthropic.data.filter((m) => m.max_input_tokens === null && m.max_tokens === null).map((m) => m.id)).toContain("opencode/jev-1.13");
+    expect(anthropic.data.filter((m) => m.max_input_tokens === null && m.max_tokens === null).map((m) => m.id)).toContain("openai/gpt-5.5-fast");
+    // The same model in the Gemini list: no limits stated.
+    const geminiList = (await (await fetch(`${daemon.url}/gemini/v1beta/models`, { headers: { "x-goog-api-key": token } })).json()) as { models: Record<string, unknown>[] };
+    const limits = geminiList.models.find((m) => m["name"] === "models/openai/gpt-5.5-fast")!;
+    expect([limits["inputTokenLimit"], limits["outputTokenLimit"]]).toEqual([undefined, undefined]);
     const posted = await fetch(`${daemon.url}/proxy/v1/models`, { method: "POST", headers: auth });
     expect([posted.status, await posted.json()]).toEqual([404, { error: { code: "not_found", message: "no route POST /proxy/v1/models" } }]);
     const missing = await fetch(`${daemon.url}/proxy/v1/models?provider=antigravity`, { headers: auth });
@@ -195,11 +199,11 @@ describe("detailed model list and opencode configuration", () => {
     expect(config.providers["ap-opencode"]!.models["edge-xai"]).toBeUndefined();
     expect(Object.values(config.providers["ap-antigravity"]!.models).every((m) => m.variants.length === 0)).toBe(true);
 
-    // A document without the provider: the live list's models get no formats from it.
+    // A document without the provider (O5: the provider's list is the reference's): the built-in list answers.
     for (const stored of ["model-reference.json", "opencode/model-catalog.json"]) unlinkSync(join(home.dir, "state", stored));
     upstreams.script("/api.json", () => Response.json({ anthropic: JSON.parse(spec("models-opencode-reference.json")).anthropic }));
-    const without = (JSON.parse((await run(["models", "opencode", "--json"])).stdout) as { catalogs: { models: { id: string; formats: string[] }[] }[] }).catalogs[0]!;
-    expect(without.models.find((m) => m.id === "opencode/big-pickle")!.formats).toEqual([]);
+    const without = (JSON.parse((await run(["models", "opencode", "--json"])).stdout) as { catalogs: { source: string; models: { id: string; formats: string[] }[] }[] }).catalogs[0]!;
+    expect([without.source, without.models.find((m) => m.id === "opencode/big-pickle")!.formats]).toEqual(["static", ["openai-chat"]]);
     // A defect while listing (an account file that is a directory) is never hidden as `unavailable`.
     unlinkSync(join(home.dir, "accounts-antigravity.json"));
     mkdirSync(join(home.dir, "accounts-antigravity.json"));
@@ -229,7 +233,6 @@ function scriptShapes(): void {
     { ...row, id: "edge-numbers", input_per_million: 1.5, output_per_million: 3, cache_read_per_million: null, cache_write_per_million: null },
   );
   upstreams.script("/public/models", () => json(cheaper));
-  const zen = JSON.parse(spec("opencode-zen-models.json")) as { data: Record<string, unknown>[] };
   const reference = JSON.parse(spec("models-opencode-reference.json")) as Record<string, { npm?: string; models: Record<string, unknown> }>;
   const anthropic = { provider: { npm: "@ai-sdk/anthropic" } };
   const edges: Record<string, unknown> = {
@@ -253,8 +256,6 @@ function scriptShapes(): void {
   };
   Object.assign(reference["opencode"]!.models, edges);
   delete reference["opencode-go"]!.npm;
-  for (const id of Object.keys(edges)) zen.data.push({ id, object: "model", created: 0, owned_by: "opencode" });
   upstreams.script("/api.json", () => json(reference));
-  upstreams.script("/inference/v1/models", () => json(zen));
 }
 

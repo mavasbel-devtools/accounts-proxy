@@ -1,0 +1,128 @@
+{
+  "schema": "recon-request/2",
+  "run": "opencode/2026-10-23-03-51-14/workflow",
+  "client": "opencode",
+  "clientVersion": "opencode v2.1.1",
+  "cell": "opencode",
+  "mode": "mitm",
+  "seq": 3,
+  "flowId": "28cbdc69-5a97-47f4-9cf4-3f0c3013d626",
+  "wallAtMs": 1792727477149,
+  "atMs": 1265,
+  "method": "POST",
+  "url": "https://opencode.ai/inference/openai/v1/responses",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Authorization",
+      "Bearer <REDACTED:authorization>"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "User-Agent",
+      "opencode/latest/2.1.1/cli"
+    ],
+    [
+      "b3",
+      "7b71eece12c21dc0fbd885e709d17c96-3a1bc4586ed13fe9-1-667bc6c101cf8612"
+    ],
+    [
+      "traceparent",
+      "00-7b71eece12c21dc0fbd885e709d17c96-3a1bc4586ed13fe9-01"
+    ],
+    [
+      "x-opencode-client",
+      "cli"
+    ],
+    [
+      "x-opencode-org-id",
+      "<REDACTED:workspace>"
+    ],
+    [
+      "x-opencode-project",
+      "bc7447dce6aa45fd13129230dddc6abeb62cb974"
+    ],
+    [
+      "x-opencode-session",
+      "ses_e991d9792ffewuYx51NDUc2Hxj"
+    ],
+    [
+      "x-opencode-session-id",
+      "ses_e991d9792ffewuYx51NDUc2Hxj"
+    ],
+    [
+      "x-session-affinity",
+      "ses_e991d9792ffewuYx51NDUc2Hxj"
+    ],
+    [
+      "x-session-id",
+      "ses_e991d9792ffewuYx51NDUc2Hxj"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ],
+    [
+      "Host",
+      "opencode.ai"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip, deflate, br, zstd"
+    ],
+    [
+      "Content-Length",
+      "2559"
+    ]
+  ],
+  "trailers": [],
+  "clientConn": {
+    "id": "da23e8e7-2dde-40e3-9c44-13701df30636",
+    "peername": [
+      "127.0.0.1",
+      51772
+    ],
+    "sni": "opencode.ai",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": "http/1.1",
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "serverConn": {
+    "id": "fe53f409-2cb8-43fc-a155-37a80b9662ed",
+    "peername": [
+      "172.65.90.23",
+      443
+    ],
+    "sni": "opencode.ai",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": "http/1.1",
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "noise": false,
+  "truncated": false,
+  "originalBytes": 2559,
+  "bodyEncoding": "utf8",
+  "body": "{\"model\":\"gpt-6-luna\",\"input\":[{\"type\":\"message\",\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"\\\"Reply with the single word: ok\\\"\"}]}],\"instructions\":\"You are a title generator. You output ONLY a thread title. Nothing else.\\n\\n<task>\\nGenerate a brief title that would help the user find this conversation later.\\n\\nFollow all rules in <rules>\\nUse the <examples> so you know what a good title looks like.\\nYour output must be:\\n- A single line\\n- <=50 characters\\n- No explanations\\n</task>\\n\\n<rules>\\n- you MUST use the same language as the user message you are summarizing\\n- Title must be grammatically correct and read naturally - no word salad\\n- Never include tool names in the title (e.g. \\\"read tool\\\", \\\"bash tool\\\", \\\"edit tool\\\")\\n- Focus on the main topic or question the user needs to retrieve\\n- Vary your phrasing - avoid repetitive patterns like always starting with \\\"Analyzing\\\"\\n- When a file is mentioned, focus on WHAT the user wants to do WITH the file, not just that they shared it\\n- Keep exact: technical terms, numbers, filenames, HTTP codes\\n- Remove: the, this, my, a, an\\n- Never assume tech stack\\n- Never use tools\\n- NEVER respond to questions, just generate a title for the conversation\\n- The title should NEVER include \\\"summarizing\\\" or \\\"generating\\\" when generating a title\\n- DO NOT SAY YOU CANNOT GENERATE A TITLE OR COMPLAIN ABOUT THE INPUT\\n- Always output something meaningful, even if the input is minimal.\\n- If the user message is short or conversational (e.g. \\\"hello\\\", \\\"lol\\\", \\\"what's up\\\", \\\"hey\\\"):\\n  -> create a title that reflects the user's tone or intent (such as Greeting, Quick check-in, Light chat, Intro message, etc.)\\n</rules>\\n\\n<examples>\\n\\\"debug 500 errors in production\\\" -> Debugging production 500 errors\\n\\\"refactor user service\\\" -> Refactoring user service\\n\\\"why is app.js failing\\\" -> app.js failure investigation\\n\\\"implement rate limiting\\\" -> Rate limiting implementation\\n\\\"how do I connect postgres to my API\\\" -> Postgres API connection\\n\\\"best practices for React hooks\\\" -> React hooks best practices\\n\\\"@src/credential.ts can you add refresh token support\\\" -> Credential refresh token support\\n\\\"@utils/parser.ts this is broken\\\" -> Parser bug fix\\n\\\"look at @config.json\\\" -> Config review\\n\\\"@App.tsx add dark mode toggle\\\" -> Dark mode toggle in App\\n</examples>\",\"stream\":true,\"store\":false,\"prompt_cache_key\":\"ses_e991d9792ffewuYx51NDUc2Hxj\",\"include\":[\"reasoning.encrypted_content\"],\"reasoning\":{\"effort\":\"none\",\"summary\":\"auto\"},\"text\":{\"verbosity\":\"low\"}}",
+  "redactions": [
+    {
+      "where": "header",
+      "name": "authorization",
+      "rule": "credential-header"
+    },
+    {
+      "where": "body",
+      "name": "workspace",
+      "rule": "identity-pattern"
+    }
+  ],
+  "secretScan": "clean"
+}

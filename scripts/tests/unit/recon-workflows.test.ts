@@ -64,6 +64,19 @@ describe("workflow catalogue", () => {
     }
   });
 
+  test("--model names opencode's own model on every turn, but not on the unknown-model workflow; other clients refuse it", () => {
+    const argv = (id: string, model?: string) =>
+      workflowById("opencode", id, model === undefined ? {} : { model }).steps.map((step) => (step.action.kind === "exec" ? step.action.argv.slice(1) : []));
+    expect(argv("turn", "opencode/m1")).toEqual([["run", "--standalone", "--model", "opencode/m1", "Reply with the single word: ok"]]);
+    expect(argv("turn")).toEqual([["run", "--standalone", "Reply with the single word: ok"]]);
+    expect(argv("multiturn", "opencode-go/m2").map((step) => step.slice(0, 4))).toEqual([
+      ["run", "--standalone", "--model", "opencode-go/m2"],
+      ["run", "--standalone", "--model", "opencode-go/m2"],
+    ]);
+    expect(argv("error", "opencode/m1")[0]).toEqual(["run", "--standalone", "--model", "recon/not-a-model", "Reply with the single word: ok"]);
+    expect(() => workflowsFor("claude", { model: "x" })).toThrow(/take no --model/);
+  });
+
   test("unknown client or workflow fails loudly", () => {
     expect(() => workflowsFor("not-a-client")).toThrow();
     expect(() => workflowById("claude", "not-a-workflow")).toThrow(/unknown workflow/);

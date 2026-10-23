@@ -10,8 +10,7 @@ import {
   encodeDevice,
   GO_SPEC,
   isInvalidGrant,
-  opencodeModels,
-  referenceFormats,
+  referenceModels,
   parseDeviceAuthorization,
   parseTokens,
   pollError,
@@ -22,21 +21,29 @@ import {
 const spec = (file: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", file), "utf8"));
 
 describe("OpenCode Zen and Go rules", () => {
-  test("Z12–Z15, Z9, Z26: Console addresses, bearer everywhere, the client's User-Agent (else the proxy's) and x-opencode-session; Go has no Gemini route", () => {
+  test("Z12–Z15, Z9, Z26, recon O1–O4: OpenCode's own endpoints and key headers on Zen and Go, its own headers forwarded, no explicit accept", () => {
     expect([ZEN_SPEC.apiBase, GO_SPEC.apiBase]).toEqual(["https://opencode.ai/inference", "https://opencode.ai/inference/go"]);
-    expect(ZEN_SPEC.endpoints).toEqual({
-      "openai-chat": { path: "/openai/v1/chat/completions" },
-      "openai-responses": { path: "/openai/v1/responses" },
-      "anthropic-messages": { path: "/anthropic/v1/messages" },
-      gemini: { path: "/google/v1beta/models" },
-    });
-    expect(GO_SPEC.endpoints).toEqual({
-      "openai-chat": { path: "/v1/chat/completions" },
-      "openai-responses": { path: "/v1/responses" },
-      "anthropic-messages": { path: "/v1/messages" },
-    });
     for (const spec of [ZEN_SPEC, GO_SPEC]) {
-      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardHeaders]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "accounts-proxy/0.1.0" }, ["x-opencode-session", "user-agent"]]);
+      expect(spec.endpoints).toEqual({
+        "openai-chat": { path: "/openai/v1/chat/completions" },
+        "openai-responses": { path: "/openai/v1/responses" },
+        "anthropic-messages": { path: "/anthropic/v1/messages" },
+        gemini: { path: "/google/v1beta/models", keyHeader: "x-goog-api-key" },
+      });
+      expect([spec.requestIdHeader, spec.uniformFormats, spec.headers, spec.forwardAccept, spec.sessionHeader]).toEqual(["x-opencode-log-id", undefined, { "user-agent": "accounts-proxy/0.1.0" }, false, "x-opencode-session"]);
+      expect(spec.forwardHeaders).toEqual([
+        "user-agent",
+        "b3",
+        "traceparent",
+        "x-opencode-client",
+        "x-opencode-project",
+        "x-opencode-session",
+        "x-opencode-session-id",
+        "x-opencode-parent-session-id",
+        "x-session-affinity",
+        "x-session-id",
+        "x-parent-session-id",
+      ]);
     }
   });
 
@@ -45,26 +52,26 @@ describe("OpenCode Zen and Go rules", () => {
     expect(ZEN_SPEC.headers!["user-agent"]).toBe(`accounts-proxy/${pkg.version}`);
   });
 
-  test("Z4 + Z5: the committed lists and the reference catalog give the built-in lists", () => {
+  test("Z5, O5: the reference catalog alone gives the built-in lists, with each model's format", () => {
     const reference = parseReference(spec("models-opencode-reference.json"));
-    const zen = opencodeModels(spec("opencode-zen-models.json"), referenceFormats(reference, "opencode"));
-    const go = opencodeModels(spec("opencode-go-models.json"), referenceFormats(reference, "opencode-go"));
+    const zen = referenceModels(reference.get("opencode")!);
+    const go = referenceModels(reference.get("opencode-go")!);
     expect(zen).toEqual([...ZEN_BUILTIN]);
     expect(go).toEqual([...GO_BUILTIN]);
     expect(zen.find((m) => m.id === "big-pickle")).toEqual({ id: "big-pickle", displayName: "big-pickle", formats: ["openai-chat"] });
     // zen.mdx: Claude models on /messages, GPT on /responses, Gemini on /models/<id>, Mistral on /chat/completions.
     const format = (id: string) => zen.find((m) => m.id === id)?.formats;
-    expect([format("claude-haiku-4-5"), format("gpt-5.5"), format("gemini-3.6-flash"), format("mistral-large-4")]).toEqual([["anthropic-messages"], ["openai-responses"], ["gemini"], ["openai-chat"]]);
-    // Z6: a live id that the reference does not describe keeps no formats.
-    expect(zen.find((m) => m.id === "jev-1.13")).toEqual({ id: "jev-1.13", displayName: "jev-1.13" });
+    expect([format("claude-haiku-4-5"), format("gpt-5.5"), format("gemini-3.6-flash")]).toEqual([["anthropic-messages"], ["openai-responses"], ["gemini"]]);
   });
 
-  test("referenceFormats: the AI SDK package of each model, unknown packages and models without one left out", () => {
-    const reference = new Map([["opencode", new Map<string, ReferenceModel>([["a", { aiSdkPackage: "@ai-sdk/mistral" }], ["b", { aiSdkPackage: "@ai-sdk/unknown" }], ["c", {}]])]]);
-    expect([...referenceFormats(reference, "opencode")]).toEqual([["a", "openai-chat"]]);
-    expect(referenceFormats(reference, "opencode-go").size).toBe(0);
-    expect(opencodeModels({ data: [{ id: "x" }, { object: "model" }, "y"] }, new Map())).toEqual([{ id: "x", displayName: "x" }]);
-    expect(opencodeModels(null, new Map())).toEqual([]);
+  test("referenceModels: the AI SDK package of each model; unknown or absent packages keep no formats (Z6)", () => {
+    const entries = new Map<string, ReferenceModel>([["a", { aiSdkPackage: "@ai-sdk/mistral" }], ["b", { aiSdkPackage: "@ai-sdk/unknown" }], ["c", {}]]);
+    expect(referenceModels(entries)).toEqual([
+      { id: "a", displayName: "a", formats: ["openai-chat"] },
+      { id: "b", displayName: "b" },
+      { id: "c", displayName: "c" },
+    ]);
+    expect(referenceModels(new Map())).toEqual([]);
   });
 
 });

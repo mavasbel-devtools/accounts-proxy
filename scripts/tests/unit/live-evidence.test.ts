@@ -73,6 +73,13 @@ describe("Redactor", () => {
       uuid: "kept-1",
     });
 
+    // The OpenCode Console workspace id: a header value and the workspace config's provider headers (measured 2026-10-20).
+    const workspace = "wrk_01AAAAAAAAAAAAAAAAAAAAAAAA";
+    expect(redactor().text(`x-opencode-org-id: ${workspace}`)).toBe("x-opencode-org-id: <REDACTED:workspace>");
+    expect(JSON.parse(redactor().body(JSON.stringify({ providers: { "opencode-go": { headers: { "x-opencode-org-id": workspace } } } })))).toEqual({
+      providers: { "opencode-go": { headers: { "x-opencode-org-id": "<REDACTED:workspace>" } } },
+    });
+
     // `name` is a model name off a profile route: scoped redaction must not touch it.
     const model = JSON.stringify({ model: { name: "claude-opus-5-5" } });
     expect(redactor().body(model, "https://api.anthropic.com/v1/messages")).toBe(model);

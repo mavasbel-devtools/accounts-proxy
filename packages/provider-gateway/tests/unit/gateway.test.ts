@@ -38,7 +38,11 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
       url: "https://gw/v1/chat/completions",
       headers: { "content-type": "application/json", accept: "text/event-stream" },
       body: '{"model":"m","messages":[]}',
+      keyHeader: "authorization",
     });
+    // O3: a vendor whose client never sets `accept` leaves it to the HTTP stack.
+    const noAccept = upstreamCall({ ...SPEC, forwardAccept: false }, "m", raw({ format: "anthropic-messages", path: "/v1/messages", headers: { accept: "*/*", "anthropic-version": "2023-06-01" } }));
+    expect(noAccept.headers).toEqual({ "content-type": "application/json", "anthropic-version": "2023-06-01" });
   });
 
   test("Messages: the Anthropic version and beta headers travel; count_tokens only where the vendor has it", () => {
@@ -56,6 +60,10 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
     expect([call.url, call.body]).toEqual(["https://gw/v1/models/gemini-3.6-flash:streamGenerateContent?alt=sse", body]);
     expect(upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:generateContent", body })).url).toBe("https://gw/v1/models/g:generateContent");
     expect(() => upstreamCall(SPEC, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:countTokens", body }))).toThrow("opencode cannot carry: countTokens");
+    // O4: an endpoint may take Gemini's own key header.
+    const keyed = { ...SPEC, endpoints: { gemini: { path: "/models", keyHeader: "x-goog-api-key" as const } } };
+    expect(upstreamCall(keyed, "g", raw({ format: "gemini", path: "/v1beta/models/opencode/g:generateContent", body })).keyHeader).toBe("x-goog-api-key");
+    expect(call.keyHeader).toBe("authorization");
   });
 
   test("a vendor's own headers are sent; the client headers it names travel when present (Z15)", () => {
@@ -105,7 +113,8 @@ describe("upstreamCall (rules G1, G2, G4)", () => {
 
 describe("headers and formats", () => {
   test("keyHeaders: the key as a bearer token (R1, C1, Z14)", () => {
-    expect(keyHeaders("k")).toEqual({ authorization: "Bearer k" });
+    expect(keyHeaders("k", "authorization")).toEqual({ authorization: "Bearer k" });
+    expect(keyHeaders("k", "x-goog-api-key")).toEqual({ "x-goog-api-key": "k" });
   });
 
   test("forwardedResponseHeaders keeps content-type, retry-after and the vendor's request id (G3)", () => {

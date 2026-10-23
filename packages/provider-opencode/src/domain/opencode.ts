@@ -2,10 +2,10 @@
 // document 2026-10-12-15-35-gateway-provider-rules.md §3a, Z12–Z23; §3 Z4–Z6, Z8 and Z9 still hold). Pure.
 import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
 import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
-import type { ReferenceCatalog } from "@accounts-proxy/core/domain/model-details.ts";
+import type { ReferenceModel } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
 import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
-import { asArray, asObject, firstString, gatewayModel, positiveInteger, rowsWithId, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { asArray, asObject, firstString, gatewayModel, positiveInteger, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
 export type OpencodeProvider = Extract<ProviderId, "opencode" | "opencode-go">;
 export const OPENCODE_PROVIDERS: readonly OpencodeProvider[] = ["opencode", "opencode-go"];
@@ -26,44 +26,65 @@ export const CONFIG_PATH = "/api/v2/config";
 export const USER_AGENT = "accounts-proxy/0.1.0";
 /** Z15: the conversation id the client sends, forwarded as it is. */
 export const SESSION_HEADER = "x-opencode-session";
-/** Z26: the client's own User-Agent, forwarded as it is (the free models answer only OpenCode's own). */
-const CLIENT_HEADERS = [SESSION_HEADER, "user-agent"];
+/**
+ * Z26, recon gap O2: OpenCode's own request headers, forwarded as they are when the client sends them — its User-Agent
+ * (the free models answer only OpenCode's own), its trace context and its session, project and client ids (opencode
+ * v2.1.1 `packages/core/src/session/model-request.ts:281-292`; captured on every inference request,
+ * recon run opencode/2026-10-23-03-50-16). The proxy never invents them.
+ */
+const CLIENT_HEADERS = [
+  "user-agent",
+  "b3",
+  "traceparent",
+  "x-opencode-client",
+  "x-opencode-project",
+  SESSION_HEADER,
+  "x-opencode-session-id",
+  "x-opencode-parent-session-id",
+  "x-session-affinity",
+  "x-session-id",
+  "x-parent-session-id",
+];
 /** Z9: the gateway's request id response header. */
 const LOG_ID = "x-opencode-log-id";
 
-/** Z12, Z14: the Console serves Chat, Responses, Messages and Gemini; the credential is a bearer token everywhere. */
-export const ZEN_SPEC: GatewaySpec = {
-  provider: "opencode",
-  apiBase: `${OPENCODE_ORIGIN}/inference`,
-  endpoints: {
+/**
+ * Z12, Z14, recon gaps O1, O4: the endpoints and key headers OpenCode v2.1.1 uses (models.opencode.ai `api` per
+ * provider and package; captured in recon runs opencode/2026-10-23-03-50-* and -03-51-*): a bearer token on Chat,
+ * Responses and Messages, Gemini's `x-goog-api-key` on Gemini. Zen under `/inference/`, Go under `/inference/go/`.
+ */
+function consoleEndpoints(): GatewaySpec["endpoints"] {
+  return {
     "openai-chat": { path: "/openai/v1/chat/completions" },
     "openai-responses": { path: "/openai/v1/responses" },
     "anthropic-messages": { path: "/anthropic/v1/messages" },
-    gemini: { path: "/google/v1beta/models" },
-  },
+    gemini: { path: "/google/v1beta/models", keyHeader: "x-goog-api-key" },
+  };
+}
+
+export const ZEN_SPEC: GatewaySpec = {
+  provider: "opencode",
+  apiBase: `${OPENCODE_ORIGIN}/inference`,
+  endpoints: consoleEndpoints(),
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
   forwardHeaders: CLIENT_HEADERS,
+  forwardAccept: false,
   sessionHeader: SESSION_HEADER,
 };
 
-/** Z13, Z14: Go serves Chat, Responses and Messages (no Gemini route). */
+/** Z13 as amended by recon gap O1: Go serves the same four families under `/inference/go/` (Gemini included). */
 export const GO_SPEC: GatewaySpec = {
   provider: "opencode-go",
   apiBase: `${OPENCODE_ORIGIN}/inference/go`,
-  endpoints: {
-    "openai-chat": { path: "/v1/chat/completions" },
-    "openai-responses": { path: "/v1/responses" },
-    "anthropic-messages": { path: "/v1/messages" },
-  },
+  endpoints: consoleEndpoints(),
   requestIdHeader: LOG_ID,
   headers: { "user-agent": USER_AGENT },
   forwardHeaders: CLIENT_HEADERS,
+  forwardAccept: false,
   sessionHeader: SESSION_HEADER,
 };
 
-/** Z12, Z13: under each spec's apiBase. */
-export const MODELS_PATH = "/v1/models";
 /** Z5: the AI SDK package of a model → its format. */
 const NPM_FORMAT: ReadonlyMap<string, WireFormat> = new Map([
   ["@ai-sdk/openai", "openai-responses"],
@@ -74,27 +95,15 @@ const NPM_FORMAT: ReadonlyMap<string, WireFormat> = new Map([
 ]);
 
 /**
- * Z5: each model's format from the reference catalog's AI SDK package (the per-model `provider.npm`, else the
- * provider's `npm`). Since plan 2026-10-16 C3 the reference is models.opencode.ai, the catalog opencode v2 loads
- * (it was models.dev).
+ * Z5, recon gap O5: the provider's models are the reference catalog's entries for it (models.opencode.ai, the list
+ * OpenCode itself loads at every start, plan 2026-10-16 C3); OpenCode never reads the gateway's `GET /v1/models` (0 of
+ * the recon runs), so the proxy does not either. Each model's format comes from its AI SDK package (the per-model
+ * `provider.npm`, else the provider's `npm`; an unknown or absent package: formats unknown, Z6). The names, limits and
+ * the rest come from the same catalog when the list is described (rule M1).
  */
-export function referenceFormats(reference: ReferenceCatalog, provider: OpencodeProvider): ReadonlyMap<string, WireFormat> {
-  const out = new Map<string, WireFormat>();
-  for (const [id, model] of reference.get(provider) ?? []) {
+export function referenceModels(entries: ReadonlyMap<string, ReferenceModel>): GatewayModel[] {
+  return [...entries].map(([id, model]) => {
     const format = model.aiSdkPackage === undefined ? undefined : NPM_FORMAT.get(model.aiSdkPackage);
-    if (format !== undefined) out.set(id, format);
-  }
-  return out;
-}
-
-/**
- * Z4 + Z5: the gateway's live ids with their formats (others: formats unknown, Z6). The names, limits and the rest
- * come from the reference catalog when the model list is described (rule M1), not from the gateway's list.
- */
-export function opencodeModels(list: unknown, formats: ReadonlyMap<string, WireFormat>): GatewayModel[] {
-  return rowsWithId(asObject(list)["data"]).map((row) => {
-    const id = row["id"] as string;
-    const format = formats.get(id);
     return gatewayModel({ id, displayName: id, contextWindow: undefined, maxOutputTokens: undefined, createdSeconds: undefined, formats: format === undefined ? undefined : [format] });
   });
 }

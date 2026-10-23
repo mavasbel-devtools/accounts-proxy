@@ -511,6 +511,27 @@ def main() -> int:
             check("/organizations/<REDACTED:organization>/model_selector/cc" in org_record["url"], "organisation path redacted, route kept")
             check(json.loads(org_record["body"])["uuid"] == "kept-1", "unrelated uuid field kept")
 
+            # The OpenCode Console workspace id rides in a request header (measured 2026-10-20).
+            workspace = "wrk_01AAAAAAAAAAAAAAAAAAAAAAAA"
+            ws_request = http.Request(
+                "opencode.ai",
+                443,
+                b"POST",
+                b"https",
+                b"opencode.ai",
+                b"/inference/go/openai/v1/chat/completions",
+                b"HTTP/1.1",
+                headers=header_pairs([("content-type", "application/json"), ("x-opencode-org-id", workspace)]),
+                content=b"{}",
+                trailers=None,
+                timestamp_start=1,
+                timestamp_end=2,
+            )
+            addon.request(tflow.tflow(req=ws_request))
+            ws_record = latest(out, "-request.json")
+            check(workspace not in json.dumps(ws_record), "workspace id absent from the record")
+            check(["x-opencode-org-id", "<REDACTED:workspace>"] in ws_record["headers"], "workspace header redacted, name kept")
+
             # 7. transport error record.
             addon.error(tflow.tflow(err=True))
             check(latest(out, "-error.json")["error"] is not None, "transport error recorded")
@@ -518,7 +539,7 @@ def main() -> int:
             addon.done()
             index = read(out, "index.json")
             check(index["schema"] == "recon-index/2", "index schema")
-            check(index["counts"]["requests"] == 6 and index["counts"]["responses"] == 6, "index counts")
+            check(index["counts"]["requests"] == 7 and index["counts"]["responses"] == 6, "index counts")
             check(index["counts"]["aborted"] == 1, "index abort count")
             check(index["counts"]["clientClosed"] == 2, "index completed-after-close count")
             check(index["counts"]["connections"] == 1, "index connection count")

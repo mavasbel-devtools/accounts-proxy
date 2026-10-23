@@ -112,7 +112,7 @@ describe("the Console session (Z18, plan v4 Phase H)", () => {
   }
   const chat = (s: { url: string; token: string }) =>
     fetch(`${s.url}/openai/v1/chat/completions`, { method: "POST", headers: { authorization: `Bearer ${s.token}`, "content-type": "application/json", "x-opencode-session": "ses_e2e" }, body: JSON.stringify({ model: "opencode-go/glm-5.3-flash", messages: [{ role: "user", content: "hi" }] }) });
-  const lastInference = () => upstreams.find("/inference/go/v1/chat/completions").at(-1)!;
+  const lastInference = () => upstreams.find("/inference/go/openai/v1/chat/completions").at(-1)!;
 
   test("an expired device token is renewed (single-use refresh token, the workspace kept) before the request", async () => {
     const s = await serve();

@@ -10,7 +10,7 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 | **`openai`** | Sign in with ChatGPT, plan usage (browser) | OpenAI Responses | OpenAI Responses |
 | **`openrouter`** | OpenRouter PKCE (browser, yields an API key) | OpenRouter API | Chat, Responses and Anthropic Messages for every model |
 | **`opencode`** | OpenCode Console device login (browser + code), or a service-account key (`--key`); one account shared with `opencode-go` | `opencode.ai/inference` | per model: Responses (GPT, Grok), Messages (Claude, …), Gemini, Chat |
-| **`opencode-go`** | the `opencode` account (Go subscription of the same workspace) | `opencode.ai/inference/go/v1` | per model: Responses, Messages, Chat |
+| **`opencode-go`** | the `opencode` account (Go subscription of the same workspace) | `opencode.ai/inference/go` | per model: Responses, Messages, Chat, Gemini |
 | **`cheaper-inference`** | Cheaper Inference API key (hidden prompt) | `api.cheaperinference.com/v1` | per model: Chat, Responses, Messages (+ `count_tokens`) |
 
 > **Status: P4.6 with amendment A (OpenCode Console), live-validated; detailed model catalog, opencode configuration
@@ -85,7 +85,7 @@ the code inside `bun run verify`.
 | Anthropic Messages | native | — | — | native | native per model | native per model | native per model |
 | OpenAI Chat Completions | — | — | — | native | native per model | native per model | native per model |
 | OpenAI Responses | — | — | native | native | native per model | native per model | native per model |
-| Gemini generateContent | — | near-native | — | — | native per model | — | — |
+| Gemini generateContent | — | near-native | — | — | native per model | native per model | — |
 
 "Native per model": the models whose list entry names that format ([models](docs/reference/2026-10-17-19-26-models.md)).
 "—": 400 `unsupported_feature`.

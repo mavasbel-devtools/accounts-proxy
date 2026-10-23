@@ -53,8 +53,8 @@ describe("gateway catalogs (rule G5, live lists from the committed vendor lists)
     expect(listed.code).toBe(0);
     expect(listed.stdout.split("\n").filter((l) => l.startsWith("# "))).toEqual([
       "# openrouter: 459 models (live catalog)",
-      "# opencode: 84 models (live catalog)",
-      "# opencode-go: 38 models (live catalog)",
+      "# opencode: 124 models (live catalog)",
+      "# opencode-go: 31 models (live catalog)",
       "# cheaper-inference: 91 models (live catalog)",
     ]);
     // The reference catalog is read once (rule M4): the OpenCode formats and the details share it.
@@ -183,8 +183,9 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     expect([upstreams.find("/inference/anthropic/v1/messages")[0]!.headers["authorization"], upstreams.find("/inference/anthropic/v1/messages")[0]!.headers["x-api-key"]]).toEqual(["Bearer oc_sk_e2e", undefined]);
     const gemini = await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:streamGenerateContent?alt=sse`, { "x-goog-api-key": s.token }, { contents: [] });
     expect(gemini.status).toBe(401);
+    // Recon gap O4: Gemini's own key header, as OpenCode sends it.
     const google = upstreams.find("/inference/google/v1beta/models/gemini-3.6-flash:streamGenerateContent")[0]!;
-    expect([google.search, google.headers["authorization"]]).toEqual(["?alt=sse", "Bearer oc_sk_e2e"]);
+    expect([google.search, google.headers["x-goog-api-key"], google.headers["authorization"]]).toEqual(["?alt=sse", "oc_sk_e2e", undefined]);
     const translated = await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode/big-pickle", input: "hi" });
     expect([translated.status, ((await translated.json()) as { error: { code: string } }).error.code]).toEqual([400, "unsupported_feature"]);
     // Z6: a model models.dev does not describe is forwarded in the client's format.
@@ -193,12 +194,17 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     // Go (Z15): without x-opencode-session the Console's captured 400; Go's workspace headers are its own (none here).
     const bare = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: [] });
     expect([bare.status, ((await bare.json()) as { error: { type: string } }).error.type]).toEqual([400, "MissingSessionID"]);
-    const go = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_go" }, { model: "opencode-go/glm-5.3-flash", messages: [] });
+    // Recon gap O1: Go under `/inference/go/openai/v1/…`, the address OpenCode itself uses; OpenCode's own headers travel (O2).
+    const own = { b3: "t-s-1-p", traceparent: "00-t-s-01", "x-opencode-client": "cli", "x-opencode-project": "prj", "x-opencode-session-id": "ses_go", "x-session-affinity": "ses_go", "x-session-id": "ses_go", "x-other": "kept-out" };
+    const go = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_go", ...own }, { model: "opencode-go/glm-5.3-flash", messages: [] });
     expect(go.status).toBe(401);
-    const goSent = upstreams.find("/inference/go/v1/chat/completions").at(-1)!;
+    const goSent = upstreams.find("/inference/go/openai/v1/chat/completions").at(-1)!;
     expect([goSent.headers["x-opencode-session"], goSent.headers["x-opencode-org-id"], goSent.headers["authorization"], goSent.headers["user-agent"]]).toEqual(["ses_go", undefined, "Bearer oc_sk_e2e", `Bun/${Bun.version}`]);
+    expect(Object.keys(own).map((name) => goSent.headers[name])).toEqual([...Object.values(own).slice(0, -1), undefined]);
+    // Go's Gemini models (the reference catalog's `@ai-sdk/google` on opencode-go) go to Go's Gemini address.
     const goGemini = await post(`${s.url}/gemini/v1beta/models/opencode-go%2Fnew-model:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
-    expect([goGemini.status, ((await goGemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "opencode-go (no native endpoint for this format; the proxy does not translate between formats) cannot carry: gemini_format"]);
+    expect([goGemini.status, ((await goGemini.json()) as { error: { type: string } }).error.type]).toEqual([400, "MissingSessionID"]);
+    expect(upstreams.find("/inference/go/google/v1beta/models/new-model:generateContent").at(-1)!.headers["x-goog-api-key"]).toBe("oc_sk_e2e");
   });
 
   test("Z26: OpenCode's free models answer opencode through the proxy; another client or none gets the FreeTierError", async () => {
@@ -237,19 +243,19 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     const session = (path: string) => upstreams.find(path).at(-1)!.headers["x-opencode-session"];
     const turn = { role: "user", content: "hi" };
     await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: [{ role: "system", content: "s" }, turn] });
-    const first = session("/inference/go/v1/chat/completions");
+    const first = session("/inference/go/openai/v1/chat/completions");
     expect(first).toMatch(/^ap_[0-9a-f]{16}$/);
     // The next request of the same conversation (history resent) carries the same id; Go then answers as with a session.
     const next = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: [{ role: "system", content: "s" }, turn, { role: "assistant", content: "yo" }, { role: "user", content: "more" }] });
-    expect([next.status, session("/inference/go/v1/chat/completions")]).toEqual([401, first]);
+    expect([next.status, session("/inference/go/openai/v1/chat/completions")]).toEqual([401, first]);
     // Claude Code: the session of metadata.user_id (as captured from claude-cli 2.1.29).
     await post(`${s.url}/anthropic/v1/messages`, { "x-api-key": s.token }, { model: "opencode-go/qwen3.8-flash", max_tokens: 8, metadata: { user_id: "user_ab12_account__session_0fae6fcb-7a48-4def-941f-6e06af96c972" }, messages: [turn] });
-    expect(session("/inference/go/v1/messages")).toBe("0fae6fcb-7a48-4def-941f-6e06af96c972");
+    expect(session("/inference/go/anthropic/v1/messages")).toBe("0fae6fcb-7a48-4def-941f-6e06af96c972");
     // Responses: the client's prompt_cache_key (opencode sets its session affinity there); without one, the first user item.
     await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", prompt_cache_key: "ses_affinity", input: "hi" });
-    expect(session("/inference/go/v1/responses")).toBe("ses_affinity");
+    expect(session("/inference/go/openai/v1/responses")).toBe("ses_affinity");
     await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", input: [{ type: "function_call_output", call_id: "c", output: "o" }, { role: "user", content: "hi" }] });
-    expect(session("/inference/go/v1/responses")).toMatch(/^ap_[0-9a-f]{16}$/);
+    expect(session("/inference/go/openai/v1/responses")).toMatch(/^ap_[0-9a-f]{16}$/);
     // Gemini (Zen): the first role-less content; a body that is not a JSON object gets no id (the upstream decides).
     await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { "x-goog-api-key": s.token }, { contents: [{ parts: [{ text: "hi" }] }] });
     expect(session("/inference/google/v1beta/models/gemini-3.6-flash:generateContent")).toMatch(/^ap_[0-9a-f]{16}$/);
@@ -257,7 +263,7 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/glm-5.3-flash", messages: "hi" });
     await post(`${s.url}/openai/v1/responses`, { authorization: `Bearer ${s.token}` }, { model: "opencode-go/gpt-5.6-luna", input: 1 });
     await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { "x-goog-api-key": s.token }, { contents: "hi" });
-    expect([session("/inference/go/v1/chat/completions"), session("/inference/go/v1/responses"), session("/inference/google/v1beta/models/gemini-3.6-flash:generateContent")]).toEqual([undefined, undefined, undefined]);
+    expect([session("/inference/go/openai/v1/chat/completions"), session("/inference/go/openai/v1/responses"), session("/inference/google/v1beta/models/gemini-3.6-flash:generateContent")]).toEqual([undefined, undefined, undefined]);
     for (const body of ["[1]", "{"]) {
       await fetch(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { method: "POST", headers: { "x-goog-api-key": s.token, "content-type": "application/json" }, body });
     }
@@ -277,7 +283,7 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     writeKeyAccount("opencode", { accessToken: "console-access", refreshToken: "console-refresh", expiresAt: Date.now() + 3_600_000, orgId: "org_e2e", workspaceHeaders: headers });
     const go = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, "x-opencode-session": "ses_go" }, { model: "opencode-go/glm-5.3-flash", messages: [] });
     expect(go.status).toBe(401);
-    const sent = upstreams.find("/inference/go/v1/chat/completions").at(-1)!;
+    const sent = upstreams.find("/inference/go/openai/v1/chat/completions").at(-1)!;
     expect([sent.headers["authorization"], sent.headers["x-opencode-org-id"]]).toEqual(["Bearer console-access", "org_e2e"]);
     expect(upstreams.find("/console/auth/device/token")).toHaveLength(renewals);
   });
@@ -326,13 +332,14 @@ describe("API keys imported from OpenCode (K5, rule Z22) and typed keys (K3)", (
 });
 
 describe("gateway edges", () => {
-  test("Zen: the client's accept travels, generateContent without alt, countTokens and other Anthropic paths are refused, an empty key is refused, an account without a key needs a login", async () => {
+  test("Zen: the client's accept is left to the HTTP stack (O3), generateContent without alt, countTokens and other Anthropic paths are refused, an empty key is refused, an account without a key needs a login", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n");
     expect(await run(["login", "opencode", "--key"], "\n")).toMatchObject({ code: 1, stderr: "error: opencode: no API key entered; run `accounts-proxy login opencode`\n" });
     writeKeyAccount("opencode", { apiKey: "oc_sk_e2e" });
     const s = await serve();
+    // OpenCode never sets `accept`; its HTTP stack's `*/*` is what the Console sees, and the proxy's stack sends the same.
     await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}`, accept: "application/json" }, { model: "opencode/big-pickle", messages: [] });
-    expect(upstreams.find("/inference/openai/v1/chat/completions").at(-1)!.headers["accept"]).toBe("application/json");
+    expect(upstreams.find("/inference/openai/v1/chat/completions").at(-1)!.headers["accept"]).toBe("*/*");
     await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
     expect(upstreams.find("/inference/google/v1beta/models/gemini-3.6-flash:generateContent").at(-1)!.search).toBe("");
     const count = await post(`${s.url}/gemini/v1beta/models/opencode%2Fgemini-3.6-flash:countTokens`, { "x-goog-api-key": s.token }, { contents: [] });
@@ -346,11 +353,17 @@ describe("gateway edges", () => {
 
   test("catalog fallbacks: the reference catalog or the list refused (captured gateway answer), a stale stored copy, an unreadable copy, an unwritable store", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n  openrouter: {enabled: true}\n");
-    upstreams.script("/api.json", zenRefusal);
-    upstreams.script("/inference/go/v1/models", zenRefusal);
+    // A refused reference answer is not kept, so each OpenCode list reads it once more.
+    upstreams.script("/api.json", zenRefusal, zenRefusal, zenRefusal);
     upstreams.script("/api/v1/models", documented("/models", "get", "500"));
     const listed = await run(["models"]);
-    expect(listed.stdout.split("\n").filter((l) => l.startsWith("# "))).toEqual(["# openrouter: 459 models (built-in list: the live catalog was unavailable)", "# opencode: 84 models (live catalog)", "# opencode-go: 38 models (built-in list: the live catalog was unavailable)"]);
+    // O5: OpenCode's lists are the reference catalog's, so without it both fall back to their built-in lists.
+    expect(listed.stdout.split("\n").filter((l) => l.startsWith("# "))).toEqual([
+      "# openrouter: 459 models (built-in list: the live catalog was unavailable)",
+      "# opencode: 124 models (built-in list: the live catalog was unavailable)",
+      "# opencode-go: 31 models (built-in list: the live catalog was unavailable)",
+    ]);
+    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))");
     // The built-in copy of the reference catalog still names the models and gives their formats.
     expect(listed.stdout).toContain("opencode/big-pickle  Big Pickle  context 200000 / output 32000\n");
     const log = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
@@ -358,17 +371,17 @@ describe("gateway edges", () => {
     expect(log).toContain("/api.json HTTP 403)");
     expect(log).toContain("WARN openrouter: live model list unavailable (model list HTTP 500)");
     // A stale copy (older than 24 h) is the fallback when the live list fails; an unreadable copy is ignored.
-    for (const dir of ["opencode-go", "openrouter"]) mkdirSync(join(home.dir, "state", dir), { recursive: true });
+    for (const dir of ["opencode", "opencode-go", "openrouter"]) mkdirSync(join(home.dir, "state", dir), { recursive: true });
     writeFileSync(join(home.dir, "state", "opencode-go", "model-catalog.json"), JSON.stringify({ version: 2, fetchedAt: 1, models: [{ id: "stale", displayName: "Stale" }] }));
     writeFileSync(join(home.dir, "state", "openrouter", "model-catalog.json"), JSON.stringify({ version: 2, fetchedAt: 1, models: [{ id: 7 }] }));
-    upstreams.script("/inference/go/v1/models", zenRefusal);
+    upstreams.script("/api.json", zenRefusal);
     const stale = await run(["models", "opencode-go"]);
     expect(stale.stdout).toBe("# opencode-go: 1 models (stored copy of the live catalog)\nopencode-go/stale  Stale\n");
     expect((await run(["models", "openrouter"])).stdout.split("\n")[0]).toBe("# openrouter: 459 models (live catalog)");
-    chmodSync(join(home.dir, "state", "opencode"), 0o500);
     writeFileSync(join(home.dir, "state", "opencode", "model-catalog.json"), "", { flag: "a" });
+    chmodSync(join(home.dir, "state", "opencode"), 0o500);
     chmodSync(join(home.dir, "state", "opencode", "model-catalog.json"), 0o000);
-    expect((await run(["models", "opencode"])).stdout.split("\n")[0]).toBe("# opencode: 84 models (live catalog)");
+    expect((await run(["models", "opencode"])).stdout.split("\n")[0]).toBe("# opencode: 124 models (live catalog)");
     const warned = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
     expect(warned).toContain("WARN opencode: model list cache unreadable");
     expect(warned).toContain("WARN opencode: model list cache write failed");
@@ -401,6 +414,9 @@ describe("cheaper-inference (rules C1–C9)", () => {
     const chat = await post(`${s.url}/openai/v1/chat/completions`, { authorization: `Bearer ${s.token}` }, { model: "cheaper-inference/aion-3.0", messages: [] });
     expect(chat.status).toBe(404);
     expect(JSON.parse(upstreams.find("/v1/chat/completions").at(-1)!.body)).toEqual({ model: "aion-3.0", messages: [] });
+    // A model the list does not know is forwarded as sent (Z6), unless the gateway has no endpoint for its format.
+    const gemini = await post(`${s.url}/gemini/v1beta/models/cheaper-inference%2Fnew-model:generateContent`, { "x-goog-api-key": s.token }, { contents: [] });
+    expect([gemini.status, ((await gemini.json()) as { error: { message: string } }).error.message]).toEqual([400, "cheaper-inference (no native endpoint for this format; the proxy does not translate between formats) cannot carry: gemini_format"]);
     expect(await run(["quota", "cheaper-inference"])).toMatchObject({ code: 1, stderr: expect.stringContaining("cheaper-inference: GET /v1/account/balance HTTP 404") });
   });
 

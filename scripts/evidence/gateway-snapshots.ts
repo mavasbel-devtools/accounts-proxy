@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { parseModels as parseCheaper } from "@accounts-proxy/provider-cheaper-inference/domain/cheaper-inference.ts";
 import type { GatewayModel } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 import { parseReference, referenceRecord } from "@accounts-proxy/core/domain/model-details.ts";
-import { opencodeModels, referenceFormats } from "@accounts-proxy/provider-opencode/domain/opencode.ts";
+import { referenceModels } from "@accounts-proxy/provider-opencode/domain/opencode.ts";
 import { parseModels as parseOpenRouter } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 
 const root = join(import.meta.dir, "..", "..");
@@ -41,9 +41,10 @@ ${body}
 const reference = parseReference(spec("models-opencode-reference.json"));
 write("provider-openrouter", "OPENROUTER_BUILTIN", parseOpenRouter(spec("openrouter-models.json")), ["openrouter-models.json"]);
 write("provider-cheaper-inference", "CHEAPER_BUILTIN", parseCheaper(spec("cheaper-inference-public-models.json")), ["cheaper-inference-public-models.json"]);
-const zen = opencodeModels(spec("opencode-zen-models.json"), referenceFormats(reference, "opencode"));
-const go = opencodeModels(spec("opencode-go-models.json"), referenceFormats(reference, "opencode-go"));
-const opencodeFiles = ["opencode-zen-models.json", "opencode-go-models.json", "models-opencode-reference.json"];
+// Recon gap O5: OpenCode's list is the reference catalog's, as OpenCode itself loads it.
+const zen = referenceModels(reference.get("opencode")!);
+const go = referenceModels(reference.get("opencode-go")!);
+const opencodeFiles = ["models-opencode-reference.json"];
 const path = join(root, "packages", "provider-opencode", "src", "domain", "builtin-models.ts");
 const line = (m: GatewayModel) => `  ${JSON.stringify(m)},`;
 writeFileSync(

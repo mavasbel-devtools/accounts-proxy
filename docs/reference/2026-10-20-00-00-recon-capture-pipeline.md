@@ -243,10 +243,11 @@ Secrets were covered from R1; the operator's account was not. The manifest (`rec
 |---|---|---|
 | `identityFields` | `email`, `given_name`, `family_name`, `verified_email`, `picture`, `account_uuid`, `device_id`, `preferred_username`, `organization_uuid`, `organizationUUID`, `accountUUID` | Google `userinfo`, Claude `metadata.user_id`, Claude telemetry bodies |
 | `identityPatterns` | `email` anywhere; `organization`: the UUID after `/organizations/` | Claude Code calls `/api/organizations/<uuid>/…` and `/api/oauth/organizations/<uuid>/…` |
+| `identityPatterns` (added 2026-10-22) | `workspace`: the OpenCode Console workspace id `wrk_` + 26 characters | OpenCode sends it as `x-opencode-org-id` on every inference request and the Console `api/v2/config` answer names it (run `opencode/2026-10-20-18-27-37/workflow`) |
 | `identityScoped` | `id`, `name` only on `www.googleapis.com/oauth2/` and `opencode.ai/console/api/user` | elsewhere `id`/`name` are models and tools |
 
 Fields are also redacted inside JSON carried as a string (Claude's `metadata.user_id`). Both redactors read the same
-file: the addon self-check passes 83 checks, `scripts/tests/unit/live-evidence.test.ts` asserts the same cases.
+file: the addon self-check passes 83 checks (85 since the `workspace` pattern), `scripts/tests/unit/live-evidence.test.ts` asserts the same cases.
 
 Measured on real traffic: Claude `turn` run `2026-10-22-02-04-42-workflow` → 216 `<REDACTED:organization…>` values,
 0 raw organisation UUIDs in paths, 0 raw identity field values, 0 email-shaped strings. Runs recorded before this

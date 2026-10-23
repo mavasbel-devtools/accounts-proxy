@@ -135,15 +135,16 @@ describe("composition root", () => {
       expect(await runCli(["models"], opts)).toBe(0);
       expect(out.filter((l) => l.startsWith("# "))).toEqual([
         "# openrouter: 459 models (built-in list: the live catalog was unavailable)\n",
-        "# opencode: 84 models (built-in list: the live catalog was unavailable)\n",
-        "# opencode-go: 38 models (built-in list: the live catalog was unavailable)\n",
+        "# opencode: 124 models (built-in list: the live catalog was unavailable)\n",
+        "# opencode-go: 31 models (built-in list: the live catalog was unavailable)\n",
         "# cheaper-inference: 91 models (built-in list: the live catalog was unavailable)\n",
       ]);
       const at = (url: string) => (origin === undefined ? url : `${origin}${new URL(url).pathname}`);
       expect(transport.requests.map((r) => r.url)).toEqual([
         at("https://openrouter.ai/api/v1/models"),
-        at("https://opencode.ai/inference/v1/models"),
-        at("https://opencode.ai/inference/go/v1/models"),
+        // O5: OpenCode's lists are the reference catalog's (its unreachable answer is not kept, so each list asks).
+        at("https://models.opencode.ai/api.json"),
+        at("https://models.opencode.ai/api.json"),
         at("https://api.cheaperinference.com/public/models"),
         at("https://models.opencode.ai/api.json"),
       ]);
