@@ -8,8 +8,8 @@ The project moved from the Windows machine (`C:\Users\Marco\Dev\AIML\inference-r
 |---|---|---|---|
 | Repo | `/home/mavasbel/Dev/repos/inference-router` | `git status --short --branch` | `main...origin/main`, in sync with `origin` at `9c357f0` (2 uncommitted doc files from 2026-10-07) |
 | Remote | `https://github.com/mavasbel/inference-router.git` | `git remote -v` | unchanged |
-| Plugin repo (Claude) | `/home/mavasbel/Dev/repos/opencode/opencode-claude-auth` | `git cat-file -t 62927412322eedfd5b1d8f08c4eb894f26e6c50a` | `commit`; HEAD `6292741` |
-| Plugin repo (Antigravity) | `/home/mavasbel/Dev/repos/opencode/opencode-antigravity-auth` | `git cat-file -t 5c6f7c2697fdc187bfc1d5f0208b8f5563620875` | `commit`; HEAD `5c6f7c2`, clean |
+| Plugin repo (Claude) | `/home/mavasbel/Dev/repos/devtools/opencode-claude-auth` | `git cat-file -t 62927412322eedfd5b1d8f08c4eb894f26e6c50a` | `commit`; HEAD `6292741` |
+| Plugin repo (Antigravity) | `/home/mavasbel/Dev/repos/devtools/opencode-antigravity-auth` | `git cat-file -t 5c6f7c2697fdc187bfc1d5f0208b8f5563620875` | `commit`; HEAD `5c6f7c2`, clean |
 | Old root `AIML/` | `/home/mavasbel/Dev/AIML` | `ls -d` | absent; nothing in the repo's code depends on it |
 | Pre-repo docs (`AIML/tools/docs/…`) | — | search of `/home/mavasbel/Dev/docs`, `/home/mavasbel/Dev/repos/opencode/docs` | absent; the repo's `docs/` holds the plan, research and session record |
 | Data directory | `/home/mavasbel/.local/share/inference-router` | `ls` | absent before; created 2026-10-10 with mode 700, `router.yaml` copied from `config/router.example.yaml` (both providers enabled, `acknowledgeTermsRisk: true`) |

@@ -71,5 +71,5 @@ answers by method and path, so the e2e tests replay them unchanged.
 2. `mv ~/.local/share/inference-router ~/.local/share/accounts-proxy` and
    `mv ~/.local/share/accounts-proxy/router.yaml ~/.local/share/accounts-proxy/proxy.yaml`; the old `logs/router.log`
    stays as history, the new log is `logs/proxy.log`.
-3. From `/home/mavasbel/Dev/repos/accounts-proxy`: `bun run proxy serve`.
+3. From `/home/mavasbel/Dev/repos/devtools/accounts-proxy`: `bun run proxy serve`.
 4. `bun run proxy login opencode`.
