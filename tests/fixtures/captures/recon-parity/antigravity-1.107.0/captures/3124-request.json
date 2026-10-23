@@ -1,0 +1,79 @@
+{
+  "schema": "recon-request/2",
+  "run": "antigravity/2026-10-21-23-59-49/login",
+  "client": "antigravity",
+  "clientVersion": "1.107.0",
+  "cell": "antigravity",
+  "mode": "mitm",
+  "seq": 3124,
+  "flowId": "bd142fe5-a811-4aa8-933c-a50712df18d4",
+  "wallAtMs": 1792628999042,
+  "atMs": 1806661,
+  "method": "POST",
+  "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Host",
+      "daily-cloudcode-pa.googleapis.com"
+    ],
+    [
+      "User-Agent",
+      "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)"
+    ],
+    [
+      "Content-Length",
+      "30"
+    ],
+    [
+      "Authorization",
+      "Bearer <REDACTED:authorization>"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Accept-Encoding",
+      "gzip"
+    ]
+  ],
+  "trailers": [],
+  "clientConn": {
+    "id": "28cf8364-ec1a-48a2-b68a-5fe21e6f990e",
+    "peername": [
+      "127.0.0.1",
+      40426
+    ],
+    "sni": "daily-cloudcode-pa.googleapis.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": null,
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "serverConn": {
+    "id": "e24905ef-2bc9-4b88-80ba-0cd513be11bc",
+    "peername": [
+      "172.217.117.4",
+      443
+    ],
+    "sni": "daily-cloudcode-pa.googleapis.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": null,
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "noise": false,
+  "truncated": false,
+  "originalBytes": 30,
+  "bodyEncoding": "utf8",
+  "body": "{\"project\":\"aicode-consumers\"}",
+  "redactions": [
+    {
+      "where": "header",
+      "name": "authorization",
+      "rule": "credential-header"
+    }
+  ],
+  "secretScan": "clean"
+}

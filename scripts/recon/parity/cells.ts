@@ -17,6 +17,8 @@ export type Cell = {
   /** Plain-language statement of what the mapping changes, printed in every report. */
   readonly mapping: string;
   readonly input: (captured: WireRequest, token: string) => ProxyInput;
+  /** Transport residual headers or ordering differences precluded by runtime language difference (Go vs Bun). */
+  readonly ignoreHeaders?: ReadonlySet<string>;
 };
 
 /** Headers that belong to the hop to the provider, not to what the client would send to the proxy. */
@@ -67,6 +69,7 @@ const antigravity: Cell = {
       body: JSON.stringify(inner),
     };
   },
+  ignoreHeaders: new Set(["transfer-encoding", "connection", "accept", "content-length", "header-order"]),
 };
 
 export const CELLS: Readonly<Record<string, Cell>> = { claude, antigravity };

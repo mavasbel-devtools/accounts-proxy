@@ -215,7 +215,7 @@ function checkTools(raw: unknown, findings: Findings): PreparedGemini["tools"] {
       declarations.push(out);
     });
   });
-  return declarations.length > 0 ? [{ functionDeclarations: declarations }] : undefined;
+  return declarations.length > 0 ? declarations.map((d) => ({ functionDeclarations: [d] })) : undefined;
 }
 
 function checkToolConfig(raw: unknown, hasTools: boolean, findings: Findings): PreparedGemini["toolConfig"] {

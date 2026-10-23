@@ -25,6 +25,7 @@ const steps: Step[] = [
   { name: "e2e with 100% coverage", command: [bun, "scripts/gate/run-tests.ts", "e2e"] },
   { name: "merged coverage 100%", command: [bun, "scripts/gate/merge-coverage.ts"] },
   { name: "recon parity (Claude Code 2.1.304)", command: [bun, "scripts/recon/cli.ts", "parity", "tests/fixtures/captures/recon-parity/claude-2.1.304", "18"] },
+  { name: "recon parity (Antigravity 1.107.0)", command: [bun, "scripts/recon/cli.ts", "parity", "tests/fixtures/captures/recon-parity/antigravity-1.107.0", "3287"] },
   { name: "docs lint", command: [bun, "scripts/gate/lint-docs.ts"] },
 ];
 

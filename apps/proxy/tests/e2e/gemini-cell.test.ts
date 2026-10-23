@@ -147,7 +147,10 @@ describe("mapping onto the upstream request", () => {
     expect(Object.keys(request)).toEqual(["contents", "systemInstruction", "tools", "toolConfig", "labels", "generationConfig", "sessionId"]);
     expect(request["contents"]).toEqual([{ role: "user", parts: body.contents[0]!.parts }]);
     expect(request["systemInstruction"]).toEqual({ role: "user", parts: [{ text: "be brief" }] });
-    expect(request["tools"]).toEqual([{ functionDeclarations: [{ name: "get_time", description: "time", parameters: { type: "OBJECT", properties: { tz: { type: "STRING" } } } }, { name: "noop" }] }]);
+    expect(request["tools"]).toEqual([
+      { functionDeclarations: [{ name: "get_time", description: "time", parameters: { type: "OBJECT", properties: { tz: { type: "STRING" } } } }] },
+      { functionDeclarations: [{ name: "noop" }] },
+    ]);
     expect(request["toolConfig"]).toEqual({ functionCallingConfig: { mode: "AUTO" } });
     expect(request["generationConfig"]).toEqual({ maxOutputTokens: 64, thinkingConfig: { includeThoughts: false, thinkingBudget: 1000 }, temperature: 0, topP: 0.5, topK: 5, stopSequences: ["5"] });
   });

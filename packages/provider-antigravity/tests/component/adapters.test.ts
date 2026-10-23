@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { activeAccount, EMPTY_POOL, upsertAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
 import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
-import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { orderedHeaders, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import { TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import {
   FixedClock,
@@ -100,7 +100,14 @@ describe("AntigravityApiClient", () => {
     expect(envelopes[2]!.response?.candidates?.[0]?.finishReason).toBe("STOP");
     const sent = transport.requests[0]!;
     expect(sent.url).toBe("http://up/v1internal:streamGenerateContent?alt=sse");
-    expect(sent.headers).toEqual({ ...callHeaders, "accept-encoding": "gzip" });
+    expect(sent.headers).toEqual(
+      orderedHeaders([
+        ["user-agent", USER_AGENT],
+        ["authorization", "Bearer at"],
+        ["content-type", "application/json"],
+        ["accept-encoding", "gzip"],
+      ]),
+    );
     expect(JSON.parse(sent.body!)).toEqual({ project: "proj-1", requestId: "agent/s/1/t/3", request: { contents: [] }, model: "gemini-x", userAgent: "antigravity", requestType: "agent" });
     expect(sent.signal).toBeUndefined();
     const controller = new AbortController();

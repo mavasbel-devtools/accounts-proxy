@@ -85,6 +85,10 @@ describe("differences", () => {
       "body-extra /list/+0",
       "body-extra /y",
     ]);
+    const ignored = diffRequests(client, proxy, new Set(["header-order", "d", "c"])).map((gap) => `${gap.kind} ${gap.where}`);
+    expect(ignored).not.toContain("header-order headers");
+    expect(ignored).not.toContain("header-missing d");
+    expect(ignored).not.toContain("header-extra c");
   });
 
   test("arrays align on equal elements; leftovers pair by position, then go missing", () => {

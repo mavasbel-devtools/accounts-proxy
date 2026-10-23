@@ -2,6 +2,8 @@
 // (src/infrastructure/config/PluginConfig.ts — "ground-truth constants extracted from Antigravity IDE 2.5.5 (main.js)
 // + captured consent URLs"; AntigravityApiClientAdapter.ts; LoopbackCallbackServerAdapter.ts; ModelCatalogService.ts).
 
+import { ANTIGRAVITY_PROFILE } from "@accounts-proxy/provider-antigravity/domain/client-profile.ts";
+
 /** Google OAuth client embedded in the Antigravity IDE (an installed-app client; RFC 8252 loopback redirect). */
 export const CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
 export const CLIENT_SECRET = "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";
@@ -21,8 +23,8 @@ export const SUCCESS_REDIRECT = "https://antigravity.google/auth-success?app=ant
 /** Every /v1internal:* call in the source goes to the daily host (the stable host is declared but unused). */
 export const DAILY_HOST = "https://daily-cloudcode-pa.googleapis.com";
 /** UA law (source wire law 1): verbatim from the authorized capture; cloudcode-pa is client-gated on it. */
-export const USER_AGENT = "antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)";
-export const IDE_METADATA = { ideType: "ANTIGRAVITY", ideVersion: "2.5.5", ideName: "antigravity" } as const;
+export const USER_AGENT = ANTIGRAVITY_PROFILE.userAgent;
+export const IDE_METADATA = { ideType: ANTIGRAVITY_PROFILE.ideType, ideVersion: ANTIGRAVITY_PROFILE.ideVersion, ideName: ANTIGRAVITY_PROFILE.ideName } as const;
 
 /** Source TokenLifecycleService / RefreshSessionUseCase.ensureFresh: refresh when ≤ 120 s remain. */
 export const EXPIRY_BUFFER_MS = 120_000;

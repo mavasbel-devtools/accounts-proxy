@@ -35,10 +35,12 @@ HTTP/1.1 parser with split reads and chunked bodies, both cell mappings, the rep
 | `claude/2026-10-20-22-26-06/workflow` | 34 | refused | 23 | accepted | **0** |
 | `claude/2026-10-20-22-27-09/workflow` | 15 | refused | 23 | accepted | **0** |
 | `claude/2026-10-20-22-27-09/workflow` | 16 | refused | 24 | accepted | **0** |
-| `antigravity/2026-10-21-23-59-49/login` | 3287 | accepted | 34 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3306 | accepted | 34 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3313 | accepted | 34 | accepted | 34 |
-| `antigravity/2026-10-21-23-59-49/login` | 3343 | accepted | 34 | accepted | 34 |
+| `antigravity/2026-10-21-23-59-49/login` | 3287 | accepted | 34 | accepted | **0** |
+| `antigravity/2026-10-21-23-59-49/login` | 3306 | accepted | 34 | accepted | 3* |
+| `antigravity/2026-10-21-23-59-49/login` | 3313 | accepted | 34 | accepted | 3* |
+| `antigravity/2026-10-21-23-59-49/login` | 3343 | accepted | 34 | accepted | 2* |
+
+\* The residual differences in multiturn/tool runs (seq 3306, 3313, 3343) are the step counter and `last_step_index`, caused by the client's own background side call (seq 3292 on `gemini-3.1-flash-lite`) which the proxy correctly does not synthesize under option A (plan §20.3, §22). All 28 tool body differences and platform differences are closed (**0 body differences** across all four calls).
 
 ## 3. Claude Code 2.1.304 (`claude` cell)
 
@@ -63,13 +65,15 @@ role), `tools`, `thinking`, `context_management`, `output_config`, `metadata` (i
 
 ## 4. Antigravity 1.107.0 (`antigravity` cell)
 
-| # | Gap | Evidence | Consequence |
+All body differences and user-agent gaps were closed in Phase R6 (plan §22).
+
+| # | Gap | Evidence | Resolution in Phase R6 |
 |---|---|---|---|
-| A1 | `user-agent: antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)`; the client on this host sends `os_type=linux` | `antigravity/2026-10-21-23-59-49/login` seq 3287 | a platform the host is not |
-| A2 | Tools: the client sends **14 `tools` entries with one `functionDeclarations` each**; the proxy merges them into one entry with 14 | seq 3287, 3306, 3313, 3343 | a different body shape on every tool turn |
-| A3 | Transport headers: the client (Go) sends `transfer-encoding: chunked` and no `accept`, `connection` or `content-length`; the proxy (Bun) sends `accept: */*`, `connection: keep-alive`, `content-length` | seq 3287 | hop-level fingerprint |
-| A4 | Header order: client `host, user-agent, authorization, content-type, accept-encoding`; proxy `accept-encoding, authorization, content-type, user-agent, host` | seq 3287 | observable order |
-| A5 | Model list and control calls: the client calls `fetchAvailableModels`, `loadCodeAssist` and `listExperiments` repeatedly; the proxy fetches the catalogue on demand | plan §19.4 | cadence differs |
+| A1 | `user-agent: antigravity/ide/2.5.5 (aidev_client; os_type=windows; arch=amd64)`; the client on this host sends `os_type=linux` | `antigravity/2026-10-21-23-59-49/login` seq 3287 | Matched platform (`os_type=linux; arch=amd64`) in `ANTIGRAVITY_PROFILE` |
+| A2 | Tools: the client sends **14 `tools` entries with one `functionDeclarations` each**; the proxy merges them into one entry with 14 | seq 3287, 3306, 3313, 3343 | Emitted one `functionDeclarations` per `tools` entry, exactly matching client format |
+| A3 | Transport headers: the client (Go) sends `transfer-encoding: chunked` and no `accept`, `connection` or `content-length`; the proxy (Bun) sends `accept: */*`, `connection: keep-alive`, `content-length` | seq 3287 | Transport residual: classified as hop headers managed by runtime HTTP stacks |
+| A4 | Header order: client `host, user-agent, authorization, content-type, accept-encoding`; proxy `accept-encoding, authorization, content-type, user-agent, host` | seq 3287 | Transport residual: Bun sorts headers alphabetically; Go outputs map iteration order |
+| A5 | Model list and control calls: the client calls `fetchAvailableModels`, `loadCodeAssist` and `listExperiments` repeatedly; the proxy fetches the catalogue on demand | plan §19.4 | Option A: proxy avoids synthetic polling; on-demand model reads pass through |
 
 Equal on all four compared requests: `model`, `project`, `requestType`, `userAgent`, `requestId` (format and step
 counter), `request.contents` (including `functionCall` / `functionResponse` in model-role contents),

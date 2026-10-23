@@ -4,7 +4,7 @@
 //      captured upstream format (one `data:` line per event) the decoded envelopes are identical.
 //   A2 failures are core errors: 429 → quota_exhausted with Retry-After; other statuses → upstream_error (status kept).
 import type { HttpResponse } from "@accounts-proxy/core/domain/wire.ts";
-import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { orderedHeaders, readAll } from "@accounts-proxy/core/domain/wire.ts";
 import { UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
 import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
@@ -63,7 +63,12 @@ export class AntigravityApiClient extends AntigravityApiPort {
       method: "POST",
       url: `${this.host}/v1internal:streamGenerateContent?alt=sse`,
       // Header allowlist captured from the IDE's stream call (source G16).
-      headers: { "content-type": "application/json", authorization: bearer(tokens), "user-agent": USER_AGENT, "accept-encoding": "gzip" },
+      headers: orderedHeaders([
+        ["user-agent", USER_AGENT],
+        ["authorization", bearer(tokens)],
+        ["content-type", "application/json"],
+        ["accept-encoding", "gzip"],
+      ]),
       body: JSON.stringify(outerEnvelope(params)),
       signal,
     });

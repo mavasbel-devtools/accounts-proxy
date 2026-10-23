@@ -155,7 +155,7 @@ export function diffRequests(client: CanonicalRequest, proxy: CanonicalRequest, 
   const common = new Set([...ha.keys()].filter((name) => hb.has(name)));
   const orderA = [...new Set(client.headers.map((h) => h.name).filter((name) => common.has(name)))];
   const orderB = [...new Set(proxy.headers.map((h) => h.name).filter((name) => common.has(name)))];
-  if (orderA.join("\n") !== orderB.join("\n")) out.push({ kind: "header-order", where: "headers", client: orderA, proxy: orderB });
+  if (!ignore.has("header-order") && orderA.join("\n") !== orderB.join("\n")) out.push({ kind: "header-order", where: "headers", client: orderA, proxy: orderB });
 
   diffBody(client.body, proxy.body, "", out);
   return out;

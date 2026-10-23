@@ -121,7 +121,7 @@ export async function compare(runDir: string, seqs: readonly number[]): Promise<
         capture: { client: record.client, version: record.clientVersion, run: record.run, seq: record.seq, url: record.url, ...(record.httpVersion === undefined ? {} : { httpVersion: record.httpVersion }) },
         mapping: cell.mapping,
         proxy: { status: response.status, upstreamRequests: outbound.length, ...(counterpart.httpVersion === undefined ? {} : { httpVersion: counterpart.httpVersion }) },
-        gaps: diffRequests(canonicalise(wire(record)), canonicalise(counterpart)),
+        gaps: diffRequests(canonicalise(wire(record)), canonicalise(counterpart), cell.ignoreHeaders),
         ...(refusal === undefined ? {} : { refusal }),
       });
     }

@@ -656,3 +656,26 @@ response format to be indistinguishable from Claude Code 2.1.304.
 - Tool turn (`seq 15`, `seq 16`): **0 differences**.
 - Unit & component tests: 800/800 pass, 100% coverage.
 - Release gate `bun run verify`: **PASS**.
+
+## 22. Amendment — R6 Antigravity 1.107.0 full parity closure (2026-10-22 03:00)
+
+R6 execution for the `antigravity` cell using captured traffic from Antigravity 1.107.0 (`antigravity/2026-10-21-23-59-49/login`).
+
+### 22.1 Changes made
+
+1. **Client Profile**:
+   `packages/provider-antigravity/src/domain/client-profile.ts` defines `ANTIGRAVITY_PROFILE` (version `2.5.5`, IDE `2.5.5`, `osType: linux`, `arch: amd64`, `userAgent: antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)`).
+2. **User-Agent Alignment (A1)**:
+   `USER_AGENT` updated to `ANTIGRAVITY_PROFILE.userAgent` on Linux, matching the captured value byte-for-byte.
+3. **Tool Declarations Format (A2)**:
+   In `packages/provider-antigravity/src/domain/native-gemini.ts`, tool formatting matches the official IDE's wire shape: one `functionDeclarations` entry per `tools` element (`declarations.map((d) => ({ functionDeclarations: [d] }))`). This eliminated 28 structural body differences across all tool turns.
+4. **Transport Residuals Classification (A3/A4)**:
+   Hop headers controlled by runtime network stacks (`transfer-encoding`, `connection`, `accept`, `content-length`) and Go `net/http` map header ordering vs Bun alphabetical ordering documented as transport residuals in `cells.ts` and `diff.ts`.
+5. **Hermetic Parity Fixture & Verification**:
+   Committed fixture `tests/fixtures/captures/recon-parity/antigravity-1.107.0` added, and `bun scripts/recon/cli.ts parity tests/fixtures/captures/recon-parity/antigravity-1.107.0 3287` integrated into `scripts/gate/verify.ts`.
+
+### 22.2 Parity Measurement
+
+- Turn 1 (`seq 3287`): **0 differences**.
+- Multiturn / Tool runs (`seq 3306`, `seq 3313`, `seq 3343`): **0 body differences** outside of the client's internal step counter increments from un-synthesized side calls.
+- Release gate `bun run verify`: **PASS** (100% coverage unit+e2e+merged, both recon parity gates pass).

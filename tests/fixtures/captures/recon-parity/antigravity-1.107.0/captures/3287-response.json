@@ -1,0 +1,128 @@
+{
+  "schema": "recon-response/3",
+  "run": "antigravity/2026-10-21-23-59-49/login",
+  "client": "antigravity",
+  "clientVersion": "1.107.0",
+  "cell": "antigravity",
+  "mode": "mitm",
+  "seq": 3287,
+  "flowId": "72abc33e-e0d4-4acb-8468-151511f46389",
+  "wallAtMs": 1792629130539,
+  "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+  "method": "POST",
+  "status": 200,
+  "httpVersion": "HTTP/1.1",
+  "headers": [
+    [
+      "Content-Type",
+      "text/event-stream"
+    ],
+    [
+      "Content-Disposition",
+      "attachment"
+    ],
+    [
+      "Vary",
+      "Origin"
+    ],
+    [
+      "Vary",
+      "X-Origin"
+    ],
+    [
+      "Vary",
+      "Referer"
+    ],
+    [
+      "Transfer-Encoding",
+      "chunked"
+    ],
+    [
+      "Date",
+      "Thu, 22 Oct 2026 00:32:10 GMT"
+    ],
+    [
+      "Server",
+      "ESF"
+    ],
+    [
+      "X-XSS-Protection",
+      "0"
+    ],
+    [
+      "X-Frame-Options",
+      "SAMEORIGIN"
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff"
+    ],
+    [
+      "Server-Timing",
+      "gfet4t7; dur=3442"
+    ],
+    [
+      "Alt-Svc",
+      "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+    ]
+  ],
+  "trailers": [],
+  "headersAtMs": 1938156,
+  "clientConn": {
+    "id": "a272a315-c5d6-48ba-b036-492302082822",
+    "peername": [
+      "127.0.0.1",
+      46832
+    ],
+    "sni": "daily-cloudcode-pa.googleapis.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": null,
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "serverConn": {
+    "id": "62d687df-fa41-4932-a5e7-61f208213cfd",
+    "peername": [
+      "172.217.119.4",
+      443
+    ],
+    "sni": "daily-cloudcode-pa.googleapis.com",
+    "tlsEstablished": true,
+    "tlsVersion": "TLSv1.3",
+    "alpn": null,
+    "cipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "noise": false,
+  "bodyEncoding": "utf8",
+  "chunks": [
+    {
+      "atMs": 1938157,
+      "bytes": 342,
+      "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"ok\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 15389,\"candidatesTokenCount\": 1,\"totalTokenCount\": 15497,\"thoughtsTokenCount\": 107},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"h1nZaqW8Ma-O6dkPt4HAkAw\"},\"traceId\": \"cec0ba5c40eab7ef\",\"metadata\": {}}\r\n\r\n",
+      "redactions": []
+    },
+    {
+      "atMs": 1938157,
+      "bytes": 1186,
+      "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EtQECtEEAWkUfRPNE5LBPd4i4nhXKwUHbiB79gQXhuuAkcvtkGhLlsgKDEc71/bpZFDuu9B3J6gwwEuk6pVnVIzijVAipxz1P5FCUl7tsUtqbesJYdGABC0dE8c+y0p3G7FIMiouOhudyl1iTayBjS5U4r5YHDFMD2UUUVKNSM9wbOLbYtyFFWItda+dB/bLOWwYRRWT6SFnYEEuepqA/MGRtxppwvqXYjYblo2op07SK2ybunx+KkGiPbExsR1MEQN2hJvJHolP0i4yrcQC/f/uhvWcur4CRpfTF8bC9AtbxC18iBxXlwVvscODGbnohGFL+blX6/J45ZnQVfsWrnYvE3AThHi80DavrpBA2At/zTs6qvLJYbbprcjXddIt+6C9rRPuDie3xWlHuNquHUFwDTyUUcbL8PyMKvuJEczs7Ds5QXzWciJPFSRk9WTA1ZB9mc/dw3w/6uynLlveqXhJrs9tjqgsreTZoDcCouZlivBTgkNmE0EYHCfAbUbFt7PFgPQUa8dPtB/iyyC896S+qTb5rxrLT3D8GKWajMUJuQv7dkYwknhRwFwZ9dj/VvL53jGVOH3bgJ2mP8CDO/aXbhRt1iYa5MLHDIDCU9kBCFbC4qcSXs1XIq6fq8wOy8BruoZJDsjA1gzUtzPVKcbPTe4T+mCAiOnMXL+zWoSqEiMASRe+jsvBLx1EeoQhBE7c6+zDNzWSqry1fNeMkTY8cL8QRM4PSavYbtOiTu5dhcMCzOHbNHpEmD8oEUkv5dsEhLjJbayT6o7PX+DCnY3FUrxzgD0=\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 15389,\"candidatesTokenCount\": 1,\"totalTokenCount\": 15497,\"thoughtsTokenCount\": 107},\"modelVersion\": \"gemini-3.8-flash-n\",\"responseId\": \"h1nZaqW8Ma-O6dkPt4HAkAw\"},\"traceId\": \"cec0ba5c40eab7ef\",\"metadata\": {}}\r\n\r\n",
+      "redactions": []
+    }
+  ],
+  "frames": [
+    {
+      "atMs": 1938157,
+      "event": null,
+      "bytes": 340
+    },
+    {
+      "atMs": 1938157,
+      "event": null,
+      "bytes": 1184
+    }
+  ],
+  "doneAtMs": 1938157,
+  "streamed": true,
+  "aborted": false,
+  "secretScan": "clean",
+  "clientClosed": false
+}

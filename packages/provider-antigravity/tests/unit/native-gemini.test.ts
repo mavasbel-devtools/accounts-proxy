@@ -216,10 +216,11 @@ describe("prepareGeminiRequest: systemInstruction", () => {
 describe("prepareGeminiRequest: tools and toolConfig", () => {
   const getTime = { name: "get_time", description: "time", parameters: { type: "object", properties: { timezone: { type: "string" } }, required: ["timezone"] } };
 
-  test("declarations are merged into one tool, types upper-cased (law 5), mode VALIDATED by default", () => {
+  test("declarations are formatted as one tool per declaration (recon parity), types upper-cased (law 5), mode VALIDATED by default", () => {
     const p = prepareGeminiRequest({ ...hello, tools: [{ functionDeclarations: [getTime] }, { functionDeclarations: [{ name: "noop" }] }, {}] }, GEMINI, strict);
     expect(p.tools).toEqual([
-      { functionDeclarations: [{ name: "get_time", description: "time", parameters: { type: "OBJECT", properties: { timezone: { type: "STRING" } }, required: ["timezone"] } }, { name: "noop" }] },
+      { functionDeclarations: [{ name: "get_time", description: "time", parameters: { type: "OBJECT", properties: { timezone: { type: "STRING" } }, required: ["timezone"] } }] },
+      { functionDeclarations: [{ name: "noop" }] },
     ]);
     expect(p.toolConfig).toEqual({ functionCallingConfig: { mode: "VALIDATED" } });
     expect(prepareGeminiRequest({ ...hello, tools: [] }, GEMINI, strict).tools).toBeUndefined();
