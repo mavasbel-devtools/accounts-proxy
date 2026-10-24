@@ -132,3 +132,14 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - Open: OpenAI cell against opencode's "Sign in with ChatGPT" (option A). A sign-in inside the opencode recon profile
   (`run opencode --login -- … auth login --standalone openai --method chatgpt-token-sharing`) waits for the
   operator's browser approval; then record turns with `--model=openai/<model>`, add the `openai` parity cell, fix gaps.
+
+## 2026-10-24 13:27 — Antigravity sign-in persists across runs
+
+- Root cause of "one consent per Antigravity recording": the runner SIGTERMed the outer `bwrap`, so the client was
+  SIGKILLed with its namespace and never ran its shutdown hook, the only place it writes `antigravityUnifiedStateSync.*`
+  (the sign-in). Fix: `scripts/recon/sandbox/stop.ts` stops the command inside the sandbox first (30 s grace).
+- Proof: consent 13:08 (run `2026-10-24-19-02-19-login`); launches at 13:19 and 13:22 and the `turn` workflow at 13:25
+  came up `signedIn` with no login; the turn recorded `streamGenerateContent` 200 (seq 265, 277).
+- Records: [login profiles §10](../reference/2026-10-20-12-13-recon-login-profiles.md#10-antigravity-keeps-its-sign-in-across-runs-2026-10-24),
+  [plan §26](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md#26-amendment--antigravity-sign-in-persists-the-client-is-stopped-inside-the-sandbox-2026-10-24-1327).
+- Open: Codex (deferred); 13 `home.*.bak` Antigravity profiles await the operator's decision.

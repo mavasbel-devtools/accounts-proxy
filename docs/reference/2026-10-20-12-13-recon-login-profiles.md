@@ -207,3 +207,44 @@ because its login detection failed before the record was written (fixed: 9.2 and
 
 - One consent per Antigravity recording until the state-sync persistence is understood.
 - The unattended carousel walk (9.2, rows 4–6) is unit-tested but not yet proven by a run without operator help.
+
+## 10. Antigravity keeps its sign-in across runs (2026-10-24)
+
+Supersedes 9.1's Antigravity row and the first residual of 9.4; plan [§26](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md#26-amendment--antigravity-sign-in-persists-the-client-is-stopped-inside-the-sandbox-2026-10-24-1327).
+
+### 10.1 Root cause
+
+| Finding | Evidence |
+|---|---|
+| Antigravity writes its `antigravityUnifiedStateSync.*` topics, `oauthToken` among them, only from its shutdown hook | `resources/app/out/main.js`: `onWillShutdown(…saveAllTopics())` |
+| The runner never let that hook run: it sent SIGTERM to the outer `bwrap`. `bwrap` forwards no signal, and with `--unshare-pid --die-with-parent` its death SIGKILLs every process in the namespace | run of 2026-10-24 09:17: `state.vscdb` afterwards held 0 `antigravityUnifiedStateSync.*` rows |
+| The window-close step before it changed nothing: `xdotool windowclose` "will destroy the window, but will not try to kill the client" (xdotool(1)) | same run |
+| SIGTERM sent to the IDE's own process inside the sandbox runs the hook | exit in 2 s, all 15 topics written, `oauthToken` included |
+
+### 10.2 The fix
+
+[scripts/recon/sandbox/stop.ts](../../scripts/recon/sandbox/stop.ts): `stopSandboxed` finds the command inside the
+sandbox (outer `bwrap` → inner `bwrap` → command, through `/proc/<pid>/task/<pid>/children`), sends it SIGTERM and
+waits up to `CLIENT_STOP_GRACE_MS` (30 s); only then the sandbox gets SIGTERM, and SIGKILL 5 s later. Both stop paths
+of [run.ts](../../scripts/recon/run.ts) use it (GUI teardown and a CLI client's timeout), and each run records a
+`client-stop` marker with the signals sent and `graceful`. `closeGuiWindow` is removed. Unit tests:
+[recon-stop.test.ts](../../scripts/tests/unit/recon-stop.test.ts) (signal order, grace, escalation, no command, real `/proc`).
+
+### 10.3 Measured
+
+| Run | What it shows |
+|---|---|
+| `2026-10-24-19-02-19-login` | consent 13:08; `auth.log` `signedIn` 13:08:38; `state.vscdb` written 13:10:09 with 10 non-empty topics, `oauthToken` 1068 bytes |
+| `2026-10-24-19-19-09-capture` | no login: `validatingLogin` → `signedIn` at 13:19:15 |
+| `2026-10-24-19-22-20-capture` | no login: `signedIn` at 13:22:26; `client-stop` `[{command, SIGTERM}]`, `graceful: true` |
+| `2026-10-24-19-25-13-workflow` (`turn`) | no login: `signedIn`, then seq 265 `gemini-3.8-flash-high` 200 (`user`, 14 tools) and seq 277 `gemini-3.1-flash-lite` 200; `client-stop` graceful; exit 0, probe `clean`, guard `unchanged`, 0 raw e-mail addresses, 0 leftover processes |
+
+The earlier login attempt `2026-10-24-18-18-37-login` reached the token exchange (12:23:05) and then failed on the
+host's DNS (`cloudcode-pa.googleapis.com`: `Temporary failure in name resolution`, `loginError`); it is a network
+failure of that moment, not a defect of the run.
+
+### 10.4 Residuals
+
+- `ls-main.log` still logs `state syncing error: key not found` (35 lines in the 13:19 run, against 1319 in a
+  signed-out run); the sign-in and the turn are unaffected.
+- Each `--fresh` keeps the former home as `home.<stamp>.bak` (13 now); removing them is the operator's decision.

@@ -769,3 +769,17 @@ redaction rule).
 `bun run verify` at 02:27 on 2026-10-24: every stage PASS (typecheck; unit+component+arch 883 pass, 0 fail; build;
 e2e 246 pass, 0 fail; merged), coverage 100% in each of the three gates (statements 3635/3635, branches 2580/2580,
 functions 850/850, lines 2973/2973), all eleven recon parity replays and the docs lint PASS.
+
+## 26. Amendment — Antigravity sign-in persists; the client is stopped inside the sandbox (2026-10-24 13:27)
+
+Supersedes §19.2's last two sentences ("A recording therefore costs one consent …"; "Root cause not established …")
+and the Antigravity row of §19.1; both stay above as the record of that day.
+
+- **Root cause**: the runner stopped a client by signalling the outer `bwrap`, which forwards nothing and, dying, has
+  the namespace's processes SIGKILLed; Antigravity saves its sign-in only from its shutdown hook. Evidence and runs:
+  [login profiles §10](../reference/2026-10-20-12-13-recon-login-profiles.md#10-antigravity-keeps-its-sign-in-across-runs-2026-10-24).
+- **Change**: `scripts/recon/sandbox/stop.ts` (`ProcessControl` / `ProcProcessControl`, `stopSandboxed`): SIGTERM to the
+  command inside the sandbox, 30 s grace, then the sandbox; a `client-stop` marker in every run.
+- **Measured**: after one consent, two plain launches and a `turn` workflow came up `signedIn` without a login; the
+  `turn` recorded `streamGenerateContent` 200 (seq 265, 277). Antigravity now joins opencode and Claude Code: one
+  login, reused by every later run.

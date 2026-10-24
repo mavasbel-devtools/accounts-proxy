@@ -41,6 +41,7 @@ import { buildBwrapArgv, isolatedEnv } from "@accounts-proxy/scripts/recon/sandb
 import { startDisplay, stopDisplay, type PrivateDisplay } from "@accounts-proxy/scripts/recon/sandbox/display.ts";
 import { changedPaths, snapshotPaths } from "@accounts-proxy/scripts/recon/sandbox/guard.ts";
 import { probeIsolation } from "@accounts-proxy/scripts/recon/sandbox/probe.ts";
+import { ProcProcessControl, stopSandboxed, type StopOutcome } from "@accounts-proxy/scripts/recon/sandbox/stop.ts";
 import {
   acquireProfileLock,
   assertIsolatedProfile,
@@ -69,6 +70,8 @@ const ADDON = join(RECON_DIR, "mitm", "recon_addon.py");
 const OPEN_STUB = join(RECON_DIR, "sandbox", "bin", "xdg-open");
 /** Private session bus + keyring launcher, bound into the sandbox for clients that keep credentials in the keyring. */
 const SESSION_STUB = join(RECON_DIR, "sandbox", "bin", "session");
+/** How long a stopped client gets to run its own shutdown before the sandbox is stopped (Antigravity measured 2 s). */
+const CLIENT_STOP_GRACE_MS = 30_000;
 
 /** System trees every sandbox needs, filtered to the ones that exist on this host. */
 function systemBinds(): string[] {
@@ -187,9 +190,10 @@ function spawnAndWait(
   argv: readonly string[],
   timeoutMs: number,
   cwd: string,
-): Promise<{ code: number; timedOut: boolean }> {
+): Promise<{ code: number; timedOut: boolean; stop?: StopOutcome }> {
   return new Promise((resolveExit, rejectExit) => {
     let timedOut = false;
+    let stopping: Promise<StopOutcome> | undefined;
     const proc = spawn(argv[0]!, argv.slice(1), {
       stdio: "inherit",
       // The sandbox environment is set entirely by the spec (`--clearenv`); the bwrap process itself needs almost
@@ -199,18 +203,22 @@ function spawnAndWait(
       cwd,
       env: { PATH: "/usr/local/bin:/usr/bin:/bin" },
     });
+    const exited = new Promise<void>((resolveExited) => proc.once("exit", () => resolveExited()));
     const timeout =
       timeoutMs > 0
         ? setTimeout(() => {
             timedOut = true;
-            proc.kill("SIGTERM");
-            setTimeout(() => proc.kill("SIGKILL"), 5_000).unref();
+            // The client inside the sandbox gets the signal, so it can save what it keeps (see `stopSandboxed`).
+            if (proc.pid !== undefined) {
+              stopping = stopSandboxed(new ProcProcessControl(), { pid: proc.pid, exited }, CLIENT_STOP_GRACE_MS, 5_000);
+            }
           }, timeoutMs)
         : undefined;
     proc.once("error", rejectExit);
     proc.once("exit", (code) => {
       if (timeout) clearTimeout(timeout);
-      resolveExit({ code: code ?? -1, timedOut });
+      if (stopping === undefined) resolveExit({ code: code ?? -1, timedOut });
+      else void stopping.then((stop) => resolveExit({ code: code ?? -1, timedOut, stop }));
     });
   });
 }
@@ -816,29 +824,6 @@ async function cdpPrompt(
 }
 
 /**
- * Close a GUI client through the window protocol instead of a signal.
- *
- * `xdotool windowclose` sends WM_DELETE_WINDOW, which the application handles as a normal window close; when the last
- * window closes, Electron runs its `will-quit` path. A signal reaches none of that: measured on Antigravity 1.107.0, a
- * login that had reported `signedIn` wrote no `antigravityUnifiedStateSync` topic when the run stopped it with SIGTERM,
- * and the next launch came up signed out.
- */
-async function closeGuiWindow(display: string, windowName: string): Promise<boolean> {
-  try {
-    const found = await xdotool(display, ["search", "--onlyvisible", "--name", windowName]);
-    const window = found
-      .split("\n")
-      .map((line) => line.trim())
-      .find((line) => line.length > 0);
-    if (window === undefined) return false;
-    await xdotool(display, ["windowclose", window]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Base64 SHA-256 of the certificate's SubjectPublicKeyInfo, the value Chromium accepts in
  * `--ignore-certificate-errors-spki-list`. Chromium derives it from the DER SPKI, not from the PEM text.
  */
@@ -1201,7 +1186,7 @@ export async function runClient(options: {
           const result = await spawnAndWait(sandboxArgv(action.argv), action.timeoutMs ?? timeoutMs, workdir);
           timedOut = timedOut || result.timedOut;
           exitCode = result.code;
-          detail = { exitCode: result.code, timedOut: result.timedOut };
+          detail = { exitCode: result.code, timedOut: result.timedOut, ...(result.stop === undefined ? {} : { stop: result.stop }) };
         } else if (action.kind === "gui-launch") {
           if (display === undefined) throw new Error("gui-launch needs a private display");
           const guiArgv = sandboxArgv(action.argv);
@@ -1275,37 +1260,17 @@ export async function runClient(options: {
         const result = await spawnAndWait(argv, timeoutMs, workdir);
         timedOut = result.timedOut;
         exitCode = result.code;
+        if (result.stop !== undefined) marker("client-stop", "point", { signals: result.stop.signals, graceful: result.stop.graceful });
       }
     }
   } finally {
-    if (gui !== undefined && gui.exitCode === null) {
-      // Close the window first: that is the only path to the application's own save-state hook. A signal skips it and
-      // the profile loses everything the run was meant to keep.
-      if (display !== undefined && client.windowName !== undefined) {
-        const asked = await closeGuiWindow(display.name, client.windowName);
-        if (asked) {
-          await new Promise<void>((resolveClose) => {
-            const timer = setTimeout(resolveClose, 30_000);
-            gui?.once("exit", () => {
-              clearTimeout(timer);
-              resolveClose();
-            });
-          });
-        }
-      }
-      if (gui.exitCode === null) {
-        gui.kill("SIGTERM");
-        await new Promise<void>((resolveGui) => {
-          const timer = setTimeout(() => {
-            gui?.kill("SIGKILL");
-            resolveGui();
-          }, 5_000);
-          gui?.once("exit", () => {
-            clearTimeout(timer);
-            resolveGui();
-          });
-        });
-      }
+    if (gui !== undefined && gui.exitCode === null && gui.pid !== undefined) {
+      // The client itself gets the SIGTERM, inside the sandbox: that runs its own shutdown, which is where Antigravity
+      // writes its state-sync topics (the sign-in among them). A signal to the sandbox kills it without that.
+      const child = gui;
+      const exited = new Promise<void>((resolveExit) => child.once("exit", () => resolveExit()));
+      const stop = await stopSandboxed(new ProcProcessControl(), { pid: gui.pid, exited }, CLIENT_STOP_GRACE_MS, 5_000);
+      marker("client-stop", "point", { signals: stop.signals, graceful: stop.graceful });
     }
     if (display) await stopDisplay(display);
     await stopMitm(mitm);
