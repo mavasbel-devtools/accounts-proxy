@@ -266,7 +266,7 @@ describe("the proxy's commands", () => {
       "antigravity/c  C\n",
       "antigravity/w  W  context 272000\n",
       "antigravity/o  O  output 4096\n",
-      "# claude: 0 models (built-in list: the live catalog was unavailable)\n",
+      "# claude: 0 models (built-in list)\n",
       "# claude: 0 models (stored copy of the live catalog)\n",
       "# openai: 0 models (unavailable: openai: no active account)\n",
     ]);

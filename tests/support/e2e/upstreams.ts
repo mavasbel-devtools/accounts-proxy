@@ -7,11 +7,11 @@
 // the OpenCode Console's captured answers (amendment A probes c0–c3) and documented config example.
 // Google's userinfo answer (`{email}`, the documented shape) is the one synthetic body: no capture exists. Non-streamed Claude messages are assembled from a captured stream's events (no
 // non-streamed capture exists); count_tokens answers the P6 probe's captures (p6/c1 refusal, p6/c2 count).
-// OpenAI (live validation L4): the live model list (l4/openai-models) for an e2e access token, the live Responses streams
-// (L1 openai-resp-*), and the key set of the replay's signing key (openai-signing.ts; OpenAI's own private key cannot sign).
+// OpenAI: the live Responses streams (live validation L1, openai-resp-*), and the key set of the replay's signing key (openai-signing.ts; OpenAI's own private key cannot sign).
 // Every request is recorded so tests can assert what the daemon really sent.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { zstdDecompressSync } from "node:zlib";
 import { jwks } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
 
 export type Recorded = { readonly method: string; readonly path: string; readonly search: string; readonly headers: Record<string, string>; readonly body: string };
@@ -170,7 +170,9 @@ export class ReplayUpstreams {
     const url = new URL(req.url);
     const headers: Record<string, string> = {};
     req.headers.forEach((value, name) => (headers[name] = value));
-    const body = await req.text();
+    // A request body arrives as the proxy encoded it (OpenAI plan usage: zstd, rule P1); it is recorded decoded.
+    const raw = Buffer.from(await req.arrayBuffer());
+    const body = (req.headers.get("content-encoding") === "zstd" ? zstdDecompressSync(raw) : raw).toString("utf8");
     this.requests.push({ method: req.method, path: url.pathname, search: url.search, headers, body });
     const json = (value: unknown, status = 200, extra: Record<string, string> = {}) => new Response(typeof value === "string" ? value : JSON.stringify(value), { status, headers: { "content-type": "application/json", ...extra } });
     const sse = (text: string, status = 200) => new Response(text, { status, headers: { "content-type": "text/event-stream; charset=utf-8" } });
@@ -230,7 +232,7 @@ export class ReplayUpstreams {
       case "/v1/oauth/token":
         return json(claudeFixture("refresh-response.json"));
       case "/v1/models":
-        return headers["authorization"]?.startsWith("Bearer e2e-openai") ? json(captured("l4/openai-models.json").body) : json(claudeFixture("catalog-api-response.json"));
+        return json(claudeFixture("catalog-api-response.json"));
       case "/v1/responses": {
         const input = Array.isArray(parsed["input"]) ? (parsed["input"] as Record<string, unknown>[]) : [];
         const answer = input.some((i) => i["type"] === "function_call_output")

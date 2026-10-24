@@ -109,16 +109,17 @@ describe("composition root", () => {
     expect(readFileSync(join(home!, "logs", "proxy.log"), "utf8")).toContain("INFO antigravity: signed in account me@x");
   });
 
-  test("openai is wired when enabled, on the production hosts or on the seams; without an account its list is the built-in one", async () => {
+  test("openai is wired when enabled, on the production hosts or on the seams; its list is the reference's, with or without an account", async () => {
     for (const seams of [{}, { openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1" }]) {
       const { opts, out, transport } = options({ seams });
       writeFileSync(join(home!, "proxy.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
       expect(await runCli(["models", "openai"], opts)).toBe(0);
-      expect(out[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)\n");
+      expect(out[0]).toBe("# openai: 8 models (built-in list)\n");
       expect(await runCli(["account", "list", "openai"], opts)).toBe(0);
       expect(out.at(-1)).toBe("no openai accounts; run: bun run proxy login openai\n");
-      // The detailed list reads the reference catalog (rule M4; the gateways seam, unset here, would repoint it).
-      expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json"]);
+      // The list and the detailed list read the reference catalog (rules M2, M4; the gateways seam, unset here, would
+      // repoint it); the scripted transport answers no read, so the built-in copy is used and nothing is stored.
+      expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json", "https://models.opencode.ai/api.json"]);
       removeTemporary(home!);
       home = undefined;
     }
@@ -134,10 +135,10 @@ describe("composition root", () => {
       writeFileSync(join(home!, "proxy.yaml"), GATEWAYS);
       expect(await runCli(["models"], opts)).toBe(0);
       expect(out.filter((l) => l.startsWith("# "))).toEqual([
-        "# openrouter: 459 models (built-in list: the live catalog was unavailable)\n",
-        "# opencode: 124 models (built-in list: the live catalog was unavailable)\n",
-        "# opencode-go: 31 models (built-in list: the live catalog was unavailable)\n",
-        "# cheaper-inference: 91 models (built-in list: the live catalog was unavailable)\n",
+        "# openrouter: 459 models (built-in list)\n",
+        "# opencode: 124 models (built-in list)\n",
+        "# opencode-go: 31 models (built-in list)\n",
+        "# cheaper-inference: 91 models (built-in list)\n",
       ]);
       const at = (url: string) => (origin === undefined ? url : `${origin}${new URL(url).pathname}`);
       expect(transport.requests.map((r) => r.url)).toEqual([

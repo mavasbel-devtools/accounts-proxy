@@ -8,6 +8,7 @@ import { readAll } from "@accounts-proxy/core/domain/wire.ts";
 import { capturedBetaHeader, transformRequest, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
 import { API_BASE } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@accounts-proxy/scripts/evidence/live/harness.ts";
+import { bodyText } from "@accounts-proxy/test-support/http-body.ts";
 
 const MODEL = "claude-haiku-4-5-20251001";
 const PATH = "/v1/messages/count_tokens";
@@ -52,7 +53,7 @@ async function viaProvider(live: Live): Promise<string> {
   });
   const text = await readAll(res.body);
   const sent = live.recorder.since(mark).find((e) => e.request.url.includes(PATH));
-  const keys = Object.keys(JSON.parse(sent?.request.body ?? "{}") as Wire).sort().join(",");
+  const keys = Object.keys(JSON.parse(bodyText(sent?.request.body)) as Wire).sort().join(",");
   return `HTTP ${res.status} keys=${keys}: ${text.slice(0, 300)}`;
 }
 

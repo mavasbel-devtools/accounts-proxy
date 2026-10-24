@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "no
 import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
+import { zstdDecompressSync } from "node:zlib";
 import { EMPTY_POOL, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount } from "@accounts-proxy/core/domain/accounts.ts";
 import { ConfigError } from "@accounts-proxy/core/domain/config.ts";
 import { base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.ts";
@@ -19,6 +20,7 @@ import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@a
 import { TerminalManualCode } from "@accounts-proxy/proxy/adapters/outbound/terminal-manual-code.ts";
 import { TerminalSecretPrompt } from "@accounts-proxy/proxy/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@accounts-proxy/proxy/adapters/outbound/yaml-config-file.ts";
+import { ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
 
 let dir: string | undefined;
 afterEach(() => {
@@ -320,6 +322,17 @@ describe("FetchTransport", () => {
     const error = await new FetchTransport(fetch as FetchFunction, 5_000).send({ method: "GET", url: `http://127.0.0.1:${port}/`, headers: {} }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(UpstreamUnreachableError);
     expect((error as UpstreamUnreachableError).httpStatus).toBe(502);
+  });
+});
+
+describe("ZstdContentEncoder (recon gap P1)", () => {
+  test("a zstd frame of the UTF-8 body at the default level, as opencode v2.1.1 sends its ChatGPT requests", () => {
+    const encoder = new ZstdContentEncoder();
+    const body = JSON.stringify({ model: "gpt-6-luna", input: [{ role: "user", content: "héllo" }] });
+    const frame = encoder.encode(body);
+    expect(encoder.encoding).toBe("zstd");
+    expect([...frame.subarray(0, 4)]).toEqual([0x28, 0xb5, 0x2f, 0xfd]);
+    expect(zstdDecompressSync(frame).toString("utf8")).toBe(body);
   });
 });
 

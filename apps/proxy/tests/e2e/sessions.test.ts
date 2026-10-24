@@ -253,7 +253,7 @@ describe("claude catalog", () => {
     home = await makeHome();
     await login("claude");
     upstreams.script("/v1/models", () => jsonResponse({ data: [], has_more: false }));
-    expect((await run(["models", "claude"])).stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(built-in list: the live catalog was unavailable\)$/);
+    expect((await run(["models", "claude"])).stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(built-in list\)$/);
     expect(proxyLog()).toContain("WARN claude: live catalog unavailable (live catalog is empty)");
     upstreams.script(
       "/v1/models",

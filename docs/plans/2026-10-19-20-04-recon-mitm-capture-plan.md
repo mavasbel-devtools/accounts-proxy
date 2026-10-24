@@ -740,3 +740,32 @@ and exited 1 on usage mistakes. No command had its own help, including `account 
 `bun run verify` at 01:06 on 2026-10-24: every stage PASS (typecheck; unit+component+arch 882 pass, 0 fail; build;
 e2e 244 pass, 0 fail; merged), coverage 100% in each of the three gates (statements 3666/3666, branches 2635/2635,
 functions 853/853, lines 3000/3000), all eight recon parity replays and the docs lint PASS.
+
+## 25. Amendment — openai cell parity against opencode v2.1.1 (2026-10-24 01:47)
+
+§23.3 carried out. The reference client is opencode's own ChatGPT sign-in, created once inside the opencode recon
+profile (run `opencode/2026-10-24-06-07-06/login`; isolation probe `clean`, guard `unchanged`). Gap report:
+[§8](../reference/2026-10-21-20-44-recon-gap-report.md#8-openai-opencode-v211-chatgpt-sign-in).
+
+### 25.1 Changes made
+
+1. **Redaction**: plan usage echoes the account's user id as `safety_identifier` in every answer; the shared manifest
+   gains the field and the pattern `openai-user` (`user-` + 24). Self-check 87 checks; `live-evidence.test.ts`.
+2. **Parity tool**: an `openai` cell for opencode's api.openai.com requests (`cellOf`); the tap decodes a zstd or gzip
+   body; every report names the other upstream calls the proxy made during the request.
+3. **Adapters** (P1–P4): `ContentEncoderPort` (core) and `ZstdContentEncoder`; the client's `User-Agent` and
+   OpenCode's own headers forwarded (`OPENCODE_CLIENT_HEADERS`, now in core and shared with the Console cells); no
+   explicit `accept`; the model list is built from the reference catalog as opencode builds it, and the proxy's
+   `GET /v1/models` call and its 24 h cache are removed.
+4. **Gate**: three conversations under `tests/fixtures/captures/recon-parity/opencode-2.1.1/2026-10-24-*` replayed by
+   `bun run verify`.
+
+### 25.2 Parity measurement
+
+7 committed requests in 3 conversations (turn and title, tool loop, two turns): **0 differences**; before the fix the
+same requests had 12 each (run `-07-08-58`). 5 more recorded requests also 0 (not committed: recorded before the
+redaction rule).
+
+`bun run verify` at 02:27 on 2026-10-24: every stage PASS (typecheck; unit+component+arch 883 pass, 0 fail; build;
+e2e 246 pass, 0 fail; merged), coverage 100% in each of the three gates (statements 3635/3635, branches 2580/2580,
+functions 850/850, lines 2973/2973), all eleven recon parity replays and the docs lint PASS.

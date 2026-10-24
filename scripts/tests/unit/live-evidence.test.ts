@@ -80,6 +80,13 @@ describe("Redactor", () => {
       providers: { "opencode-go": { headers: { "x-opencode-org-id": "<REDACTED:workspace>" } } },
     });
 
+    // OpenAI's user id, echoed by plan usage in every response's `safety_identifier` (measured 2026-10-24, recon run
+    // opencode/2026-10-24-07-08-58): the field in JSON, the pattern in the event-stream text.
+    const user = "user-AAAAAAAAAAAAAAAAAAAAAAAA";
+    expect(redactor().text(`data: {"response":{"safety_identifier":"${user}"}}`)).toBe('data: {"response":{"safety_identifier":"<REDACTED:openai-user>"}}');
+    expect(JSON.parse(redactor().body(JSON.stringify({ response: { safety_identifier: user } })))).toEqual({ response: { safety_identifier: "<REDACTED:safety_identifier>" } });
+    expect(redactor().text("user-agent: opencode/latest/2.1.1/cli")).toBe("user-agent: opencode/latest/2.1.1/cli");
+
     // `name` is a model name off a profile route: scoped redaction must not touch it.
     const model = JSON.stringify({ model: { name: "claude-opus-5-5" } });
     expect(redactor().body(model, "https://api.anthropic.com/v1/messages")).toBe(model);

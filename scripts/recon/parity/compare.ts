@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { canonicalise, type WireRequest } from "@accounts-proxy/scripts/recon/parity/canon.ts";
-import { cellFor } from "@accounts-proxy/scripts/recon/parity/cells.ts";
+import { cellOf } from "@accounts-proxy/scripts/recon/parity/cells.ts";
 import { diffRequests, type Gap } from "@accounts-proxy/scripts/recon/parity/diff.ts";
 import { WireTap, type TappedRequest } from "@accounts-proxy/scripts/recon/parity/tap.ts";
 import { BOTH_PROVIDERS, startSignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
@@ -30,7 +30,13 @@ export type CaptureRecord = {
 export type Comparison = {
   readonly capture: { readonly client: string; readonly version: string; readonly run: string; readonly seq: number; readonly url: string; readonly httpVersion?: string };
   readonly mapping: string;
-  readonly proxy: { readonly status: number; readonly upstreamRequests: number; readonly httpVersion?: string };
+  readonly proxy: {
+    readonly status: number;
+    readonly upstreamRequests: number;
+    readonly httpVersion?: string;
+    /** Every other upstream call the proxy made while it served this request (`METHOD /path`), in order. */
+    readonly otherUpstream: readonly string[];
+  };
   /**
    * The proxy's answer when it refused the client's request as sent (strict translation). The comparison then repeats
    * the request with `x-proxy-lossy: 1`, so the rest of the request can still be compared; the refusal is itself a gap.
@@ -93,7 +99,7 @@ export async function compare(runDir: string, seqs: readonly number[]): Promise<
   const origin = `http://127.0.0.1:${await tap.start()}`;
   const seams = Object.fromEntries(Object.keys(upstreams.seamEnv()).map((name) => [name, origin]));
   scriptFromRun(upstreams, runDir);
-  const setups = [...new Set(records.map((record) => cellFor(record.client)))].flatMap((cell) => (cell.daemon === undefined ? [] : [cell.daemon]));
+  const setups = [...new Set(records.map((record) => cellOf(record.client, record.url)))].flatMap((cell) => (cell.daemon === undefined ? [] : [cell.daemon]));
   const yaml = `${BOTH_PROVIDERS}${setups.map((setup) => setup.providers).join("")}`;
   const env = await startSignedInDaemon(seams, yaml, (home) => {
     for (const setup of setups) {
@@ -103,15 +109,18 @@ export async function compare(runDir: string, seqs: readonly number[]): Promise<
   try {
     const results: Comparison[] = [];
     for (const record of records) {
-      const cell = cellFor(record.client);
+      const cell = cellOf(record.client, record.url);
       const input = cell.input(wire(record), env.token);
       const send = async (extra: readonly (readonly [string, string])[]) => {
         const mark = tap.requests.length;
         const response = await fetch(`${env.daemon.url}${input.target}`, { method: "POST", headers: [...input.headers, ...extra].map(([n, v]) => [n, v]), body: input.body });
         const answer = await response.text();
         const counterpart = cell.isCounterpart ?? ((path: string) => path === cell.upstreamPath);
-        const outbound: TappedRequest[] = tap.requests.slice(mark).filter((request) => counterpart(new URL(request.url, "http://x.invalid").pathname));
-        return { response, answer, outbound };
+        const path = (request: TappedRequest) => new URL(request.url, "http://x.invalid").pathname;
+        const window = tap.requests.slice(mark);
+        const outbound: TappedRequest[] = window.filter((request) => counterpart(path(request)));
+        const other = window.filter((request) => !counterpart(path(request))).map((request) => `${request.method} ${path(request)}`);
+        return { response, answer, outbound, other };
       };
       let attempt = await send([]);
       let refusal: Comparison["refusal"];
@@ -121,13 +130,13 @@ export async function compare(runDir: string, seqs: readonly number[]): Promise<
         const dropped = attempt.response.headers.get("x-proxy-dropped");
         if (dropped !== null) refusal = { ...refusal, dropped };
       }
-      const { response, answer, outbound } = attempt;
+      const { response, answer, outbound, other } = attempt;
       const counterpart = outbound.at(-1);
       if (counterpart === undefined) throw new Error(`seq ${record.seq}: the proxy sent no ${cell.upstreamPath} request (answer ${response.status}: ${answer.slice(0, 400)})`);
       results.push({
         capture: { client: record.client, version: record.clientVersion, run: record.run, seq: record.seq, url: record.url, ...(record.httpVersion === undefined ? {} : { httpVersion: record.httpVersion }) },
         mapping: cell.mapping,
-        proxy: { status: response.status, upstreamRequests: outbound.length, ...(counterpart.httpVersion === undefined ? {} : { httpVersion: counterpart.httpVersion }) },
+        proxy: { status: response.status, upstreamRequests: outbound.length, ...(counterpart.httpVersion === undefined ? {} : { httpVersion: counterpart.httpVersion }), otherUpstream: other },
         gaps: diffRequests(canonicalise(wire(record)), canonicalise(counterpart), cell.ignoreHeaders),
         ...(refusal === undefined ? {} : { refusal }),
       });
@@ -157,7 +166,7 @@ export function markdown(comparison: Comparison): string {
   const lines = [
     `### ${capture.client} ${capture.version} — capture \`${capture.run}\` seq ${capture.seq}`,
     "",
-    `Client request: \`${capture.url.replace(/\?.*$/, "")}\` (${capture.httpVersion ?? "unknown HTTP version"}). Proxy answer to the client: ${proxy.status}; proxy upstream requests on that path: ${proxy.upstreamRequests} (${proxy.httpVersion ?? "?"} to the loopback tap).`,
+    `Client request: \`${capture.url.replace(/\?.*$/, "")}\` (${capture.httpVersion ?? "unknown HTTP version"}). Proxy answer to the client: ${proxy.status}; proxy upstream requests on that path: ${proxy.upstreamRequests} (${proxy.httpVersion ?? "?"} to the loopback tap). Other proxy upstream calls during this request: ${proxy.otherUpstream.length === 0 ? "none" : proxy.otherUpstream.map((call) => `\`${call}\``).join(", ")}.`,
     "",
     comparison.mapping,
     "",

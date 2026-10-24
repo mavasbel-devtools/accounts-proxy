@@ -152,6 +152,64 @@ const opencode: Cell = {
   },
 };
 
+/**
+ * opencode's ChatGPT provider compresses the body only toward its own default `baseURL` (opencode v2.1.1
+ * `encoding: settings.encoding ?? "zstd"` when `baseURL` is unset); a provider pointed at the proxy sets one, so it
+ * sends the decoded body without `Content-Encoding`.
+ */
+const OPENAI_CLIENT_DROPPED = new Set([...HOP, "accept", "content-encoding"]);
+
+const openai: Cell = {
+  client: "opencode",
+  upstreamPath: "/v1/responses",
+  mapping:
+    "OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the " +
+    "model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the " +
+    "decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the " +
+    "hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets " +
+    "on both sides. The proxy is signed in to a test ChatGPT account.",
+  daemon: {
+    providers: "  openai: {enabled: true, acknowledgeTermsRisk: true}\n",
+    accountFiles: {
+      "accounts-openai.json": {
+        activeId: "parity-client",
+        accounts: [
+          {
+            provider: "openai",
+            id: "parity-client",
+            label: "parity",
+            data: {
+              accessToken: "parity-openai-access",
+              refreshToken: "parity-openai-refresh",
+              expiresAt: 4_102_444_800_000,
+              scopes: "chatgpt.tokens.use.direct email offline_access openid profile resource.invoke",
+              clientId: "parity-client",
+              subject: "parity-subject",
+              idToken: "parity-id-token",
+            },
+          },
+        ],
+      },
+    },
+  },
+  input(captured, token) {
+    const body = parse(captured.body);
+    return {
+      target: "/openai/v1/responses",
+      headers: captured.headers
+        .filter(([name]) => !OPENAI_CLIENT_DROPPED.has(name.toLowerCase()))
+        .map(([name, value]) => (name.toLowerCase() === "authorization" ? ([name, `Bearer ${token}`] as const) : ([name, value] as const))),
+      body: JSON.stringify({ ...body, model: `openai/${String(body["model"])}` }),
+    };
+  },
+};
+
+/** The cell of one captured request: by client, and for opencode by the upstream it called. */
+export function cellOf(client: string, url: string): Cell {
+  if (client === "opencode" && new URL(url).host === "api.openai.com") return openai;
+  return cellFor(client);
+}
+
 export const CELLS: Readonly<Record<string, Cell>> = { claude, antigravity, opencode };
 
 export function cellFor(client: string): Cell {

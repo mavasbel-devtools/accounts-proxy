@@ -97,6 +97,7 @@ import { DEFAULT_LOCK_OPTIONS, FileLock, vanishingStatFs, type FileLockOptions, 
 import { FileCredentialStore, FileKeyValueStore, FileProxyTokenStore } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { LoopbackCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
+import { ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
 import { TerminalManualCode } from "@accounts-proxy/proxy/adapters/outbound/terminal-manual-code.ts";
 import { OpencodeAuthFile, opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
 import { TerminalSecretPrompt } from "@accounts-proxy/proxy/adapters/outbound/terminal-secret-prompt.ts";
@@ -377,8 +378,8 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       provider: new AntigravityProvider(catalog, new AntigravityNative(runner, antigravityState, logger), logger),
     };
   }
-  const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger }) : undefined;
   const reference = new ModelReferenceCatalog(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE);
+  const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger, reference }) : undefined;
   const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference });
   return {
     config,
@@ -406,18 +407,19 @@ type OpenAIDeps = {
   readonly clock: ClockPort;
   readonly lock: FileLock;
   readonly logger: LoggerPort;
+  readonly reference: ModelReferencePort;
 };
 
 /** The openai provider (plan v4 P4.5) on its production hosts or on the openai seams. */
 function wireOpenAI(deps: OpenAIDeps): OpenAIGraph {
-  const { seams, transport, store, state, random, clock, lock, logger } = deps;
+  const { seams, transport, store, state, random, clock, lock, logger, reference } = deps;
   const apiBase = seams.openaiApi ?? OPENAI_API_BASE;
   const authOrigin = seams.openaiAuth ?? OPENAI_ISSUER;
   const identity = new OpenAIIdentity(state, random);
   const oauth = new OpenAIOAuthClient(transport, store, identity, new JwksIdTokenVerifier(transport, clock, `${authOrigin}${OPENAI_JWKS_PATH}`), clock, authOrigin);
   const session = new OpenAISession(store, oauth, lock, clock, logger);
-  const catalog = new OpenAICatalog(transport, session, state, clock, logger, apiBase);
-  return { oauth, session, identity, catalog, provider: new OpenAIProvider(session, catalog, identity, transport, logger, apiBase) };
+  const catalog = new OpenAICatalog(reference);
+  return { oauth, session, identity, catalog, provider: new OpenAIProvider(session, catalog, identity, transport, new ZstdContentEncoder(), logger, apiBase) };
 }
 
 type GatewayDeps = {

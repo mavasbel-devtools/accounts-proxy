@@ -4,6 +4,7 @@ import { ProviderAuthRequiredError, UpstreamError } from "@accounts-proxy/core/d
 import type { JsonObject } from "@accounts-proxy/core/domain/json.ts";
 import type { ReferenceModel } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
+import { OPENCODE_CLIENT_HEADERS, OPENCODE_SESSION_HEADER } from "@accounts-proxy/core/domain/opencode-client.ts";
 import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
 import { asArray, asObject, firstString, gatewayModel, positiveInteger, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 
@@ -25,26 +26,9 @@ export const CONFIG_PATH = "/api/v2/config";
 /** Z15, Z26: the proxy's name and version (apps/proxy/package.json), sent when the client sends no User-Agent. */
 export const USER_AGENT = "accounts-proxy/0.1.0";
 /** Z15: the conversation id the client sends, forwarded as it is. */
-export const SESSION_HEADER = "x-opencode-session";
-/**
- * Z26, recon gap O2: OpenCode's own request headers, forwarded as they are when the client sends them — its User-Agent
- * (the free models answer only OpenCode's own), its trace context and its session, project and client ids (opencode
- * v2.1.1 `packages/core/src/session/model-request.ts:281-292`; captured on every inference request,
- * recon run opencode/2026-10-23-03-50-16). The proxy never invents them.
- */
-const CLIENT_HEADERS = [
-  "user-agent",
-  "b3",
-  "traceparent",
-  "x-opencode-client",
-  "x-opencode-project",
-  SESSION_HEADER,
-  "x-opencode-session-id",
-  "x-opencode-parent-session-id",
-  "x-session-affinity",
-  "x-session-id",
-  "x-parent-session-id",
-];
+export const SESSION_HEADER = OPENCODE_SESSION_HEADER;
+/** Z26, recon gap O2: OpenCode's own request headers, forwarded as they are when the client sends them. */
+const CLIENT_HEADERS = OPENCODE_CLIENT_HEADERS;
 /** Z9: the gateway's request id response header. */
 const LOG_ID = "x-opencode-log-id";
 

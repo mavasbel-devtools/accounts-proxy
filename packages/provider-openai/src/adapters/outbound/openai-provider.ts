@@ -3,26 +3,33 @@
 // upstream stream goes back to a streaming client unchanged except the terminal response's missing output items (I6),
 // and is aggregated into one response for the others (O8).
 // The request carries opencode's session headers `session-id`, `thread-id`, `x-client-request-id` (I5, decision O9).
+// Recon gaps P1–P3 (opencode v2.1.1 toward api.openai.com, recon runs opencode/2026-10-24-07-08-58, -07-09-06,
+// -07-09-16): the body is zstd-compressed with `content-encoding: zstd`, as opencode's ChatGPT provider sends it toward
+// its default address; the client's User-Agent and OpenCode's own headers are forwarded as sent (the proxy's own
+// User-Agent only when the client sends none); no explicit `accept`. On the wire opencode sends, after the standard
+// headers, its other headers ordered by name, so the proxy does the same.
 // Upstream errors (the `{"detail"}` admission bodies and the structured `error` objects) pass through with their
 // status, body and request id (E1–E2). Rule I7 (live 2026-10-13 and 2026-10-17, captures
 // tests/fixtures/captures/p0-live/l1/openai-resp-*.json): plan usage answers its event stream with no `content-type` and
 // names the request in `x-oai-request-id`; a streaming client gets `content-type: text/event-stream` (the upstream's own
 // value when it sends one) and the request id.
 import { isJsonObject, type JsonObject } from "@accounts-proxy/core/domain/json.ts";
-import { withDetails } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ModelCatalog, WireFormat } from "@accounts-proxy/core/domain/models.ts";
 import { SseCodec } from "@accounts-proxy/core/domain/services/event-stream.ts";
 import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts";
 import { bodyOf, DROPPED_HEADER, readAll, type HttpResponse, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
+import { OPENCODE_CLIENT_HEADERS } from "@accounts-proxy/core/domain/opencode-client.ts";
 import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
-import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import type { ContentEncoderPort, HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import { USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { aggregate, prepareRequest, StreamRepair } from "@accounts-proxy/provider-openai/domain/responses.ts";
 import type { OpenAICatalogPort, OpenAIIdentityPort, OpenAISessionPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
 export const NATIVE_PATH = "/v1/responses";
 const FORWARDED = ["content-type", "retry-after", "x-request-id", "x-oai-request-id"];
+/** P2: OpenCode's own headers after the User-Agent, forwarded when the client sends them. */
+const CLIENT_HEADERS = OPENCODE_CLIENT_HEADERS.filter((name) => name !== "user-agent");
 /** I7: the type of a stream the upstream sent without one. */
 export const STREAM_CONTENT_TYPE = "text/event-stream";
 
@@ -62,6 +69,7 @@ export class OpenAIProvider extends ProviderPort {
     private readonly catalog: OpenAICatalogPort,
     private readonly identity: OpenAIIdentityPort,
     private readonly transport: HttpTransportPort,
+    private readonly encoder: ContentEncoderPort,
     private readonly logger: LoggerPort,
     private readonly apiBase: string,
   ) {
@@ -78,7 +86,7 @@ export class OpenAIProvider extends ProviderPort {
       provider: this.id,
       formats: this.formats,
       source,
-      models: entries.map((e) => ({ address: { provider: this.id, model: e.id }, displayName: e.displayName, ...(e.contextWindow !== undefined ? { contextWindow: e.contextWindow } : {}), ...withDetails(e.details) })),
+      models: entries.map((e) => ({ address: { provider: this.id, model: e.id }, displayName: e.displayName })),
     };
   }
 
@@ -88,19 +96,22 @@ export class OpenAIProvider extends ProviderPort {
     const { accessToken } = (await this.session.active()).account;
     const session = request.headers["session-id"] ?? this.identity.sessionId;
     const thread = request.headers["thread-id"] ?? session;
+    const named: Record<string, string> = { "session-id": session, "thread-id": thread, "x-client-request-id": request.headers["x-client-request-id"] ?? thread };
+    for (const name of CLIENT_HEADERS) {
+      const value = request.headers[name];
+      if (value !== undefined) named[name] = value;
+    }
     const response = await this.transport.send({
       method: "POST",
       url: `${this.apiBase}${NATIVE_PATH}`,
       headers: {
         authorization: `Bearer ${accessToken}`,
+        "content-encoding": this.encoder.encoding,
         "content-type": "application/json",
-        accept: "text/event-stream",
-        "user-agent": USER_AGENT,
-        "session-id": session,
-        "thread-id": thread,
-        "x-client-request-id": request.headers["x-client-request-id"] ?? thread,
+        "user-agent": request.headers["user-agent"] ?? USER_AGENT,
+        ...Object.fromEntries(Object.keys(named).sort().map((name) => [name, named[name]!])),
       },
-      body: JSON.stringify(prepared.body),
+      body: this.encoder.encode(JSON.stringify(prepared.body)),
       signal: request.signal,
     });
     const headers = forwardedResponseHeaders(response.headers);

@@ -8,7 +8,7 @@ import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
 import { readAll } from "@accounts-proxy/core/domain/wire.ts";
 import type { ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
-import { CATALOG, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { JWKS_TIMEOUT_MS, USER_AGENT } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { checkClaims, IdTokenError, parseCompactJws, type ExpectedClaims, type VerifiedIdentity } from "@accounts-proxy/provider-openai/domain/id-token.ts";
 import { IdTokenVerifierPort } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 
@@ -44,7 +44,7 @@ export class JwksIdTokenVerifier extends IdTokenVerifierPort {
   }
 
   private async fetchKeys(): Promise<readonly Jwk[]> {
-    const res = await this.transport.send({ method: "GET", url: this.jwksUrl, headers: { accept: "application/json", "user-agent": USER_AGENT }, timeoutMs: CATALOG.timeoutMs });
+    const res = await this.transport.send({ method: "GET", url: this.jwksUrl, headers: { accept: "application/json", "user-agent": USER_AGENT }, timeoutMs: JWKS_TIMEOUT_MS });
     const text = await readAll(res.body);
     if (res.status !== 200) throw new UpstreamError("openai", res.status, `JWKS: ${text}`);
     let parsed: unknown;

@@ -244,10 +244,11 @@ Secrets were covered from R1; the operator's account was not. The manifest (`rec
 | `identityFields` | `email`, `given_name`, `family_name`, `verified_email`, `picture`, `account_uuid`, `device_id`, `preferred_username`, `organization_uuid`, `organizationUUID`, `accountUUID` | Google `userinfo`, Claude `metadata.user_id`, Claude telemetry bodies |
 | `identityPatterns` | `email` anywhere; `organization`: the UUID after `/organizations/` | Claude Code calls `/api/organizations/<uuid>/…` and `/api/oauth/organizations/<uuid>/…` |
 | `identityPatterns` (added 2026-10-22) | `workspace`: the OpenCode Console workspace id `wrk_` + 26 characters | OpenCode sends it as `x-opencode-org-id` on every inference request and the Console `api/v2/config` answer names it (run `opencode/2026-10-20-18-27-37/workflow`) |
+| `identityFields` + `identityPatterns` (added 2026-10-24) | field `safety_identifier`; pattern `openai-user`: `user-` + 24 letters and digits | OpenAI plan usage echoes the account's user id as `safety_identifier` in every Responses answer, also inside event-stream text (runs `opencode/2026-10-24-07-08-58/workflow`, `-07-09-06`, `-07-09-16`: 21 occurrences before the rule, 0 after in `-07-22-40`, `-07-22-48`, `-07-22-57`, 18 `<REDACTED:safety_identifier>`) |
 | `identityScoped` | `id`, `name` only on `www.googleapis.com/oauth2/` and `opencode.ai/console/api/user` | elsewhere `id`/`name` are models and tools |
 
 Fields are also redacted inside JSON carried as a string (Claude's `metadata.user_id`). Both redactors read the same
-file: the addon self-check passes 83 checks (85 since the `workspace` pattern), `scripts/tests/unit/live-evidence.test.ts` asserts the same cases.
+file: the addon self-check passes 83 checks (85 since the `workspace` pattern, 87 since `openai-user`), `scripts/tests/unit/live-evidence.test.ts` asserts the same cases.
 
 Measured on real traffic: Claude `turn` run `2026-10-22-02-04-42-workflow` → 216 `<REDACTED:organization…>` values,
 0 raw organisation UUIDs in paths, 0 raw identity field values, 0 email-shaped strings. Runs recorded before this

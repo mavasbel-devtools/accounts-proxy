@@ -30,6 +30,6 @@ export abstract class OpenAIIdentityPort {
 export type CatalogListing = { readonly source: ModelsSource; readonly entries: readonly CatalogEntry[] };
 
 export abstract class OpenAICatalogPort {
-  /** Live list (24 h cache per registration), else the stored copy, else the built-in list. Never empty. */
+  /** The model list as opencode builds it (M2, recon gap P4), with the reference catalog's source. */
   abstract listing(): Promise<CatalogListing>;
 }

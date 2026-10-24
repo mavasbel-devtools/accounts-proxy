@@ -6,18 +6,19 @@ import { DROPPED_HEADER, readAll, type HttpRequest, type RawRequest } from "@acc
 import { FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, RecordingLock, ScriptedTransport, SequenceRandom, type ScriptedResponse } from "@accounts-proxy/test-support/fakes.ts";
 import { IdTokenSigner } from "@accounts-proxy/test-support/openai-id-token.ts";
 import { JwksIdTokenVerifier } from "@accounts-proxy/provider-openai/adapters/outbound/jwks-id-token-verifier.ts";
-import { CATALOG_KEY, OpenAICatalog } from "@accounts-proxy/provider-openai/adapters/outbound/openai-catalog.ts";
+import { OpenAICatalog } from "@accounts-proxy/provider-openai/adapters/outbound/openai-catalog.ts";
 import { HOST_ID_KEY, OpenAIIdentity } from "@accounts-proxy/provider-openai/adapters/outbound/openai-identity.ts";
 import { OpenAIOAuthClient } from "@accounts-proxy/provider-openai/adapters/outbound/openai-oauth-client.ts";
 import { forwardedResponseHeaders, NATIVE_PATH, OpenAIProvider, sseEvents } from "@accounts-proxy/provider-openai/adapters/outbound/openai-provider.ts";
 import { OpenAISession, REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
-import { STATIC_CATALOG } from "@accounts-proxy/provider-openai/domain/catalog.ts";
 import { SCOPES } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { fromAccount, toAccount, type OpenAITokens } from "@accounts-proxy/provider-openai/domain/credential.ts";
 import type { ExpectedClaims, VerifiedIdentity } from "@accounts-proxy/provider-openai/domain/id-token.ts";
 import { IdTokenVerifierPort, OpenAICatalogPort, OpenAIIdentityPort, type CatalogListing } from "@accounts-proxy/provider-openai/ports/outbound/openai.ts";
 import type { Session } from "@accounts-proxy/core/ports/outbound/session.ts";
 import { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { ModelReferencePort, type ReferenceListing } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
+import { bodyText, ZstdTestEncoder } from "@accounts-proxy/test-support/http-body.ts";
 
 const NOW = 1_800_000_000_000;
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}): ScriptedResponse => ({ status, headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
@@ -148,7 +149,7 @@ describe("OpenAIOAuthClient (S1–S16, T2–T4)", () => {
     const sent = transport.requests[0]!;
     expect([sent.method, sent.url, sent.timeoutMs]).toEqual(["POST", "http://auth/api/accounts/oauth/token", TOKEN_ENDPOINT_TIMEOUT_MS]);
     expect(sent.headers).toEqual({ "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": "accounts-proxy/0.1.0" });
-    expect([...new URLSearchParams(sent.body!).entries()]).toEqual([
+    expect([...new URLSearchParams(bodyText(sent.body)).entries()]).toEqual([
       ["grant_type", "authorization_code"],
       ["client_id", "oaiapp_new"],
       ["code", "c0de"],
@@ -209,7 +210,7 @@ describe("OpenAIOAuthClient (S1–S16, T2–T4)", () => {
   test("refresh: form body in chatgpt.ts order; the rotated refresh token replaces the old one", async () => {
     const { client, transport } = make(() => json({ access_token: "a2", refresh_token: "r2", expires_in: 60, scope: SCOPES }));
     expect(await client.refresh(tokens)).toEqual({ ...tokens, accessToken: "a2", refreshToken: "r2", expiresAt: NOW + 60_000 });
-    expect([...new URLSearchParams(transport.requests[0]!.body!).entries()]).toEqual([
+    expect([...new URLSearchParams(bodyText(transport.requests[0]!.body)).entries()]).toEqual([
       ["grant_type", "refresh_token"],
       ["client_id", "oaiapp_saved"],
       ["refresh_token", "rt"],
@@ -259,60 +260,26 @@ class FixedSession extends OAuthSessionPort<OpenAITokens> {
   }
 }
 
-describe("OpenAICatalog (M1–M2)", () => {
-  const live = { models: [{ slug: "gpt-6.1-sol", display_name: "GPT-6.1 Sol", visibility: "list", context_window: 500_000 }] };
-  const make = (answer: () => ScriptedResponse = () => json(live)) => {
-    const transport = new ScriptedTransport(answer);
-    const session = new FixedSession();
-    const store = new MemoryKeyValueStore();
-    const clock = new FixedClock(NOW);
-    const logger = new MemoryLogger();
-    return { transport, session, store, clock, logger, catalog: new OpenAICatalog(transport, session, store, clock, logger, "http://api") };
-  };
+class Reference extends ModelReferencePort {
+  constructor(private readonly listing: ReferenceListing) {
+    super();
+  }
+  async reference(): Promise<ReferenceListing> {
+    return this.listing;
+  }
+}
 
-  test("live list (bearer, user agent), cached per registration for 24 h, then refreshed", async () => {
-    const m = make();
-    expect(await m.catalog.listing()).toEqual({ source: "live", entries: [{ id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol", contextWindow: 500_000 }] });
-    expect(m.transport.requests[0]).toMatchObject({ method: "GET", url: "http://api/v1/models", headers: { authorization: "Bearer at", accept: "application/json", "user-agent": "accounts-proxy/0.1.0" } });
-    expect((await m.catalog.listing()).source).toBe("live");
-    expect(m.store.values.get(CATALOG_KEY)).toMatchObject({ version: 2, clientId: "oaiapp_saved", fetchedAt: NOW });
-    const restarted = new OpenAICatalog(m.transport, m.session, m.store, m.clock, m.logger, "http://api");
-    expect((await restarted.listing()).source).toBe("cache");
-    m.clock.time += 24 * 60 * 60 * 1000;
-    expect((await m.catalog.listing()).source).toBe("live");
-    expect(m.transport.requests).toHaveLength(2);
-    m.session.client = "oaiapp_other";
-    expect((await m.catalog.listing()).source).toBe("live");
-    expect(m.transport.requests).toHaveLength(3);
-  });
-
-  test("no account → built-in list; a failing or empty live list → stored copy, else built-in; cache faults are warned", async () => {
-    const none = make();
-    none.session.failing = new ProviderAuthRequiredError("openai", "no active account");
-    expect(await none.catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
-    expect(none.logger.lines).toEqual(["WARN openai: live model list unavailable (openai: no active account; run `accounts-proxy login openai`)"]);
-
-    const failing = make(() => ({ status: 500, body: "x" }));
-    expect((await failing.catalog.listing()).source).toBe("static");
-    failing.store.values.set(CATALOG_KEY, { version: 2, clientId: "oaiapp_saved", fetchedAt: 0, models: [{ id: "old", displayName: "Old" }] });
-    expect(await failing.catalog.listing()).toEqual({ source: "cache", entries: [{ id: "old", displayName: "Old" }] });
-    expect(failing.logger.lines).toContain("WARN openai: live model list unavailable (model list HTTP 500)");
-
-    const empty = make(() => json({ models: [] }));
-    expect((await empty.catalog.listing()).source).toBe("static");
-    expect(empty.logger.lines).toEqual(["WARN openai: live model list unavailable (live model list is empty)"]);
-
-    const faults = make();
-    faults.store.failRead = new Error("eio");
-    faults.store.failWrite = new Error("rofs");
-    expect((await faults.catalog.listing()).source).toBe("live");
-    expect(faults.logger.lines).toEqual(["WARN openai: model list cache unreadable: Error: eio", "WARN openai: model list cache write failed: Error: rofs"]);
+describe("OpenAICatalog (M2, recon gap P4)", () => {
+  test("the reference's openai models with an allowed id, with the reference's source; none without an openai provider", async () => {
+    const catalog = new Map([["openai", new Map([["o3-pro", {}], ["gpt-6-luna", { name: "GPT-6 Luna" }]])]]);
+    expect(await new OpenAICatalog(new Reference({ source: "cache", catalog })).listing()).toEqual({ source: "cache", entries: [{ id: "gpt-6-luna", displayName: "gpt-6-luna" }] });
+    expect(await new OpenAICatalog(new Reference({ source: "static", catalog: new Map() })).listing()).toEqual({ source: "static", entries: [] });
   });
 });
 
 class FixedCatalog extends OpenAICatalogPort {
   async listing(): Promise<CatalogListing> {
-    return { source: "live", entries: [{ id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol", contextWindow: 500_000 }, { id: "gpt-5.5", displayName: "gpt-5.5" }] };
+    return { source: "static", entries: [{ id: "gpt-6.1-sol", displayName: "gpt-6.1-sol" }, { id: "gpt-5.5", displayName: "gpt-5.5" }] };
   }
 }
 
@@ -324,7 +291,7 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
   const make = (answer: () => ScriptedResponse = () => ({ status: 200, headers: { "content-type": "text/event-stream", "x-request-id": "req_1", "set-cookie": "x" }, body: [STREAM.slice(0, 40), STREAM.slice(40)] })) => {
     const transport = new ScriptedTransport(answer);
     const logger = new MemoryLogger();
-    return { transport, logger, provider: new OpenAIProvider(new FixedSession(), new FixedCatalog(), new FixedIdentity(), transport, logger, "http://api") };
+    return { transport, logger, provider: new OpenAIProvider(new FixedSession(), new FixedCatalog(), new FixedIdentity(), transport, new ZstdTestEncoder(), logger, "http://api") };
   };
   const raw = (body: unknown, headers: Record<string, string> = {}, lossy = false, path = NATIVE_PATH): RawRequest => ({ format: "openai-responses", path, query: {}, headers, body: typeof body === "string" ? body : JSON.stringify(body), lossy });
 
@@ -334,9 +301,9 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     expect(await provider.models()).toEqual({
       provider: "openai",
       formats: ["openai-responses"],
-      source: "live",
+      source: "static",
       models: [
-        { address: { provider: "openai", model: "gpt-6.1-sol" }, displayName: "GPT-6.1 Sol", contextWindow: 500_000 },
+        { address: { provider: "openai", model: "gpt-6.1-sol" }, displayName: "gpt-6.1-sol" },
         { address: { provider: "openai", model: "gpt-5.5" }, displayName: "gpt-5.5" },
       ],
     });
@@ -352,14 +319,15 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     expect([sent.method, sent.url]).toEqual(["POST", "http://api/v1/responses"]);
     expect(sent.headers).toEqual({
       authorization: "Bearer at",
+      "content-encoding": "zstd",
       "content-type": "application/json",
-      accept: "text/event-stream",
       "user-agent": "accounts-proxy/0.1.0",
       "session-id": "proc-session",
       "thread-id": "proc-session",
       "x-client-request-id": "proc-session",
     });
-    expect(JSON.parse(sent.body!)).toEqual({ model: "gpt-6.1-sol", input: [{ role: "user", content: "hi" }], stream: true, store: false });
+    expect(sent.body).toBeInstanceOf(Uint8Array);
+    expect(JSON.parse(bodyText(sent.body))).toEqual({ model: "gpt-6.1-sol", input: [{ role: "user", content: "hi" }], stream: true, store: false });
     expect(logger.lines).toEqual(["INFO openai: /v1/responses model=gpt-6.1-sol (stream) -> HTTP 200", "INFO openai: stream end model=gpt-6.1-sol terminal=response.completed"]);
   });
 
@@ -396,6 +364,45 @@ describe("OpenAIProvider (I1–I5, E1–E3, O7–O9)", () => {
     const { provider, logger } = make(() => ({ status: 200, headers: { "content-type": "text/event-stream" }, body: sse({ type: "response.created", response: {} }) }));
     await readAll((await provider.passthrough("m", raw({ input: [], stream: true }))).body);
     expect(logger.lines.at(-1)).toBe("INFO openai: stream end model=m terminal=none");
+  });
+
+  test("P2: the client's User-Agent and OpenCode's own headers are forwarded as sent, ordered by name after the standard headers", async () => {
+    const { provider, transport } = make();
+    const opencode = {
+      "user-agent": "opencode/latest/2.1.1/cli",
+      "x-session-id": "ses_1",
+      b3: "t-s-1-p",
+      traceparent: "00-t-s-01",
+      "x-opencode-client": "cli",
+      "x-opencode-project": "proj",
+      "x-opencode-session": "ses_1",
+      "x-opencode-session-id": "ses_1",
+      "x-session-affinity": "ses_1",
+      "session-id": "ses_1",
+      "thread-id": "ses_1",
+      "x-client-request-id": "ses_1",
+      "x-unrelated": "never",
+    };
+    await readAll((await provider.passthrough("m", raw({ input: [], stream: true }, opencode))).body);
+    const sent = transport.requests[0]!.headers;
+    expect(Object.keys(sent)).toEqual([
+      "authorization",
+      "content-encoding",
+      "content-type",
+      "user-agent",
+      "b3",
+      "session-id",
+      "thread-id",
+      "traceparent",
+      "x-client-request-id",
+      "x-opencode-client",
+      "x-opencode-project",
+      "x-opencode-session",
+      "x-opencode-session-id",
+      "x-session-affinity",
+      "x-session-id",
+    ]);
+    expect(sent["user-agent"]).toBe("opencode/latest/2.1.1/cli");
   });
 
   test("the client's own session headers are forwarded", async () => {

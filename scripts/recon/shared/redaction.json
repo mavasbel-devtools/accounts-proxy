@@ -51,7 +51,8 @@
     "preferred_username",
     "organization_uuid",
     "organizationUUID",
-    "accountUUID"
+    "accountUUID",
+    "safety_identifier"
   ],
   "identityPatterns": [
     {
@@ -65,6 +66,10 @@
     {
       "name": "workspace",
       "regex": "wrk_[0-9A-Z]{26}"
+    },
+    {
+      "name": "openai-user",
+      "regex": "\\buser-[A-Za-z0-9]{24}\\b"
     }
   ],
   "identityScoped": [

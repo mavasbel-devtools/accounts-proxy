@@ -34,6 +34,7 @@ import { prepareGeminiRequest } from "@accounts-proxy/provider-antigravity/domai
 import type { GenerateParams } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
 import { OAuthSessionPort } from "@accounts-proxy/core/ports/outbound/session.ts";
 import { AntigravityApiPort, AntigravityCatalogPort, AntigravityOAuthPort, AntigravityStatePort, type ActiveAccount } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
+import { bodyText } from "@accounts-proxy/test-support/http-body.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-5c6f7c2");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -61,7 +62,7 @@ describe("AntigravityApiClient", () => {
     await client.onboardUser(tokens);
     await client.fetchAvailableModels(tokens);
     await client.retrieveUserQuotaSummary(tokens);
-    expect(transport.requests.map((r) => [r.method, r.url, JSON.parse(r.body!)])).toEqual([
+    expect(transport.requests.map((r) => [r.method, r.url, JSON.parse(bodyText(r.body))])).toEqual([
       ["POST", "http://up/v1internal:loadCodeAssist", { metadata: { ideType: "ANTIGRAVITY" } }],
       ["POST", "http://up/v1internal:onboardUser", { tier_id: "free-tier", metadata: { ide_type: "ANTIGRAVITY", ide_version: "2.5.5", ide_name: "antigravity" } }],
       ["POST", "http://up/v1internal:fetchAvailableModels", {}],
@@ -108,7 +109,7 @@ describe("AntigravityApiClient", () => {
         ["accept-encoding", "gzip"],
       ]),
     );
-    expect(JSON.parse(sent.body!)).toEqual({ project: "proj-1", requestId: "agent/s/1/t/3", request: { contents: [] }, model: "gemini-x", userAgent: "antigravity", requestType: "agent" });
+    expect(JSON.parse(bodyText(sent.body))).toEqual({ project: "proj-1", requestId: "agent/s/1/t/3", request: { contents: [] }, model: "gemini-x", userAgent: "antigravity", requestType: "agent" });
     expect(sent.signal).toBeUndefined();
     const controller = new AbortController();
     await drain(client.streamGenerate(params, tokens, controller.signal));
@@ -207,7 +208,7 @@ describe("GoogleOAuthClient", () => {
     const { client, transport, api } = make(() => json({ access_token: "a1", refresh_token: "r1", expires_in: 3599 }));
     const credential = await client.exchange({ code: "c", state: "s", redirectUri: "http://localhost:5/oauth-callback", codeVerifier: "ignored", nonce: "n", callback: {} });
     expect(transport.requests[0]!.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
-    expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "authorization_code", code: "c", client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: "http://localhost:5/oauth-callback" });
+    expect(Object.fromEntries(new URLSearchParams(bodyText(transport.requests[0]!.body)))).toEqual({ grant_type: "authorization_code", code: "c", client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: "http://localhost:5/oauth-callback" });
     expect(api.calls).toEqual(["fetchUserInfo", "loadCodeAssist"]);
     expect(credential.id).toBe("me@x");
     expect(fromCredential(credential)).toEqual({ email: "me@x", tokens: { accessToken: "a1", refreshToken: "r1", expiresAt: 1_000 + 3_599_000 }, projectIds: ["proj-1"], activeProjectId: "proj-1" });
@@ -232,7 +233,7 @@ describe("GoogleOAuthClient", () => {
   test("refresh returns the token endpoint's answer (rotated() keeps the old refresh token); needs one", async () => {
     const { client, transport } = make(() => json({ access_token: "a2", expires_in: 10 }));
     expect(await client.refresh(tokens)).toEqual({ accessToken: "a2", expiresAt: 11_000 });
-    expect(Object.fromEntries(new URLSearchParams(transport.requests[0]!.body!))).toEqual({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
+    expect(Object.fromEntries(new URLSearchParams(bodyText(transport.requests[0]!.body)))).toEqual({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID, client_secret: CLIENT_SECRET });
     expect(transport.requests[0]!.timeoutMs).toBe(TOKEN_ENDPOINT_TIMEOUT_MS);
     expect(await make(() => json({ access_token: "a2", refresh_token: "rt2", expires_in: 10 })).client.refresh(tokens)).toEqual({ accessToken: "a2", refreshToken: "rt2", expiresAt: 11_000 });
     await expect(client.refresh({ accessToken: "a", expiresAt: 0 })).rejects.toBeInstanceOf(ProviderAuthRequiredError);

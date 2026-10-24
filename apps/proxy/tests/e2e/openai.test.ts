@@ -1,16 +1,17 @@
 // The openai provider (Sign in with ChatGPT, plan usage), black-box through the real proxy process (live validation
-// L4, docs/plans/2026-10-13-01-42-live-validation-plan.md). Replays: the live model list and Responses streams captured
-// on 2026-10-13 (tests/fixtures/captures/p0-live/l4, l1), the fake browser approving a new registration (issued client
+// L4, docs/plans/2026-10-13-01-42-live-validation-plan.md). Replays: the live Responses streams captured on 2026-10-13
+// (tests/fixtures/captures/p0-live/l1); the model list is the reference catalog's (recon gap P4), the fake browser approving a new registration (issued client
 // id in the callback, S2/S9), token answers with the live shape (fields of the token reference; scopes as granted
 // live), and ID tokens with the live claim names signed by the replay's own key (openai-signing.ts).
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
 import OpenAI from "openai";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { claims, GRANTED_SCOPES, idToken, jwks, signingKey } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
-import { captured, jsonResponse, ReplayUpstreams, stalledStream, type Recorded, type Responder } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+import { jsonResponse, ReplayUpstreams, spec, stalledStream, type Recorded, type Responder } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(120_000);
 const upstreams = new ReplayUpstreams();
@@ -48,6 +49,8 @@ const accounts = () => JSON.parse(readFileSync(join(home!.dir, "accounts-openai.
 function storeAccount(data: Record<string, unknown>, extra: Record<string, unknown> = {}): void {
   writeFileSync(join(home!.dir, "accounts-openai.json"), JSON.stringify({ accounts: [{ provider: "openai", id: "oaiapp_e2e", label: "e2e@example.com", data, ...extra }], activeId: "oaiapp_e2e" }), { mode: 0o600 });
 }
+/** gpt-5.6-luna in the list, its name and limits from the reference catalog (rule M1). */
+const MODELS_LINE = "openai/gpt-5.6-luna  GPT-5.6 Luna  context 1050000 / output 128000\n";
 const ACCOUNT = { accessToken: "e2e-openai-access", refreshToken: "e2e-openai-refresh", expiresAt: Date.now() + 3_600_000, scopes: GRANTED_SCOPES, clientId: "oaiapp_e2e", subject: "e2e-subject", idToken: "x.y.z", email: "e2e@example.com" };
 
 describe("sign-in (rules S1–S16)", () => {
@@ -71,12 +74,11 @@ describe("sign-in (rules S1–S16)", () => {
     expect(accounts().accounts.map((a) => [a.id, a.label, a.data["subject"], a.data["scopes"]])).toEqual([["oaiapp_e2e", "e2e@example.com", "e2e-subject", GRANTED_SCOPES]]);
     expect((await run(["account", "list", "openai"])).stdout).toBe("* oaiapp_e2e  (e2e@example.com)\n");
 
-    // The live list (captured 2026-10-13) states the context windows only; the output limit comes from the reference
-    // catalog, whose context window (1 050 000) yields to the provider's own (rule M1).
+    // Recon gap P4: opencode's list, the reference's openai models with an allowed id; no model-list call to OpenAI.
     const models = await run(["models", "openai"]);
-    expect(models.stdout.split("\n")[0]).toBe("# openai: 7 models (live catalog)");
-    expect(models.stdout).toContain("openai/gpt-5.6-luna  GPT-5.6-Luna  context 272000 / output 128000\n");
-    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 7 models (stored copy of the live catalog)");
+    expect(models.stdout.split("\n")[0]).toBe("# openai: 8 models (live catalog)");
+    expect(models.stdout).toContain(MODELS_LINE);
+    expect(upstreams.find("/v1/models")).toHaveLength(0);
 
     // A re-login re-authorizes the saved registration with its issued client id (the callback carries none) and the
     // stored host id; the same subject is accepted.
@@ -202,8 +204,10 @@ describe("the native Responses cell (rules I1–I6, E1–E3, O7–O9)", () => {
     const final = await stream.finalResponse();
     expect([deltas.join(""), final.output_text, final.status]).toEqual(["OK", "OK", "completed"]);
     const request = sent();
+    // Recon gaps P1–P3: the body zstd-compressed (the replay records it decoded), the client's own User-Agent, no
+    // explicit accept (the runtime's default).
     expect(JSON.parse(request.body)).toEqual({ model: "gpt-5.6-luna", input: [{ role: "user", content: "Reply with the single word OK." }], stream: true, store: false });
-    expect([request.headers["authorization"], request.headers["user-agent"], request.headers["accept"]]).toEqual(["Bearer e2e-openai-access", "accounts-proxy/0.1.0", "text/event-stream"]);
+    expect([request.headers["authorization"], request.headers["content-encoding"], request.headers["user-agent"], request.headers["accept"]]).toEqual(["Bearer e2e-openai-access", "zstd", "OpenAI/JS 7.32.0", "*/*"]);
     expect(request.headers["session-id"]).toMatch(/^[0-9a-f-]{36}$/);
     expect([request.headers["thread-id"], request.headers["x-client-request-id"]]).toEqual([request.headers["session-id"], request.headers["session-id"]]);
 
@@ -222,6 +226,32 @@ describe("the native Responses cell (rules I1–I6, E1–E3, O7–O9)", () => {
     expect([sent().headers["session-id"], sent().headers["thread-id"], sent().headers["x-client-request-id"]]).toEqual(["ses_client", "thr_client", "thr_client"]);
     const second = await client(s).responses.create({ model: "openai/gpt-5.6-luna", tools: [tool], input: [{ role: "user", content: "time in Tokyo?" }, { type: "function_call", call_id: call.type === "function_call" ? call.call_id : "", name: "get_time", arguments: "{}" }, { type: "function_call_output", call_id: call.type === "function_call" ? call.call_id : "", output: "16:05" }] });
     expect(second.output_text).toContain("16:05");
+  });
+
+  test("recon gaps P1–P3: opencode's own recorded request goes upstream with its headers in name order and a zstd body; a client without a User-Agent gets the proxy's", async () => {
+    const s = await serve();
+    // opencode v2.1.1's tool-result request (recon run opencode/2026-10-24-07-22-48 seq 5), as it reaches the proxy.
+    const recorded = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "recon-parity", "opencode-2.1.1", "2026-10-24-07-22-48-workflow", "captures", "005-request.json"), "utf8")) as { headers: [string, string][]; body: string };
+    const hop = new Set(["authorization", "content-encoding", "content-length", "connection", "accept", "host", "accept-encoding"]);
+    const own = recorded.headers.filter(([name]) => !hop.has(name.toLowerCase()));
+    const body = { ...(JSON.parse(recorded.body) as Record<string, unknown>), model: "openai/gpt-5.6-luna" };
+    const answer = await post(s, body, Object.fromEntries(own));
+    expect(answer.status).toBe(200);
+    await answer.text();
+    const upstream = sent();
+    expect([upstream.headers["content-encoding"], upstream.headers["user-agent"], upstream.headers["x-opencode-client"], upstream.headers["x-session-affinity"]]).toEqual(["zstd", "opencode/latest/2.1.1/cli", "cli", recorded.headers.find(([n]) => n === "x-session-affinity")![1]]);
+    expect(JSON.parse(upstream.body)).toMatchObject({ model: "gpt-5.6-luna", store: false, stream: true });
+
+    const target = new URL(`${s.url}/openai/v1/responses`);
+    const bare = await new Promise<number>((resolve, reject) => {
+      const req = request({ host: target.hostname, port: target.port, path: target.pathname, method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${s.token}` } }, (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode!));
+      });
+      req.on("error", reject);
+      req.end(JSON.stringify({ model: "openai/gpt-5.6-luna", input: "Reply with the single word OK." }));
+    });
+    expect([bare, sent().headers["user-agent"]]).toEqual([200, "accounts-proxy/0.1.0"]);
   });
 
   test("documented limits (I3–I4, O7): 400 unsupported_feature, or dropped and reported with x-proxy-lossy", async () => {
@@ -322,72 +352,61 @@ describe("the native Responses cell (rules I1–I6, E1–E3, O7–O9)", () => {
 describe("session and catalog (T1–T5, M1–M2)", () => {
   test("an expired token is renewed once (the refresh token rotates); a refused renewal marks the account for a new login", async () => {
     home = await makeHome(OPENAI);
+    // The model list needs no account (recon gap P4), so a Responses request is what renews.
+    const token = (await run(["token"])).stdout.trim();
+    daemon = await startDaemon(home, upstreams.seamEnv());
+    const ask = () => fetch(`${daemon!.url}/openai/v1/responses`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ model: "openai/gpt-5.6-luna", input: "x" }) });
     storeAccount({ ...ACCOUNT, expiresAt: Date.now() - 1000 });
     upstreams.script(TOKEN, () => jsonResponse({ access_token: "e2e-openai-access-2", refresh_token: "e2e-openai-refresh-2", expires_in: 3600, scope: GRANTED_SCOPES }));
-    const listed = await run(["models", "openai"]);
-    expect(listed.stdout.split("\n")[0]).toBe("# openai: 7 models (live catalog)");
+    expect((await ask()).status).toBe(200);
     const refresh = form(upstreams.find(TOKEN).at(-1)!);
     expect([refresh.get("grant_type"), refresh.get("client_id"), refresh.get("refresh_token"), refresh.get("resource")]).toEqual(["refresh_token", "oaiapp_e2e", "e2e-openai-refresh", "https://api.openai.com/v1"]);
     expect([accounts().accounts[0]!.data["accessToken"], accounts().accounts[0]!.data["refreshToken"], accounts().accounts[0]!.data["scopes"]]).toEqual(["e2e-openai-access-2", "e2e-openai-refresh-2", GRANTED_SCOPES]);
 
     storeAccount({ ...ACCOUNT, expiresAt: Date.now() - 1000 });
     upstreams.script(TOKEN, () => jsonResponse({ access_token: "e2e-openai-access-3", refresh_token: "e2e-openai-refresh-3" }));
-    expect((await run(["models", "openai"])).code).toBe(0);
-    expect(accounts().accounts[0]!.data["scopes"]).toBe(GRANTED_SCOPES);
+    expect((await ask()).status).toBe(200);
+    expect([accounts().accounts[0]!.data["accessToken"], accounts().accounts[0]!.data["scopes"]]).toEqual(["e2e-openai-access-3", GRANTED_SCOPES]);
 
     storeAccount({ ...ACCOUNT, expiresAt: Date.now() - 1000 });
     upstreams.script(TOKEN, () => jsonResponse({ error: "invalid_grant" }, 400));
-    const s = { token: (await run(["token"])).stdout.trim(), url: "" };
-    daemon = await startDaemon(home, upstreams.seamEnv());
-    const refused = await fetch(`${daemon.url}/openai/v1/responses`, { method: "POST", headers: { authorization: `Bearer ${s.token}`, "content-type": "application/json" }, body: JSON.stringify({ model: "openai/gpt-5.6-luna", input: "x" }) });
+    const refused = await ask();
     expect([refused.status, ((await refused.json()) as { error: { code: string } }).error.code]).toEqual([401, "provider_auth_required"]);
     expect(accounts().accounts[0]!.needsLogin).toContain("invalid_grant");
     expect((await run(["account", "list", "openai"])).stdout).toContain("[needs login");
   });
 
-  test("the model list: the stored copy when the live list fails, the built-in list without one or without an account", async () => {
+  test("the model list (M2, recon gap P4): the reference's openai models with an allowed id, with or without an account; never a model-list call", async () => {
     home = await makeHome(OPENAI);
-    const none = await run(["models", "openai"]);
-    expect(none.stdout.split("\n")[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)");
+    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 8 models (live catalog)");
     storeAccount(ACCOUNT);
-    for (const answer of [() => new Response("down", { status: 503 }), () => jsonResponse({ models: [{ slug: "hidden", visibility: "hide" }, 1, { visibility: "list", slug: "" }] }), () => jsonResponse({ data: [] })]) {
-      upstreams.script("/v1/models", answer);
-      expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)");
-    }
-    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 7 models (live catalog)");
-    // A stored copy past 24 h is refreshed; when that fails the stale copy is used.
-    const path = join(home.dir, "state", "openai", "model-catalog.json");
-    const stored = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-    writeFileSync(path, JSON.stringify({ ...stored, fetchedAt: 0 }));
-    upstreams.script("/v1/models", () => new Response("down", { status: 503 }));
-    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 7 models (stored copy of the live catalog)");
-    // An unreadable copy is ignored (logged); a copy of another registration is not used.
-    writeFileSync(path, "{");
-    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 7 models (live catalog)");
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN openai: model list cache unreadable");
-    storeAccount({ ...ACCOUNT, clientId: "oaiapp_other" });
-    upstreams.script("/v1/models", () => new Response("down", { status: 503 }));
-    expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)");
-    // Stored accounts of another shape are unreadable: the built-in list.
-    for (const data of [{ accessToken: 1 }, { ...ACCOUNT, clientId: 1 }, "x"]) {
-      storeAccount(data as Record<string, unknown>);
-      expect((await run(["models", "openai"])).stdout.split("\n")[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)");
-    }
-    // A model without a display name or a context window is listed by its slug alone; the daemon keeps its live list in
-    // memory; an account without an e-mail is used as it is; a store that cannot be written is only logged.
-    const { email: _email, ...withoutEmail } = ACCOUNT;
-    storeAccount({ ...withoutEmail, clientId: "oaiapp_third" });
-    chmodSync(join(home.dir, "state", "openai"), 0o500);
-    upstreams.script("/v1/models", () => jsonResponse({ models: [{ slug: "bare", visibility: "list", context_window: 0 }] }));
-    expect((await run(["models", "openai"])).stdout).toBe("# openai: 1 models (live catalog)\nopenai/bare  bare\n");
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN openai: model list cache write failed");
-    chmodSync(join(home.dir, "state", "openai"), 0o700);
+    const listed = await run(["models", "openai"]);
+    expect(listed.stdout.split("\n")[0]).toBe("# openai: 8 models (stored copy of the live catalog)");
+    expect(listed.stdout).toContain(MODELS_LINE);
     const token = (await run(["token"])).stdout.trim();
     daemon = await startDaemon(home, upstreams.seamEnv());
-    for (const _ of [1, 2]) {
-      const listed = await fetch(`${daemon.url}/openai/v1/models`, { headers: { authorization: `Bearer ${token}` } });
-      expect(listed.headers.get("x-proxy-models-source")).toBe("openai=live");
+    const served = await fetch(`${daemon.url}/openai/v1/models`, { headers: { authorization: `Bearer ${token}` } });
+    expect(served.headers.get("x-proxy-models-source")).toBe("openai=cache");
+    expect(upstreams.find("/v1/models")).toHaveLength(0);
+    // An account without an e-mail is used as it is.
+    const { email: _email, ...withoutEmail } = ACCOUNT;
+    storeAccount(withoutEmail);
+    const used = await fetch(`${daemon.url}/openai/v1/responses`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ model: "openai/gpt-5.6-luna", input: "x" }) });
+    expect([used.status, upstreams.find("/v1/responses").at(-1)!.headers["authorization"]]).toEqual([200, "Bearer e2e-openai-access"]);
+    await used.text();
+    // Stored accounts of another shape are unreadable: a request needs a new login.
+    for (const data of [{ accessToken: 1 }, { ...ACCOUNT, clientId: 1 }]) {
+      storeAccount(data);
+      const refused = await fetch(`${daemon.url}/openai/v1/responses`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ model: "openai/gpt-5.6-luna", input: "x" }) });
+      expect([refused.status, ((await refused.json()) as { error: { code: string } }).error.code]).toEqual([401, "provider_auth_required"]);
     }
-    expect(captured("l4/openai-models.json").status).toBe(200);
   });
+
+  test("a reference catalog without an openai provider lists no openai model (the list is opencode's, never OpenAI's)", async () => {
+    home = await makeHome(OPENAI);
+    const { openai: _openai, ...others } = JSON.parse(spec("models-opencode-reference.json")) as Record<string, unknown>;
+    upstreams.script("/api.json", () => jsonResponse(others));
+    expect((await run(["models", "openai"])).stdout).toBe("# openai: 0 models (live catalog)\n");
+    expect(upstreams.find("/v1/models")).toHaveLength(0);
+  });;
 });

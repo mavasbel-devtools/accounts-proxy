@@ -27,7 +27,7 @@ const steps: Step[] = [
   { name: "recon parity (Claude Code 2.1.304)", command: [bun, "scripts/recon/cli.ts", "parity", "tests/fixtures/captures/recon-parity/claude-2.1.304", "18"] },
   { name: "recon parity (Antigravity 1.107.0)", command: [bun, "scripts/recon/cli.ts", "parity", "tests/fixtures/captures/recon-parity/antigravity-1.107.0", "3287"] },
   // OpenCode v2.1.1, one recorded conversation per endpoint family (Go and Zen): Chat with a tool loop, Responses,
-  // Messages and Gemini; each conversation is replayed through one daemon, in order.
+  // Messages and Gemini, then the ChatGPT plan-usage conversations; each is replayed through one daemon, in order.
   ...(
     [
       ["2026-10-23-03-50-16-workflow", "2", "3", "4"],
@@ -36,6 +36,11 @@ const steps: Step[] = [
       ["2026-10-23-03-55-59-workflow", "3", "4"],
       ["2026-10-23-03-51-14-workflow", "2", "3"],
       ["2026-10-23-03-51-20-workflow", "2", "3"],
+      // The openai cell, opencode's own ChatGPT sign-in (recon gaps P1–P4): a turn with its title call, a tool loop and
+      // two turns of one conversation.
+      ["2026-10-24-07-22-40-workflow", "3", "4"],
+      ["2026-10-24-07-22-48-workflow", "3", "4", "5"],
+      ["2026-10-24-07-22-57-workflow", "3", "6"],
     ] as const
   ).map(([run, ...seqs]) => ({
     name: `recon parity (OpenCode 2.1.1, ${run})`,

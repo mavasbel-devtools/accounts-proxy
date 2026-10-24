@@ -16,7 +16,8 @@ export type HttpRequest = {
   readonly method: "GET" | "POST";
   readonly url: string;
   readonly headers: Headers | HeaderPairs;
-  readonly body?: string;
+  /** Text, or bytes already encoded for the request's `content-encoding`. */
+  readonly body?: string | Uint8Array;
   /** Abort the request (including the body read) after this many milliseconds. */
   readonly timeoutMs?: number;
   /** Aborts the exchange, body read included (the client of a streamed response disconnected). */

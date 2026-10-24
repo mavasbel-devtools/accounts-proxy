@@ -41,7 +41,7 @@ import { CATALOG as CLAUDE_CATALOG, EXPIRY_BUFFER_MS as CLAUDE_EXPIRY_BUFFER_MS 
 import { CATALOG_TTL_MS } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 import { NATIVE_PATH as OPENAI_NATIVE_PATH } from "@accounts-proxy/provider-openai/adapters/outbound/openai-provider.ts";
 import { REFRESH_LOCK as OPENAI_REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
-import { CATALOG as OPENAI_CATALOG, EXPIRY_BUFFER_MS as OPENAI_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-openai/domain/constants.ts";
+import { EXPIRY_BUFFER_MS as OPENAI_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { EXPIRY_BUFFER_MS as OPENCODE_EXPIRY_BUFFER_MS, REFRESH_LOCK as OPENCODE_REFRESH_LOCK } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-session.ts";
 import { SHUTDOWN_GRACE_MS } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
 import { DEFAULT_LOGIN_TIMEOUT_S } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
@@ -184,7 +184,7 @@ describe("the documentation is in step with the code", () => {
     expect(api).toContain("access-token renewal: 2 minutes before expiry");
     expect([TOKEN_ENDPOINT_TIMEOUT_MS, RENEWAL_RETRY_AFTER_MS]).toEqual([30_000, 30_000]);
     expect(api).toContain("bounded by 30 s; a transient renewal failure keeps a still-valid token and retries after 30 s");
-    for (const ttl of [CLAUDE_CATALOG.ttlMs, OPENAI_CATALOG.ttlMs, CATALOG_TTL_MS, REFERENCE_TTL_MS]) expect(ttl).toBe(24 * 3_600_000);
+    for (const ttl of [CLAUDE_CATALOG.ttlMs, CATALOG_TTL_MS, REFERENCE_TTL_MS]) expect(ttl).toBe(24 * 3_600_000);
     expect(api).toContain("model lists and the reference catalog: 24 h");
   });
 

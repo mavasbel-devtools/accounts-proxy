@@ -532,6 +532,27 @@ def main() -> int:
             check(workspace not in json.dumps(ws_record), "workspace id absent from the record")
             check(["x-opencode-org-id", "<REDACTED:workspace>"] in ws_record["headers"], "workspace header redacted, name kept")
 
+            # OpenAI's user id rides in the answer stream's `safety_identifier` (measured 2026-10-24).
+            openai_user = "user-AAAAAAAAAAAAAAAAAAAAAAAA"
+            oa_request = http.Request(
+                "api.openai.com",
+                443,
+                b"POST",
+                b"https",
+                b"api.openai.com",
+                b"/v1/responses",
+                b"HTTP/1.1",
+                headers=header_pairs([("content-type", "application/json")]),
+                content=json.dumps({"safety_identifier": openai_user, "note": "user-agent"}).encode(),
+                trailers=None,
+                timestamp_start=1,
+                timestamp_end=2,
+            )
+            addon.request(tflow.tflow(req=oa_request))
+            oa_record = latest(out, "-request.json")
+            check(openai_user not in json.dumps(oa_record), "OpenAI user id absent from the record")
+            check(json.loads(oa_record["body"])["note"] == "user-agent", "text that only starts like the pattern kept")
+
             # 7. transport error record.
             addon.error(tflow.tflow(err=True))
             check(latest(out, "-error.json")["error"] is not None, "transport error recorded")
@@ -539,7 +560,7 @@ def main() -> int:
             addon.done()
             index = read(out, "index.json")
             check(index["schema"] == "recon-index/2", "index schema")
-            check(index["counts"]["requests"] == 7 and index["counts"]["responses"] == 6, "index counts")
+            check(index["counts"]["requests"] == 8 and index["counts"]["responses"] == 6, "index counts")
             check(index["counts"]["aborted"] == 1, "index abort count")
             check(index["counts"]["clientClosed"] == 2, "index completed-after-close count")
             check(index["counts"]["connections"] == 1, "index connection count")

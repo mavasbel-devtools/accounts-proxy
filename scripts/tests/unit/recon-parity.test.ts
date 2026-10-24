@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { gzipSync, zstdCompressSync } from "node:zlib";
 import { canonicalise, maskString, maskValue, REDACTED } from "@accounts-proxy/scripts/recon/parity/canon.ts";
-import { cellFor } from "@accounts-proxy/scripts/recon/parity/cells.ts";
+import { cellFor, cellOf } from "@accounts-proxy/scripts/recon/parity/cells.ts";
 import { markdown, render } from "@accounts-proxy/scripts/recon/parity/compare.ts";
 import { diffRequests } from "@accounts-proxy/scripts/recon/parity/diff.ts";
 import { RequestStream } from "@accounts-proxy/scripts/recon/parity/tap.ts";
@@ -129,6 +130,18 @@ describe("wire tap parser", () => {
     new RequestStream((request) => empty.push(request)).push(Buffer.from("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"));
     expect(empty).toHaveLength(1);
   });
+
+  test("a zstd or gzip body is decoded like plane A's; the content-encoding header itself is kept", () => {
+    const seen: { headers: readonly (readonly [string, string])[]; body: string }[] = [];
+    const stream = new RequestStream((request) => seen.push(request));
+    for (const [encoding, frame] of [["zstd", zstdCompressSync(Buffer.from('{"a":1}'))], ["gzip", gzipSync(Buffer.from('{"b":2}'))]] as const) {
+      stream.push(Buffer.concat([Buffer.from(`POST /v1/responses HTTP/1.1\r\nContent-Encoding: ${encoding}\r\nContent-Length: ${frame.length}\r\n\r\n`), frame]));
+    }
+    expect(seen.map((request) => [request.headers[0], request.body])).toEqual([
+      [["Content-Encoding", "zstd"], '{"a":1}'],
+      [["Content-Encoding", "gzip"], '{"b":2}'],
+    ]);
+  });
 });
 
 describe("cells", () => {
@@ -198,6 +211,29 @@ describe("cells", () => {
     expect(cell.daemon!.providers).toBe("  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");
   });
 
+  test("openai: opencode's ChatGPT request maps to the Responses route without its content-encoding; other clients keep their cell", () => {
+    const headers = [
+      ["Authorization", "Bearer <REDACTED:authorization>"],
+      ["Content-Encoding", "zstd"],
+      ["Content-Type", "application/json"],
+      ["User-Agent", "opencode/latest/2.1.1/cli"],
+      ["session-id", "ses_1"],
+      ["Connection", "keep-alive"],
+      ["Accept", "*/*"],
+      ["Content-Length", "10"],
+    ] as const;
+    const cell = cellOf("opencode", "https://api.openai.com/v1/responses");
+    expect(cell.input({ method: "POST", url: "https://api.openai.com/v1/responses", headers, body: '{"model":"gpt-6-luna","input":[]}' }, "tok")).toEqual({
+      target: "/openai/v1/responses",
+      headers: [["Authorization", "Bearer tok"], ["Content-Type", "application/json"], ["User-Agent", "opencode/latest/2.1.1/cli"], ["session-id", "ses_1"]],
+      body: JSON.stringify({ model: "openai/gpt-6-luna", input: [] }),
+    });
+    expect([cell.client, cell.upstreamPath, cell.daemon!.providers]).toEqual(["opencode", "/v1/responses", "  openai: {enabled: true, acknowledgeTermsRisk: true}\n"]);
+    expect(Object.keys(cell.daemon!.accountFiles!)).toEqual(["accounts-openai.json"]);
+    expect(cellOf("opencode", "https://opencode.ai/inference/openai/v1/responses")).toBe(cellFor("opencode"));
+    expect(cellOf("claude", "https://api.anthropic.com/v1/messages")).toBe(cellFor("claude"));
+  });
+
   test("identity patterns of the manifest are masked on both sides: the OpenCode workspace id and its redacted mark compare equal", () => {
     expect(maskString("wrk_01PARITYPARITYPARITYPARITY")).toBe(REDACTED);
     expect(maskString("<REDACTED:workspace>")).toBe(REDACTED);
@@ -213,7 +249,7 @@ describe("report", () => {
     const text = markdown({
       capture: { client: "claude", version: "2.1.304", run: "claude/r/turn", seq: 18, url: "https://api.anthropic.com/v1/messages?beta=true", httpVersion: "HTTP/1.1" },
       mapping: "mapping",
-      proxy: { status: 200, upstreamRequests: 1, httpVersion: "HTTP/1.1" },
+      proxy: { status: 200, upstreamRequests: 1, httpVersion: "HTTP/1.1", otherUpstream: ["GET /v1/models"] },
       refusal: { status: 400, body: "no", dropped: "anthropic-beta:x" },
       gaps: [{ kind: "header-missing", where: "x-a", client: "1" }],
     });
@@ -222,8 +258,9 @@ describe("report", () => {
     expect(text).toContain("**Refused as sent:** 400");
     expect(text).toContain("which dropped `anthropic-beta:x`");
     expect(text).toContain("| 1 | header-missing | `x-a` | `1` | — |");
-    expect(markdown({ capture: { client: "c", version: "v", run: "r", seq: 1, url: "u" }, mapping: "m", proxy: { status: 200, upstreamRequests: 1 }, gaps: [] })).toContain(
-      "0 difference(s).",
-    );
+    expect(text).toContain("Other proxy upstream calls during this request: `GET /v1/models`.");
+    const bare = markdown({ capture: { client: "c", version: "v", run: "r", seq: 1, url: "u" }, mapping: "m", proxy: { status: 200, upstreamRequests: 1, otherUpstream: [] }, gaps: [] });
+    expect(bare).toContain("0 difference(s).");
+    expect(bare).toContain("Other proxy upstream calls during this request: none.");
   });
 });

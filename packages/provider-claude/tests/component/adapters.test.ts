@@ -27,6 +27,7 @@ import { STATIC_CATALOG } from "@accounts-proxy/provider-claude/domain/model-env
 import { capturedBetaHeader } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
 import { ClaudeCatalogPort, ClaudeOAuthPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 import { OAuthSessionPort, type Session } from "@accounts-proxy/core/ports/outbound/session.ts";
+import { bodyText } from "@accounts-proxy/test-support/http-body.ts";
 
 const fixtures = join(import.meta.dir, "..", "fixtures", "plugin-6292741");
 const text = (name: string) => readFileSync(join(fixtures, name), "utf8");
@@ -58,7 +59,7 @@ describe("ClaudeOAuthClient", () => {
     const sent = transport.requests[0]!;
     expect(sent.url).toBe(PRODUCTION_ENDPOINTS.tokenUrl);
     expect(sent.headers).toEqual(TOKEN_HEADERS);
-    expect(JSON.parse(sent.body!)).toEqual({
+    expect(JSON.parse(bodyText(sent.body))).toEqual({
       grant_type: "authorization_code",
       code: "c0de",
       redirect_uri: "http://localhost:5555/callback",
@@ -66,7 +67,7 @@ describe("ClaudeOAuthClient", () => {
       code_verifier: "ver",
       state: "st",
     });
-    expect(Object.keys(JSON.parse(sent.body!))).toEqual(["grant_type", "code", "redirect_uri", "client_id", "code_verifier", "state"]);
+    expect(Object.keys(JSON.parse(bodyText(sent.body)))).toEqual(["grant_type", "code", "redirect_uri", "client_id", "code_verifier", "state"]);
     expect(sent.timeoutMs).toBe(TOKEN_ENDPOINT_TIMEOUT_MS);
     expect(account.id).toBe("<account-email>");
     expect(fromAccount(account)?.expiresAt).toBe(1_000 + 28_800_000);
@@ -85,10 +86,10 @@ describe("ClaudeOAuthClient", () => {
     const client = new ClaudeOAuthClient(transport, clock, PRODUCTION_ENDPOINTS);
     const capturedScope = json<{ scope: string }>("refresh-request.json").scope;
     const fresh = await client.refresh({ accessToken: "old", refreshToken: "sk-ant-oat01-REDACTED", expiresAt: 0, scopes: capturedScope, email: "e" });
-    expect(JSON.parse(transport.requests[0]!.body!)).toEqual(json("refresh-request.json"));
+    expect(JSON.parse(bodyText(transport.requests[0]!.body))).toEqual(json("refresh-request.json"));
     expect(fresh).toEqual({ accessToken: "new", refreshToken: "sk-ant-oat01-REDACTED", expiresAt: 61_000, scopes: capturedScope, email: "e" });
     await client.refresh({ accessToken: "old", refreshToken: "r", expiresAt: 0, scopes: "" });
-    expect(JSON.parse(transport.requests[1]!.body!).scope).toBe("user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload user:plugins");
+    expect(JSON.parse(bodyText(transport.requests[1]!.body)).scope).toBe("user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload user:plugins");
   });
 
   test("refresh without a refresh token is an auth error", async () => {
@@ -528,7 +529,7 @@ describe("ClaudeSubscriptionProvider", () => {
     const sent = transport.requests[0]!;
     expect(sent.url).toBe("http://up/v1/messages?beta=true");
     expect(sent.headers.authorization).toBe("Bearer at");
-    const body = JSON.parse(sent.body!) as { model: string; metadata: { user_id: string } };
+    const body = JSON.parse(bodyText(sent.body)) as { model: string; metadata: { user_id: string } };
     expect(body.model).toBe("claude-opus-4-8");
     expect(JSON.parse(body.metadata.user_id)).toMatchObject({ account_uuid: "acct-1", session_id: identity.sessionId });
     expect(identity.previousMessageId()).toMatch(/^msg_/);
@@ -588,7 +589,7 @@ describe("ClaudeSubscriptionProvider", () => {
     const provider = new ClaudeSubscriptionProvider(new NoUuid(), new FixedCatalog(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), transport, new SequenceRandom(), new MemoryLogger(), API_BASE);
     await provider.passthrough("m", raw({ messages: [] }));
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/messages?beta=true");
-    expect(JSON.parse(JSON.parse(transport.requests[0]!.body!).metadata.user_id).account_uuid).toBe("");
+    expect(JSON.parse(JSON.parse(bodyText(transport.requests[0]!.body)).metadata.user_id).account_uuid).toBe("");
   });
 
   test("a response without content-type is not observed", async () => {

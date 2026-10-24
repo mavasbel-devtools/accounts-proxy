@@ -10,6 +10,7 @@ import { OpenRouterOAuthClient } from "@accounts-proxy/provider-openrouter/adapt
 import { OpenRouterQuota } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-quota.ts";
 import { HEADLESS_REDIRECT } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
 import { FixedClock, MemoryCredentialStore, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
+import { bodyText } from "@accounts-proxy/test-support/http-body.ts";
 
 class Hash extends HashPort {
   sha256() {
@@ -37,7 +38,7 @@ describe("OpenRouterOAuthClient (R5–R7)", () => {
     expect(await client.exchange(exchange)).toEqual({ provider: "openrouter", id: "key-deadbeef", label: "key-deadbeef", data: { apiKey: "sk-or-v1-b" } });
     await expect(client.exchange(exchange)).rejects.toThrow("openrouter: no API key entered");
     const sent = transport.requests[0]!;
-    expect([sent.method, sent.url, sent.headers["content-type"], JSON.parse(sent.body!), sent.timeoutMs]).toEqual(["POST", "http://api/api/v1/auth/keys", "application/json", { code: "c", code_verifier: "v", code_challenge_method: "S256" }, 30_000]);
+    expect([sent.method, sent.url, sent.headers["content-type"], JSON.parse(bodyText(sent.body)), sent.timeoutMs]).toEqual(["POST", "http://api/api/v1/auth/keys", "application/json", { code: "c", code_verifier: "v", code_challenge_method: "S256" }, 30_000]);
   });
 
   test("a refused exchange needs a new login", async () => {

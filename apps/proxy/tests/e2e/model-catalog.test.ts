@@ -12,6 +12,8 @@ import { GRANTED_SCOPES } from "@accounts-proxy/test-support/e2e/openai-signing.
 import { captured, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
+/** The committed reference's openai models with one of opencode's 16 ChatGPT ids, in the reference's order (P4). */
+const OPENAI_LISTED = ["gpt-6.1-sol", "gpt-6-astra", "gpt-5.6-luna", "gpt-5.5", "gpt-6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-6-sol"].map((id) => `openai/${id}`);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());
@@ -60,7 +62,7 @@ describe("detailed model list and opencode configuration", () => {
     expect(catalogs.map((c) => [c.provider, c.source, c.referenceSource])).toEqual([
       ["claude", "static", "live"],
       ["antigravity", "unavailable", "live"],
-      ["openai", "static", "live"],
+      ["openai", "live", "live"],
       ["openrouter", "live", "live"],
       ["opencode", "live", "live"],
       ["opencode-go", "live", "live"],
@@ -108,13 +110,6 @@ describe("detailed model list and opencode configuration", () => {
     expect(one.catalogs.map((c) => [c.provider, c.models.length])).toEqual([["cheaper-inference", 91]]);
     const unknown = await fetch(`${daemon.url}/proxy/v1/models?provider=nope`, { headers: auth });
     expect([unknown.status, await unknown.json()]).toEqual([400, { error: { code: "invalid_request", message: 'unknown provider "nope"' } }]);
-    // A model whose lists state no limits has none in the Anthropic list either.
-    const anthropic = (await (await fetch(`${daemon.url}/anthropic/v1/models`, { headers: { "x-api-key": token } })).json()) as { data: { id: string; max_input_tokens: number | null; max_tokens: number | null }[] };
-    expect(anthropic.data.filter((m) => m.max_input_tokens === null && m.max_tokens === null).map((m) => m.id)).toContain("openai/gpt-5.5-fast");
-    // The same model in the Gemini list: no limits stated.
-    const geminiList = (await (await fetch(`${daemon.url}/gemini/v1beta/models`, { headers: { "x-goog-api-key": token } })).json()) as { models: Record<string, unknown>[] };
-    const limits = geminiList.models.find((m) => m["name"] === "models/openai/gpt-5.5-fast")!;
-    expect([limits["inputTokenLimit"], limits["outputTokenLimit"]]).toEqual([undefined, undefined]);
     const posted = await fetch(`${daemon.url}/proxy/v1/models`, { method: "POST", headers: auth });
     expect([posted.status, await posted.json()]).toEqual([404, { error: { code: "not_found", message: "no route POST /proxy/v1/models" } }]);
     const missing = await fetch(`${daemon.url}/proxy/v1/models?provider=antigravity`, { headers: auth });
@@ -171,8 +166,19 @@ describe("detailed model list and opencode configuration", () => {
     const model = (provider: string, id: string) => catalogs.find((c) => c.provider === provider)!.models.find((m) => m["id"] === `${provider}/${id}`)!;
     // Each list states only what it carries: no capabilities, a media type marked false, an empty effort, no parameters, no prices.
     expect(model("claude", "claude-edge-nocaps")["input"]).toBeUndefined();
+    // A model whose lists state no limits has none in the Anthropic list or the Gemini list either.
+    const token = (await run(["token"])).stdout.trim();
+    daemon = await startDaemon(home, upstreams.seamEnv());
+    const anthropic = (await (await fetch(`${daemon.url}/anthropic/v1/models`, { headers: { "x-api-key": token } })).json()) as { data: { id: string; max_input_tokens: number | null; max_tokens: number | null }[] };
+    expect(anthropic.data.find((m) => m.id === "claude/claude-edge-nocaps")).toMatchObject({ max_input_tokens: null, max_tokens: null });
+    const geminiList = (await (await fetch(`${daemon.url}/gemini/v1beta/models`, { headers: { "x-goog-api-key": token } })).json()) as { models: Record<string, unknown>[] };
+    const limits = geminiList.models.find((m) => m["name"] === "models/claude/claude-edge-nocaps")!;
+    expect([limits["inputTokenLimit"], limits["outputTokenLimit"]]).toEqual([undefined, undefined]);
+    await daemon.stop();
+    daemon = undefined;
     expect(model("antigravity", "gemini-edge")["input"]).toEqual(["text"]);
-    expect(model("openai", "gpt-edge")["reasoningOptions"]).toEqual([{ type: "effort", values: ["low"] }]);
+    // OpenAI's list is opencode's (recon gap P4): the reference's openai models with an allowed id, nothing else.
+    expect(catalogs.find((c) => c.provider === "openai")!.models.map((m) => m["id"])).toEqual(OPENAI_LISTED);
     expect(model("openrouter", "meta/edge")["toolCall"]).toBeUndefined();
     expect([model("cheaper-inference", "edge-image")["input"], model("cheaper-inference", "edge-image")["cost"]]).toEqual([undefined, undefined]);
     expect(model("cheaper-inference", "edge-numbers")["cost"]).toEqual([{ input: 1.5, output: 3 }]);
@@ -216,9 +222,6 @@ describe("detailed model list and opencode configuration", () => {
 function scriptShapes(): void {
   const json = (value: unknown): Response => Response.json(value);
   const body = (relative: string) => JSON.parse(captured(relative).body) as Record<string, unknown>;
-  const openai = body("l4/openai-models.json") as { models: Record<string, unknown>[] };
-  openai.models.push({ ...openai.models[0], slug: "gpt-edge", supported_reasoning_levels: ["x", { effort: "" }, { effort: "low" }] });
-  upstreams.script("/v1/models", () => json(openai));
   const antigravity = body("e5/fetch-available-models.json") as { models: Record<string, Record<string, unknown>> };
   const first = Object.values(antigravity.models)[0]!;
   antigravity.models["gemini-edge"] = { ...first, displayName: "Edge", supportsImages: false, supportsVideo: false, supportedMimeTypes: { "image/png": false, "text/plain": true } };

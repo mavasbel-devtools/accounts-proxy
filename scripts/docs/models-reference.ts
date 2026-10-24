@@ -56,7 +56,7 @@ type OpencodeConfig = { providers: Record<string, { models: Record<string, { var
 const LIST_SOURCE: Readonly<Record<string, { readonly from: string; readonly daemon: string }>> = {
   claude: { from: "the built-in list `STATIC_CATALOG` (`packages/provider-claude/src/domain/model-envelope.ts`; no account in the generation)", daemon: "14, live" },
   antigravity: { from: "the committed capture `tests/fixtures/captures/p0-live/e5/fetch-available-models.json` (live answer of 2026-10-12; Antigravity has no built-in list)", daemon: "24, live" },
-  openai: { from: "the built-in list `STATIC_CATALOG` (`packages/provider-openai/src/domain/catalog.ts`; no account in the generation)", daemon: "7, stored copy" },
+  openai: { from: "the reference catalog's `openai` models with one of opencode's 16 ChatGPT ids (`FALLBACK_MODELS`, `docs/reference/specs/models-opencode-reference.json`; recon gap P4: the list OpenCode itself shows)", daemon: "7, stored copy" },
   openrouter: { from: "the committed vendor list `docs/reference/specs/openrouter-models.json`", daemon: "467, stored copy" },
   opencode: { from: "the reference catalog's `opencode` provider (`docs/reference/specs/models-opencode-reference.json`; recon gap O5: the list OpenCode itself loads)", daemon: "88, stored copy" },
   "opencode-go": { from: "the reference catalog's `opencode-go` provider (`docs/reference/specs/models-opencode-reference.json`; recon gap O5)", daemon: "37, stored copy" },

@@ -17,6 +17,7 @@ import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type C
 import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 import { Redactor } from "@accounts-proxy/scripts/evidence/live/redact.ts";
 import { RecordingTransport, type Exchange } from "@accounts-proxy/scripts/evidence/live/recording-transport.ts";
+import { bodyText } from "@accounts-proxy/test-support/http-body.ts";
 
 export const PACE_MS = 2000;
 
@@ -202,12 +203,12 @@ export type CaptureRecord = {
 };
 
 export function redactExchange(redactor: Redactor, exchange: Exchange): Record<string, unknown> {
-  const bodyText = exchange.request.body ?? "";
-  let body: unknown = bodyText;
+  const text = bodyText(exchange.request.body);
+  let body: unknown = text;
   try {
-    body = JSON.parse(redactor.body(bodyText));
+    body = JSON.parse(redactor.body(text));
   } catch {
-    body = redactor.text(bodyText);
+    body = redactor.text(text);
   }
   return {
     request: { method: exchange.request.method, url: redactor.text(exchange.request.url), headers: redactor.headers(exchange.request.headers), body },

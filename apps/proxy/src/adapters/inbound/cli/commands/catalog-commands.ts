@@ -57,7 +57,7 @@ export const OPENCODE_CONFIG_HELP: CommandHelp = {
 const SOURCE_TEXT: Readonly<Record<CatalogSource, string>> = {
   live: "live catalog",
   cache: "stored copy of the live catalog",
-  static: "built-in list: the live catalog was unavailable",
+  static: "built-in list",
   unavailable: "unavailable",
 };
 

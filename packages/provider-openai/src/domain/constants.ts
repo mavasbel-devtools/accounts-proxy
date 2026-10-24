@@ -27,10 +27,15 @@ export const CALLBACK_PATH = "/auth/callback";
 export const DEFAULT_EXPIRES_IN_S = 3600;
 /** Renew this long before expiry: the proxy's common 2-minute buffer (Claude and Antigravity use the same value). */
 export const EXPIRY_BUFFER_MS = 120_000;
-/** The proxy's own User-Agent on OpenAI calls (opencode sends its own app's, chatgpt.ts:367,410). */
+/** The proxy's own User-Agent, sent only when the client sends none (recon gap P2; opencode sends its own app's). */
 export const USER_AGENT = "accounts-proxy/0.1.0";
 
-/** M2 (chatgpt.ts:30-47): the built-in model list, used when the live list is unavailable. */
+/**
+ * M2 (chatgpt.ts:30-47), recon gap P4: the model ids opencode allows for a ChatGPT sign-in. Its list is the reference
+ * catalog's `openai` models with one of these ids (chatgpt.ts:301; opencode v2.1.1's bundle filters the same set), and
+ * it never calls `GET /v1/models`: the live fetch is commented out (chatgpt.ts:298-300, 334), and none of the 14
+ * api.openai.com requests of recon runs opencode/2026-10-24-* is a model list.
+ */
 export const FALLBACK_MODELS: readonly string[] = [
   "gpt-5.5",
   "gpt-5.5-fast",
@@ -50,8 +55,8 @@ export const FALLBACK_MODELS: readonly string[] = [
   "gpt-6.1-sol-fast",
 ];
 
-/** Model catalog: live list cached for 24 h (the Claude catalog's rule), one cache per account registration. */
-export const CATALOG = { ttlMs: 24 * 60 * 60 * 1000, timeoutMs: 15_000 } as const;
+/** The deadline of the JWKS read at sign-in (S12). */
+export const JWKS_TIMEOUT_MS = 15_000;
 
 /** I3 (openai-siwc-preview-limitations.md "Responses API requirements"). */
 export const UNSUPPORTED_FIELDS: readonly string[] = [

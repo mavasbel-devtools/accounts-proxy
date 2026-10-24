@@ -359,9 +359,9 @@ describe("gateway edges", () => {
     const listed = await run(["models"]);
     // O5: OpenCode's lists are the reference catalog's, so without it both fall back to their built-in lists.
     expect(listed.stdout.split("\n").filter((l) => l.startsWith("# "))).toEqual([
-      "# openrouter: 459 models (built-in list: the live catalog was unavailable)",
-      "# opencode: 124 models (built-in list: the live catalog was unavailable)",
-      "# opencode-go: 31 models (built-in list: the live catalog was unavailable)",
+      "# openrouter: 459 models (built-in list)",
+      "# opencode: 124 models (built-in list)",
+      "# opencode-go: 31 models (built-in list)",
     ]);
     expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))");
     // The built-in copy of the reference catalog still names the models and gives their formats.
@@ -424,7 +424,7 @@ describe("cheaper-inference (rules C1–C9)", () => {
     home = await makeHome("providers:\n  cheaper-inference: {enabled: true}\n");
     // A captured gateway refusal (probe z0) stands for any non-200 answer: only the status is read.
     upstreams.script("/public/models", zenRefusal);
-    expect((await run(["models", "cheaper-inference"])).stdout.split("\n")[0]).toBe("# cheaper-inference: 91 models (built-in list: the live catalog was unavailable)");
+    expect((await run(["models", "cheaper-inference"])).stdout.split("\n")[0]).toBe("# cheaper-inference: 91 models (built-in list)");
     expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN cheaper-inference: live model list unavailable (model list HTTP 403)");
   });
 

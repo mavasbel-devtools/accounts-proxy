@@ -82,6 +82,7 @@ counter), `request.contents` (including `functionCall` / `functionResponse` in m
 ## 5. Not covered here
 
 - **opencode**: covered since 2026-10-22 (§7): the parity daemon gets a test Console sign-in (`cells.ts` `daemon`).
+- **openai**: covered since 2026-10-24 (§8): opencode's own ChatGPT sign-in is the reference client.
 - **TLS**: the ClientHello (JA3/JA4) is recorded on plane A since R2; plane B goes to a loopback HTTP tap, so the
   proxy's TLS fingerprint is not compared yet.
 - **HTTP version**: both captured clients used HTTP/1.1 to these hosts; the proxy's loopback leg is HTTP/1.1 as well.
@@ -632,6 +633,124 @@ OpenCode with a provider pointed at the proxy sends the same request to the prox
 Client request: `https://opencode.ai/inference/openai/v1/responses` (HTTP/1.1). Proxy answer to the client: 401; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap).
 
 OpenCode with a provider pointed at the proxy sends the same request to the proxy's route for its format (`/openai/v1/chat/completions`, `/openai/v1/responses`, `/anthropic/v1/messages`, `/gemini/v1beta/models/<model>:…`) with the model named `opencode/<model>` or `opencode-go/<model>`: the captured headers with the proxy token in the captured credential header (`Authorization` or `x-goog-api-key`), without the workspace header `x-opencode-org-id` (OpenCode adds it only on its own Console providers; the proxy adds the signed-in workspace's) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+## 8. OpenAI (opencode v2.1.1, ChatGPT sign-in)
+
+Added 2026-10-24 (plan [§25](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md#25-amendment--openai-cell-parity-against-opencode-v211-2026-10-24-0147)).
+The reference client is opencode's own "Sign in with ChatGPT" (user decision of 2026-10-22, option A), signed in once
+inside the opencode recon profile (run `opencode/2026-10-24-06-07-06/login`). Recordings:
+`bun scripts/recon/cli.ts workflow opencode <turn|turn-tools|multiturn> --model=openai/gpt-6-luna` (isolation probe
+`clean`, guard `unchanged` on every run). The three conversations recorded after the `openai-user` redaction rule are
+committed under `tests/fixtures/captures/recon-parity/opencode-2.1.1/` and replayed by `bun run verify`.
+
+The comparison maps opencode's request to the proxy's Responses route: its headers in their order with the proxy token
+in `Authorization`, the model named `openai/<model>`, the body decoded and without `Content-Encoding` (opencode
+compresses only toward its default address, so a client pointed at the proxy sends plain JSON), without the hop headers
+Bun sets on both sides. The tap decodes the proxy's zstd body like the capture addon decodes the client's, and the
+`content-encoding` header itself is compared.
+
+| # | Gap | Evidence | Resolution |
+|---|---|---|---|
+| P1 | Body encoding: opencode sends the Responses body zstd-compressed with `Content-Encoding: zstd` (default level: our `zstdCompressSync` of the recorded body gives the recorded `Content-Length` on all 7 requests); the proxy sent plain JSON | `opencode/2026-10-24-07-08-58/workflow` seq 2 | `ContentEncoderPort` (core) with `ZstdContentEncoder` (node:zlib) injected into `OpenAIProvider` |
+| P2 | Headers: the proxy sent its own `User-Agent` and none of opencode's own headers (`b3`, `traceparent`, `x-opencode-client`, `x-opencode-project`, `x-opencode-session`, `x-opencode-session-id`, `x-session-affinity`, `x-session-id`); opencode sends them after the standard headers, ordered by name together with `session-id`, `thread-id`, `x-client-request-id` | seq 2 | the client's `User-Agent` and OpenCode's own headers forwarded as sent (`OPENCODE_CLIENT_HEADERS`, shared with the Console cells), the proxy's own `User-Agent` only when the client sends none; named headers in name order |
+| P3 | `accept`: opencode sets none (its runtime sends `Accept: */*` after `Connection`); the proxy sent `accept: text/event-stream` first | seq 2 | no explicit `accept` |
+| P4 | Model list: opencode never calls `GET /v1/models` for a ChatGPT sign-in (0 of the 14 api.openai.com requests of the runs `opencode/2026-10-24-*`; the live fetch is commented out at chatgpt.ts:298-300, 334); it lists the reference catalog's `openai` models whose id is one of its 16 (chatgpt.ts:301; the v2.1.1 bundle filters the same set) | every opencode run | the list is built the same way from the reference catalog, with the reference's source; the proxy's `/v1/models` call is removed |
+
+| Capture run | Seq | Request | Differences (before) | Differences (after) |
+|---|---|---|---|---|
+| `opencode/2026-10-24-07-08-58/workflow` (turn) | 2, 3 | turn, title | 12, 12 | **0, 0** |
+| `opencode/2026-10-24-07-22-40/workflow` (turn) | 3, 4 | turn, title | not measured (recorded after the fix) | **0, 0** |
+| `opencode/2026-10-24-07-22-48/workflow` (turn-tools) | 3, 4, 5 | turn, title, tool result | not measured | **0, 0, 0** |
+| `opencode/2026-10-24-07-22-57/workflow` (multiturn) | 3, 6 | turn 1, turn 2 (3 messages) | not measured | **0, 0** |
+
+Before: the 12 differences were P1 (`content-encoding` missing), P2 (`user-agent` value and eight missing headers), P3
+(`accept` value) and the header order. The earlier runs `-07-09-06` (seq 2, 3, 4) and `-07-09-16` (seq 2, 4) also
+compare with 0 differences after the fix and are not committed: they were recorded before the `openai-user` rule
+(the three runs `-07-08-58`, `-07-09-06`, `-07-09-16` carry 21 raw `safety_identifier` values in their responses), so
+they are not promotable; `-07-08-58` is kept only as the before measurement.
+
+Not compared: models.opencode.ai `api.json` and the Console `api/v2/config` reads opencode makes at every start
+(control plane, option A), and the run `-07-22-48` seq 4 title request, which opencode itself cancelled
+(`client-disconnect` in its error record) — the request is compared, its answer was never read.
+
+### Generated results (OpenAI)
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-40/workflow` seq 3
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-40/workflow` seq 4
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-48/workflow` seq 3
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-48/workflow` seq 4
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-48/workflow` seq 5
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-57/workflow` seq 3
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
+
+0 difference(s).
+
+| # | Kind | Where | Client (plane A) | Proxy (plane B) |
+|---|---|---|---|---|
+
+#### opencode opencode v2.1.1 — capture `opencode/2026-10-24-07-22-57/workflow` seq 6
+
+Client request: `https://api.openai.com/v1/responses` (HTTP/1.1). Proxy answer to the client: 200; proxy upstream requests on that path: 1 (HTTP/1.1 to the loopback tap). Other proxy upstream calls during this request: none.
+
+OpenCode with a provider pointed at the proxy sends the same Responses request to `/openai/v1/responses` with the model named `openai/<model>`: the captured headers in their order with the proxy token in `Authorization`, the decoded body, and no `Content-Encoding` (opencode compresses only toward its own default address) and without the hop headers (`Connection`, `Accept: */*`, `Host`, `Accept-Encoding`, `Content-Length`), which Bun's HTTP stack sets on both sides. The proxy is signed in to a test ChatGPT account.
 
 0 difference(s).
 

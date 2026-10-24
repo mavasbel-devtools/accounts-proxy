@@ -2,6 +2,7 @@
 // client→server bytes as HTTP/1.1, so plane B keeps what an HTTP server object hides: header order, header case and
 // duplicates, exactly as the proxy's HTTP stack put them on the wire.
 import { connect, createServer, type Server, type Socket } from "node:net";
+import { gunzipSync, zstdDecompressSync } from "node:zlib";
 import type { WireRequest } from "@accounts-proxy/scripts/recon/parity/canon.ts";
 
 export type TappedRequest = WireRequest & { readonly connection: number };
@@ -61,7 +62,10 @@ export class RequestStream {
       consumed = start + length;
     }
     this.buffer = this.buffer.subarray(consumed);
-    return { method, url: target, httpVersion, headers, body: body.toString("utf8") };
+    // Plane A holds the decoded body (the capture addon decodes `content-encoding`); the header itself is compared.
+    const encoding = (find("content-encoding") ?? "").toLowerCase();
+    const decoded = encoding === "zstd" ? zstdDecompressSync(body) : encoding === "gzip" ? gunzipSync(body) : body;
+    return { method, url: target, httpVersion, headers, body: decoded.toString("utf8") };
   }
 }
 

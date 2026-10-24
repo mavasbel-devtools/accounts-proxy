@@ -1,10 +1,8 @@
 // provider-openai domain rules (docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md).
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
 import { base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.ts";
-import { isSnapshot, parseModelList, STATIC_CATALOG } from "@accounts-proxy/provider-openai/domain/catalog.ts";
+import { chatgptModels } from "@accounts-proxy/provider-openai/domain/catalog.ts";
 import { FALLBACK_MODELS, SCOPES, SHARING_ERROR_STATUS, UNSUPPORTED_FIELDS, UNSUPPORTED_TOOL_TYPES } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { fromAccount, grantedTokens, grantsPlanUsage, refreshed, toAccount, type OpenAITokens } from "@accounts-proxy/provider-openai/domain/credential.ts";
 import { checkClaims, IdTokenError, parseCompactJws } from "@accounts-proxy/provider-openai/domain/id-token.ts";
@@ -93,55 +91,15 @@ describe("ID token (S12)", () => {
   });
 });
 
-describe("model list (M1–M2)", () => {
-  test("keeps visibility list in server order; display name and context window when present", () => {
-    const list = parseModelList({
-      models: [
-        { slug: "gpt-6.1-sol", display_name: "GPT-6.1 Sol", visibility: "list", context_window: 500_000 },
-        { slug: "hidden", display_name: "Hidden", visibility: "hide" },
-        { slug: "gpt-5.5", display_name: "", visibility: "list", context_window: 0 },
-        { slug: "", visibility: "list" },
-        "junk",
-        { slug: "gpt-6-luna", visibility: "list", context_window: 1.5 },
-      ],
-    });
-    expect(list).toEqual([
-      { id: "gpt-6.1-sol", displayName: "GPT-6.1 Sol", contextWindow: 500_000 },
-      { id: "gpt-5.5", displayName: "gpt-5.5" },
-      { id: "gpt-6-luna", displayName: "gpt-6-luna" },
-    ]);
-    expect(() => parseModelList({ data: [] })).toThrow("model list has no models array");
-    // Plan 2026-10-16 C3: description, input modalities and reasoning levels; the captured live list.
-    expect(parseModelList({ models: [{ slug: "m", visibility: "list", description: "", input_modalities: ["text", "image", "x"], supported_reasoning_levels: [{ effort: "low" }, { effort: "" }, "x", {}] }] })).toEqual([
-      { id: "m", displayName: "m", details: { input: ["text", "image"], reasoningOptions: [{ type: "effort", values: ["low"] }] } },
-    ]);
-    expect(parseModelList({ models: [{ slug: "m", visibility: "list", supported_reasoning_levels: [] }] })).toEqual([{ id: "m", displayName: "m" }]);
-    const captured = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "p0-live", "l4", "openai-models.json"), "utf8")) as { exchanges: { response: { chunks: { text: string }[] } }[] };
-    const live = parseModelList(JSON.parse(captured.exchanges[0]!.response.chunks.map((c) => c.text).join("")));
-    expect(live[0]).toEqual({
-      id: "gpt-6.1-sol",
-      displayName: "GPT-6.1-Sol",
-      contextWindow: 500_000,
-      details: { description: "Latest workhorse model for coding and everyday work.", input: ["text", "image"], reasoningOptions: [{ type: "effort", values: ["low", "medium", "high", "xhigh", "max", "ultra"] }] },
-    });
-    expect(() => parseModelList(null)).toThrow("model list has no models array");
-  });
-
-  test("the built-in list is the 16 chatgpt.ts slugs", () => {
-    expect(STATIC_CATALOG.map((e) => e.id)).toEqual([...FALLBACK_MODELS]);
+describe("model list (M2, recon gap P4)", () => {
+  test("the reference's openai models with one of the 16 chatgpt.ts ids, in the reference's order, the ids as names", () => {
     expect(FALLBACK_MODELS).toHaveLength(16);
-  });
-
-  test("a stored copy belongs to one registration", () => {
-    const snapshot = { version: 2, clientId: "c", fetchedAt: 1, models: [{ id: "m", displayName: "M" }] };
-    expect(isSnapshot(snapshot, "c")).toBe(true);
-    expect(isSnapshot({ ...snapshot, version: 1 }, "c")).toBe(false);
-    expect(isSnapshot(snapshot, "d")).toBe(false);
-    expect(isSnapshot({ ...snapshot, version: 3 }, "c")).toBe(false);
-    expect(isSnapshot({ ...snapshot, fetchedAt: "1" }, "c")).toBe(false);
-    expect(isSnapshot({ ...snapshot, models: {} }, "c")).toBe(false);
-    expect(isSnapshot({ ...snapshot, models: [{ id: "m" }] }, "c")).toBe(false);
-    expect(isSnapshot(undefined, "c")).toBe(false);
+    const reference = new Map([["gpt-6-luna", { name: "GPT-6 Luna" }], ["o3-pro", {}], ["gpt-5.5", {}], ["gpt-6-luna-fast-x", {}]]);
+    expect(chatgptModels(reference)).toEqual([
+      { id: "gpt-6-luna", displayName: "gpt-6-luna" },
+      { id: "gpt-5.5", displayName: "gpt-5.5" },
+    ]);
+    expect(chatgptModels(new Map())).toEqual([]);
   });
 });
 
