@@ -7,7 +7,13 @@ import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
 import { HealthPort, DescribeModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
-import { CliDriver, DEFAULT_LOGIN_TIMEOUT_S, SHUTDOWN_GRACE_MS, USAGE } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
+import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
+import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
+import { SHUTDOWN_GRACE_MS } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
+import { DEFAULT_LOGIN_TIMEOUT_S } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
+import { PROXY_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/proxy-commands.ts";
+import { renderHelp } from "@accounts-proxy/proxy/adapters/inbound/cli/help-text.ts";
+import { proxyCommands } from "@accounts-proxy/proxy/composition/container.ts";
 import { Driver } from "@accounts-proxy/proxy/adapters/inbound/driver.ts";
 import { Server, ShutdownSignal, type Listening } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
 
@@ -112,17 +118,59 @@ function cli(accounts: AccountSummary[] = []) {
   const err: string[] = [];
   const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
   const daemon = { server: new FakeServer(), shutdown: new FakeSignal() };
-  const driver = new CliDriver(ports, daemon, (t) => out.push(t), (t) => err.push(t));
+  const driver = new CommandLineDriver(proxyCommands(ports, daemon), PROGRAM, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
 }
 
-describe("CliDriver", () => {
-  test("is a Driver; help and no command print usage", async () => {
+const OVERVIEW = renderHelp(PROXY_HELP, [], PROGRAM);
+
+describe("the proxy's commands", () => {
+  test("is a Driver; no command, help, --help and -h print the overview on stdout with exit 0", async () => {
     const c = cli();
     expect(c.driver).toBeInstanceOf(Driver);
-    expect(await c.run()).toBe(0);
-    expect(await c.run("help")).toBe(0);
-    expect(c.out).toEqual([`${USAGE}\n`, `${USAGE}\n`]);
+    for (const argv of [[], ["help"], ["--help"], ["-h"]]) expect(await c.run(...argv)).toBe(0);
+    expect(c.out).toEqual([OVERVIEW, OVERVIEW, OVERVIEW, OVERVIEW]);
+    expect(c.err).toEqual([]);
+    expect(OVERVIEW.startsWith("bun run proxy — one local endpoint")).toBe(true);
+  });
+
+  test.each([
+    [["help", "login"], "login"],
+    [["login", "--help"], "login"],
+    [["login", "claude", "-h"], "login"],
+    [["help", "account"], "account"],
+    [["account", "--help"], "account"],
+    [["help", "account", "list"], "account list"],
+    [["account", "list", "--help"], "account list"],
+    [["account", "use", "-h"], "account use"],
+    [["help", "quota"], "quota"],
+    [["models", "-h"], "models"],
+    [["opencode-config", "--help"], "opencode-config"],
+    [["serve", "--help"], "serve"],
+    [["token", "--help"], "token"],
+    [["status", "--help"], "status"],
+    [["help", "help"], "help"],
+  ])("%p prints the help of `%s` and runs nothing", async (argv, path) => {
+    const c = cli();
+    expect(await c.run(...argv)).toBe(0);
+    expect(c.err).toEqual([]);
+    expect(c.out).toHaveLength(1);
+    expect(c.out[0]!.startsWith(`bun run proxy ${path} — `)).toBe(true);
+    for (const section of ["usage:", "options:", "exit codes:", "examples:"]) expect(c.out[0]).toContain(`\n${section}\n`);
+    expect(c.ports.login.calls).toEqual([]);
+    expect(c.daemon.server.events).toEqual([]);
+    expect(c.ports.access.calls).toBe(0);
+  });
+
+  test("every command's help has a description, its exit codes and at least two examples run as printed", () => {
+    const all = [PROXY_HELP, ...PROXY_HELP.subcommands!, ...PROXY_HELP.subcommands!.flatMap((sub) => sub.subcommands ?? [])];
+    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "help", "list", "use"]);
+    for (const help of all) {
+      expect(help.description.length).toBeGreaterThan(0);
+      expect(help.exits.map((exit) => exit.name)).toContain("2");
+      expect(help.examples.length).toBeGreaterThanOrEqual(2);
+      for (const example of help.examples) expect(example.name.startsWith(`${PROGRAM} `) || example.name.startsWith("export ") || example.name.startsWith("ACCOUNTS_PROXY_HOME=")).toBe(true);
+    }
   });
 
   test("login: browser or device code by default with the default timeout; --manual, --new, --key, --from-opencode and --timeout-seconds", async () => {
@@ -155,36 +203,46 @@ describe("CliDriver", () => {
   });
 
   test.each([
-    [["login"], "missing or extra arguments"],
-    [["login", "nope"], "unknown provider nope"],
-    [["login", "antigravity", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer"],
-    [["login", "antigravity", "--timeout-seconds"], "--timeout-seconds needs a positive integer"],
-    [["login", "antigravity", "--bogus"], "unknown login option --bogus"],
-    [["login", "openrouter", "--key", "--from-opencode"], "--key and --from-opencode exclude each other"],
-    [["account"], "account list <provider> | account use <provider> <account-id>"],
-    [["account", "list", "antigravity", "extra"], "account list <provider> | account use"],
-    [["account", "use", "antigravity"], "account list <provider> | account use"],
-    [["account", "use", "antigravity", "a", "b"], "account list <provider> | account use"],
-    [["quota"], "missing or extra arguments"],
-    [["quota", "antigravity", "x"], "missing or extra arguments"],
-    [["models", "a", "b"], "models takes at most one provider"],
-    [["models", "--json", "--json"], "models takes at most one provider"],
-    [["opencode-config", "x"], "opencode-config takes no arguments"],
-    [["serve", "x"], "serve takes no arguments"],
-    [["token", "x"], "token takes no arguments"],
-    [["status", "x"], "status takes no arguments"],
-    [["frobnicate"], "unknown command frobnicate"],
-  ])("usage error %p → exit 2", async (argv, message) => {
+    [["login"], "login needs a provider", "login"],
+    [["login", "nope"], "unknown provider nope", "login"],
+    [["login", "antigravity", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer", "login"],
+    [["login", "antigravity", "--timeout-seconds"], "--timeout-seconds needs a positive integer", "login"],
+    [["login", "antigravity", "--bogus"], "unknown login option --bogus", "login"],
+    [["login", "openrouter", "--key", "--from-opencode"], "--key and --from-opencode exclude each other", "login"],
+    [["account"], "missing account subcommand: one of list, use", "account"],
+    [["account", "lst", "antigravity"], "unknown account subcommand lst (did you mean list?)", "account"],
+    [["account", "bogus", "--help"], "unknown account subcommand bogus", "account"],
+    [["account", "list"], "account list needs a provider", "account list"],
+    [["account", "list", "antigravity", "extra"], "account list takes one provider", "account list"],
+    [["account", "use", "antigravity"], "account use needs a provider and one account id", "account use"],
+    [["account", "use", "antigravity", "a", "b"], "account use needs a provider and one account id", "account use"],
+    [["quota"], "quota needs a provider", "quota"],
+    [["quota", "antigravity", "x"], "quota takes one provider", "quota"],
+    [["models", "a", "b"], "models takes at most one provider and --json", "models"],
+    [["models", "--json", "--json"], "models takes at most one provider and --json", "models"],
+    [["models", "nope"], "unknown provider nope", "models"],
+    [["opencode-config", "x"], "opencode-config takes no arguments", "opencode-config"],
+    [["serve", "x"], "serve takes no arguments", "serve"],
+    [["token", "x"], "token takes no arguments", "token"],
+    [["status", "x"], "status takes no arguments", "status"],
+    [["help", "frobnicate"], "unknown command frobnicate", "help"],
+    [["help", "account", "lst"], "unknown account subcommand lst (did you mean list?)", "help"],
+    [["help", "login", "x"], "login has no subcommands", "help"],
+    [["frobnicate"], "unknown command frobnicate", ""],
+    [["logn"], "unknown command logn (did you mean login?)", ""],
+  ])("usage error %p → exit 2: %s", async (argv, message, path) => {
     const c = cli();
     expect(await c.run(...argv)).toBe(2);
-    expect(c.err[0]!.startsWith(message)).toBe(true);
-    expect(c.err[0]).toContain(USAGE);
+    expect(c.out).toEqual([]);
+    const [first, ...rest] = c.err[0]!.split("\n");
+    expect(first).toBe(message);
+    expect(rest.at(-2)).toBe(`for options, exit codes and examples: ${["bun run proxy", "help", ...(path === "" ? [] : path.split(" "))].join(" ")}`);
   });
 
   test("account list (empty, marked active, label shown when it differs) and account use", async () => {
     const empty = cli();
     expect(await empty.run("account", "list", "antigravity")).toBe(0);
-    expect(empty.out).toEqual(["no antigravity accounts; run: accounts-proxy login antigravity\n"]);
+    expect(empty.out).toEqual(["no antigravity accounts; run: bun run proxy login antigravity\n"]);
     const c = cli([
       { provider: "antigravity", id: "a@x", label: "a@x", active: true },
       { provider: "antigravity", id: "b", label: "Bee", active: false },
@@ -231,7 +289,7 @@ describe("CliDriver", () => {
     expect(c.daemon.server.events).toEqual(["start", `stop ${SHUTDOWN_GRACE_MS}`]);
     expect(c.out).toEqual([
       "accounts-proxy listening on http://127.0.0.1:4141 (providers: claude, antigravity)\n",
-      "clients authenticate with the proxy token: accounts-proxy token\n",
+      "clients authenticate with the proxy token: bun run proxy token\n",
       "SIGTERM: stopping (in-flight responses get 10 s)\n",
       "stopped\n",
     ]);

@@ -116,7 +116,7 @@ describe("composition root", () => {
       expect(await runCli(["models", "openai"], opts)).toBe(0);
       expect(out[0]).toBe("# openai: 16 models (built-in list: the live catalog was unavailable)\n");
       expect(await runCli(["account", "list", "openai"], opts)).toBe(0);
-      expect(out.at(-1)).toBe("no openai accounts; run: accounts-proxy login openai\n");
+      expect(out.at(-1)).toBe("no openai accounts; run: bun run proxy login openai\n");
       // The detailed list reads the reference catalog (rule M4; the gateways seam, unset here, would repoint it).
       expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json"]);
       removeTemporary(home!);
@@ -248,7 +248,7 @@ describe("process entry (main/cli.ts)", () => {
       if (saved.env === undefined) delete process.env["ACCOUNTS_PROXY_HOME"];
       else process.env["ACCOUNTS_PROXY_HOME"] = saved.env;
     }
-    expect(printed.join("")).toContain("usage: accounts-proxy <command>");
+    expect(printed.join("")).toContain("usage:\n  bun run proxy <command>");
   });
 });
 

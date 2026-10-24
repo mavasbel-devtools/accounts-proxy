@@ -75,7 +75,15 @@ import { OpenRouterKeyLogin } from "@accounts-proxy/provider-openrouter/adapters
 import { OpenRouterQuota } from "@accounts-proxy/provider-openrouter/adapters/outbound/openrouter-quota.ts";
 import { OPENROUTER_BUILTIN } from "@accounts-proxy/provider-openrouter/domain/builtin-models.ts";
 import { AUTH_URL as OPENROUTER_AUTH_URL, OPENROUTER_SPEC } from "@accounts-proxy/provider-openrouter/domain/openrouter.ts";
-import { CliDriver, type CliPorts, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
+import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
+import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
+import { type CliCommand, CommandRoot, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
+import { AccountCommand, AccountListCommand, AccountUseCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
+import { ModelsCommand, OpencodeConfigCommand, QuotaCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
+import { type CliDaemon, ServeCommand, StatusCommand, TokenCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
+import { LoginCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
+import { type CliPorts, HELP_HELP, PROXY_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/proxy-commands.ts";
+import { HelpCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/help-command.ts";
 import type { HttpHandler } from "@accounts-proxy/proxy/adapters/inbound/http/http-handler.ts";
 import type { ErrorReporterPort } from "@accounts-proxy/core/ports/inbound/diagnostics.ts";
 import type { Driver } from "@accounts-proxy/proxy/adapters/inbound/driver.ts";
@@ -529,7 +537,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   });
   const { handler, errors, ports } = buildRoutes(graph, options.home, options.entry);
   const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
-  const driver = new CliDriver(
+  const commands = proxyCommands(
     {
       login,
       accounts: new AccountAdminService(graph.store),
@@ -538,10 +546,24 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       status: new DaemonStatusService(graph.transport, `http://${LOOPBACK_HOST}:${graph.config.port}`),
     },
     { server, shutdown: options.shutdown },
-    options.out,
-    options.err,
   );
+  const driver = new CommandLineDriver(commands, PROGRAM, options.out, options.err);
   return { config: graph.config, driver };
+}
+
+/** The proxy's command tree: every command over the inbound ports it drives. */
+export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
+  return new CommandRoot(PROXY_HELP, [
+    new LoginCommand(ports.login),
+    new AccountCommand([new AccountListCommand(ports.accounts), new AccountUseCommand(ports.accounts)]),
+    new QuotaCommand(ports.usage),
+    new ModelsCommand(ports.models),
+    new OpencodeConfigCommand(ports.models, ports.opencode, ports.origin),
+    new ServeCommand(daemon, ports.access, ports.health),
+    new TokenCommand(ports.access),
+    new StatusCommand(ports.status),
+    new HelpCommand(PROXY_HELP, PROGRAM, HELP_HELP),
+  ]);
 }
 
 /** Builds and runs the CLI; configuration and store errors are reported, never thrown. */

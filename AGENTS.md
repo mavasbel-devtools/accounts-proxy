@@ -176,6 +176,12 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   in a source file, a constant or lock name it states differs from the code, or its matrix differs from the README's.
 - **Links.** The docs lint (`scripts/gate/lint-docs.ts`) fails on a relative link to a missing file and on a
   `#fragment` that names no heading of the target Markdown file.
+- **Command help** (plan [2026-10-19-20-04](docs/plans/2026-10-19-20-04-recon-mitm-capture-plan.md) §24): both command
+  lines (`bun run proxy`, `bun scripts/recon/cli.ts`) are trees of `CliCommand` / `CommandGroup` under a `CommandRoot`
+  (`apps/proxy/src/adapters/inbound/cli/`). Every command and subcommand declares its help (usage, description,
+  arguments, options with defaults, exit codes, environment, examples); `help <command>`, `<command> --help` and
+  `<command> -h` print it on stdout with exit 0 and run nothing. Exit codes: 0 success and help, 1 `error: <message>`,
+  2 usage error (message, the command's usage, where its help is); recon adds 3 for an isolation failure.
 - **Reference documentation** (plan 2026-10-16 C7, decisions D2–D4): the [API](docs/reference/2026-10-17-19-26-proxy-api.md),
   [OpenAPI 3.1](docs/reference/2026-10-17-19-26-proxy-openapi.json), [providers](docs/reference/2026-10-17-19-26-providers.md),
   [format fields](docs/reference/2026-10-17-19-26-format-fields.md), [models](docs/reference/2026-10-17-19-26-models.md) and

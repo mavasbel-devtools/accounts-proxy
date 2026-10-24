@@ -24,11 +24,48 @@ describe("accounts-proxy CLI (e2e)", () => {
   test("help, usage errors, and a refused seam", async () => {
     home = await makeHome();
     const help = await run(["help"]);
-    expect([help.code, help.stdout.startsWith("usage: accounts-proxy <command>")]).toEqual([0, true]);
-    expect((await run(["frobnicate"])).code).toBe(2);
+    expect([help.code, help.stdout.startsWith("bun run proxy — one local endpoint")]).toEqual([0, true]);
+    for (const argv of [[], ["--help"], ["-h"]]) expect(await run(argv)).toMatchObject({ code: 0, stdout: help.stdout, stderr: "" });
+    const wrong = await run(["frobnicate"]);
+    expect([wrong.code, wrong.stdout, wrong.stderr.split("\n")[0]]).toEqual([2, "", "unknown command frobnicate"]);
+    expect(wrong.stderr).toContain("\nfor options, exit codes and examples: bun run proxy help\n");
     const refused = await runProxy(home, ["help"], { ...upstreams.seamEnv(), ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API: "https://api.anthropic.com" });
     expect(refused.code).toBe(1);
     expect(refused.stderr).toContain("ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API must be an http://127.0.0.1:<port> origin");
+  });
+
+  test.each(["login", "account", "account list", "account use", "quota", "models", "opencode-config", "serve", "token", "status", "help"])(
+    "`help %s`, `--help` and `-h` print the same help, without running the command",
+    async (command: string) => {
+      const words = command.split(" ");
+      home = await makeHome();
+      const [help, long, short] = await Promise.all([run(["help", ...words]), run([...words, "--help"]), run([...words, "-h"])]);
+      expect([help.code, help.stderr, help.stdout.split("\n")[0]!.startsWith(`bun run proxy ${words.join(" ")} — `)]).toEqual([0, "", true]);
+      for (const section of ["\nusage:\n", "\noptions:\n  ", "\nexit codes:\n", "\nexamples:\n"]) expect(help.stdout).toContain(section);
+      for (const other of [long, short]) expect(other).toMatchObject({ code: 0, stdout: help.stdout, stderr: "" });
+    },
+  );
+
+  test("help flags after arguments, misspelt commands and a missing argument", async () => {
+    home = await makeHome();
+    // A help flag after the arguments still prints the help, so `serve` never starts and `login` never opens a browser.
+    expect(await run(["serve", "--help"])).toMatchObject({ code: 0, stdout: (await run(["help", "serve"])).stdout });
+    expect((await run(["login", "claude", "--manual", "-h"])).stdout).toBe((await run(["help", "login"])).stdout);
+    const nested = await run(["account", "lst", "--help"]);
+    expect([nested.code, nested.stdout, nested.stderr.split("\n")[0]]).toEqual([2, "", "unknown account subcommand lst (did you mean list?)"]);
+    const unknown = await run(["help", "logn"]);
+    expect([unknown.code, unknown.stderr.split("\n")[0]]).toEqual([2, "unknown command logn (did you mean login?)"]);
+    const subcommand = await run(["help", "account", "lst"]);
+    expect([subcommand.code, subcommand.stderr.split("\n")[0]]).toEqual([2, "unknown account subcommand lst (did you mean list?)"]);
+    const leaf = await run(["help", "login", "claude"]);
+    expect([leaf.code, leaf.stderr.split("\n")[0]]).toEqual([2, "login has no subcommands"]);
+    const group = await run(["account"]);
+    expect([group.code, group.stderr]).toEqual([2, "missing account subcommand: one of list, use\nusage: bun run proxy account list <provider>\n       bun run proxy account use <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account\n"]);
+    // After `--` a help flag is an argument like any other: `serve` takes none.
+    const separated = await run(["serve", "--", "--help"]);
+    expect([separated.code, separated.stderr.split("\n")[0]]).toEqual([2, "serve takes no arguments"]);
+    const missing = await run(["login"]);
+    expect([missing.code, missing.stderr]).toEqual([2, "login needs a provider\nusage: bun run proxy login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]\nfor options, exit codes and examples: bun run proxy help login\n"]);
   });
 
   test("an invalid proxy.yaml and a disabled provider are reported", async () => {

@@ -112,7 +112,7 @@ describe("stores", () => {
     expect((await run(["account", "list", "claude"])).stderr).toContain("expected { accounts: AccountCredential[], activeId? }");
     writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [{ provider: "claude", id: "a@x", label: "Work", data: {} }] }));
     expect((await run(["account", "list", "claude"])).stdout).toBe("  a@x  (Work)\n");
-    expect((await run(["account", "list", "antigravity"])).stdout).toBe("no antigravity accounts; run: accounts-proxy login antigravity\n");
+    expect((await run(["account", "list", "antigravity"])).stdout).toBe("no antigravity accounts; run: bun run proxy login antigravity\n");
   });
 
   test("a damaged proxy token file is an error", async () => {
@@ -125,13 +125,15 @@ describe("stores", () => {
 
 describe("usage errors (exit 2)", () => {
   test.each([
-    [["login"], "missing or extra arguments"],
+    [["login"], "login needs a provider\nusage: bun run proxy login <provider>"],
     [["login", "anthropic"], "unknown provider anthropic"],
     [["login", "claude", "--bogus"], "unknown login option --bogus"],
     [["login", "claude", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer"],
-    [["account", "use", "claude"], "account list <provider> | account use <provider> <account-id>"],
-    [["quota"], "missing or extra arguments"],
+    [["account", "use", "claude"], "account use needs a provider and one account id\nusage: bun run proxy account use <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account use\n"],
+    [["quota"], "quota needs a provider\nusage: bun run proxy quota <provider>\n"],
     [["models", "claude", "antigravity"], "models takes at most one provider"],
+    [["account", "list", "claude", "extra"], "account list takes one provider"],
+    [["quota", "claude", "extra"], "quota takes one provider"],
     [["serve", "now"], "serve takes no arguments"],
     [["token", "again"], "token takes no arguments"],
     [["status", "please"], "status takes no arguments"],

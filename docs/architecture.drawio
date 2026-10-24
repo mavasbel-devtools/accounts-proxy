@@ -13,7 +13,7 @@
         <mxCell id="http" value="apps/proxy · adapters/inbound/http&#10;NodeHttpServer (node:http, 127.0.0.1:&lt;port&gt;, 32 MB body limit, backpressure, client abort, SIGTERM drain)&#10;RouteHandler (route table, token carriers: Bearer · x-api-key · x-goog-api-key · ?key=)&#10;Server · ShutdownSignal ← ProcessShutdownSignal" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="300" y="370" width="260" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="cli" value="apps/proxy · adapters/inbound&#10;Driver ← CliDriver: login (browser loopback, --manual, --new; device code; --key hidden API-key prompt; --from-opencode) · account list/use · quota · models · serve · token · status · help" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
+        <mxCell id="cli" value="apps/proxy · adapters/inbound&#10;Driver ← CommandLineDriver · CommandRoot of CliCommand / CommandGroup, each with its own help: login · account list/use · quota · models · opencode-config · serve · token · status · help" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;" vertex="1" parent="1">
           <mxGeometry x="300" y="560" width="260" height="110" as="geometry"/>
         </mxCell>
         <mxCell id="main" value="apps/proxy · main/cli.ts&#10;process → composition main()" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7;" vertex="1" parent="1">

@@ -43,7 +43,10 @@ import { NATIVE_PATH as OPENAI_NATIVE_PATH } from "@accounts-proxy/provider-open
 import { REFRESH_LOCK as OPENAI_REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
 import { CATALOG as OPENAI_CATALOG, EXPIRY_BUFFER_MS as OPENAI_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-openai/domain/constants.ts";
 import { EXPIRY_BUFFER_MS as OPENCODE_EXPIRY_BUFFER_MS, REFRESH_LOCK as OPENCODE_REFRESH_LOCK } from "@accounts-proxy/provider-opencode/adapters/outbound/opencode-session.ts";
-import { DEFAULT_LOGIN_TIMEOUT_S, SHUTDOWN_GRACE_MS, USAGE } from "@accounts-proxy/proxy/adapters/inbound/cli/cli-driver.ts";
+import { SHUTDOWN_GRACE_MS } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
+import { DEFAULT_LOGIN_TIMEOUT_S } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
+import { PROXY_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/proxy-commands.ts";
+import { synopses as helpSynopses } from "@accounts-proxy/proxy/adapters/inbound/cli/help-text.ts";
 import { MAX_BODY_BYTES } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
 import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
 import { DEFAULT_LOCK_OPTIONS } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
@@ -145,11 +148,9 @@ describe("the documentation is in step with the code", () => {
     }
   });
 
-  test("command line: every synopsis of the usage text is a row of the API reference", () => {
-    const synopses = USAGE.split("\n")
-      .filter((line) => /^ {2}[a-z]/.test(line))
-      .map((line) => line.trim().split(/\s{2,}/)[0]!);
-    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "quota <provider>", "models [<provider>] [--json]", "opencode-config", "serve", "token", "status", "help"]);
+  test("command line: every synopsis of the command tree is a row of the API reference", () => {
+    const synopses = helpSynopses(PROXY_HELP);
+    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "quota <provider>", "models [<provider>] [--json]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
     for (const synopsis of synopses) expect(api).toContain(`| \`${synopsis}\` |`);
   });
 

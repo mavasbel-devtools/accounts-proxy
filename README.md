@@ -42,6 +42,7 @@ cp config/proxy.example.yaml ~/.local/share/accounts-proxy/proxy.yaml   # every 
 bun run proxy login claude                                                # or any other provider
 bun run proxy serve                                                       # 127.0.0.1:4141
 bun run proxy token                                                       # the key clients send
+bun run proxy help login                                                  # any command's options, exit codes and examples (or: login --help)
 ```
 
 ```ts

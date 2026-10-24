@@ -303,7 +303,7 @@ describe("process environment", () => {
     expect((await runProxy(home, ["account", "list", "claude"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch })).code).toBe(0);
     // The openai provider on its production hosts (no seam set; listing accounts calls no host).
     writeFileSync(join(scratch, ".local", "share", "accounts-proxy", "proxy.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
-    expect(await runProxy(home, ["account", "list", "openai"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch })).toMatchObject({ code: 0, stdout: "no openai accounts; run: accounts-proxy login openai\n" });
+    expect(await runProxy(home, ["account", "list", "openai"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch })).toMatchObject({ code: 0, stdout: "no openai accounts; run: bun run proxy login openai\n" });
     for (const seam of ["ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API", "ACCOUNTS_PROXY_TEST_UPSTREAM_ANTIGRAVITY_API"]) {
       const partial = await runProxy(home, ["help"], { [seam]: upstreams.origin });
       expect([partial.code, partial.stderr]).toEqual([0, ""]);

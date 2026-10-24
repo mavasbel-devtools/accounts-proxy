@@ -29,7 +29,7 @@ describe("built bundle", () => {
   test("help", async () => {
     const child = Bun.spawn([process.execPath, bundle, "help"], { env: env(), stdout: "pipe" });
     expect(await child.exited).toBe(0);
-    expect(await new Response(child.stdout).text()).toStartWith("usage: accounts-proxy <command>");
+    expect(await new Response(child.stdout).text()).toStartWith("bun run proxy — one local endpoint");
   });
 
   test("serve answers /health and stops on SIGTERM", async () => {

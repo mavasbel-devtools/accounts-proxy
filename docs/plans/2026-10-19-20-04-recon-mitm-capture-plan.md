@@ -711,3 +711,32 @@ Messages, Zen Responses): **0 differences**; 14 more recorded requests also 0 (n
 
 OpenAI (`openai` cell): the reference client is opencode's own "Sign in with ChatGPT" (user decision of 2026-10-22,
 option A). It needs a ChatGPT sign-in inside the opencode recon profile, which the operator approves in the browser.
+
+## 24. Amendment — one command framework with per-command help for both command lines (2026-10-24 00:36)
+
+Measured before the change (read-only diagnosis of 2026-10-23): the proxy CLI treated `--help` and `-h` as unknown
+commands (exit 2) and had one usage text for everything; the recon CLI printed the same overview for every help form
+and exited 1 on usage mistakes. No command had its own help, including `account list` and `account use`.
+
+### 24.1 Changes made
+
+1. **Framework** (`apps/proxy/src/adapters/inbound/cli/`): `CliCommand` (abstract; its `CommandHelp` and `run`),
+   `CommandGroup` (subcommands, extends `CliCommand`), `CommandRoot` (the program, extends `CommandGroup`),
+   `HelpCommand`, the pure renderer `help-text.ts` and `CommandLineDriver` (exit 0 / 1 `error:` / 2 usage). A help flag
+   anywhere before `--` prints the help of the deepest command it follows and runs nothing; a misspelt command,
+   subcommand or option gets `(did you mean …?)` within two edits.
+2. **Proxy commands** (`…/cli/commands/`): every command and both `account` subcommands carry their usage,
+   description, arguments, options with defaults, exit codes, environment and runnable examples; the old
+   `cli-driver.ts` is removed and its cases moved to `apps/proxy/tests/unit/cli-commands.test.ts`.
+3. **Recon commands** (`scripts/recon/cli/`): the same framework over the abstraction `ReconActions`
+   (`LiveReconActions` drives the sandbox, capture and parity); usage mistakes now exit 2 like the proxy's, a failed
+   command 1, an isolation failure 3. Tests: `scripts/tests/unit/recon-cli.test.ts` (every command, every help form,
+   every usage error).
+4. **Docs**: API reference §6 (help forms, exit codes, `help [<command> [<subcommand>]]`), README quick start,
+   architecture diagram (CLI box), AGENTS.md §7 rule "Command help".
+
+### 24.2 Measurement
+
+`bun run verify` at 01:06 on 2026-10-24: every stage PASS (typecheck; unit+component+arch 882 pass, 0 fail; build;
+e2e 244 pass, 0 fail; merged), coverage 100% in each of the three gates (statements 3666/3666, branches 2635/2635,
+functions 853/853, lines 3000/3000), all eight recon parity replays and the docs lint PASS.
