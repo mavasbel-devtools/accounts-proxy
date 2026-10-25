@@ -1,0 +1,26 @@
+{
+  "codeWord": "PELICAN",
+  "files": [
+    {
+      "file": "code-word.png",
+      "mimeType": "image/png",
+      "bytes": 2313,
+      "sha256": "9f1de758ae6f1cd68975434e8cdb675f1cd9eb48e0cdb238429a2934547d1e5d",
+      "madeWith": "Version: ImageMagick 7.1.2-27 Q16 x86_64 20260705 https://imagemagick.org"
+    },
+    {
+      "file": "code-word.wav",
+      "mimeType": "audio/wav",
+      "bytes": 93286,
+      "sha256": "b19e838bd4f381935a5205e9efdf0e7e3ef9f989df3435cb7bb00dbef15e49b1",
+      "madeWith": "eSpeak text-to-speech: 1.48.15  16.Apr.15  Data at: /usr/lib/x86_64-linux-gnu/espeak-data"
+    },
+    {
+      "file": "code-word.webm",
+      "mimeType": "video/webm",
+      "bytes": 5415,
+      "sha256": "7371a54a9ef42e4a91b30a21b685fc9d19a34c4d36ce7d8bdd048d5dd97cbdac",
+      "madeWith": "Version: ImageMagick 7.1.2-27 Q16 x86_64 20260705 https://imagemagick.org; ffmpeg version n9.0.2-33-g4cf298e66a-20261022 Copyright (c) 2000-2026 the FFmpeg developers"
+    }
+  ]
+}

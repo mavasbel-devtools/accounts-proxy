@@ -1,0 +1,95 @@
+{
+  "id": "antigravity-filedata-pdf-url",
+  "target": "antigravity",
+  "scenario": "PDF (by URL)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1ed96426-45ce-4f9a-a0e1-eb9db58e3945/1792897392248/426bda9a-65c5-4912-8f94-1452ce2aadf9/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "fileData": {
+                      "mimeType": "application/pdf",
+                      "fileUri": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                    }
+                  },
+                  {
+                    "text": "Quote the text of this PDF."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "426bda9a-65c5-4912-8f94-1452ce2aadf9",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:03:14 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1964",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2032,
+        "doneAtMs": 2069.4,
+        "chunks": [
+          {
+            "atMs": 2032.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"totalTokenCount\": 583},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"cXHdaoHwNbWvxdIPqeuHoAo\"},\"traceId\": \"cb4fcc90fe9a3e6\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2033,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"Dummy PDF\"}]}}],\"usageMetadata\": {\"candidatesTokenCount\": 2,\"totalTokenCount\": 585},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"cXHdaoHwNbWvxdIPqeuHoAo\"},\"traceId\": \"cb4fcc90fe9a3e6\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2034.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" file\"}]}}],\"usageMetadata\": {\"candidatesTokenCount\": 3,\"totalTokenCount\": 586},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"cXHdaoHwNbWvxdIPqeuHoAo\"},\"traceId\": \"cb4fcc90fe9a3e6\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2036.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EmcKZQFpFH0Tsq5gqw/aj0+31ChutV0TljgZ0Ofmd/68lqfiykj0lhdZbAQxsFdz8Hg/6/BWZt74SpBasyFfN/fkTaQ4ATDGwdufFzfgmT6yQ8oUgGkM3bznS3P3i3f497N3QlzH4ARN\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"candidatesTokenCount\": 3,\"totalTokenCount\": 586},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"cXHdaoHwNbWvxdIPqeuHoAo\"},\"traceId\": \"cb4fcc90fe9a3e6\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

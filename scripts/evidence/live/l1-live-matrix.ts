@@ -15,13 +15,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { GoogleGenAI, type Content, type GenerateContentResponse } from "@google/genai";
-import { join } from "node:path";
 import type { WireFormat } from "@accounts-proxy/core/domain/models.ts";
-import { SystemBrowserLauncher } from "@accounts-proxy/proxy/adapters/outbound/browser-launcher.ts";
-import { opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
-import { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
-import { LOOPBACK_HOST, PRODUCTION_LOCK, runCli, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
-import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc, type Live } from "@accounts-proxy/scripts/evidence/live/harness.ts";
+import { startDaemon } from "@accounts-proxy/scripts/evidence/live/daemon.ts";
+import { PACE_MS, openLive, sleep, timestamp, writeCapture, writeDoc } from "@accounts-proxy/scripts/evidence/live/harness.ts";
 
 const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "").slice("--only=".length).split(",").filter((x) => x !== "");
 const onlyScenarios = (process.argv.find((a) => a.startsWith("--scenarios=")) ?? "").slice("--scenarios=".length).split(",").filter((x) => x !== "");
@@ -71,35 +67,6 @@ const MCP_SCHEMA = {
 /** What a scenario observed on the client side (SDK view). */
 type Outcome = { readonly status: number; readonly summary: string; readonly dropped?: string | null };
 type Row = { readonly cell: string; readonly scenario: string; readonly status: number; readonly summary: string; readonly dropped: string; readonly upstream: string; readonly ms: number };
-
-class ManualShutdown extends ShutdownSignal {
-  private release: (name: string) => void = () => undefined;
-  private readonly asked = new Promise<string>((resolve) => (this.release = resolve));
-  wait(): Promise<string> {
-    return this.asked;
-  }
-  stop(): void {
-    this.release("SIGTERM");
-  }
-}
-
-function options(live: Live, out: (text: string) => void, shutdown: ShutdownSignal): ContainerOptions {
-  return {
-    home: live.home,
-    opencodeData: opencodeDataDir(process.env),
-    entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "proxy", "src", "main", "cli.ts")],
-    out,
-    err: out,
-    stdin: process.stdin,
-    stdout: process.stdout,
-    seams: {},
-    transport: live.recorder,
-    browser: new SystemBrowserLauncher(process.platform),
-    shutdown,
-    listenHost: LOOPBACK_HOST,
-    lock: PRODUCTION_LOCK,
-  };
-}
 
 const clip = (text: string, n = 160) => text.replace(/\s+/g, " ").trim().slice(0, n);
 
@@ -327,19 +294,8 @@ function geminiClient(base: string, token: string, extra: Record<string, string>
 
 async function main(): Promise<number> {
   const live = await openLive();
-  // The gateway API keys are only in the authorization header (redacted by name); they are also secrets for the scan.
-  for (const gateway of live.gateways) live.redactor.add(`${gateway.spec.provider}_key`, await gateway.session.optionalKey());
-  let tokenText = "";
-  await runCli(["token"], options(live, (t) => void (tokenText += t), new ManualShutdown()));
-  const token = tokenText.trim();
-  live.redactor.add("proxy_token", token);
-
-  let daemonOut = "";
-  const shutdown = new ManualShutdown();
-  const serving = runCli(["serve"], options(live, (t) => void (daemonOut += t), shutdown));
-  for (let i = 0; i < 3000 && !daemonOut.includes("listening on"); i++) await sleep(10);
-  const base = /listening on (http:\/\/\S+)/.exec(daemonOut)?.[1];
-  if (base === undefined) throw new Error(`serve did not start: ${daemonOut}`);
+  const daemon = await startDaemon(live);
+  const { base, token } = daemon;
   const capturedAt = new Date().toISOString();
   const session = { "x-opencode-session": `ses_l1_${Date.now()}` };
   const clients: Record<WireFormat, Client> = {
@@ -426,8 +382,7 @@ async function main(): Promise<number> {
     }
   }
 
-  shutdown.stop();
-  const code = await serving;
+  const { code, output: daemonOut } = await daemon.stop();
   const ts = timestamp();
   writeDoc(
     live,

@@ -1,0 +1,91 @@
+{
+  "id": "antigravity-video",
+  "target": "antigravity",
+  "scenario": "video (WebM VP9, inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1ed96426-45ce-4f9a-a0e1-eb9db58e3945/1792897388140/88b4808f-d727-41b2-8dcf-0f6ec4156ad8/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "video/webm",
+                      "data": "<FIXTURE:code-word.webm>"
+                    }
+                  },
+                  {
+                    "text": "What word is written in this video? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "88b4808f-d727-41b2-8dcf-0f6ec4156ad8",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:03:10 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1982",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2049.7,
+        "doneAtMs": 2093.5,
+        "chunks": [
+          {
+            "atMs": 2049.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 213,\"totalTokenCount\": 213},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"bXHdav2uIt3DxdIP0_W3mAo\"},\"traceId\": \"2693f0f7c832de27\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2056.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"PELICAN\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 213,\"candidatesTokenCount\": 2,\"totalTokenCount\": 215},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"bXHdav2uIt3DxdIP0_W3mAo\"},\"traceId\": \"2693f0f7c832de27\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2061.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EmcKZQFpFH0Tl7sRolVA6+mQOBThOJx9/Gdv8Ua3r5MheUg6fFlZg64Bxf0NKk9sBkXfCmadFjbC4NfLVrTFmQR6bchT9dznzOp0stGn6HqYRQ3oo6eac3V8q9xTjR2zFylt/HyXotXM\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 213,\"candidatesTokenCount\": 2,\"totalTokenCount\": 215},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"bXHdav2uIt3DxdIP0_W3mAo\"},\"traceId\": \"2693f0f7c832de27\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

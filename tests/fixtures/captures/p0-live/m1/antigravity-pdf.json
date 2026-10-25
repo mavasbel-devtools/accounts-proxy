@@ -1,0 +1,91 @@
+{
+  "id": "antigravity-pdf",
+  "target": "antigravity",
+  "scenario": "PDF (inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1ed96426-45ce-4f9a-a0e1-eb9db58e3945/1792897380717/44f0959c-86ca-4a5e-acf4-efd6edc5f2be/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "application/pdf",
+                      "data": "<FIXTURE:code-word.pdf>"
+                    }
+                  },
+                  {
+                    "text": "What is the code word in the document? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "44f0959c-86ca-4a5e-acf4-efd6edc5f2be",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:03:01 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1234",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 1300.7,
+        "doneAtMs": 1341.9,
+        "chunks": [
+          {
+            "atMs": 1300.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 536,\"totalTokenCount\": 536},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"ZXHdarnhFp2_xdIPqczQyAc\"},\"traceId\": \"9fd2aafa64d273a8\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1302.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"PELICAN\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 536,\"candidatesTokenCount\": 2,\"totalTokenCount\": 538},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"ZXHdarnhFp2_xdIPqczQyAc\"},\"traceId\": \"9fd2aafa64d273a8\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 1306.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EmcKZQFpFH0TiEZqDBDGIY9VWEbg0eiTT6I1u/RVl7uhxbWECuXZmCnRkpSiY/pBVBp2BI/Pts0vMDPDkmf860rovMPbgis17kxy3nEpcgJwQAFWe/pXW7HPjQdZVaS/78kL/sf4p6/m\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 536,\"candidatesTokenCount\": 2,\"totalTokenCount\": 538},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"ZXHdarnhFp2_xdIPqczQyAc\"},\"traceId\": \"9fd2aafa64d273a8\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

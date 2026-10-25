@@ -5,6 +5,10 @@
 //   - carried fields: contents, systemInstruction, tools[].functionDeclarations, toolConfig, generationConfig (the
 //     captured IDE request, SPEC.md §3); generationConfig keys maxOutputTokens, thinkingConfig (captured) and
 //     temperature, topP, topK, stopSequences (accepted on every Antigravity target, P0-LIVE E3 f6/f7).
+//   - media (live media probe M1, 2026-10-24): inlineData of any type (image, PDF, audio, video answered); fileData
+//     with fileUri and mimeType (the upstream fetches the URL itself: a PDF URL answered, an unfetchable one is the
+//     upstream's own 400, captures m1/u1, m1/u2); responseModalities TEXT and IMAGE (an image came back, m1/u3);
+//     mediaResolution at the levels probed (m1/u4–u6). Other values (AUDIO output, unprobed levels) stay unsupported.
 //   - thinkingBudget is catalog-exact (AGENTS.md §3) and injected when absent (wire law 13).
 //   - maxOutputTokens defaults to the catalog value and may not exceed it.
 //   - tool schemas: keywords outside the law-5 whitelist are unsupported (user decision Q2); with lossy they are
@@ -48,9 +52,12 @@ export type PrepareOptions = { readonly lossy: boolean; readonly signatures: Rea
 
 const TARGET = "antigravity (Gemini cell)";
 const TOP_LEVEL = new Set(["contents", "systemInstruction", "tools", "toolConfig", "generationConfig"]);
-const GENERATION = new Set(["maxOutputTokens", "thinkingConfig", "temperature", "topP", "topK", "stopSequences"]);
+const GENERATION = new Set(["maxOutputTokens", "thinkingConfig", "temperature", "topP", "topK", "stopSequences", "responseModalities", "mediaResolution"]);
+const MODALITIES = new Set(["TEXT", "IMAGE"]);
+const MEDIA_RESOLUTIONS = new Set(["MEDIA_RESOLUTION_LOW", "MEDIA_RESOLUTION_MEDIUM", "MEDIA_RESOLUTION_HIGH"]);
 const THINKING = new Set(["includeThoughts", "thinkingBudget"]);
-const PART = new Set(["text", "thought", "thoughtSignature", "inlineData", "functionCall", "functionResponse"]);
+const PART = new Set(["text", "thought", "thoughtSignature", "inlineData", "fileData", "functionCall", "functionResponse"]);
+const FILE_DATA = new Set(["fileUri", "mimeType"]);
 const DECLARATION = new Set(["name", "description", "parameters", "parametersJsonSchema"]);
 const MODES = new Set(["AUTO", "VALIDATED"]);
 
@@ -103,6 +110,15 @@ function checkPart(part: unknown, where: string, findings: Findings): GeminiPart
   if (inline !== undefined && (!isObject(inline) || typeof inline["mimeType"] !== "string" || typeof inline["data"] !== "string")) {
     throw new InvalidRequestError(`${where}.inlineData needs string mimeType and data`);
   }
+  const file = out["fileData"];
+  if (file !== undefined) {
+    if (!isObject(file) || typeof file["fileUri"] !== "string" || (file["mimeType"] !== undefined && typeof file["mimeType"] !== "string")) {
+      throw new InvalidRequestError(`${where}.fileData needs a string fileUri (and a string mimeType when given)`);
+    }
+    const kept: Record<string, unknown> = { ...file };
+    for (const key of unknownKeys(file, FILE_DATA)) if (findings.refuse(`contents.parts.fileData.${key}`)) delete kept[key];
+    out["fileData"] = kept;
+  }
   for (const kind of ["functionCall", "functionResponse"] as const) {
     const value = out[kind];
     if (value !== undefined && (!isObject(value) || typeof value["name"] !== "string")) throw new InvalidRequestError(`${where}.${kind} needs a string name`);
@@ -112,9 +128,9 @@ function checkPart(part: unknown, where: string, findings: Findings): GeminiPart
 
 const hasResponse = (c: GeminiContent) => c.parts.some((p) => p["functionResponse"] !== undefined);
 
-/** A part that carries content (law 8): a call, a response, inline data, or non-blank text. */
+/** A part that carries content (law 8): a call, a response, inline or file data, or non-blank text. */
 function contentful(part: GeminiPart): boolean {
-  if (part["functionCall"] !== undefined || part["functionResponse"] !== undefined || part["inlineData"] !== undefined) return true;
+  if (part["functionCall"] !== undefined || part["functionResponse"] !== undefined || part["inlineData"] !== undefined || part["fileData"] !== undefined) return true;
   return typeof part["text"] === "string" && part["text"].trim().length > 0;
 }
 
@@ -247,6 +263,18 @@ function checkGeneration(raw: unknown, model: ModelDescriptor, findings: Finding
   }
   const stops = given["stopSequences"];
   if (stops !== undefined && (!Array.isArray(stops) || !stops.every((s) => typeof s === "string"))) throw new InvalidRequestError("generationConfig.stopSequences must be an array of strings");
+  const modalities = given["responseModalities"];
+  if (modalities !== undefined) {
+    if (!Array.isArray(modalities) || !modalities.every((m) => typeof m === "string")) throw new InvalidRequestError("generationConfig.responseModalities must be an array of strings");
+    const kept = modalities.filter((m) => MODALITIES.has(m) || !findings.refuse(`generationConfig.responseModalities:${m}`));
+    if (kept.length > 0) given["responseModalities"] = kept;
+    else delete given["responseModalities"];
+  }
+  const resolution = given["mediaResolution"];
+  if (resolution !== undefined) {
+    if (typeof resolution !== "string") throw new InvalidRequestError("generationConfig.mediaResolution must be a string");
+    if (!MEDIA_RESOLUTIONS.has(resolution) && findings.refuse(`generationConfig.mediaResolution:${resolution}`)) delete given["mediaResolution"];
+  }
 
   const out: Record<string, unknown> = {};
   const max = model.maxOutputTokens;
@@ -270,7 +298,7 @@ function checkGeneration(raw: unknown, model: ModelDescriptor, findings: Finding
     if (catalogBudget !== undefined) config["thinkingBudget"] = catalogBudget;
     out["thinkingConfig"] = config;
   }
-  for (const key of ["temperature", "topP", "topK", "stopSequences"]) if (given[key] !== undefined) out[key] = given[key];
+  for (const key of ["temperature", "topP", "topK", "stopSequences", "responseModalities", "mediaResolution"]) if (given[key] !== undefined) out[key] = given[key];
   return out;
 }
 

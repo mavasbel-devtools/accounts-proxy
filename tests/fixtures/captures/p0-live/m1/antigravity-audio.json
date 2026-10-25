@@ -1,0 +1,91 @@
+{
+  "id": "antigravity-audio",
+  "target": "antigravity",
+  "scenario": "audio (WAV, inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/1ed96426-45ce-4f9a-a0e1-eb9db58e3945/1792897384073/36b9f412-53e6-4456-823c-3d35a5d52613/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "audio/wav",
+                      "data": "<FIXTURE:code-word.wav>"
+                    }
+                  },
+                  {
+                    "text": "What code word is spoken in this audio? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "36b9f412-53e6-4456-823c-3d35a5d52613",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 65535
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:03:06 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=1878",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2013.6,
+        "doneAtMs": 2050.7,
+        "chunks": [
+          {
+            "atMs": 2013.7,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 69,\"totalTokenCount\": 69},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"aXHdaoCgG7WvxdIPn-uHoAo\"},\"traceId\": \"34cb260947c58955\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2021.9,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"pelican\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 69,\"candidatesTokenCount\": 2,\"totalTokenCount\": 71},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"aXHdaoCgG7WvxdIPn-uHoAo\"},\"traceId\": \"34cb260947c58955\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2025.4,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"EmcKZQFpFH0T18gczfVlJ3dH+fPG7SIvy+ELlOC9Dnbi12P5iift9Rnu0eXHy7QT0y1Yhp1b/xypP3YcQYNJIWQqgkTd7eImvyNX1MGrhhWXKgl7hh7W84FAIfBfSYwrHzG+FPbC2rtX\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 69,\"candidatesTokenCount\": 2,\"totalTokenCount\": 71},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"aXHdaoCgG7WvxdIPn-uHoAo\"},\"traceId\": \"34cb260947c58955\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

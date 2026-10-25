@@ -1,0 +1,64 @@
+{
+  "id": "opencode-gem-image",
+  "target": "opencode",
+  "scenario": "image (PNG, inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "google-genai-sdk/2.28.0 gl-node/v26.3.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_c28dfd52d9adad2c",
+          "x-goog-api-key": "<REDACTED:x-goog-api-key>"
+        },
+        "body": {
+          "contents": [
+            {
+              "parts": [
+                {
+                  "inlineData": {
+                    "mimeType": "image/png",
+                    "data": "<FIXTURE:code-word.png>"
+                  }
+                },
+                {
+                  "text": "What word is written in this image? Reply with the word only."
+                }
+              ],
+              "role": "user"
+            }
+          ],
+          "generationConfig": {}
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfdf85d622ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:09 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17103-f740-7991-8e39-c4ed4fcd391e",
+          "x-zen-model": "gemini-3.5-flash-lite"
+        },
+        "headersAtMs": 2062.4,
+        "doneAtMs": 2062.8,
+        "chunks": [
+          {
+            "atMs": 2062.6,
+            "text": "{\"createTime\":\"2026-10-25T03:04:08.042814Z\",\"responseId\":\"qHHdar7OAo6hlcIPxuax0AI\",\"modelVersion\":\"gemini-3.5-flash-lite\",\"candidates\":[{\"finishReason\":\"STOP\",\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"PELICAN\",\"thoughtSignature\":\"AY89a1/VnDNrPDmB+Anw7QECFXM6TO5R+PhyVUm+rJ9Mv6Zu6MaJE0koDRmsomdZw3s87WGDVfSlzPnlpKzACN5Hu+HMwK/9ZLqYsv5n1X1ezYyb49C4U+Q9WOs=\"}]}}],\"usageMetadata\":{\"candidatesTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":2}],\"promptTokensDetails\":[{\"modality\":\"IMAGE\",\"tokenCount\":1100},{\"modality\":\"TEXT\",\"tokenCount\":14}],\"candidatesTokenCount\":2,\"promptTokenCount\":1114,\"totalTokenCount\":1116,\"cost\":0.0003392,\"opencode\":{\"billing_source\":\"balance\",\"list_cost\":0.0003392,\"tokens\":{\"input\":1114,\"output\":2,\"reasoning\":0,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

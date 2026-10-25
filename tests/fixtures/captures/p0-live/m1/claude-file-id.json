@@ -1,0 +1,9 @@
+{
+  "id": "claude-file-id",
+  "target": "claude",
+  "scenario": "PDF (Files API file_id, files beta)",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": []
+}

@@ -1,0 +1,65 @@
+{
+  "id": "go-chat-image",
+  "target": "opencode-go",
+  "scenario": "image (PNG, inline)",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "OpenAI/JS 7.32.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_3dbd88cbbca8694e",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "image_url",
+                  "image_url": {
+                    "url": "data:image/png;base64,<FIXTURE:code-word.png>"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What word is written in this image? Reply with the word only."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfe649ebd2ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:25 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17104-3ae9-7408-bccf-fd3543aa2ca8",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 770.8,
+        "doneAtMs": 771.2,
+        "chunks": [
+          {
+            "atMs": 771,
+            "text": "{\"id\":\"chatcmpl-RPW2W4bVD3nx8Mg8w5ILpXZv\",\"object\":\"chat.completion\",\"created\":1792897465,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"PELICAN\",\"name\":null,\"reasoning_content\":null,\"tool_calls\":null}}],\"usage\":{\"prompt_tokens\":112,\"completion_tokens\":6,\"total_tokens\":118,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":null},\"completion_tokens_details\":{\"reasoning_tokens\":0},\"cost\":0,\"opencode\":{\"billing_source\":\"go-plus\",\"list_cost\":0.0000198,\"allowance\":0.0000264,\"tokens\":{\"input\":112,\"output\":6,\"reasoning\":0,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

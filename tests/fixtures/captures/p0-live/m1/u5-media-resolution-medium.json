@@ -1,0 +1,93 @@
+{
+  "id": "u5-media-resolution-medium",
+  "target": "antigravity",
+  "scenario": "image (PNG, inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/b9267810-d856-44c2-adb1-c11ee61e62e3/1792897513536/0905ff1b-7b8d-4df5-9eb1-84364a932420/6",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "mimeType": "image/png",
+                      "data": "<FIXTURE:code-word.png>"
+                    }
+                  },
+                  {
+                    "text": "What word is written in this image? Reply with the word only."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_execution_id": "95483a6e-b232-4810-a423-bf05a275c943",
+              "last_step_index": "5",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "0905ff1b-7b8d-4df5-9eb1-84364a932420",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "mediaResolution": "MEDIA_RESOLUTION_MEDIUM"
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:05:14 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=813",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 879.5,
+        "doneAtMs": 928,
+        "chunks": [
+          {
+            "atMs": 879.6,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 542,\"totalTokenCount\": 542},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6XHdapP3MfvXiLMPgsiHiAo\"},\"traceId\": \"26428c7aede652c8\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 884.8,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"PELICAN\"}]}}],\"usageMetadata\": {\"promptTokenCount\": 542,\"candidatesTokenCount\": 2,\"totalTokenCount\": 544},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6XHdapP3MfvXiLMPgsiHiAo\"},\"traceId\": \"26428c7aede652c8\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 887,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"<FIXTURE:thought-signature 140 base64 chars sha256:0e471acd6249116b30a3f78c18a0520d241f6f7337a8d0518080254f2f2892c7>\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 542,\"candidatesTokenCount\": 2,\"totalTokenCount\": 544},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"6XHdapP3MfvXiLMPgsiHiAo\"},\"traceId\": \"26428c7aede652c8\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

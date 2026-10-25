@@ -1,0 +1,65 @@
+{
+  "id": "go-chat-video",
+  "target": "opencode-go",
+  "scenario": "video (WebM VP9, inline)",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/go/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "OpenAI/JS 7.32.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_6e30ad0b24e582da",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "video_url",
+                  "video_url": {
+                    "url": "data:video/webm;base64,<FIXTURE:code-word.webm>"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What word is written in this video? Reply with the word only."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfe76de732ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:32 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17104-4654-71d2-bb7a-9edc7ac236af",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 4947.6,
+        "doneAtMs": 4948,
+        "chunks": [
+          {
+            "atMs": 4947.8,
+            "text": "{\"id\":\"09222245-8492-4946-ba3c-c5ff1a551a65\",\"object\":\"chat.completion\",\"created\":1792897472,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"PELICAN\",\"reasoning_content\":\"The user wants to know what word is written in the provided video frames.\\nThe frames show a blue background with white text.\\nLooking at the images from 00:00 to 00:02, the text clearly says \\\"PELICAN\\\".\\nI just need to output the word only.\",\"tool_calls\":null}}],\"usage\":{\"prompt_tokens\":298,\"completion_tokens\":65,\"total_tokens\":363,\"prompt_tokens_details\":{\"cached_tokens\":0},\"cost\":0,\"opencode\":{\"billing_source\":\"go-plus\",\"list_cost\":0.0000772,\"allowance\":0.00010293,\"tokens\":{\"input\":298,\"output\":65,\"reasoning\":0,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

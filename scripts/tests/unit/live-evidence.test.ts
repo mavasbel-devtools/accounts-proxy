@@ -1,6 +1,6 @@
 // The P0-LIVE redactor and recording transport: nothing credential-bearing may reach a capture file.
 import { describe, expect, test } from "bun:test";
-import { readAll } from "@accounts-proxy/core/domain/wire.ts";
+import { orderedHeaders, readAll } from "@accounts-proxy/core/domain/wire.ts";
 import { ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 import { Redactor } from "@accounts-proxy/scripts/evidence/live/redact.ts";
 import { RecordingTransport } from "@accounts-proxy/scripts/evidence/live/recording-transport.ts";
@@ -33,6 +33,25 @@ describe("Redactor", () => {
   test("credential headers are replaced by name, keeping the scheme", () => {
     const out = redactor().headers({ Authorization: "Bearer anything", "x-goog-api-key": "k", "X-Project": "proj-abcdef", accept: "text/event-stream" });
     expect(out).toEqual({ authorization: "Bearer <REDACTED:authorization>", "x-goog-api-key": "<REDACTED:x-goog-api-key>", "x-project": "<REDACTED:project>", accept: "text/event-stream" });
+  });
+
+  test("ordered header pairs are redacted in their order, without the name index the pairs also carry", () => {
+    const pairs = orderedHeaders([["Accept", "application/json"], ["Authorization", "Bearer anything"], ["X-Project", "proj-abcdef"]]);
+    const out = redactor().headers(pairs);
+    expect(Object.keys(out)).toEqual(["accept", "authorization", "x-project"]);
+    expect(out).toEqual({ accept: "application/json", authorization: "Bearer <REDACTED:authorization>", "x-project": "<REDACTED:project>" });
+  });
+
+  test("fixtures are named instead of repeated, so their bytes cannot trip the token-prefix scan", () => {
+    const r = redactor();
+    const payload = "UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAA1//wYXRh";
+    expect(r.scan(payload)).toEqual(["prefix:1//"]);
+    r.fixture("code-word.wav", payload);
+    r.fixture("code-word.wav", payload);
+    const out = r.body(JSON.stringify({ parts: [{ inlineData: { mimeType: "audio/wav", data: payload } }] }));
+    expect(out).toBe('{"parts":[{"inlineData":{"mimeType":"audio/wav","data":"<FIXTURE:code-word.wav>"}}]}');
+    expect(r.scan(out)).toEqual([]);
+    expect(() => r.fixture("tiny", "abc")).toThrow("too short");
   });
 
   test("JSON bodies: credential fields by name at any depth, secrets inside strings, other values kept", () => {

@@ -1,0 +1,9 @@
+{
+  "id": "claude-files-api",
+  "target": "claude",
+  "scenario": "Files API upload (POST /anthropic/v1/files)",
+  "model": "-",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": []
+}

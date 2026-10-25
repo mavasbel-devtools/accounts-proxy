@@ -1,0 +1,123 @@
+{
+  "id": "claude-image-url",
+  "target": "claude",
+  "scenario": "image (JPEG, by URL)",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "user-agent": "claude-cli/2.1.304 (external, sdk-cli)",
+          "x-claude-code-session-id": "e262bf2e-9d33-48b4-9fe8-8458c781d9d4",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Linux",
+          "x-stainless-package-version": "0.128.0",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "anthropic-dispatch-id": "v2d",
+          "anthropic-version": "2023-06-01",
+          "x-app": "cli",
+          "x-cc-atis": "711efd76d10f17e5",
+          "x-claude-code-prompt-id": "4f5b8fd0-24f2-4776-b839-6a88668aa944",
+          "x-claude-code-request-class": "main",
+          "x-client-request-id": "34ed302e-e79c-49f2-a27a-72d6b844e376"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 512,
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "image",
+                  "source": {
+                    "type": "url",
+                    "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What kind of insect is in this photo? One word."
+                }
+              ]
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.304; cc_entrypoint=sdk-cli; cch=a3181; cc_prompt_id=4f5b8fd0-24f2-4776-b839-6a88668aa944; cc_turn_origin=sdk; cc_prompt_index=0; cc_turn_index=1;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "diagnostics": {
+            "previous_message_id": null
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:device_id>\",\"account_uuid\":\"<REDACTED:account_uuid>\",\"session_id\":\"e262bf2e-9d33-48b4-9fe8-8458c781d9d4\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1792908000",
+          "anthropic-ratelimit-unified-5h-status": "allowed_warning",
+          "anthropic-ratelimit-unified-5h-surpassed-threshold": "0.9",
+          "anthropic-ratelimit-unified-5h-utilization": "0.91",
+          "anthropic-ratelimit-unified-7d-reset": "1793296800",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.51",
+          "anthropic-ratelimit-unified-fallback": "available",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "org_level_disabled",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1792908000",
+          "anthropic-ratelimit-unified-status": "allowed_warning",
+          "anthropic-ratelimit-unified-upgrade-paths": "overage",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a4fdfbfc9936ebb6-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:02:47 GMT",
+          "request-id": "req_011CgNDEVXvLvzwXpkeD34RJ",
+          "server": "cloudflare",
+          "server-timing": "x-originResponse;dur=947",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-ecf4d069ed26d6be7835afbc20c3ded3-3716a11c2ac1fb5c-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1053.7,
+        "doneAtMs": 1054.1,
+        "chunks": [
+          {
+            "atMs": 1053.9,
+            "text": "{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CgNDEVn3dGR75bV6WrVEn\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Ant\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":1576,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"iterations\":[{\"input_tokens\":1576,\"output_tokens\":5,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}],\"output_tokens\":5,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\",\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":{\"applied_edits\":[]}}"
+          }
+        ]
+      }
+    }
+  ]
+}

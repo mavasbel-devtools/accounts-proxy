@@ -5,7 +5,7 @@
 
 import { loadRedactionManifest } from "@accounts-proxy/scripts/recon/shared/manifest.ts";
 
-export type Secret = { readonly label: string; readonly value: string };
+export type Secret = { readonly label: string; readonly value: string; readonly replacement: string };
 
 // Credential names, identity names, value patterns and per-endpoint identity scopes come from the recon facility's
 // manifest, the same JSON the capture addon reads, so the live-evidence redactor and the MITM capture cannot drift.
@@ -72,7 +72,18 @@ export class Redactor {
     if (value === undefined || value === null || value.length === 0) return;
     if (value.length < 6) throw new Error(`secret ${label} is too short to redact safely (${value.length} chars)`);
     if (this.secrets.some((s) => s.value === value)) return;
-    this.secrets.push({ label, value });
+    this.secrets.push({ label, value, replacement: `<REDACTED:${label}>` });
+    this.secrets.sort((a, b) => b.value.length - a.value.length);
+  }
+
+  /**
+   * A known payload the repository already holds (a committed media fixture, base64): replaced by `<FIXTURE:label>`
+   * so a capture names it instead of repeating it, and so its bytes cannot trip the token-prefix scan.
+   */
+  fixture(label: string, value: string): void {
+    if (value.length < 6) throw new Error(`fixture ${label} is too short to substitute safely (${value.length} chars)`);
+    if (this.secrets.some((s) => s.value === value)) return;
+    this.secrets.push({ label, value, replacement: `<FIXTURE:${label}>` });
     this.secrets.sort((a, b) => b.value.length - a.value.length);
   }
 
@@ -82,19 +93,21 @@ export class Redactor {
 
   text(input: string): string {
     let out = input;
-    for (const s of this.secrets) out = out.split(s.value).join(`<REDACTED:${s.label}>`);
+    for (const s of this.secrets) out = out.split(s.value).join(s.replacement);
     for (const s of this.secrets) {
       const encoded = encodeURIComponent(s.value);
-      if (encoded !== s.value) out = out.split(encoded).join(`<REDACTED:${s.label}>`);
+      if (encoded !== s.value) out = out.split(encoded).join(s.replacement);
     }
     out = out.replace(QUERY_CREDENTIAL, "$1<REDACTED:field>");
     for (const pattern of IDENTITY_PATTERNS) out = out.replace(pattern.regex, `<REDACTED:${pattern.name}>`);
     return out;
   }
 
-  headers(headers: Readonly<Record<string, string>>): Record<string, string> {
+  /** Plain records and the ordered header pairs the Claude client profile sends (wire.ts `orderedHeaders`), in order. */
+  headers(headers: Readonly<Record<string, string>> | readonly (readonly [string, string])[]): Record<string, string> {
     const out: Record<string, string> = {};
-    for (const [name, value] of Object.entries(headers)) {
+    const entries = Array.isArray(headers) ? (headers as readonly (readonly [string, string])[]) : Object.entries(headers);
+    for (const [name, value] of entries) {
       const key = name.toLowerCase();
       if (CREDENTIAL_HEADERS.has(key)) {
         const scheme = /^(Bearer|Basic)\s+/i.exec(value)?.[1];

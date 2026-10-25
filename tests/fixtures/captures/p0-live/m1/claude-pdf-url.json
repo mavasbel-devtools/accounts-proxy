@@ -1,0 +1,123 @@
+{
+  "id": "claude-pdf-url",
+  "target": "claude",
+  "scenario": "PDF (by URL)",
+  "model": "claude-haiku-4-5-20251001",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages?beta=true",
+        "headers": {
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "user-agent": "claude-cli/2.1.304 (external, sdk-cli)",
+          "x-claude-code-session-id": "e262bf2e-9d33-48b4-9fe8-8458c781d9d4",
+          "x-stainless-arch": "x64",
+          "x-stainless-lang": "js",
+          "x-stainless-os": "Linux",
+          "x-stainless-package-version": "0.128.0",
+          "x-stainless-retry-count": "0",
+          "x-stainless-runtime": "node",
+          "x-stainless-runtime-version": "v26.3.0",
+          "x-stainless-timeout": "600",
+          "anthropic-beta": "oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07",
+          "anthropic-dangerous-direct-browser-access": "true",
+          "anthropic-dispatch-id": "v2d",
+          "anthropic-version": "2023-06-01",
+          "x-app": "cli",
+          "x-cc-atis": "711efd76d10f17e5",
+          "x-claude-code-prompt-id": "881572da-5590-4bc4-ae56-74c5c76f6d43",
+          "x-claude-code-request-class": "main",
+          "x-client-request-id": "63f2c4d3-8040-4272-81bf-66817825ed85"
+        },
+        "body": {
+          "model": "claude-haiku-4-5-20251001",
+          "max_tokens": 512,
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "document",
+                  "source": {
+                    "type": "url",
+                    "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "Quote the text of this PDF."
+                }
+              ]
+            }
+          ],
+          "system": [
+            {
+              "type": "text",
+              "text": "x-anthropic-billing-header: cc_version=2.1.304; cc_entrypoint=sdk-cli; cch=a3181; cc_prompt_id=881572da-5590-4bc4-ae56-74c5c76f6d43; cc_turn_origin=sdk; cc_prompt_index=0; cc_turn_index=1;"
+            },
+            {
+              "type": "text",
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+            }
+          ],
+          "diagnostics": {
+            "previous_message_id": null
+          },
+          "metadata": {
+            "user_id": "{\"device_id\":\"<REDACTED:device_id>\",\"account_uuid\":\"<REDACTED:account_uuid>\",\"session_id\":\"e262bf2e-9d33-48b4-9fe8-8458c781d9d4\"}"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "anthropic-organization-id": "<REDACTED:organizationuuid>",
+          "anthropic-ratelimit-unified-5h-reset": "1792908000",
+          "anthropic-ratelimit-unified-5h-status": "allowed_warning",
+          "anthropic-ratelimit-unified-5h-surpassed-threshold": "0.9",
+          "anthropic-ratelimit-unified-5h-utilization": "0.91",
+          "anthropic-ratelimit-unified-7d-reset": "1793296800",
+          "anthropic-ratelimit-unified-7d-status": "allowed",
+          "anthropic-ratelimit-unified-7d-utilization": "0.51",
+          "anthropic-ratelimit-unified-fallback": "available",
+          "anthropic-ratelimit-unified-fallback-percentage": "0.5",
+          "anthropic-ratelimit-unified-overage-disabled-reason": "org_level_disabled",
+          "anthropic-ratelimit-unified-overage-status": "rejected",
+          "anthropic-ratelimit-unified-representative-claim": "five_hour",
+          "anthropic-ratelimit-unified-reset": "1792908000",
+          "anthropic-ratelimit-unified-status": "allowed_warning",
+          "anthropic-ratelimit-unified-upgrade-paths": "overage",
+          "anthropic-workspace-id": "wrkspc_01UPaPYSP87x9rB4AahuKQEm",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a4fdfc0fe8a5ebb6-YYZ",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:02:51 GMT",
+          "request-id": "req_011CgNDEihS1kRBHtphLhE94",
+          "server": "cloudflare",
+          "server-timing": "x-originResponse;dur=1465",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "traceresponse": "00-558ef49dc18e6722a68d7a8cdcea90e1-1087e961fd9c6ec9-01",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding",
+          "x-robots-tag": "none"
+        },
+        "headersAtMs": 1567.4,
+        "doneAtMs": 1567.8,
+        "chunks": [
+          {
+            "atMs": 1567.7,
+            "text": "{\"model\":\"claude-haiku-4-5-20251001\",\"id\":\"msg_011CgNDEiuptgYWBQdEnju9y\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"The text contained in this PDF is:\\n\\n\\\"Dummy PDF file\\\"\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":1629,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"iterations\":[{\"input_tokens\":1629,\"output_tokens\":18,\"cache_read_input_tokens\":0,\"cache_creation_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":0},\"type\":\"message\"}],\"output_tokens\":18,\"service_tier\":\"standard\",\"inference_geo\":\"not_available\",\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":{\"applied_edits\":[]}}"
+          }
+        ]
+      }
+    }
+  ]
+}

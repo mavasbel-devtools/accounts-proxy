@@ -1,0 +1,64 @@
+{
+  "id": "opencode-gem-video",
+  "target": "opencode",
+  "scenario": "video (WebM VP9, inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "google-genai-sdk/2.28.0 gl-node/v26.3.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_14b1dde4ea741584",
+          "x-goog-api-key": "<REDACTED:x-goog-api-key>"
+        },
+        "body": {
+          "contents": [
+            {
+              "parts": [
+                {
+                  "inlineData": {
+                    "mimeType": "video/webm",
+                    "data": "<FIXTURE:code-word.webm>"
+                  }
+                },
+                {
+                  "text": "What word is written in this video? Reply with the word only."
+                }
+              ],
+              "role": "user"
+            }
+          ],
+          "generationConfig": {}
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfe3aab672ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:19 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17104-20cf-7469-be3b-02984d7dd44f",
+          "x-zen-model": "gemini-3.5-flash-lite"
+        },
+        "headersAtMs": 1349.6,
+        "doneAtMs": 1349.9,
+        "chunks": [
+          {
+            "atMs": 1349.8,
+            "text": "{\"createTime\":\"2026-10-25T03:04:18.767536Z\",\"responseId\":\"snHdarDsLon-sbwPovTImAM\",\"modelVersion\":\"gemini-3.5-flash-lite\",\"candidates\":[{\"finishReason\":\"STOP\",\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"PELICAN\",\"thoughtSignature\":\"AY89a1+NxxI2n0yEBhPEuuzb3TBuv8E4Hf+JOANA6oNudrGpyhzvPwo9mzIKhkfHfiOBSvL6Mysj4Fm3IuD5wQlw7ce3p4/8K1fReVWknahGuevOZz8rwi4dI3k=\"}]}}],\"usageMetadata\":{\"candidatesTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":2}],\"promptTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":14},{\"modality\":\"VIDEO\",\"tokenCount\":198}],\"candidatesTokenCount\":2,\"promptTokenCount\":212,\"totalTokenCount\":214,\"cost\":0.0000686,\"opencode\":{\"billing_source\":\"balance\",\"list_cost\":0.0000686,\"tokens\":{\"input\":212,\"output\":2,\"reasoning\":0,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

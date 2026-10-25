@@ -1,0 +1,67 @@
+{
+  "id": "openrouter-audio",
+  "target": "openrouter",
+  "scenario": "audio (WAV, inline)",
+  "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_audio",
+                  "input_audio": {
+                    "data": "<FIXTURE:code-word.wav>",
+                    "format": "wav"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What code word is spoken in this audio? Reply with the word only."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
+          "cf-ray": "a4fdfdd95fed36ce-YYZ",
+          "connection": "keep-alive",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:02 GMT",
+          "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
+          "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-content-type-options": "nosniff",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 312.8,
+        "doneAtMs": 313.1,
+        "chunks": [
+          {
+            "atMs": 313,
+            "text": "{\"error\":{\"message\":\"User not found.\",\"code\":401}}"
+          }
+        ]
+      }
+    }
+  ]
+}

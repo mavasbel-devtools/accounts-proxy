@@ -1,0 +1,65 @@
+{
+  "id": "opencode-chat-image",
+  "target": "opencode",
+  "scenario": "image (PNG, inline)",
+  "model": "glm-5.3-flash",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/openai/v1/chat/completions",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "OpenAI/JS 7.32.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_3dbd88cbbca8694e",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "glm-5.3-flash",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "image_url",
+                  "image_url": {
+                    "url": "data:image/png;base64,<FIXTURE:code-word.png>"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "What word is written in this image? Reply with the word only."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfe504b802ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:22 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17104-2e36-7716-b07d-e5a975da5b46",
+          "x-zen-model": "glm-5.3-flash"
+        },
+        "headersAtMs": 1058.7,
+        "doneAtMs": 1059.2,
+        "chunks": [
+          {
+            "atMs": 1059.1,
+            "text": "{\"id\":\"chatcmpl-41de14e1\",\"object\":\"chat.completion\",\"created\":1792897462,\"model\":\"glm-5.3-flash\",\"choices\":[{\"index\":0,\"finish_reason\":\"stop\",\"logprobs\":null,\"message\":{\"role\":\"assistant\",\"content\":\"PELICAN\",\"reasoning_content\":\"The image shows the word \\\"PELICAN\\\" in black text on a white background.\"}}],\"usage\":{\"prompt_tokens\":112,\"completion_tokens\":25,\"total_tokens\":137,\"prompt_tokens_details\":{\"cached_tokens\":0},\"completion_tokens_details\":{\"accepted_prediction_tokens\":null,\"reasoning_tokens\":19,\"rejected_prediction_tokens\":null},\"cost\":0.0000293,\"opencode\":{\"billing_source\":\"balance\",\"list_cost\":0.0000293,\"tokens\":{\"input\":112,\"output\":25,\"reasoning\":19,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

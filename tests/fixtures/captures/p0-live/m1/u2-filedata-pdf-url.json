@@ -1,0 +1,91 @@
+{
+  "id": "u2-filedata-pdf-url",
+  "target": "antigravity",
+  "scenario": "PDF (by URL)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/b9267810-d856-44c2-adb1-c11ee61e62e3/1792897495886/ad552470-5322-4414-8dbb-4994192aab5e/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "fileData": {
+                      "mimeType": "application/pdf",
+                      "fileUri": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                    }
+                  },
+                  {
+                    "text": "Quote the text of this PDF."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M198",
+              "trajectory_id": "ad552470-5322-4414-8dbb-4994192aab5e",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.5-flash-lite",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:04:57 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=2023",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 2090,
+        "doneAtMs": 2121.4,
+        "chunks": [
+          {
+            "atMs": 2090.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thought\": true,\"text\": \"\"}]}}],\"usageMetadata\": {\"totalTokenCount\": 583},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2XHdavqcEKvHxdIP29OHcQ\"},\"traceId\": \"f458af20cef56a3c\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"Dummy PDF\"}]}}],\"usageMetadata\": {\"candidatesTokenCount\": 2,\"totalTokenCount\": 585},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2XHdavqcEKvHxdIP29OHcQ\"},\"traceId\": \"f458af20cef56a3c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2092.2,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \" file\"}]}}],\"usageMetadata\": {\"candidatesTokenCount\": 3,\"totalTokenCount\": 586},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2XHdavqcEKvHxdIP29OHcQ\"},\"traceId\": \"f458af20cef56a3c\",\"metadata\": {}}\r\n\r\n"
+          },
+          {
+            "atMs": 2096.1,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"<FIXTURE:thought-signature 140 base64 chars sha256:809084c119e1ad45acd09a842c28933653b60be74f029cec99cd7487fb14bbcf>\",\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"candidatesTokenCount\": 3,\"totalTokenCount\": 586},\"modelVersion\": \"gemini-3.5-flash-lite\",\"responseId\": \"2XHdavqcEKvHxdIP29OHcQ\"},\"traceId\": \"f458af20cef56a3c\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -95,6 +95,9 @@ describe("prepareGeminiRequest: shape and carried fields", () => {
       [{ contents: [{ parts: [{ inlineData: "x" }] }] }, "inlineData needs"],
       [{ contents: [{ parts: [{ inlineData: { mimeType: "image/png" } }] }] }, "inlineData needs"],
       [{ contents: [{ parts: [{ inlineData: { data: "AA" } }] }] }, "inlineData needs"],
+      [{ contents: [{ parts: [{ fileData: "x" }] }] }, "fileData needs a string fileUri"],
+      [{ contents: [{ parts: [{ fileData: { mimeType: "application/pdf" } }] }] }, "fileData needs a string fileUri"],
+      [{ contents: [{ parts: [{ fileData: { fileUri: "https://x/a.pdf", mimeType: 1 } }] }] }, "fileData needs a string fileUri"],
       [{ contents: [{ parts: [{ functionCall: {} }] }] }, "functionCall needs a string name"],
       [{ contents: [{ parts: [{ functionResponse: 1 }] }] }, "functionResponse needs a string name"],
       [{ contents: [] }, "no turn left"],
@@ -110,29 +113,62 @@ describe("prepareGeminiRequest: shape and carried fields", () => {
     expect(prepareGeminiRequest({ contents: [{ parts }] }, GEMINI, strict).contents).toEqual([{ role: "user", parts }]);
   });
 
+  test("file data (live media probe M1): fileUri and mimeType are carried, a file-only turn is content, other keys are unsupported", () => {
+    const parts = [{ fileData: { fileUri: "https://example.com/a.pdf", mimeType: "application/pdf" } }];
+    expect(prepareGeminiRequest({ contents: [{ parts }] }, GEMINI, strict).contents).toEqual([{ role: "user", parts }]);
+    const named = { contents: [{ parts: [{ fileData: { fileUri: "https://example.com/a.pdf", displayName: "a.pdf" } }] }] };
+    expect(unsupported(() => prepareGeminiRequest(named, GEMINI, strict))).toEqual(["contents.parts.fileData.displayName"]);
+    const p = prepareGeminiRequest(named, GEMINI, lossy);
+    expect(p.contents[0]!.parts).toEqual([{ fileData: { fileUri: "https://example.com/a.pdf" } }]);
+    expect(p.dropped).toEqual(["contents.parts.fileData.displayName"]);
+  });
+
   test("unknown fields anywhere are unsupported (collected, deduplicated); lossy drops and reports them", () => {
     const body = {
       ...hello,
       safetySettings: [],
       cachedContent: "c",
-      contents: [{ role: "user", parts: [{ text: "a", fileData: {} }, { text: "b", fileData: {} }] }],
+      contents: [{ role: "user", parts: [{ text: "a", videoMetadata: {} }, { text: "b", videoMetadata: {} }] }],
       generationConfig: { responseMimeType: "application/json", thinkingConfig: { thinkingLevel: "low" } },
     };
     expect(unsupported(() => prepareGeminiRequest(body, GEMINI, strict))).toEqual([
       "safetySettings",
       "cachedContent",
-      "contents.parts.fileData",
+      "contents.parts.videoMetadata",
       "generationConfig.responseMimeType",
       "generationConfig.thinkingConfig.thinkingLevel",
     ]);
     const p = prepareGeminiRequest(body, GEMINI, lossy);
     expect(p.contents[0]!.parts).toEqual([{ text: "a" }, { text: "b" }]);
     expect(p.generationConfig).toEqual({ maxOutputTokens: 65_536, thinkingConfig: { includeThoughts: true, thinkingBudget: 1000 } });
-    expect(p.dropped).toEqual(["safetySettings", "cachedContent", "contents.parts.fileData", "generationConfig.responseMimeType", "generationConfig.thinkingConfig.thinkingLevel"]);
+    expect(p.dropped).toEqual(["safetySettings", "cachedContent", "contents.parts.videoMetadata", "generationConfig.responseMimeType", "generationConfig.thinkingConfig.thinkingLevel"]);
   });
 });
 
 describe("prepareGeminiRequest: generationConfig", () => {
+  test("media settings (live media probe M1): TEXT/IMAGE output and the probed resolutions are carried; other values are unsupported", () => {
+    const config = { responseModalities: ["TEXT", "IMAGE"], mediaResolution: "MEDIA_RESOLUTION_HIGH" };
+    expect(prepareGeminiRequest({ ...hello, generationConfig: config }, GEMINI, strict).generationConfig).toEqual({
+      maxOutputTokens: 65_536,
+      thinkingConfig: { includeThoughts: true, thinkingBudget: 1000 },
+      responseModalities: ["TEXT", "IMAGE"],
+      mediaResolution: "MEDIA_RESOLUTION_HIGH",
+    });
+    const other = { responseModalities: ["TEXT", "AUDIO"], mediaResolution: "MEDIA_RESOLUTION_UNSPECIFIED" };
+    expect(unsupported(() => prepareGeminiRequest({ ...hello, generationConfig: other }, GEMINI, strict))).toEqual([
+      "generationConfig.responseModalities:AUDIO",
+      "generationConfig.mediaResolution:MEDIA_RESOLUTION_UNSPECIFIED",
+    ]);
+    const p = prepareGeminiRequest({ ...hello, generationConfig: other }, GEMINI, lossy);
+    expect(p.generationConfig).toEqual({ maxOutputTokens: 65_536, thinkingConfig: { includeThoughts: true, thinkingBudget: 1000 }, responseModalities: ["TEXT"] });
+    expect(p.dropped).toEqual(["generationConfig.responseModalities:AUDIO", "generationConfig.mediaResolution:MEDIA_RESOLUTION_UNSPECIFIED"]);
+    const audioOnly = prepareGeminiRequest({ ...hello, generationConfig: { responseModalities: ["AUDIO"] } }, GEMINI, lossy);
+    expect(audioOnly.generationConfig["responseModalities"]).toBeUndefined();
+    expect(() => prepareGeminiRequest({ ...hello, generationConfig: { responseModalities: "IMAGE" } }, GEMINI, strict)).toThrow("responseModalities must be an array of strings");
+    expect(() => prepareGeminiRequest({ ...hello, generationConfig: { responseModalities: [1] } }, GEMINI, strict)).toThrow("responseModalities must be an array of strings");
+    expect(() => prepareGeminiRequest({ ...hello, generationConfig: { mediaResolution: 1 } }, GEMINI, strict)).toThrow("mediaResolution must be a string");
+  });
+
   test("sampling fields proven in P0-LIVE E3 are carried; types are checked", () => {
     const config = { temperature: 0, topP: 0.5, topK: 5, stopSequences: ["5"], maxOutputTokens: 64 };
     expect(prepareGeminiRequest({ ...hello, generationConfig: config }, GEMINI, strict).generationConfig).toEqual({

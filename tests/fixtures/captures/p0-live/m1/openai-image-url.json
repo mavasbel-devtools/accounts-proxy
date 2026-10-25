@@ -1,0 +1,82 @@
+{
+  "id": "openai-image-url",
+  "target": "openai",
+  "scenario": "image (JPEG, by URL)",
+  "model": "gpt-5.6-luna",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "headers": {
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-encoding": "zstd",
+          "content-type": "application/json",
+          "user-agent": "OpenAI/JS 7.32.0",
+          "session-id": "a112815c-5d84-411f-a6d5-f63aeaeb99eb",
+          "thread-id": "a112815c-5d84-411f-a6d5-f63aeaeb99eb",
+          "x-client-request-id": "a112815c-5d84-411f-a6d5-f63aeaeb99eb"
+        },
+        "body": {
+          "model": "gpt-5.6-luna",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_image",
+                  "image_url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
+                  "detail": "auto"
+                },
+                {
+                  "type": "input_text",
+                  "text": "What kind of insect is in this photo? One word."
+                }
+              ]
+            }
+          ],
+          "store": false,
+          "stream": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "access-control-expose-headers": "CF-Ray, CF-Ray",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cf-cache-status": "DYNAMIC",
+          "cf-ray": "a4fdfd85bb54086a-YYZ",
+          "connection": "keep-alive",
+          "date": "Sun, 25 Oct 2026 03:03:50 GMT",
+          "server": "cloudflare",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "transfer-encoding": "chunked",
+          "x-codex-turn-state": "gAAAAABq3XGVCFD7GDberraEX2CKYmk_wOilX-7d461c363iwQGdahevX2WF3Pq-2OWPEmjccmK_JiasseyH90d0lVmRFs4GCNJXjyyJBCHL6aWYWL01IniANFRMU-o46Adq7dxGNRU8YO6bUA6-MLTHmlbx1dIOMvgJldQlqbGlFRdWguXhEN1semLoWDuuW8ymwhqDsaGZ5HTVqw0-emmk96Dc2NdG52Mo1Hq6H0MlZ_s6H0O74vrvbnEOM7R26FO-Na5oUfV3PIi3S4xrpH4R3tSS9YWbg6C_4plJ4a1cSy5Ve72eFnBEygfsDmfoW5ocXYH90Tym7HFHmZh8WzaXMgC6a89ScuQqjaKRPmvEmWWO82YVt0dhgQ0PAagEPkTMvQhw8wQXdK0vE08Ahij15NH5lC8rBBIdxq50KyB63bfdKBgO8tJMbywv2BkaMmuI08W40eemsbtKl3CCqBEX8vrIPJlKGQk52ZNx-hYdVXPVee72vAuNP1_mQ0eSLADQN6YgrgfB-lgPYaSDt7SgbDvnU1vBf6KZuhRZ9m427OgF6Ni94np5GoqbHRTxDwv1-w9J4jVnkPWFWemJX9bt72wlx8IZGa7SNQnOWbCPwULObVU5m8i4HJhFUwys1Anr0-c4Ie7qaWYRCmDFoy2otx4r2QzbcJjS27vWD89qGNNf5lc8UkQ0EIIDYurxLsHDR1hcJ-xBfcsLmsRpcl-VgLeApLlVok4yr18-fsN12tzaxoJC0zl1KhgCffRflSxHMXLStiQQ",
+          "x-content-type-options": "nosniff",
+          "x-models-etag": "W/\"1344d0062d5c1bbbd0fc3c893657e0dd\"",
+          "x-oai-request-id": "req_8682c487cd094925aaea6384cc8f928f",
+          "x-openai-proxy-wasm": "v0.1",
+          "set-cookie": "<REDACTED:set-cookie>"
+        },
+        "headersAtMs": 1415.7,
+        "doneAtMs": 1905.8,
+        "chunks": [
+          {
+            "atMs": 1415.8,
+            "text": "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_0601a547292df25b016add7195f76487d285bf9a3e5149b85a\",\"object\":\"response\",\"created_at\":1792897430,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"a112815c-5d84-411f-a6d5-f63aeaeb99eb\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"<REDACTED:openai-user>\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":0}\n\nevent: response.in_progress\ndata: {\"type\":\"response.in_progress\",\"response\":{\"id\":\"resp_0601a547292df25b016add7195f76487d285bf9a3e5149b85a\",\"object\":\"response\",\"created_at\":1792897430,\"status\":\"in_progress\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":null,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"a112815c-5d84-411f-a6d5-f63aeaeb99eb\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"<REDACTED:openai-user>\",\"service_tier\":\"auto\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":null,\"user\":null,\"metadata\":{}},\"sequence_number\":1}\n\n"
+          },
+          {
+            "atMs": 1538.2,
+            "text": "event: response.output_item.added\ndata: {\"type\":\"response.output_item.added\",\"item\":{\"id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"type\":\"message\",\"status\":\"in_progress\",\"content\":[],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":2}\n\nevent: response.content_part.added\ndata: {\"type\":\"response.content_part.added\",\"content_index\":0,\"item_id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"\"},\"sequence_number\":3}\n\nevent: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"content_index\":0,\"delta\":\"Ant\",\"item_id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"logprobs\":[],\"obfuscation\":\"RyYhc4UE8CvQM\",\"output_index\":0,\"sequence_number\":4}\n\n"
+          },
+          {
+            "atMs": 1905.7,
+            "text": "event: response.metadata\ndata: {\"type\":\"response.metadata\",\"response_id\":\"resp_0601a547292df25b016add7195f76487d285bf9a3e5149b85a\",\"sequence_number\":5,\"metadata\":{\"openai_chatgpt_moderation_metadata\":{\"prompt\":{},\"generation\":{},\"tool_call\":{},\"tool_response\":{}}}}\n\nevent: response.output_text.done\ndata: {\"type\":\"response.output_text.done\",\"content_index\":0,\"item_id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"logprobs\":[],\"output_index\":0,\"sequence_number\":6,\"text\":\"Ant\"}\n\nevent: response.content_part.done\ndata: {\"type\":\"response.content_part.done\",\"content_index\":0,\"item_id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"output_index\":0,\"part\":{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"Ant\"},\"sequence_number\":7}\n\nevent: response.output_item.done\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"id\":\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\",\"type\":\"message\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"Ant\"}],\"phase\":\"final_answer\",\"role\":\"assistant\"},\"output_index\":0,\"sequence_number\":8}\n\nevent: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_0601a547292df25b016add7195f76487d285bf9a3e5149b85a\",\"object\":\"response\",\"created_at\":1792897430,\"status\":\"completed\",\"access_programs\":{\"cyber\":\"standard\"},\"background\":false,\"completed_at\":1792897430,\"error\":null,\"frequency_penalty\":0.0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":null,\"max_tool_calls\":null,\"model\":\"gpt-5.6-luna\",\"moderation\":null,\"output\":[],\"parallel_tool_calls\":true,\"presence_penalty\":0.0,\"previous_response_id\":null,\"prompt_cache_key\":\"a112815c-5d84-411f-a6d5-f63aeaeb99eb\",\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"all_turns\",\"effort\":\"medium\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":\"<REDACTED:openai-user>\",\"service_tier\":\"default\",\"store\":false,\"temperature\":1.0,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":{\"attribution\":{\"items\":{\"msg_0601a547292df25b016add719627cc87d28dd4b909c7521445\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":2603,\"output_tokens\":0},{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":13,\"output_tokens\":0}],\"input_tokens\":2616,\"output_tokens\":0},\"msg_0601a547292df25b016add7196c0cc87d2af6b6482a1afd79e\":{\"cache_write_tokens\":0,\"cached_tokens\":0,\"content\":[{\"cache_write_tokens\":0,\"cached_tokens\":0,\"input_tokens\":2,\"output_tokens\":5}],\"input_tokens\":2,\"output_tokens\":5}}},\"input_tokens\":2618,\"input_tokens_details\":{\"cache_write_tokens\":0,\"cached_tokens\":0},\"output_tokens\":5,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":2623},\"user\":null,\"metadata\":{}},\"sequence_number\":9}\n\n"
+          }
+        ]
+      }
+    }
+  ]
+}

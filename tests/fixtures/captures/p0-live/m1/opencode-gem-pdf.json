@@ -1,0 +1,64 @@
+{
+  "id": "opencode-gem-pdf",
+  "target": "opencode",
+  "scenario": "PDF (inline)",
+  "model": "gemini-3.5-flash-lite",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "headers": {
+          "x-opencode-org-id": "<REDACTED:orgid>",
+          "user-agent": "google-genai-sdk/2.28.0 gl-node/v26.3.0",
+          "content-type": "application/json",
+          "x-opencode-session": "ap_00b6f5b35537bbee",
+          "x-goog-api-key": "<REDACTED:x-goog-api-key>"
+        },
+        "body": {
+          "contents": [
+            {
+              "parts": [
+                {
+                  "inlineData": {
+                    "mimeType": "application/pdf",
+                    "data": "<FIXTURE:code-word.pdf>"
+                  }
+                },
+                {
+                  "text": "What is the code word in the document? Reply with the word only."
+                }
+              ],
+              "role": "user"
+            }
+          ],
+          "generationConfig": {}
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cf-ray": "a4fdfe102f552ba3-PHL",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Sun, 25 Oct 2026 03:04:12 GMT",
+          "server": "cloudflare",
+          "transfer-encoding": "chunked",
+          "x-opencode-log-id": "01a17104-0627-7162-b98d-a9667d7b0a92",
+          "x-zen-model": "gemini-3.5-flash-lite"
+        },
+        "headersAtMs": 1115.4,
+        "doneAtMs": 1115.8,
+        "chunks": [
+          {
+            "atMs": 1115.6,
+            "text": "{\"createTime\":\"2026-10-25T03:04:11.832099Z\",\"responseId\":\"q3HdauPkMs2aotQPitKZaQ\",\"modelVersion\":\"gemini-3.5-flash-lite\",\"candidates\":[{\"finishReason\":\"STOP\",\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"PELICAN\",\"thoughtSignature\":\"AY89a19T5vndIx8OeD8X+11uhT+k8Ux474BtMjAMPDVE84PaiqE29gOXNVA1iu3ItcYcl4a0DzE1qH84KTVxaDA5JFQmRT1D+kAiwj8pgtuvj6XbZly6/Ams+Ek=\"}]}}],\"usageMetadata\":{\"candidatesTokensDetails\":[{\"modality\":\"TEXT\",\"tokenCount\":2}],\"promptTokensDetails\":[{\"modality\":\"IMAGE\",\"tokenCount\":520},{\"modality\":\"TEXT\",\"tokenCount\":15}],\"candidatesTokenCount\":2,\"promptTokenCount\":535,\"totalTokenCount\":537,\"cost\":0.0001655,\"opencode\":{\"billing_source\":\"balance\",\"list_cost\":0.0001655,\"tokens\":{\"input\":535,\"output\":2,\"reasoning\":0,\"cache_read\":0,\"cache_write_5m\":0,\"cache_write_1h\":0}}}}"
+          }
+        ]
+      }
+    }
+  ]
+}

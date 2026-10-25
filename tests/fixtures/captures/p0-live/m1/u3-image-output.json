@@ -1,0 +1,82 @@
+{
+  "id": "u3-image-output",
+  "target": "antigravity",
+  "scenario": "image output",
+  "model": "gemini-3.1-flash-image",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "note": "response chunks joined: a generated image spans several chunks",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse",
+        "headers": {
+          "user-agent": "antigravity/ide/2.5.5 (aidev_client; os_type=linux; arch=amd64)",
+          "authorization": "Bearer <REDACTED:authorization>",
+          "content-type": "application/json",
+          "accept-encoding": "gzip"
+        },
+        "body": {
+          "project": "<REDACTED:projectids>",
+          "requestId": "agent/b9267810-d856-44c2-adb1-c11ee61e62e3/1792897500187/d3f48304-2f28-4277-8ada-5036f8c08e87/3",
+          "request": {
+            "contents": [
+              {
+                "role": "user",
+                "parts": [
+                  {
+                    "text": "Draw a small red circle on a white background."
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "last_step_index": "2",
+              "model_enum": "MODEL_PLACEHOLDER_M21",
+              "trajectory_id": "d3f48304-2f28-4277-8ada-5036f8c08e87",
+              "used_claude": "false",
+              "used_claude_conservative": "false",
+              "used_non_gemini_model": "false"
+            },
+            "generationConfig": {
+              "maxOutputTokens": 2048,
+              "responseModalities": [
+                "TEXT",
+                "IMAGE"
+              ]
+            },
+            "sessionId": "<REDACTED:antigravity_session_id>"
+          },
+          "model": "gemini-3.1-flash-image",
+          "userAgent": "antigravity",
+          "requestType": "agent"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "content-disposition": "attachment",
+          "content-type": "text/event-stream",
+          "date": "Sun, 25 Oct 2026 03:05:07 GMT",
+          "server": "ESF",
+          "server-timing": "gfet4t7; dur=6857",
+          "transfer-encoding": "chunked",
+          "vary": "Origin, X-Origin, Referer",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "SAMEORIGIN",
+          "x-xss-protection": "0"
+        },
+        "headersAtMs": 6924.9,
+        "doneAtMs": 6995.4,
+        "chunks": [
+          {
+            "atMs": 6994.3,
+            "text": "data: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"thoughtSignature\": \"<FIXTURE:thought-signature 1024612 base64 chars sha256:3ef47f6adcf94ecc63c73e37b286a72191351ecbf1dbab8bde09c8398e806e74>\",\"inlineData\": {\"mimeType\": \"image/jpeg\",\"data\": \"<FIXTURE:generated-image 706464 base64 chars sha256:4f4c7f602045b2f306e7d5072f7146b026636b2b996da3a5b755b9debac9c17e>\"}}]}}],\"usageMetadata\": {\"promptTokenCount\": 11,\"candidatesTokenCount\": 1215,\"totalTokenCount\": 1226},\"modelVersion\": \"gemini-3.1-flash-image\",\"responseId\": \"3HHdas27I8-pxdIPp5HBqAM\"},\"traceId\": \"183bd9880dcb61d6\",\"metadata\": {}}\r\n\r\ndata: {\"response\": {\"candidates\": [{\"content\": {\"role\": \"model\",\"parts\": [{\"text\": \"\"}]},\"finishReason\": \"STOP\"}],\"usageMetadata\": {\"promptTokenCount\": 11,\"candidatesTokenCount\": 1215,\"totalTokenCount\": 1226},\"modelVersion\": \"gemini-3.1-flash-image\",\"responseId\": \"3HHdas27I8-pxdIPp5HBqAM\"},\"traceId\": \"183bd9880dcb61d6\",\"metadata\": {}}\r\n\r\n"
+          }
+        ]
+      }
+    }
+  ]
+}

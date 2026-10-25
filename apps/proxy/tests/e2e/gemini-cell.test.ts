@@ -93,6 +93,12 @@ describe("request validation (400 INVALID_ARGUMENT, nothing sent upstream)", () 
     ["includeThoughts not a boolean", { ...hello, generationConfig: { thinkingConfig: { includeThoughts: "yes" } } }, "includeThoughts must be a boolean"],
     ["thinkingBudget not a number", { ...hello, generationConfig: { thinkingConfig: { thinkingBudget: "1000" } } }, "thinkingBudget must be an integer"],
     ["thinkingBudget not an integer", { ...hello, generationConfig: { thinkingConfig: { thinkingBudget: 1.5 } } }, "thinkingBudget must be an integer"],
+    ["fileData that is not an object", { contents: [{ parts: [{ fileData: "x" }] }] }, "fileData needs a string fileUri"],
+    ["fileData without fileUri", { contents: [{ parts: [{ fileData: { mimeType: "application/pdf" } }] }] }, "fileData needs a string fileUri"],
+    ["fileData with a non-string mimeType", { contents: [{ parts: [{ fileData: { fileUri: "https://example.com/a.pdf", mimeType: 1 } }] }] }, "fileData needs a string fileUri"],
+    ["responseModalities not an array", { ...hello, generationConfig: { responseModalities: "IMAGE" } }, "responseModalities must be an array of strings"],
+    ["responseModalities with a number", { ...hello, generationConfig: { responseModalities: [1] } }, "responseModalities must be an array of strings"],
+    ["mediaResolution not a string", { ...hello, generationConfig: { mediaResolution: 1 } }, "mediaResolution must be a string"],
   ])("%s", async (_name, body, expected) => {
     const before = upstreams.find(GENERATE).length;
     const answer = await call(body);
@@ -105,7 +111,10 @@ describe("request validation (400 INVALID_ARGUMENT, nothing sent upstream)", () 
 describe("strict translation: unknown fields are 400 unsupported_feature; x-proxy-lossy drops and reports them", () => {
   test.each([
     ["an unknown top-level field", { ...hello, safetySettings: [] }, "safetySettings"],
-    ["an unknown part field", { contents: [{ parts: [{ text: "a", fileData: {} }] }] }, "contents.parts.fileData"],
+    ["an unknown part field", { contents: [{ parts: [{ text: "a", videoMetadata: {} }] }] }, "contents.parts.videoMetadata"],
+    ["a fileData field other than fileUri and mimeType", { contents: [{ parts: [{ text: "a", fileData: { fileUri: "https://example.com/a.pdf", displayName: "a.pdf" } }] }] }, "contents.parts.fileData.displayName"],
+    ["an output modality other than TEXT and IMAGE", { ...hello, generationConfig: { responseModalities: ["TEXT", "AUDIO"] } }, "generationConfig.responseModalities:AUDIO"],
+    ["a media resolution never probed", { ...hello, generationConfig: { mediaResolution: "MEDIA_RESOLUTION_UNSPECIFIED" } }, "generationConfig.mediaResolution:MEDIA_RESOLUTION_UNSPECIFIED"],
     ["a non-text system part", { ...hello, systemInstruction: { parts: [{ text: "keep", thought: true }, { inlineData: { mimeType: "image/png", data: "AA" } }] } }, "systemInstruction.parts.thought,systemInstruction.parts.inlineData"],
     ["another tool kind", { ...hello, tools: [{ googleSearch: {} }] }, "tools.googleSearch"],
     ["a declaration field", { ...hello, tools: [{ functionDeclarations: [{ name: "f", behavior: "BLOCKING" }] }] }, "tools.functionDeclarations.behavior"],
@@ -153,6 +162,23 @@ describe("mapping onto the upstream request", () => {
     ]);
     expect(request["toolConfig"]).toEqual({ functionCallingConfig: { mode: "AUTO" } });
     expect(request["generationConfig"]).toEqual({ maxOutputTokens: 64, thinkingConfig: { includeThoughts: false, thinkingBudget: 1000 }, temperature: 0, topP: 0.5, topK: 5, stopSequences: ["5"] });
+  });
+
+  test("media (live media probe M1): fileData by URL, TEXT/IMAGE output and mediaResolution travel unchanged", async () => {
+    const file = { fileData: { fileUri: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", mimeType: "application/pdf" } };
+    const answer = await call({ contents: [{ parts: [file] }], generationConfig: { responseModalities: ["TEXT", "IMAGE"], mediaResolution: "MEDIA_RESOLUTION_LOW" } }, { model: "gemini-3.1-flash-image" });
+    expect([answer.status, answer.headers.get("x-proxy-dropped")]).toEqual([200, null]);
+    const request = sent();
+    expect(request["contents"]).toEqual([{ role: "user", parts: [file] }]);
+    expect(request["generationConfig"]).toEqual({ responseModalities: ["TEXT", "IMAGE"], mediaResolution: "MEDIA_RESOLUTION_LOW" });
+  });
+
+  test("lossy media: an AUDIO-only output request loses responseModalities entirely; fileData keeps fileUri", async () => {
+    const answer = await call({ contents: [{ parts: [{ fileData: { fileUri: "https://example.com/a.pdf", displayName: "a.pdf" } }] }], generationConfig: { responseModalities: ["AUDIO"] } }, { model: "gemini-3.1-flash-image", lossy: true });
+    expect([answer.status, answer.headers.get("x-proxy-dropped")]).toEqual([200, "contents.parts.fileData.displayName,generationConfig.responseModalities:AUDIO"]);
+    const request = sent();
+    expect(request["contents"]).toEqual([{ role: "user", parts: [{ fileData: { fileUri: "https://example.com/a.pdf" } }] }]);
+    expect(request["generationConfig"]).toEqual({});
   });
 
   test("an MCP tool as the Gen AI SDK sends it (parametersJsonSchema) travels unchanged (live L1 j1/j2)", async () => {

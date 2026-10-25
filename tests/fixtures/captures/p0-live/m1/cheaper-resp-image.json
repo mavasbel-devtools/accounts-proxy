@@ -1,0 +1,77 @@
+{
+  "id": "cheaper-resp-image",
+  "target": "cheaper-inference",
+  "scenario": "image (PNG, inline)",
+  "model": "gpt-5.4-nano",
+  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "tokenEndpointExchangesOmitted": 0,
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "https://api.cheaperinference.com/v1/responses",
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json",
+          "authorization": "Bearer <REDACTED:authorization>"
+        },
+        "body": {
+          "model": "gpt-5.4-nano",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_image",
+                  "image_url": "data:image/png;base64,<FIXTURE:code-word.png>",
+                  "detail": "auto"
+                },
+                {
+                  "type": "input_text",
+                  "text": "What word is written in this image? Reply with the word only."
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 25 Oct 2026 03:04:44 GMT",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-ci-cache": "miss",
+          "x-ci-model-response-ms": "3122",
+          "x-ci-prompt-cache-affinity": "new",
+          "x-ci-request-id": "d14b0fa4-9686-4158-8df4-9ec3a1d84a30",
+          "x-ci-routing-overhead-ms": "768",
+          "x-ci-techniques": "",
+          "x-ci-tokens-saved": "0",
+          "x-ci-zdr": "false",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-matched-path": "/api/v1/responses",
+          "x-nextjs-rewritten-path": "/api/v1/responses",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "yul1::yul1::f2qj2-1792897480134-dc2f966e4d62"
+        },
+        "headersAtMs": 4330.6,
+        "doneAtMs": 4331,
+        "chunks": [
+          {
+            "atMs": 4330.9,
+            "text": "{\"id\":\"resp_04fcd196f7db31f3016add71ca9c4c87d198653806d844722b\",\"object\":\"response\",\"created_at\":1792897482,\"status\":\"completed\",\"access_programs\":null,\"background\":false,\"completed_at\":1792897483,\"error\":null,\"frequency_penalty\":0,\"incomplete_details\":null,\"instructions\":null,\"max_output_tokens\":128000,\"max_tool_calls\":null,\"model\":\"gpt-5.4-nano\",\"moderation\":null,\"output\":[{\"id\":\"msg_04fcd196f7db31f3016add71cafcf487d1b0f0769586d6920e\",\"type\":\"message\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"annotations\":[],\"logprobs\":[],\"text\":\"PELICAN\"}],\"phase\":\"final_answer\",\"role\":\"assistant\"}],\"parallel_tool_calls\":true,\"presence_penalty\":0,\"previous_response_id\":null,\"prompt_cache_key\":null,\"prompt_cache_retention\":\"24h\",\"reasoning\":{\"context\":\"current_turn\",\"effort\":\"none\",\"mode\":\"standard\",\"summary\":null},\"safety_identifier\":null,\"service_tier\":\"default\",\"store\":false,\"temperature\":1,\"text\":{\"format\":{\"type\":\"text\"},\"verbosity\":\"medium\"},\"tool_choice\":\"auto\",\"tool_usage\":{\"image_gen\":{\"input_tokens\":0,\"input_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"output_tokens\":0,\"output_tokens_details\":{\"image_tokens\":0,\"text_tokens\":0},\"total_tokens\":0},\"web_search\":{\"num_requests\":0}},\"tools\":[],\"top_logprobs\":0,\"top_p\":0.98,\"truncation\":\"disabled\",\"usage\":{\"input_tokens\":93,\"input_tokens_details\":{\"cache_write_tokens\":0,\"cached_tokens\":0},\"output_tokens\":7,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":100},\"user\":null,\"metadata\":{},\"request_id\":\"d14b0fa4-9686-4158-8df4-9ec3a1d84a30\",\"billing\":{\"status\":\"settled\",\"billed_cost_usd\":\"0.000017\",\"currency\":\"USD\",\"zero_data_retention\":false,\"effective_discount_percent\":37.84277879341865}}"
+          }
+        ]
+      }
+    }
+  ]
+}
