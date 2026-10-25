@@ -3,7 +3,7 @@
   "target": "openrouter",
   "scenario": "PDF (inline)",
   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "capturedAt": "2026-10-25T06:05:22.829Z",
   "tokenEndpointExchangesOmitted": 0,
   "exchanges": [
     {
@@ -38,27 +38,33 @@
         }
       },
       "response": {
-        "status": 401,
+        "status": 200,
         "headers": {
           "access-control-allow-origin": "*",
           "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
-          "cf-ray": "a4fdfdcaede536ce-YYZ",
+          "cf-ray": "a4ff07964fb93293-QRO",
           "connection": "keep-alive",
+          "content-encoding": "gzip",
           "content-type": "application/json",
-          "date": "Sun, 25 Oct 2026 03:04:00 GMT",
+          "date": "Sun, 25 Oct 2026 06:05:28 GMT",
           "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
           "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
           "server": "cloudflare",
           "transfer-encoding": "chunked",
           "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1792908327-zRJvRt2L21oKZw0i3drY",
           "set-cookie": "<REDACTED:set-cookie>"
         },
-        "headersAtMs": 87.6,
-        "doneAtMs": 87.9,
+        "headersAtMs": 919.6,
+        "doneAtMs": 3068.9,
         "chunks": [
           {
-            "atMs": 87.8,
-            "text": "{\"error\":{\"message\":\"User not found.\",\"code\":401}}"
+            "atMs": 919.9,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 3068.8,
+            "text": "{\"id\":\"gen-1792908327-zRJvRt2L21oKZw0i3drY\",\"object\":\"chat.completion\",\"created\":1792908327,\"model\":\"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"PELICAN\",\"refusal\":null,\"reasoning\":\"We need to read the document content: <file name=\\\"code-word.pdf\\\">The code word is PELICAN.</file>. The question: \\\"What is the code word in the document? Reply with the word only.\\\" So answer: PELICAN.\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"We need to read the document content: <file name=\\\"code-word.pdf\\\">The code word is PELICAN.</file>. The question: \\\"What is the code word in the document? Reply with the word only.\\\" So answer: PELICAN.\\n\",\"format\":\"unknown\",\"index\":0}],\"annotations\":[{\"type\":\"file\",\"file\":{\"hash\":\"08bb3fd0e8d647a29aeb3fe435b43b846684caf364dc47b52685011df63f75ec\",\"name\":\"code-word.pdf\",\"content\":[{\"type\":\"text\",\"text\":\"<file name=\\\"code-word.pdf\\\">\"},{\"type\":\"text\",\"text\":\"The code word is PELICAN.\"},{\"type\":\"text\",\"text\":\"</file>\"}]}}]}}],\"usage\":{\"prompt_tokens\":51,\"completion_tokens\":60,\"total_tokens\":111,\"cost\":0.002,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":51,\"image_tokens\":0,\"audio_tokens\":0}}}"
           }
         ]
       }

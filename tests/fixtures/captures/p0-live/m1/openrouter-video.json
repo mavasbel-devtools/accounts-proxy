@@ -3,7 +3,7 @@
   "target": "openrouter",
   "scenario": "video (WebM VP9, inline)",
   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "capturedAt": "2026-10-25T03:02:40.807Z",
+  "capturedAt": "2026-10-25T21:35:16.112Z",
   "tokenEndpointExchangesOmitted": 0,
   "exchanges": [
     {
@@ -37,27 +37,45 @@
         }
       },
       "response": {
-        "status": 401,
+        "status": 200,
         "headers": {
           "access-control-allow-origin": "*",
           "access-control-expose-headers": "X-Generation-Id,X-Provider-Name,request-id,cf-ray",
-          "cf-ray": "a4fdfde81a6236ce-YYZ",
+          "cf-ray": "a50459a00b151185-YYZ",
           "connection": "keep-alive",
+          "content-encoding": "gzip",
           "content-type": "application/json",
-          "date": "Sun, 25 Oct 2026 03:04:05 GMT",
+          "date": "Sun, 25 Oct 2026 21:35:16 GMT",
           "permissions-policy": "payment=(self \"https://checkout.stripe.com\" \"https://connect-js.stripe.com\" \"https://js.stripe.com\" \"https://*.js.stripe.com\" \"https://hooks.stripe.com\")",
           "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
           "server": "cloudflare",
           "transfer-encoding": "chunked",
           "x-content-type-options": "nosniff",
+          "x-generation-id": "gen-1792964116-u6OaIeBkpDKGYpnoDyLl",
           "set-cookie": "<REDACTED:set-cookie>"
         },
-        "headersAtMs": 94.7,
-        "doneAtMs": 95,
+        "headersAtMs": 545.4,
+        "doneAtMs": 12704.8,
         "chunks": [
           {
-            "atMs": 94.9,
-            "text": "{\"error\":{\"message\":\"User not found.\",\"code\":401}}"
+            "atMs": 892.9,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 3897.3,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 6863.9,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 9865.5,
+            "text": "\n         \n"
+          },
+          {
+            "atMs": 12704.6,
+            "text": "{\"id\":\"gen-1792964116-u6OaIeBkpDKGYpnoDyLl\",\"object\":\"chat.completion\",\"created\":1792964116,\"model\":\"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free\",\"provider\":\"Nvidia\",\"system_fingerprint\":null,\"service_tier\":null,\"choices\":[{\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\",\"native_finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"PELICAN\",\"refusal\":null,\"reasoning\":\"The user wants me to identify the word written in the video.\\n\\n1.  **Analyze the frames:**\\n    *   Frame 1 (00:00): Shows the word \\\"PELICAN\\\" in white capital letters on a blue background.\\n    *   Frame 2 (00:01): Shows the word \\\"PELICAN\\\" (partially cut off, looks like \\\"PEL...\\\"). Wait, looking closely at the crop, it's actually just \\\"PEL\\\" visible or maybe \\\"PELICAN\\\" cut off. Let's re-examine. Ah, the second image is just a zoomed-in or cropped version showing \\\"PEL\\\". No, wait, looking at the full sequence:\\n        *   Image 1: \\\"PELICAN\\\"\\n        *   Image 2: \\\"PEL\\\" (It seems the text is scrolling or changing? No, let's look at the timestamps).\\n        *   Image 3: \\\"PECAN\\\" (The 'LI' part is gone).\\n        *   Image 4: \\\"CAN\\\" (The 'PE' part is gone).\\n    *   Actually, let's look at the progression. It looks like a countdown or a reveal.\\n    *   Frame 1: Full word \\\"PELICAN\\\".\\n    *   Frame 2: \\\"PEL\\\" is visible. Wait, looking at the second image provided, it shows \\\"PEL\\\". The 'I' and 'CAN' are cut off. Or maybe it's just \\\"PEL\\\". Let's assume the text is animating out.\\n    *   Frame 3: \\\"PECAN\\\". The 'LI' is missing.\\n    *   Frame 4: \\\"CAN\\\". The 'PE' is missing.\\n\\n    Wait, let me look closer at the images.\\n    *   Image 1: \\\"PELICAN\\\"\\n    *   Image 2: \\\"PEL\\\" -> This looks like the start of the word being revealed or scrolled. Actually, looking at the third image \\\"PECAN\\\", it seems like letters are disappearing from the left? Or maybe the camera is panning right?\\n    *   Let's look at Image 3: \\\"PECAN\\\". The 'L' and 'I' are gone. So \\\"PE\\\" + \\\"CAN\\\".\\n    *   Let's look at Image 4: \\\"CAN\\\". The 'PE' is gone.\\n\\n    Regardless of the animation, the core word is clearly \\\"PELICAN\\\". The question asks \\\"What word is written in this video?\\\". The primary word displayed is \\\"PELICAN\\\". Even though subsequent frames show parts of it, the full word is \\\"PELICAN\\\".\\n\\n2.  **Formulate the answer:** The word is PELICAN.\\n\",\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"The user wants me to identify the word written in the video.\\n\\n1.  **Analyze the frames:**\\n    *   Frame 1 (00:00): Shows the word \\\"PELICAN\\\" in white capital letters on a blue background.\\n    *   Frame 2 (00:01): Shows the word \\\"PELICAN\\\" (partially cut off, looks like \\\"PEL...\\\"). Wait, looking closely at the crop, it's actually just \\\"PEL\\\" visible or maybe \\\"PELICAN\\\" cut off. Let's re-examine. Ah, the second image is just a zoomed-in or cropped version showing \\\"PEL\\\". No, wait, looking at the full sequence:\\n        *   Image 1: \\\"PELICAN\\\"\\n        *   Image 2: \\\"PEL\\\" (It seems the text is scrolling or changing? No, let's look at the timestamps).\\n        *   Image 3: \\\"PECAN\\\" (The 'LI' part is gone).\\n        *   Image 4: \\\"CAN\\\" (The 'PE' part is gone).\\n    *   Actually, let's look at the progression. It looks like a countdown or a reveal.\\n    *   Frame 1: Full word \\\"PELICAN\\\".\\n    *   Frame 2: \\\"PEL\\\" is visible. Wait, looking at the second image provided, it shows \\\"PEL\\\". The 'I' and 'CAN' are cut off. Or maybe it's just \\\"PEL\\\". Let's assume the text is animating out.\\n    *   Frame 3: \\\"PECAN\\\". The 'LI' is missing.\\n    *   Frame 4: \\\"CAN\\\". The 'PE' is missing.\\n\\n    Wait, let me look closer at the images.\\n    *   Image 1: \\\"PELICAN\\\"\\n    *   Image 2: \\\"PEL\\\" -> This looks like the start of the word being revealed or scrolled. Actually, looking at the third image \\\"PECAN\\\", it seems like letters are disappearing from the left? Or maybe the camera is panning right?\\n    *   Let's look at Image 3: \\\"PECAN\\\". The 'L' and 'I' are gone. So \\\"PE\\\" + \\\"CAN\\\".\\n    *   Let's look at Image 4: \\\"CAN\\\". The 'PE' is gone.\\n\\n    Regardless of the animation, the core word is clearly \\\"PELICAN\\\". The question asks \\\"What word is written in this video?\\\". The primary word displayed is \\\"PELICAN\\\". Even though subsequent frames show parts of it, the full word is \\\"PELICAN\\\".\\n\\n2.  **Formulate the answer:** The word is PELICAN.\\n\",\"format\":\"unknown\",\"index\":0}]}}],\"usage\":{\"prompt_tokens\":492,\"completion_tokens\":575,\"total_tokens\":1067,\"cost\":0,\"is_byok\":false,\"prompt_tokens_details\":{\"cached_tokens\":0,\"cache_write_tokens\":0,\"audio_tokens\":0,\"video_tokens\":0},\"cost_details\":{\"upstream_inference_cost\":0,\"upstream_inference_prompt_cost\":0,\"upstream_inference_completions_cost\":0},\"completion_tokens_details\":{\"reasoning_tokens\":481,\"image_tokens\":0,\"audio_tokens\":0}}}"
           }
         ]
       }

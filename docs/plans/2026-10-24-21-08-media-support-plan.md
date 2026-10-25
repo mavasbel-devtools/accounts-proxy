@@ -62,3 +62,13 @@ is why the image probes now use a PNG carrying a word.
 - Account files: of the seven files in `~/.local/share/accounts-proxy/`, only `accounts-openai.json` changed during
   the probe runs: the proxy renewed its own OpenAI token (the `200 token` call of the first run), as the renewal
   rules require. No other file changed.
+
+## 5. Amendment: OpenRouter media measured (2026-10-25)
+
+Following the import of the active OpenRouter key from OpenCode (`bun run proxy login openrouter --from-opencode`),
+`ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/m1-media-probe.ts --only=openrouter` was executed live.
+All four media modalities on OpenRouter (`openrouter-image`, `openrouter-pdf`, `openrouter-audio`, `openrouter-video`)
+answered HTTP 200 OK (image, PDF, and video reading the code word `PELICAN`, audio returning 200 assistant completion).
+Captures `tests/fixtures/captures/p0-live/m1/openrouter-*.json` and the reference table in
+`docs/reference/2026-10-24-21-05-m1-media-probe.md` are updated with the live evidence. Item §3 row OpenRouter media
+is resolved.

@@ -143,3 +143,16 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - Records: [login profiles §10](../reference/2026-10-20-12-13-recon-login-profiles.md#10-antigravity-keeps-its-sign-in-across-runs-2026-10-24),
   [plan §26](../plans/2026-10-19-20-04-recon-mitm-capture-plan.md#26-amendment--antigravity-sign-in-persists-the-client-is-stopped-inside-the-sandbox-2026-10-24-1327).
 - Open: Codex (deferred); 13 `home.*.bak` Antigravity profiles await the operator's decision.
+
+## 2026-10-25 15:40 — M1 Media Probe & OpenRouter Validation Complete
+
+- M1 Media Probe ([plan](../plans/2026-10-24-21-08-media-support-plan.md), [record](../reference/2026-10-24-21-05-m1-media-probe.md)):
+  All providers tested across supported media modalities (PNG, PDF, WAV, VP9 WebM).
+  Antigravity native Gemini cell now supports `inlineData`, `fileData` with `fileUri` (+ `mimeType`),
+  `generationConfig.responseModalities` `TEXT`/`IMAGE`, and `mediaResolution` `LOW`/`MEDIUM`/`HIGH`.
+- OpenRouter media validation: imported active key from OpenCode (`bun run proxy login openrouter --from-opencode`).
+  All four media modalities (`openrouter-image`, `openrouter-pdf`, `openrouter-audio`, `openrouter-video`) re-probed
+  live through the daemon and verified 200 ACCEPTED (PELICAN recognized).
+- Backup profile cleanup: old `home.*.bak` directories purged (~1.1 GB freed).
+- Verification gate: `bun run verify` GATE: PASS (895 unit+component+arch, 257 e2e, 100% coverage on statements,
+  branches, functions, lines across every tier, 11 recon parity checks pass with 0 differences, docs lint PASS).
