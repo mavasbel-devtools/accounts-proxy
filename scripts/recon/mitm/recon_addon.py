@@ -61,6 +61,10 @@ SCHEMA_ERROR = "recon-error/2"
 SCHEMA_CONNECTIONS = "recon-connections/1"
 SCHEMA_INDEX = "recon-index/2"
 
+# An identity header value shorter than this is not learned: replacing it everywhere would corrupt unrelated text
+# (the same floor as the TypeScript redactor's known secrets).
+LEARNED_MIN_LENGTH = 6
+
 # What a stream's last bytes look like when the provider finished the answer (Anthropic, OpenAI chat, OpenAI
 # Responses, Gemini). A client that closes the socket right after one of these ended a complete response; only a
 # stream without any of them was cancelled mid-answer. `finish_reason` and `finishReason` are matched with a non-null
@@ -283,10 +287,15 @@ class ReconAddon:
             raise RuntimeError("recon_redaction is required: capture never runs without a redaction manifest")
         with open(path, encoding="utf-8") as handle:
             self.manifest = json.load(handle)
-        if self.manifest.get("schema") != "recon-redaction/2":
+        if self.manifest.get("schema") != "recon-redaction/3":
             raise RuntimeError(f"unexpected redaction manifest schema: {self.manifest.get('schema')}")
         self.max_body = int(ctx.options.recon_max_body)
         self._credential_headers = {name.lower() for name in self.manifest["credentialHeaders"]}
+        self._identity_headers = {name.lower() for name in self.manifest["identityHeaders"]}
+        # Values carried by an identity header (the ChatGPT account id), learned as the run sees them and redacted
+        # wherever they appear afterwards: the same id comes back as a bare array element or object `id`, which no
+        # field rule can name (measured 2026-10-25, Codex `wham/accounts/check`).
+        self._learned: dict[str, str] = {}
         self._credential_fields = list(self.manifest["credentialFields"])
         self._identity_fields = list(self.manifest["identityFields"])
         self._query_fields = list(self.manifest["queryCredentialFields"])
@@ -344,6 +353,10 @@ class ReconAddon:
             if entry not in redactions:
                 redactions.append(entry)
 
+        for value, name in self._learned.items():
+            if value in text:
+                text = text.replace(value, f"<REDACTED:{name}>")
+                note(name, "identity-value")
         for field, pattern in self._field_patterns:
             text, count = pattern.subn(lambda m, f=field: m.group(1) + f"<REDACTED:{f}>" + m.group(2), text)
             if count:
@@ -394,6 +407,13 @@ class ReconAddon:
                 scheme = re.match(r"^(Bearer|Basic)\s+", value, re.IGNORECASE)
                 out.append([name, f"{scheme.group(1)} <REDACTED:{name.lower()}>" if scheme else f"<REDACTED:{name.lower()}>"])
                 entry = {"where": "header", "name": name.lower(), "rule": "credential-header"}
+                if entry not in redactions:
+                    redactions.append(entry)
+            elif name.lower() in self._identity_headers:
+                if len(value) >= LEARNED_MIN_LENGTH:
+                    self._learned.setdefault(value, name.lower())
+                out.append([name, f"<REDACTED:{name.lower()}>"])
+                entry = {"where": "header", "name": name.lower(), "rule": "identity-header"}
                 if entry not in redactions:
                     redactions.append(entry)
             else:

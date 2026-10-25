@@ -84,8 +84,11 @@ describe("run preconditions", () => {
 describe("redaction manifest", () => {
   test("is validated and carries every credential class", () => {
     const manifest = loadRedactionManifest();
-    expect(manifest.schema).toBe("recon-redaction/2");
+    expect(manifest.schema).toBe("recon-redaction/3");
     expect(manifest.credentialHeaders).toContain("authorization");
+    expect(manifest.identityHeaders).toContain("chatgpt-account-id");
+    expect(manifest.queryCredentialFields).toContain("sig");
+    expect(manifest.identityFields).toContain("installation_id");
     expect(manifest.credentialHeaders).toContain("proxy-authorization");
     expect(manifest.credentialFields).toContain("refresh_token");
     expect(manifest.identityFields).toContain("account_uuid");

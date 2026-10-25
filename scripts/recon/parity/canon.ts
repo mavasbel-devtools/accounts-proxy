@@ -40,6 +40,7 @@ const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?
 
 type Manifest = {
   readonly credentialHeaders: readonly string[];
+  readonly identityHeaders: readonly string[];
   readonly credentialFields: readonly string[];
   readonly identityFields: readonly string[];
   readonly identityPatterns: readonly { readonly name: string; readonly regex: string }[];
@@ -51,6 +52,8 @@ const manifest = JSON.parse(readFileSync(join(import.meta.dir, "..", "shared", "
  */
 const IDENTITY_PATTERNS = manifest.identityPatterns.map(({ regex }) => new RegExp(regex, "g"));
 const CREDENTIAL_HEADERS = new Set(manifest.credentialHeaders.map((name) => name.toLowerCase()));
+/** An account header (the ChatGPT account id) is compared by presence: the capture holds the mark, the proxy its own id. */
+const IDENTITY_HEADERS = new Set(manifest.identityHeaders.map((name) => name.toLowerCase()));
 /**
  * Fields that name a person, an install or a secret are compared by presence and type only, on both sides: a capture
  * recorded before a manifest rule existed still holds the raw value, and the proxy's own value is a different
@@ -105,6 +108,7 @@ function headerValue(name: string, value: string): string {
     const scheme = /^(Bearer|Basic)\s+/i.exec(value);
     return scheme ? `${scheme[1]} ${REDACTED}` : REDACTED;
   }
+  if (IDENTITY_HEADERS.has(lower)) return REDACTED;
   return maskString(value);
 }
 

@@ -553,6 +553,46 @@ def main() -> int:
             check(openai_user not in json.dumps(oa_record), "OpenAI user id absent from the record")
             check(json.loads(oa_record["body"])["note"] == "user-agent", "text that only starts like the pattern kept")
 
+            # Codex's ChatGPT account id rides in a header and comes back as a bare array element and an object `id`;
+            # the install id rides inside the turn-metadata header; a signed download link carries `sig` (measured
+            # 2026-10-25, recon runs codex/2026-10-25-01-52-*).
+            account = "8b7f0000-0000-4000-8000-000000000001"
+            codex_request = http.Request(
+                "chatgpt.com",
+                443,
+                b"GET",
+                b"https",
+                b"chatgpt.com",
+                b"/backend-api/wham/accounts/check?sig=signed-value&sp=r",
+                b"HTTP/1.1",
+                headers=header_pairs(
+                    [
+                        ("chatgpt-account-id", account),
+                        ("x-codex-turn-metadata", json.dumps({"installation_id": "i-123456", "turn": 1})),
+                    ]
+                ),
+                content=b"",
+                trailers=None,
+                timestamp_start=1,
+                timestamp_end=2,
+            )
+            codex_flow = tflow.tflow(req=codex_request)
+            addon.request(codex_flow)
+            codex_seq = int(codex_flow.metadata["recon_seq"])
+            codex_record = read(out, f"{codex_seq:03d}-request.json")
+            check(["chatgpt-account-id", "<REDACTED:chatgpt-account-id>"] in codex_record["headers"], "account header redacted, name kept")
+            check("i-123456" not in json.dumps(codex_record), "install id inside a header redacted")
+            check("signed-value" not in codex_record["url"] and "sp=r" in codex_record["url"], "signed-link sig redacted, other parameters kept")
+            codex_flow.response = http.Response.make(
+                200,
+                json.dumps({"accounts": [{"id": account}], "default_account_id": account, "account_ordering": [account]}).encode(),
+                {"content-type": "application/json"},
+            )
+            addon.response(codex_flow)
+            codex_response = read(out, f"{codex_seq:03d}-response.json")
+            check(account not in json.dumps(codex_response), "learned account id absent from the answer")
+            check(json.loads(codex_response["body"])["account_ordering"] == ["<REDACTED:chatgpt-account-id>"], "bare account id replaced by its header name")
+
             # 7. transport error record.
             addon.error(tflow.tflow(err=True))
             check(latest(out, "-error.json")["error"] is not None, "transport error recorded")
@@ -560,14 +600,14 @@ def main() -> int:
             addon.done()
             index = read(out, "index.json")
             check(index["schema"] == "recon-index/2", "index schema")
-            check(index["counts"]["requests"] == 8 and index["counts"]["responses"] == 6, "index counts")
+            check(index["counts"]["requests"] == 9 and index["counts"]["responses"] == 7, "index counts")
             check(index["counts"]["aborted"] == 1, "index abort count")
             check(index["counts"]["clientClosed"] == 2, "index completed-after-close count")
             check(index["counts"]["connections"] == 1, "index connection count")
             check(index["counts"]["websockets"] == 1 and index["counts"]["websocketFrames"] == 2, "index websocket counts")
             check(index["counts"]["errors"] == 1, "index error count counts only failures without a response")
             check(read(out, "030-error.json")["errorClass"] == "client-disconnect", "an abort still records its reason")
-            check(index["redactionManifest"] == "recon-redaction/2", "index names the manifest")
+            check(index["redactionManifest"] == "recon-redaction/3", "index names the manifest")
 
     # 8. the addon refuses to run without a redaction manifest.
     addon = addon_module.ReconAddon()

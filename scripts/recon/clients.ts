@@ -265,6 +265,9 @@ function codex(): ReconClient {
     processMarker: ".codex/packages/",
     defaultCommand: [target, "exec", "--skip-git-repo-check", "Reply with the single word: ok"],
     loginCommand: [target, "login"],
+    // Measured 2026-10-25 (codex-cli 0.163.0, runs 2026-10-25-02-03-*): every turn is a WebSocket opened with
+    // `GET /backend-api/codex/responses` that carries `response.create` frames; nothing else counts as a turn.
+    turnRequest: String.raw`/backend-api/codex/responses\b`,
     authStatusCommand: [target, "login", "status"],
     timeoutMs: 120_000,
   };

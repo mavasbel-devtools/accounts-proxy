@@ -87,6 +87,24 @@ describe("Redactor", () => {
     expect(JSON.parse(redactor().body(JSON.stringify({ response: { safety_identifier: user } })))).toEqual({ response: { safety_identifier: "<REDACTED:safety_identifier>" } });
     expect(redactor().text("user-agent: opencode/latest/2.1.1/cli")).toBe("user-agent: opencode/latest/2.1.1/cli");
 
+    // Codex's ChatGPT account id: a header whose value recurs as a bare array element and an object `id`, and the
+    // install id inside the turn-metadata header (measured 2026-10-25, recon runs codex/2026-10-25-01-52-*).
+    const account = "8b7f0000-0000-4000-8000-000000000001";
+    const r = redactor();
+    expect(r.headers({ "ChatGPT-Account-Id": account, "x-codex-turn-metadata": JSON.stringify({ installation_id: "i-123456", turn: 1 }) })).toEqual({
+      "chatgpt-account-id": "<REDACTED:chatgpt-account-id>",
+      "x-codex-turn-metadata": JSON.stringify({ installation_id: "<REDACTED:installation_id>", turn: 1 }),
+    });
+    expect(JSON.parse(r.body(JSON.stringify({ accounts: [{ id: account, account_user_id: "u__a" }], default_account_id: account, account_ordering: [account] })))).toEqual({
+      accounts: [{ id: "<REDACTED:chatgpt-account-id>", account_user_id: "<REDACTED:account_user_id>" }],
+      default_account_id: "<REDACTED:default_account_id>",
+      account_ordering: ["<REDACTED:chatgpt-account-id>"],
+    });
+    expect(JSON.parse(r.body(JSON.stringify({ meta: JSON.stringify({ installation_id: "i-123456" }) })))).toEqual({ meta: JSON.stringify({ installation_id: "<REDACTED:installation_id>" }) });
+    expect(redactor().headers({ "chatgpt-account-id": "short" })).toEqual({ "chatgpt-account-id": "<REDACTED:chatgpt-account-id>" });
+    // A signed download link's `sig` is a credential; its other parameters are kept.
+    expect(redactor().text("https://x.blob.example/f/raw?se=2026&sp=r&sig=abc%2Bdef")).toBe("https://x.blob.example/f/raw?se=2026&sp=r&sig=<REDACTED:field>");
+
     // `name` is a model name off a profile route: scoped redaction must not touch it.
     const model = JSON.stringify({ model: { name: "claude-opus-5-5" } });
     expect(redactor().body(model, "https://api.anthropic.com/v1/messages")).toBe(model);

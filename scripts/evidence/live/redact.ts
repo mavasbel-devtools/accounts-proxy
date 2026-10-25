@@ -13,6 +13,13 @@ const manifest = loadRedactionManifest();
 
 /** Header names whose whole value is a credential. */
 const CREDENTIAL_HEADERS = new Set(manifest.credentialHeaders);
+/** Header names whose value names the operator's account; the value becomes a known secret for the rest of the run. */
+const IDENTITY_HEADERS = new Set(manifest.identityHeaders);
+/** Query parameters whose value is a credential (an OAuth code, a signed link's `sig`). */
+const QUERY_CREDENTIAL = new RegExp(
+  `((?:^|[?&])(?:${manifest.queryCredentialFields.map((field) => field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})=)[^&\\s"]+`,
+  "g",
+);
 /** JSON field names whose string value is a credential wherever they appear ("code" is form-only: JSON error and tool
  * payloads legitimately carry a `code` field). */
 const CREDENTIAL_FIELDS = new Set(manifest.credentialFields);
@@ -80,10 +87,7 @@ export class Redactor {
       const encoded = encodeURIComponent(s.value);
       if (encoded !== s.value) out = out.split(encoded).join(`<REDACTED:${s.label}>`);
     }
-    out = out.replace(
-      /((?:^|[?&])(?:access_token|refresh_token|id_token|code|code_verifier|client_secret)=)[^&\s"]+/g,
-      "$1<REDACTED:field>",
-    );
+    out = out.replace(QUERY_CREDENTIAL, "$1<REDACTED:field>");
     for (const pattern of IDENTITY_PATTERNS) out = out.replace(pattern.regex, `<REDACTED:${pattern.name}>`);
     return out;
   }
@@ -95,7 +99,10 @@ export class Redactor {
       if (CREDENTIAL_HEADERS.has(key)) {
         const scheme = /^(Bearer|Basic)\s+/i.exec(value)?.[1];
         out[key] = scheme !== undefined ? `${scheme} <REDACTED:${key}>` : `<REDACTED:${key}>`;
-      } else out[key] = this.text(value);
+      } else if (IDENTITY_HEADERS.has(key)) {
+        if (value.length >= 6) this.add(key, value);
+        out[key] = `<REDACTED:${key}>`;
+      } else out[key] = this.nested(value, new Set(), 0);
     }
     return out;
   }

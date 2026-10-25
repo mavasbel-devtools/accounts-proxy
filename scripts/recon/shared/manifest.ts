@@ -3,8 +3,8 @@
 //
 // Two classes of rule live here:
 // * credentials (headers, fields, query fields, token prefixes), and
-// * identity (fields, value patterns, and per-endpoint scoped fields) so promoted goldens never carry the operator's
-//   account: email, names, device identifiers, account identifiers.
+// * identity (headers, fields, value patterns, and per-endpoint scoped fields) so promoted goldens never carry the
+//   operator's account: email, names, device and install identifiers, account identifiers.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -24,6 +24,8 @@ export interface IdentityScope {
 export interface RedactionManifest {
   readonly schema: string;
   readonly credentialHeaders: readonly string[];
+  /** Headers whose value names the operator's account; the value is also redacted wherever it recurs in the run. */
+  readonly identityHeaders: readonly string[];
   readonly credentialFields: readonly string[];
   readonly queryCredentialFields: readonly string[];
   readonly tokenPrefixes: readonly string[];
@@ -98,7 +100,7 @@ function parse(raw: string): RedactionManifest {
   }
   if (document === null || typeof document !== "object") throw new Error("recon redaction manifest must be an object");
   const entry = document as Record<string, unknown>;
-  if (typeof entry.schema !== "string" || entry.schema !== "recon-redaction/2") {
+  if (typeof entry.schema !== "string" || entry.schema !== "recon-redaction/3") {
     throw new Error(`recon redaction manifest: unexpected schema ${String(entry.schema)}`);
   }
   const tail = entry.tokenBodyMinTail;
@@ -108,6 +110,7 @@ function parse(raw: string): RedactionManifest {
   return {
     schema: entry.schema,
     credentialHeaders: stringArray(entry.credentialHeaders, "credentialHeaders"),
+    identityHeaders: stringArray(entry.identityHeaders, "identityHeaders"),
     credentialFields: stringArray(entry.credentialFields, "credentialFields"),
     queryCredentialFields: stringArray(entry.queryCredentialFields, "queryCredentialFields"),
     tokenPrefixes: stringArray(entry.tokenPrefixes, "tokenPrefixes"),

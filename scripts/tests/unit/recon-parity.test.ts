@@ -24,7 +24,7 @@ describe("canonical form", () => {
     expect(maskValue({ list: ["[not json", "{\"a\":1}"], n: 3, z: null })).toEqual({ list: ["[not json", { $json: { a: 1 } }], n: 3, z: null });
   });
 
-  test("headers keep order and case; transport and credential values are placeholders", () => {
+  test("headers keep order and case; transport, credential and account values are placeholders", () => {
     const canonical = canonicalise({
       method: "post",
       url: "https://api.anthropic.com/v1/messages?beta=true&b=2",
@@ -34,6 +34,7 @@ describe("canonical form", () => {
         ["x-api-key", "k"],
         ["Content-Length", "12"],
         ["X-Session", uuid],
+        ["ChatGPT-Account-Id", "account-a"],
       ],
       body: "",
     });
@@ -46,6 +47,7 @@ describe("canonical form", () => {
       { name: "x-api-key", raw: "x-api-key", value: REDACTED },
       { name: "content-length", raw: "Content-Length", value: "<content-length>" },
       { name: "x-session", raw: "X-Session", value: "<uuid>" },
+      { name: "chatgpt-account-id", raw: "ChatGPT-Account-Id", value: REDACTED },
     ]);
     expect(canonical.body).toBeNull();
     expect(canonicalise({ method: "POST", url: "/x", headers: [], body: "plain text" }).body).toBe("plain text");

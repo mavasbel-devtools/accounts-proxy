@@ -783,3 +783,24 @@ and the Antigravity row of §19.1; both stay above as the record of that day.
 - **Measured**: after one consent, two plain launches and a `turn` workflow came up `signedIn` without a login; the
   `turn` recorded `streamGenerateContent` 200 (seq 265, 277). Antigravity now joins opencode and Claude Code: one
   login, reused by every later run.
+
+## 27. Amendment — Codex CLI recorded signed in; account headers redacted (2026-10-24 20:06)
+
+Extends §16 (capture) and §18 (login); nothing above is superseded.
+
+- **Login**: one consent for `codex-cli 0.163.0` under its own sign-in (`client_id=app_EMoamEEZ73f0CkXaXp7hrann`,
+  `originator=codex_cli_rs`); `run codex --verify` reused it. Codex joins opencode, Claude Code and Antigravity: one
+  login, reused by every later run.
+- **Redaction (`recon-redaction/3`)**: a new key `identityHeaders` (`chatgpt-account-id`), whose value the addon and the
+  live redactor learn and replace wherever it recurs in the run; identity fields `installation_id`,
+  `default_account_id`, `account_user_id`; query credential `sig`. The parity canonicaliser compares an identity header
+  by presence. Evidence and counts:
+  [capture pipeline §8.1](../reference/2026-10-20-00-00-recon-capture-pipeline.md#81-identity-is-redacted-like-a-secret).
+  The ten Codex runs recorded before the rule (`codex/2026-10-25-01-20-27` … `-01-53-47`) hold the raw account id and
+  are not promotable.
+- **Workflows**: Codex's `turnRequest` is the `codex/responses` WebSocket; `exec resume` gains
+  `--skip-git-repo-check`; `bootstrap` is declared unsupported (0 flows measured). Five workflows recorded clean:
+  [capture pipeline §9](../reference/2026-10-20-00-00-recon-capture-pipeline.md#9-first-signed-in-capture-codex-cli-01630-2026-10-25-utc).
+- **Next**: decide what a `codex` provider would be. Codex talks to `chatgpt.com/backend-api/codex/responses` over a
+  WebSocket under the legacy client id, which is the path OpenAI's plan-usage terms tell apps not to use (project
+  memory #1126); the proxy's `openai` provider stays on the approved `dynamic_agent_client` flow.

@@ -1,6 +1,6 @@
 {
-  "schema": "recon-redaction/2",
-  "note": "Single source of truth for recon redaction. The capture addon (Python) and the TypeScript redactor both read this file. Credential fields protect secrets; identity fields and patterns protect the operator's account (email, names, device and account identifiers) so a promoted golden carries protocol shape, never a person.",
+  "schema": "recon-redaction/3",
+  "note": "Single source of truth for recon redaction. The capture addon (Python) and the TypeScript redactor both read this file. Credential fields protect secrets; identity headers, fields and patterns protect the operator's account (email, names, device, install and account identifiers) so a promoted golden carries protocol shape, never a person. An identity header's value is also redacted wherever it appears later in the same run.",
   "credentialHeaders": [
     "authorization",
     "proxy-authorization",
@@ -8,6 +8,9 @@
     "x-goog-api-key",
     "cookie",
     "set-cookie"
+  ],
+  "identityHeaders": [
+    "chatgpt-account-id"
   ],
   "credentialFields": [
     "access_token",
@@ -22,7 +25,8 @@
     "id_token",
     "code",
     "code_verifier",
-    "client_secret"
+    "client_secret",
+    "sig"
   ],
   "tokenPrefixes": [
     "sk-ant-",
@@ -52,7 +56,10 @@
     "organization_uuid",
     "organizationUUID",
     "accountUUID",
-    "safety_identifier"
+    "safety_identifier",
+    "installation_id",
+    "default_account_id",
+    "account_user_id"
   ],
   "identityPatterns": [
     {

@@ -246,9 +246,15 @@ Secrets were covered from R1; the operator's account was not. The manifest (`rec
 | `identityPatterns` (added 2026-10-22) | `workspace`: the OpenCode Console workspace id `wrk_` + 26 characters | OpenCode sends it as `x-opencode-org-id` on every inference request and the Console `api/v2/config` answer names it (run `opencode/2026-10-20-18-27-37/workflow`) |
 | `identityFields` + `identityPatterns` (added 2026-10-24) | field `safety_identifier`; pattern `openai-user`: `user-` + 24 letters and digits | OpenAI plan usage echoes the account's user id as `safety_identifier` in every Responses answer, also inside event-stream text (runs `opencode/2026-10-24-07-08-58/workflow`, `-07-09-06`, `-07-09-16`: 21 occurrences before the rule, 0 after in `-07-22-40`, `-07-22-48`, `-07-22-57`, 18 `<REDACTED:safety_identifier>`) |
 | `identityScoped` | `id`, `name` only on `www.googleapis.com/oauth2/` and `opencode.ai/console/api/user` | elsewhere `id`/`name` are models and tools |
+| `identityHeaders` (new key, schema `recon-redaction/3`, 2026-10-25) | `chatgpt-account-id`: the header is replaced by name, and its value is learned and replaced (`<REDACTED:chatgpt-account-id>`) wherever it appears later in the same run | Codex sends the ChatGPT account id on every request; `wham/accounts/check` answers it as `accounts[].id` and as a bare `account_ordering` element, which no field rule can name (runs `codex/2026-10-25-01-52-32` … `-01-53-13`: 105 files held the raw id) |
+| `identityFields` (added 2026-10-25) | `installation_id`, `default_account_id`, `account_user_id` | Codex's `x-codex-turn-metadata` header carries `installation_id` as JSON; `wham/accounts/check` carries the other two |
+| `queryCredentialFields` (added 2026-10-25) | `sig` | Codex downloads plugin assets from signed `*.oaiusercontent.com/files/<id>/raw?…&sig=` links (18 527 `sig=` values in the same runs) |
 
 Fields are also redacted inside JSON carried as a string (Claude's `metadata.user_id`). Both redactors read the same
-file: the addon self-check passes 83 checks (85 since the `workspace` pattern, 87 since `openai-user`), `scripts/tests/unit/live-evidence.test.ts` asserts the same cases.
+file: the addon self-check passes 83 checks (85 since the `workspace` pattern, 87 since `openai-user`, 92 since
+`identityHeaders`), `scripts/tests/unit/live-evidence.test.ts` asserts the same cases. Since 2026-10-25 the live
+redactor reads its query list from the manifest too (it was a copy of the same six names) and redacts JSON header
+values structurally, as the addon already did.
 
 Measured on real traffic: Claude `turn` run `2026-10-22-02-04-42-workflow` → 216 `<REDACTED:organization…>` values,
 0 raw organisation UUIDs in paths, 0 raw identity field values, 0 email-shaped strings. Runs recorded before this
@@ -258,3 +264,32 @@ change still contain identity values; they stay in the operator's local run dire
 
 `expects` (per workflow) and `turnRequest` (per client) name the request a run exists to produce. A workflow or a
 prompted login without it exits 1 and prints `evidence NONE`; `run.json` records `emptyWorkflow` / `missingTurn`.
+
+## 9. First signed-in capture: Codex CLI 0.163.0 (2026-10-25 UTC)
+
+One ChatGPT consent (`run codex --login`, run `codex/2026-10-25-01-20-27-login`, `login.json` `signedIn: true`,
+`.codex/auth.json` 4 134 bytes, probe `clean`, guard `unchanged`); `run codex --verify` then reported "Logged in using
+ChatGPT" with no new consent. The workflows below were recorded after the `recon-redaction/3` rules (§8.1); every run's
+`index.json` names that manifest, and a scan of all five found 0 raw account ids, install ids, `sig` values, OpenAI user
+ids or e-mail addresses.
+
+| Workflow | Run | Flows | `codex/responses` WebSocket frames | Exit |
+|---|---|---|---|---|
+| `bootstrap` | — | — | — | declared unsupported: `--version` made 0 requests signed in (run `-01-52-30`) |
+| `turn` | `2026-10-25-02-03-06-workflow` | 29 | 21 (2 `response.create`) | 0 |
+| `turn-tools` | `2026-10-25-02-03-17-workflow` | 29 | 67 (3 `response.create`) | 0 |
+| `multiturn` | `2026-10-25-02-03-28-workflow` | 35 | 21 + 21 (one socket per process) | 0 |
+| `abort` | `2026-10-25-02-03-45-workflow` | 25 | 12 | 143 (the 9 s step timeout is the abort) |
+| `error` | `2026-10-25-02-03-57-workflow` | 22 | 2 + 2 (`response.create`, server `error` `model_not_found`) | 1 (the client's own exit on the refusal) |
+
+Measured shape of a turn (`turn` run): the model call is not HTTP. Codex opens a WebSocket with
+`GET https://chatgpt.com/backend-api/codex/responses` (`openai-beta: responses_websockets=2026-02-06`,
+`originator: codex_exec`, `x-codex-*` headers) and sends `response.create` frames: the first with `generate: false` and
+2 input items, the second with `previous_response_id` and 5 input items. Around it the client calls, in the same run,
+`codex/models` (2), `wham/accounts/check`, `wham/settings/user`, `ps/plugins/*` and `plugins/featured` (18),
+`ps/mcp` (3), `codex/analytics-events/events` (2) and `ab.chatgpt.com/otlp/v1/metrics` (1). `turnRequest` for Codex is
+therefore `/backend-api/codex/responses\b`, and every Codex workflow that sends a prompt declares it as `expects`.
+
+Two catalogue defects were found by these runs and fixed: `exec resume --last` refuses to start outside a git
+repository without `--skip-git-repo-check` (run `-01-52-53`, step 2 exit 1), and the `bootstrap` workflow recorded no
+flow, so it is now declared unsupported with that measurement.

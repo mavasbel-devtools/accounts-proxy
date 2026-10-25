@@ -99,4 +99,17 @@ describe("workflow catalogue", () => {
     expect(expression).toContain(`'[aria-label="Message input"]'`);
     expect(expression).toContain("click()");
   });
+
+  test("every Codex turn workflow names the codex/responses WebSocket, and a resumed session skips the git check", () => {
+    // Measured on codex-cli 0.163.0 (runs 2026-10-25-02-03-*): each turn opens `GET /backend-api/codex/responses`;
+    // `exec resume` outside a git repository refuses to start without --skip-git-repo-check.
+    for (const id of ["turn", "turn-tools", "multiturn", "abort", "error"]) {
+      expect(workflowById("codex", id).expects).toBe(String.raw`/backend-api/codex/responses\b`);
+    }
+    expect(new RegExp(workflowById("codex", "turn").expects ?? "").test("https://chatgpt.com/backend-api/codex/responses")).toBe(true);
+    expect(new RegExp(workflowById("codex", "turn").expects ?? "").test("https://chatgpt.com/backend-api/codex/analytics-events/events")).toBe(false);
+    const resume = workflowById("codex", "multiturn").steps[1]?.action;
+    expect(resume?.kind === "exec" ? resume.argv : []).toContain("--skip-git-repo-check");
+    expect(workflowById("codex", "bootstrap").unsupported).toContain("0 flows");
+  });
 });

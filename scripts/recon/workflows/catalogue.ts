@@ -145,18 +145,23 @@ function claudeWorkflows(client: ReconClient): WorkflowDefinition[] {
 /** The Codex CLI workflows (`openai` cell; Responses over HTTP or WebSocket). */
 function codexWorkflows(client: ReconClient): WorkflowDefinition[] {
   const bin = client.binary.target;
+  // Every turn is the `codex/responses` WebSocket (client.turnRequest); a run without it recorded no turn.
+  const expects = client.turnRequest === undefined ? {} : { expects: client.turnRequest };
   return [
     {
       id: "bootstrap",
       client: client.id,
       title: "Process start",
-      purpose: "startup traffic before any conversation (measured: `--version` makes no request)",
-      steps: [exec([bin, "--version"])],
+      purpose: "startup traffic before any conversation",
+      steps: [],
+      unsupported:
+        "`--version` makes no request (signed in, run 2026-10-25-01-52-30: 0 flows) and no other invocation starts without a turn; the start-up traffic is recorded at the head of every `turn` run",
     },
     {
       id: "turn",
       client: client.id,
       title: "Single non-interactive turn",
+      ...expects,
       purpose: "the Responses envelope the client sends, over whichever transport it chooses",
       steps: [exec([bin, "exec", "--skip-git-repo-check", OK])],
     },
@@ -164,6 +169,7 @@ function codexWorkflows(client: ReconClient): WorkflowDefinition[] {
       id: "turn-tools",
       client: client.id,
       title: "One turn with a tool call",
+      ...expects,
       purpose: "tool definitions and the tool-output round trip; the client is already externally sandboxed",
       steps: [exec([bin, "exec", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", TOOL])],
     },
@@ -171,16 +177,18 @@ function codexWorkflows(client: ReconClient): WorkflowDefinition[] {
       id: "multiturn",
       client: client.id,
       title: "Two turns in one session",
+      ...expects,
       purpose: "how the client replays history on a resumed session",
       steps: [
         exec([bin, "exec", "--skip-git-repo-check", REMEMBER]),
-        exec([bin, "exec", "resume", "--last", ADD_ONE]),
+        exec([bin, "exec", "resume", "--skip-git-repo-check", "--last", ADD_ONE]),
       ],
     },
     {
       id: "abort",
       client: client.id,
       title: "Abort mid-stream",
+      ...expects,
       purpose: "how the client cancels a stream (WebSocket close vs HTTP abort)",
       steps: [exec([bin, "exec", "--skip-git-repo-check", LONG], 9_000)],
     },
@@ -188,6 +196,7 @@ function codexWorkflows(client: ReconClient): WorkflowDefinition[] {
       id: "error",
       client: client.id,
       title: "Unknown model",
+      ...expects,
       purpose: "the client's own request shape when the provider refuses the model",
       steps: [exec([bin, "exec", "--skip-git-repo-check", "-m", "recon-not-a-model", OK])],
     },

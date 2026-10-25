@@ -207,8 +207,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   bodies, per-chunk SSE timing and every WebSocket frame. Redaction runs before any write from the single manifest
   `scripts/recon/shared/redaction.json`, which the live-evidence redactor also reads; a body that still matches a secret
   rule is refused, never stored, and the refusal is counted. Noise flows are labelled `noise: true`, never dropped.
-  The operator's identity (account fields, identifiers inside JSON strings, the organisation UUID in URL paths) is
-  redacted from the same manifest; a run recorded before a rule existed is not promotable. A workflow names the
+  The operator's identity (account fields, identifiers inside JSON strings, the organisation UUID in URL paths, account
+  headers such as `chatgpt-account-id` and every later occurrence of their value in the run) is redacted from the same
+  manifest; a run recorded before a rule existed is not promotable. A workflow names the
   request it exists to produce (`expects`, per client `turnRequest`), and a run without it exits 1.
   Record: [2026-10-20-00-00-recon-capture-pipeline.md](docs/reference/2026-10-20-00-00-recon-capture-pipeline.md).
 - **Recon parity** (plan §20): `bun scripts/recon/cli.ts parity <run-dir> <seq>...` compares the proxy's upstream
