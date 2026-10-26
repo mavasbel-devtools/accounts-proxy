@@ -30,6 +30,8 @@ class Reference extends ModelReferencePort {
   }
   async reference(): Promise<ReferenceListing> {
     return { source: this.source, catalog: new Map([["opencode", new Map([["big-pickle", { name: "Big Pickle", aiSdkPackage: "@ai-sdk/openai-compatible" }], ["new", {}]])]]) };
+  }  async refresh(): Promise<ReferenceListing> {
+    return this.reference();
   }
 }
 

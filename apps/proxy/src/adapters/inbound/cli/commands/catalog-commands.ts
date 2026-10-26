@@ -1,8 +1,8 @@
-// `quota <provider>`, `models [<provider>] [--json]` and `opencode-config`: what the providers offer and report.
+// `quota <provider>`, `models [<provider>] [--json] [--refresh]` and `opencode-config`: what the providers offer and report.
 import type { CatalogSource } from "@accounts-proxy/core/domain/models.ts";
 import type { UsagePort } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import type { OpencodeConfigPort, OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
-import type { DescribeModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import type { DescribeModelsPort, RequestModelRefreshPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CliCommand, type CommandHelp, UsageError, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, noArguments, providerArgument, PROVIDER_ARGUMENT, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 
@@ -24,18 +24,24 @@ export const QUOTA_HELP: CommandHelp = {
 
 export const MODELS_HELP: CommandHelp = {
   name: "models",
-  synopsis: ["models [<provider>] [--json]"],
+  synopsis: ["models [<provider>] [--json] [--refresh]"],
   summary: "each provider's models and where the list came from",
   description: [
     "One block per enabled provider: its models with the context and output limits a source states, and where the list came from (live catalog, stored copy, built-in list, or unavailable with the reason). With a provider, only that provider.",
+    "A fetched list is reused for `modelListMaxAgeMinutes` of proxy.yaml (default 1440, 24 h). `--refresh` reads every list now from its source: the running daemon on the configured port does it (POST /proxy/v1/models/refresh), so its own lists and the opencode configuration change at once; with no daemon listening there, this command does it and rewrites the stored copies a daemon reads when it starts.",
   ],
   arguments: [{ name: "<provider>", text: `${PROVIDER_ARGUMENT.text} (default: every enabled provider)` }],
-  options: [{ name: "--json", text: "print the detailed records of GET /proxy/v1/models, every field with its source (default: the text list)" }],
+  options: [
+    { name: "--json", text: "print the detailed records of GET /proxy/v1/models, every field with its source (default: the text list)" },
+    { name: "--refresh", text: "read the lists now from their sources instead of reusing a copy younger than modelListMaxAgeMinutes (default: off)" },
+  ],
   exits: [{ name: "0", text: "the catalogs were printed" }, FAILED_EXIT, USAGE_EXIT],
   environment: [HOME_VARIABLE],
   examples: [
     { name: "bun run proxy models", text: "every enabled provider's models" },
     { name: "bun run proxy models claude --json", text: "Claude's models with every detail and its source" },
+    { name: "bun run proxy models --refresh", text: "every list read now, by the running daemon when there is one" },
+    { name: "bun run proxy models openrouter --refresh", text: "only OpenRouter's list read now" },
   ],
 };
 
@@ -75,21 +81,36 @@ export class QuotaCommand extends CliCommand {
   }
 }
 
+const MODELS_OPTIONS: readonly string[] = ["--json", "--refresh"];
+
 export class ModelsCommand extends CliCommand {
   readonly help = MODELS_HELP;
 
-  constructor(private readonly models: DescribeModelsPort) {
+  constructor(
+    private readonly models: DescribeModelsPort,
+    private readonly refresh: RequestModelRefreshPort,
+  ) {
     super();
   }
 
   async run(args: readonly string[], out: Writer): Promise<void> {
     const json = args.includes("--json");
-    const names = args.filter((a) => a !== "--json");
-    if (names.length > 1 || args.length - names.length > 1) throw new UsageError("models takes at most one provider and --json");
-    const catalogs = await this.models.describeModels(names[0] === undefined ? undefined : providerArgument(names[0], "models"));
+    const refresh = args.includes("--refresh");
+    const names = args.filter((a) => !MODELS_OPTIONS.includes(a));
+    if (names.length > 1 || new Set(args).size !== args.length) throw new UsageError("models takes at most one provider, --json and --refresh");
+    const provider = names[0] === undefined ? undefined : providerArgument(names[0], "models");
+    const outcome = refresh ? await this.refresh.request(provider) : undefined;
+    const catalogs = outcome?.catalogs ?? (await this.models.describeModels(provider));
     if (json) {
-      out(`${JSON.stringify({ catalogs }, null, 2)}\n`);
+      out(`${JSON.stringify(outcome === undefined ? { catalogs } : { refreshedBy: outcome.by, url: outcome.url, catalogs }, null, 2)}\n`);
       return;
+    }
+    if (outcome !== undefined) {
+      out(
+        outcome.by === "daemon"
+          ? `refreshed by the daemon at ${outcome.url}\n`
+          : `no daemon at ${outcome.url}: refreshed by this process (the stored copies a daemon reads when it starts)\n`,
+      );
     }
     for (const catalog of catalogs) {
       out(`# ${catalog.provider}: ${catalog.models.length} models (${SOURCE_TEXT[catalog.source]}${catalog.error !== undefined ? `: ${catalog.error.message}` : ""})\n`);

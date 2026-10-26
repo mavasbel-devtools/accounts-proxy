@@ -14,7 +14,7 @@ import {
 import type { ModelCatalog, ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
 import { bodyOf, readAll, type HttpResponse, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
-import { DescribeModelsPort, HealthPort, PassthroughPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import { DescribeModelsPort, HealthPort, PassthroughPort, RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { describeCatalog, type DetailedCatalog } from "@accounts-proxy/core/domain/model-details.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
 import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
@@ -222,6 +222,13 @@ class Models extends DescribeModelsPort {
     return catalogs.map((c) => describeCatalog(c, undefined, undefined));
   }
 }
+class Refresh extends RefreshModelsPort {
+  seen: (ProviderId | undefined)[] = [];
+  async refreshModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]> {
+    this.seen.push(provider);
+    return [describeCatalog({ provider: "claude", formats: ["anthropic-messages"], source: "live", models: [] }, undefined, undefined)];
+  }
+}
 class Health extends HealthPort {
   enabledProviders(): readonly ProviderId[] {
     return ["claude", "antigravity"];
@@ -234,10 +241,11 @@ describe("RouteHandler", () => {
   const make = () => {
     const passthrough = new Passthrough();
     const models = new Models();
+    const refresh = new Refresh();
     const logger = new MemoryLogger();
     const errors = new LoggingErrorReporter(logger);
-    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, health: new Health(), describe: models, opencode: new OpencodeConfigCodec(), origin: ORIGIN }, errors);
-    return { handler, passthrough, logger, models };
+    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, health: new Health(), describe: models, refresh, opencode: new OpencodeConfigCodec(), origin: ORIGIN }, errors);
+    return { handler, passthrough, logger, models, refresh };
   };
   const request = (method: string, path: string, over: Partial<InboundRequest> = {}): InboundRequest => ({
     method,
@@ -295,6 +303,19 @@ describe("RouteHandler", () => {
     aborted.abort();
     expect((await handler.handle(request("GET", "/proxy/v1/models", { signal: aborted.signal }))).status).toBe(500);
     expect(logger.lines).toHaveLength(1);
+  });
+
+  test("POST /proxy/v1/models/refresh: token first, POST only, ?provider names one provider", async () => {
+    const { handler, models, refresh } = make();
+    const all = await json(await handler.handle(request("POST", "/proxy/v1/models/refresh")));
+    expect(all).toEqual({ status: 200, body: { catalogs: [{ provider: "claude", source: "live", models: [] }] } });
+    expect((await handler.handle(request("POST", "/proxy/v1/models/refresh", { query: { provider: "claude" } }))).status).toBe(200);
+    expect(refresh.seen).toEqual([undefined, "claude"]);
+    expect((await json(await handler.handle(request("POST", "/proxy/v1/models/refresh", { headers: {} })))).status).toBe(401);
+    expect(await json(await handler.handle(request("GET", "/proxy/v1/models/refresh")))).toEqual({ status: 404, body: { error: { code: "not_found", message: "no route GET /proxy/v1/models/refresh" } } });
+    expect(await json(await handler.handle(request("POST", "/proxy/v1/models")))).toEqual({ status: 404, body: { error: { code: "not_found", message: "no route POST /proxy/v1/models" } } });
+    expect((await json(await handler.handle(request("POST", "/proxy/v1/models/refresh", { query: { provider: "nope" } })))).status).toBe(400);
+    expect([refresh.seen.length, models.seen]).toEqual([2, []]);
   });
 
   test("model lists in each dialect, with x-proxy-models-source", async () => {

@@ -1,6 +1,7 @@
 // The reference model catalog (plan 2026-10-16 rule M4): `https://models.opencode.ai/api.json`, the catalog opencode v2
-// loads (core/src/models-dev.ts), read at most once per 24 h; the parsed copy is kept in the proxy's state; when the
-// catalog cannot be read: the stored copy, else the built-in copy generated from docs/reference/specs.
+// loads (core/src/models-dev.ts), read at most once per `modelListMaxAgeMinutes` (default 24 h) unless a refresh asks
+// for it now; the parsed copy is kept in the proxy's state; when the catalog cannot be read: the stored copy, else the
+// built-in copy generated from docs/reference/specs.
 import { isJsonObject, type JsonValue } from "@accounts-proxy/core/domain/json.ts";
 import { parseReference, referenceCatalog, referenceRecord, type ReferenceRecord } from "@accounts-proxy/core/domain/model-details.ts";
 import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
@@ -11,7 +12,6 @@ import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 
 export const MODEL_REFERENCE_URL = "https://models.opencode.ai/api.json";
-export const REFERENCE_TTL_MS = 24 * 60 * 60 * 1000;
 /** The full document is about 6 MB. */
 export const REFERENCE_TIMEOUT_MS = 30_000;
 const CACHE_KEY = "model-reference";
@@ -30,14 +30,23 @@ export class ModelReferenceCatalog extends ModelReferencePort {
     private readonly logger: LoggerPort,
     private readonly url: string,
     private readonly builtin: ReferenceRecord,
+    private readonly maxAgeMs: number,
   ) {
     super();
   }
 
-  async reference(): Promise<ReferenceListing> {
+  reference(): Promise<ReferenceListing> {
+    return this.load(false);
+  }
+
+  refresh(): Promise<ReferenceListing> {
+    return this.load(true);
+  }
+
+  private async load(now: boolean): Promise<ReferenceListing> {
     const fromMemory = this.memory !== undefined;
     const cached = this.memory ?? (await this.loadCache());
-    if (cached !== undefined && this.clock.now() - cached.fetchedAt < REFERENCE_TTL_MS) return { source: fromMemory ? "live" : "cache", catalog: referenceCatalog(cached.catalog) };
+    if (!now && cached !== undefined && this.clock.now() - cached.fetchedAt < this.maxAgeMs) return { source: fromMemory ? "live" : "cache", catalog: referenceCatalog(cached.catalog) };
     try {
       const res = await this.transport.send({ method: "GET", url: this.url, headers: { accept: "application/json" }, timeoutMs: REFERENCE_TIMEOUT_MS });
       const text = await readAll(res.body);

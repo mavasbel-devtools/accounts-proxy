@@ -26,8 +26,10 @@ export abstract class ClaudeIdentityPort {
 export type CatalogListing = { readonly source: ModelsSource; readonly entries: readonly CatalogModelEntry[] };
 
 export abstract class ClaudeCatalogPort {
-  /** Live catalog (24 h cache), else stale cache, else the static minimum, with where it came from. Never empty. */
+  /** Live catalog (cached for `modelListMaxAgeMinutes`), else stale cache, else the static minimum, with where it came from. Never empty. */
   abstract listing(): Promise<CatalogListing>;
+  /** The live catalog read now whatever the cache's age, with the same fallbacks (plan 2026-10-26 R2). */
+  abstract refresh(): Promise<CatalogListing>;
 
   async entries(): Promise<readonly CatalogModelEntry[]> {
     return (await this.listing()).entries;

@@ -266,6 +266,8 @@ class Reference extends ModelReferencePort {
   }
   async reference(): Promise<ReferenceListing> {
     return this.listing;
+  }  async refresh(): Promise<ReferenceListing> {
+    return this.reference();
   }
 }
 

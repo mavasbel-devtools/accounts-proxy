@@ -6,7 +6,7 @@ import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/po
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
-import { HealthPort, DescribeModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import { HealthPort, DescribeModelsPort, RequestModelRefreshPort, type RefreshOutcome } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
 import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 import { SHUTDOWN_GRACE_MS } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
@@ -65,6 +65,14 @@ class Models extends DescribeModelsPort {
     return catalogs.map((c) => describeCatalog(c, undefined, undefined));
   }
 }
+class Refresh extends RequestModelRefreshPort {
+  seen: (ProviderId | undefined)[] = [];
+  by: RefreshOutcome["by"] = "daemon";
+  async request(provider?: ProviderId): Promise<RefreshOutcome> {
+    this.seen.push(provider);
+    return { by: this.by, url: "http://127.0.0.1:4141", catalogs: [describeCatalog({ provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "n" }, displayName: "New" }] }, undefined, undefined)] };
+  }
+}
 class OpencodeConfig extends OpencodeConfigPort {
   config(catalogs: readonly DetailedCatalog[], at: OpencodeOrigin) {
     return { providers: catalogs.length, origin: at.origin };
@@ -116,7 +124,7 @@ class FakeSignal extends ShutdownSignal {
 function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
-  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
+  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
   const daemon = { server: new FakeServer(), shutdown: new FakeSignal() };
   const driver = new CommandLineDriver(proxyCommands(ports, daemon), PROGRAM, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
@@ -218,8 +226,9 @@ describe("the proxy's commands", () => {
     [["account", "use", "antigravity", "a", "b"], "account use needs a provider and one account id", "account use"],
     [["quota"], "quota needs a provider", "quota"],
     [["quota", "antigravity", "x"], "quota takes one provider", "quota"],
-    [["models", "a", "b"], "models takes at most one provider and --json", "models"],
-    [["models", "--json", "--json"], "models takes at most one provider and --json", "models"],
+    [["models", "a", "b"], "models takes at most one provider, --json and --refresh", "models"],
+    [["models", "--json", "--json"], "models takes at most one provider, --json and --refresh", "models"],
+    [["models", "--refresh", "--refresh"], "models takes at most one provider, --json and --refresh", "models"],
     [["models", "nope"], "unknown provider nope", "models"],
     [["opencode-config", "x"], "opencode-config takes no arguments", "opencode-config"],
     [["serve", "x"], "serve takes no arguments", "serve"],
@@ -280,6 +289,18 @@ describe("the proxy's commands", () => {
     expect(listed.catalogs[0].models[0]).toEqual({ id: "antigravity/g", provider: "antigravity", model: "g", name: "G", formats: ["gemini"], contextWindow: 80000, maxOutputTokens: 65536, sources: { name: "provider:antigravity", contextWindow: "provider:antigravity", maxOutputTokens: "provider:antigravity" } });
     expect(await c.run("opencode-config")).toBe(0);
     expect(JSON.parse(c.out[1]!)).toEqual({ providers: 4, origin: "http://127.0.0.1:4141" });
+  });
+
+  test("models --refresh: the daemon's or this process's refresh, as text or JSON; no description is read", async () => {
+    const c = cli();
+    expect(await c.run("models", "--refresh")).toBe(0);
+    expect(c.out).toEqual(["refreshed by the daemon at http://127.0.0.1:4141\n", "# claude: 1 models (live catalog)\n", "claude/n  New\n"]);
+    c.ports.refresh.by = "this process";
+    expect(await c.run("models", "claude", "--refresh", "--json")).toBe(0);
+    expect(JSON.parse(c.out[3]!)).toMatchObject({ refreshedBy: "this process", url: "http://127.0.0.1:4141", catalogs: [{ provider: "claude" }] });
+    expect(await c.run("models", "--refresh")).toBe(0);
+    expect(c.out[4]).toBe("no daemon at http://127.0.0.1:4141: refreshed by this process (the stored copies a daemon reads when it starts)\n");
+    expect([c.ports.refresh.seen, c.ports.models.seen]).toEqual([[undefined, "claude", undefined], []]);
   });
 
   test("serve: token first, listen, wait for the shutdown signal, stop with the grace period", async () => {

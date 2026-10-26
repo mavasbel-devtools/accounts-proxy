@@ -253,12 +253,15 @@ class FixedSession extends OAuthSessionPort<ClaudeTokens> {
   }
 }
 
+/** The default model-list age (proxy.yaml `modelListMaxAgeMinutes` 1440), the plugin's 24 h. */
+const DAY_MS = 24 * 3_600_000;
+
 describe("ClaudeCatalog", () => {
   const live = json<{ data: unknown[] }>("catalog-api-response.json");
   const make = (handler: ConstructorParameters<typeof ScriptedTransport>[0], kv = new MemoryKeyValueStore(), clock = new FixedClock(100_000_000)) => {
     const transport = new ScriptedTransport(handler);
     const logger = new MemoryLogger();
-    return { transport, kv, logger, clock, catalog: new ClaudeCatalog(transport, new FixedSession(), kv, clock, logger, "http://up") };
+    return { transport, kv, logger, clock, catalog: new ClaudeCatalog(transport, new FixedSession(), kv, clock, logger, "http://up", DAY_MS) };
   };
 
   test("fetches live (contract headers, limit, timeout), caches in memory and on disk", async () => {
@@ -317,7 +320,7 @@ describe("ClaudeCatalog", () => {
 
   test("production api base; pages without data; entries without id are skipped", async () => {
     const transport = new ScriptedTransport((_r, i) => ok(i === 0 ? { has_more: true, last_id: "c" } : { data: [{}, { id: "only" }] }));
-    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger(), API_BASE);
+    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger(), API_BASE, DAY_MS);
     expect((await catalog.entries()).map((e) => e.id)).toEqual(["only"]);
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=100");
   });
@@ -351,7 +354,7 @@ describe("ClaudeCatalog", () => {
     });
     const kv = new MemoryKeyValueStore();
     const clock = new FixedClock(100_000_000);
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), kv, clock, new MemoryLogger(), "http://up");
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), kv, clock, new MemoryLogger(), "http://up", DAY_MS);
     const entries = await catalog.entries();
     expect(entries).toHaveLength(1);
     expect(entries[0]!.id).toBe("claude-opus-5-5");
@@ -377,7 +380,7 @@ describe("ClaudeCatalog", () => {
       return ok({ data: [{ id: "fallback-model" }], has_more: false });
     });
     const logger = new MemoryLogger();
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), logger, "http://up");
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), logger, "http://up", DAY_MS);
     const entries = await catalog.entries();
     expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
   });
@@ -394,7 +397,7 @@ describe("ClaudeCatalog", () => {
       }
       return ok({ data: [{ id: "fallback-model" }], has_more: false });
     });
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), new MemoryLogger(), "http://up");
+    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), new MemoryLogger(), "http://up", DAY_MS);
     const entries = await catalog.entries();
     expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
   });
@@ -416,6 +419,30 @@ describe("ClaudeCatalog", () => {
     expect(await make(() => ({ status: 503, body: "down" })).catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
   });
 
+  test("the configured max age decides when a kept list is read again", async () => {
+    const transport = new ScriptedTransport(() => ok({ data: [{ id: "live" }] }));
+    const clock = new FixedClock(100_000_000);
+    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), clock, new MemoryLogger(), "http://up", 60_000);
+    await catalog.listing();
+    clock.time += 59_999;
+    await catalog.listing();
+    expect(transport.requests).toHaveLength(1);
+    clock.time += 1;
+    await catalog.listing();
+    expect(transport.requests).toHaveLength(2);
+  });
+
+  test("refresh reads the list now, even with a fresh copy; a failed refresh falls back to the copy", async () => {
+    let status = 200;
+    const { catalog, transport } = make(() => ({ ...ok({ data: [{ id: "live" }] }), status }));
+    await catalog.listing();
+    expect(await catalog.refresh()).toMatchObject({ source: "live", entries: [{ id: "live" }] });
+    expect(transport.requests).toHaveLength(2);
+    status = 503;
+    expect(await catalog.refresh()).toMatchObject({ source: "cache", entries: [{ id: "live" }] });
+    expect(transport.requests).toHaveLength(3);
+  });
+
   test("a transport failure is logged with its message", async () => {
     const { catalog, logger } = make(() => Promise.reject(new TypeError("connection refused")));
     expect(await catalog.entries()).toBe(STATIC_CATALOG);
@@ -426,6 +453,9 @@ describe("ClaudeCatalog", () => {
 class FixedCatalog extends ClaudeCatalogPort {
   async listing() {
     return { source: "static" as const, entries: STATIC_CATALOG };
+  }
+  async refresh() {
+    return { source: "live" as const, entries: STATIC_CATALOG.slice(0, 1) };
   }
 }
 
@@ -497,10 +527,19 @@ describe("ClaudeSubscriptionProvider", () => {
     });
   });
 
+  test("refreshModels: the catalog's refreshed list", async () => {
+    const { provider } = make(ok({}));
+    expect(await provider.refreshModels()).toMatchObject({ provider: "claude", source: "live", models: [{ address: { provider: "claude", model: "claude-opus-5" } }] });
+    expect((await provider.refreshModels()).models).toHaveLength(1);
+  });
+
   test("models without limits omit them", async () => {
     class Bare extends ClaudeCatalogPort {
       async listing() {
         return { source: "live" as const, entries: [{ id: "x", displayName: "X", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] };
+      }
+      async refresh() {
+        return this.listing();
       }
     }
     const provider = new ClaudeSubscriptionProvider(new FixedSession(), new Bare(), new ClaudeIdentity(new MemoryKeyValueStore(), new SequenceRandom()), new ScriptedTransport(() => ok({})), new SequenceRandom(), new MemoryLogger(), API_BASE);

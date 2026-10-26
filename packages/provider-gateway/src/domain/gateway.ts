@@ -138,7 +138,6 @@ export function servedFormats(spec: GatewaySpec, formats: readonly WireFormat[])
 /** Cached model list (G5). Version 2 (plan 2026-10-16 C3): the details; a version-1 copy is not reused. */
 export type CatalogSnapshot = { readonly version: 2; readonly fetchedAt: number; readonly models: readonly GatewayModel[] };
 
-export const CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
 export const CATALOG_TIMEOUT_MS = 30_000;
 
 const FORMATS: readonly string[] = ["anthropic-messages", "openai-chat", "openai-responses", "gemini"];

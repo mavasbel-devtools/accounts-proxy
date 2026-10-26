@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { EMPTY_POOL, upsertAccount, type AccountCredential, markNeedsLogin } from "@accounts-proxy/core/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError } from "@accounts-proxy/core/domain/errors.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, ProviderDisabledError, UnknownAccountError, UpstreamUnreachableError } from "@accounts-proxy/core/domain/errors.ts";
 import type { ModelCatalog, ProviderId } from "@accounts-proxy/core/domain/models.ts";
-import { ListModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
+import { ListModelsPort, RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { ModelReferencePort, type ReferenceListing } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { apiKeyAccount } from "@accounts-proxy/core/domain/api-key.ts";
 import { ApiKeyLoginPort, ForeignKeySourcePort, SecretPromptPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
@@ -12,11 +13,13 @@ import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthCli
 import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import { BrowserLauncherPort, HashPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
-import { FixedClock, MemoryCredentialStore, MemoryLogger, SequenceRandom } from "@accounts-proxy/test-support/fakes.ts";
+import { FixedClock, MemoryCredentialStore, MemoryLogger, ScriptedTransport, SequenceRandom, type ScriptedResponse } from "@accounts-proxy/test-support/fakes.ts";
 import { AccountAdminService, UsageService } from "@accounts-proxy/proxy/application/account-services.ts";
 import { DescribeModelsService } from "@accounts-proxy/proxy/application/describe-models-service.ts";
 import { ListModelsService } from "@accounts-proxy/proxy/application/list-models-service.ts";
 import { LoginService } from "@accounts-proxy/proxy/application/login-service.ts";
+import { RefreshModelsService } from "@accounts-proxy/proxy/application/refresh-models-service.ts";
+import { DaemonRefreshError, REFRESH_TIMEOUT_MS, RequestModelRefreshService } from "@accounts-proxy/proxy/application/request-model-refresh-service.ts";
 import type { LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 
 class FakeClient extends OAuthClientPort {
@@ -445,6 +448,8 @@ describe("DescribeModelsService", () => {
     async reference(): Promise<ReferenceListing> {
       this.reads += 1;
       return { source: "cache", catalog: new Map([["anthropic", new Map([["c", { name: "Claude C", toolCall: true }]])]]) };
+    }    async refresh(): Promise<ReferenceListing> {
+      throw new Error("not used by the description");
     }
   }
   const claude: ModelCatalog = { provider: "claude", formats: ["anthropic-messages"], source: "live", models: [{ address: { provider: "claude", model: "c" }, displayName: "c" }] };
@@ -459,5 +464,116 @@ describe("DescribeModelsService", () => {
     expect(reference.reads).toBe(1);
     await service.describeModels("cheaper-inference");
     expect(reference.reads).toBe(1);
+  });
+});
+
+describe("RefreshModelsService (plan 2026-10-26 R2)", () => {
+  class Provider extends ProviderPort {
+    refreshes = 0;
+    constructor(
+      readonly id: ProviderId,
+      private readonly error?: Error,
+    ) {
+      super();
+    }
+    async nativeFormats() {
+      return undefined;
+    }
+    async models() {
+      if (this.error) throw this.error;
+      return { provider: this.id, formats: [] as const, source: "live" as const, models: [] };
+    }
+    override async refreshModels() {
+      this.refreshes += 1;
+      return super.refreshModels();
+    }
+    async passthrough(): Promise<never> {
+      throw new Error("unused");
+    }
+  }
+  class Reference extends ModelReferencePort {
+    refreshes = 0;
+    async reference(): Promise<ReferenceListing> {
+      return { source: "live", catalog: new Map() };
+    }
+    async refresh(): Promise<ReferenceListing> {
+      this.refreshes += 1;
+      return this.reference();
+    }
+  }
+  const make = (providers: Provider[]) => {
+    const reference = new Reference();
+    const models = new ListModelsService(providers);
+    const service = new RefreshModelsService(providers, reference, new DescribeModelsService(models, reference));
+    return { reference, service };
+  };
+
+  test("every provider refreshed (the reference first), then described; one provider by name; a disabled one fails", async () => {
+    const claude = new Provider("claude");
+    const cheaper = new Provider("cheaper-inference");
+    const { reference, service } = make([claude, cheaper]);
+    expect((await service.refreshModels()).map((c) => [c.provider, c.source])).toEqual([
+      ["claude", "live"],
+      ["cheaper-inference", "live"],
+    ]);
+    expect([reference.refreshes, claude.refreshes, cheaper.refreshes]).toEqual([1, 1, 1]);
+    expect((await service.refreshModels("cheaper-inference")).map((c) => c.provider)).toEqual(["cheaper-inference"]);
+    expect([reference.refreshes, claude.refreshes, cheaper.refreshes]).toEqual([1, 1, 2]);
+    await expect(service.refreshModels("openai")).rejects.toBeInstanceOf(ProviderDisabledError);
+  });
+
+  test("all providers: one that cannot list is unavailable; asked by name it fails; a bug is never hidden", async () => {
+    const auth = new ProviderAuthRequiredError("antigravity", "no active account");
+    const { service } = make([new Provider("claude"), new Provider("antigravity", auth)]);
+    expect((await service.refreshModels())[1]).toMatchObject({ provider: "antigravity", source: "unavailable" });
+    await expect(service.refreshModels("antigravity")).rejects.toBe(auth);
+    await expect(make([new Provider("claude", new TypeError("boom"))]).service.refreshModels()).rejects.toThrow("boom");
+  });
+});
+
+describe("RequestModelRefreshService (plan 2026-10-26 R2)", () => {
+  class Access extends AccessPort {
+    async token() {
+      return "tok";
+    }
+    async authorize() {
+      return true;
+    }
+  }
+  class Local extends RefreshModelsPort {
+    asked: (ProviderId | undefined)[] = [];
+    async refreshModels(provider?: ProviderId) {
+      this.asked.push(provider);
+      return [];
+    }
+  }
+  const CATALOG = { provider: "claude", source: "live", models: [] } as const;
+  const make = (answer: ScriptedResponse | (() => Promise<never>)) => {
+    const transport = new ScriptedTransport(() => (typeof answer === "function" ? answer() : answer));
+    const local = new Local();
+    return { transport, local, service: new RequestModelRefreshService(transport, new Access(), "http://127.0.0.1:4141", local) };
+  };
+
+  test("the running daemon refreshes: POST with the proxy token, its catalogs returned", async () => {
+    const { transport, local, service } = make({ status: 200, body: JSON.stringify({ catalogs: [CATALOG] }) });
+    expect(await service.request("claude")).toEqual({ by: "daemon", url: "http://127.0.0.1:4141", catalogs: [CATALOG] });
+    expect(transport.requests).toEqual([{ method: "POST", url: "http://127.0.0.1:4141/proxy/v1/models/refresh?provider=claude", headers: { authorization: "Bearer tok" }, timeoutMs: REFRESH_TIMEOUT_MS }]);
+    await service.request();
+    expect(transport.requests[1]!.url).toBe("http://127.0.0.1:4141/proxy/v1/models/refresh");
+    expect(local.asked).toEqual([]);
+  });
+
+  test("nothing listening: this process refreshes; any other failure is reported", async () => {
+    const down = make(() => Promise.reject(new UpstreamUnreachableError("127.0.0.1", "ECONNREFUSED")));
+    expect(await down.service.request("claude")).toEqual({ by: "this process", url: "http://127.0.0.1:4141", catalogs: [] });
+    expect(down.local.asked).toEqual(["claude"]);
+    await expect(make(() => Promise.reject(new TypeError("boom"))).service.request()).rejects.toThrow("boom");
+    await expect(make({ status: 503, body: JSON.stringify({ error: { code: "provider_disabled", message: "claude is not enabled" } }) }).service.request()).rejects.toThrow(
+      "the daemon at http://127.0.0.1:4141 answered the refresh with HTTP 503: claude is not enabled",
+    );
+    await expect(make({ status: 404, body: "not json" }).service.request()).rejects.toThrow("answered the refresh with HTTP 404");
+    await expect(make({ status: 404, body: JSON.stringify({ error: "x" }) }).service.request()).rejects.toThrow(/HTTP 404$/);
+    await expect(make({ status: 200, body: JSON.stringify({ nope: 1 }) }).service.request()).rejects.toBeInstanceOf(DaemonRefreshError);
+    await expect(make({ status: 200, body: "[]" }).service.request()).rejects.toThrow("the answer has no catalogs");
   });
 });

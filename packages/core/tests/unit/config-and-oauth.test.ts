@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ConfigError, DEFAULT_CONFIG, enabledProviders, parseProxyConfig } from "@accounts-proxy/core/domain/config.ts";
+import { ConfigError, DEFAULT_CONFIG, DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, enabledProviders, modelListMaxAgeMs, parseProxyConfig } from "@accounts-proxy/core/domain/config.ts";
 import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
 import { codeFromCallback, codeFromManualInput, loopbackRedirectUri } from "@accounts-proxy/core/domain/services/oauth-flow.ts";
 
@@ -28,6 +28,12 @@ describe("parseProxyConfig", () => {
     expect(() => parseProxyConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
   });
 
+  test("modelListMaxAgeMinutes: default 1440 (24 h), any positive integer (plan 2026-10-26 R1)", () => {
+    expect([DEFAULT_CONFIG.modelListMaxAgeMinutes, DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, modelListMaxAgeMs(DEFAULT_CONFIG)]).toEqual([1440, 1440, 86_400_000]);
+    const config = parseProxyConfig({ modelListMaxAgeMinutes: 10 });
+    expect([config.modelListMaxAgeMinutes, modelListMaxAgeMs(config)]).toEqual([10, 600_000]);
+  });
+
   test("acknowledged but disabled stays disabled", () => {
     expect(enabledProviders(parseProxyConfig({ providers: { antigravity: { acknowledgeTermsRisk: true } } }))).toEqual([]);
   });
@@ -46,6 +52,9 @@ describe("parseProxyConfig", () => {
     [{ providers: { antigravity: { enabled: "yes" } } }, "providers.antigravity.enabled must be true or false"],
     [{ providers: { antigravity: { enabled: true } } }, "enabled without acknowledgeTermsRisk: true"],
     [{ providers: { antigravity: { enabled: true, acknowledgeTermsRisk: false } } }, "enabled without acknowledgeTermsRisk: true"],
+    [{ modelListMaxAgeMinutes: 0 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
+    [{ modelListMaxAgeMinutes: 1.5 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
+    [{ modelListMaxAgeMinutes: "10" }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ aliases: "x" }, "aliases must be a mapping"],
     [{ aliases: { a: 1 } }, "aliases.a must be a <provider>/<model> string"],
     [{ aliases: { a: "gpt-4o" } }, 'aliases.a = "gpt-4o" is not <provider>/<model>'],

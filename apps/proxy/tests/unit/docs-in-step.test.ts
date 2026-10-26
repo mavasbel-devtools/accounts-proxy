@@ -8,7 +8,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { RENEWAL_RETRY_AFTER_MS, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
-import { DEFAULT_PORT } from "@accounts-proxy/core/domain/config.ts";
+import { DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, DEFAULT_PORT } from "@accounts-proxy/core/domain/config.ts";
 import {
   InternalError,
   InvalidRequestError,
@@ -28,6 +28,7 @@ import {
   type ProxyErrorCode,
 } from "@accounts-proxy/core/domain/errors.ts";
 import { PROVIDER_IDS } from "@accounts-proxy/core/domain/models.ts";
+import { MODEL_REFRESH_PATH } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { rpcStatusFor } from "@accounts-proxy/core/domain/services/google-error.ts";
 import { DROPPED_HEADER, UPSTREAM_IDLE_TIMEOUT_MS } from "@accounts-proxy/core/domain/wire.ts";
 import { AnthropicCodec, anthropicErrorType } from "@accounts-proxy/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
@@ -37,8 +38,7 @@ import { REFRESH_LOCK as ANTIGRAVITY_REFRESH_LOCK } from "@accounts-proxy/provid
 import { EXPIRY_BUFFER_MS as ANTIGRAVITY_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
 import { REFRESH_LOCK as CLAUDE_REFRESH_LOCK } from "@accounts-proxy/provider-claude/adapters/outbound/claude-session.ts";
 import { NATIVE_PATHS as CLAUDE_NATIVE_PATHS } from "@accounts-proxy/provider-claude/adapters/outbound/claude-subscription-provider.ts";
-import { CATALOG as CLAUDE_CATALOG, EXPIRY_BUFFER_MS as CLAUDE_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-claude/domain/constants.ts";
-import { CATALOG_TTL_MS } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { EXPIRY_BUFFER_MS as CLAUDE_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import { NATIVE_PATH as OPENAI_NATIVE_PATH } from "@accounts-proxy/provider-openai/adapters/outbound/openai-provider.ts";
 import { REFRESH_LOCK as OPENAI_REFRESH_LOCK } from "@accounts-proxy/provider-openai/adapters/outbound/openai-session.ts";
 import { EXPIRY_BUFFER_MS as OPENAI_EXPIRY_BUFFER_MS } from "@accounts-proxy/provider-openai/domain/constants.ts";
@@ -50,8 +50,8 @@ import { synopses as helpSynopses } from "@accounts-proxy/proxy/adapters/inbound
 import { MAX_BODY_BYTES } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
 import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
 import { DEFAULT_LOCK_OPTIONS } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
-import { REFERENCE_TTL_MS } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
 import { STATUS_TIMEOUT_MS } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
+import { REFRESH_TIMEOUT_MS } from "@accounts-proxy/proxy/application/request-model-refresh-service.ts";
 
 const repo = join(import.meta.dir, "..", "..", "..", "..");
 const REFERENCE = join(repo, "docs", "reference");
@@ -98,6 +98,7 @@ function codeOperations(): string[] {
     `GET ${WELL_KNOWN_PATH}`,
     `GET ${OPENCODE_CONFIG_PATH}`,
     `GET ${DETAILED_MODELS_PATH}`,
+    `POST ${MODEL_REFRESH_PATH}`,
     ...Object.keys(CLAUDE_NATIVE_PATHS).map((p) => `POST ${anthropic}${p}`),
     `GET ${anthropic}/v1/models`,
     `POST ${openai}/v1/chat/completions`,
@@ -150,7 +151,7 @@ describe("the documentation is in step with the code", () => {
 
   test("command line: every synopsis of the command tree is a row of the API reference", () => {
     const synopses = helpSynopses(PROXY_HELP);
-    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "quota <provider>", "models [<provider>] [--json]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
+    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
     for (const synopsis of synopses) expect(api).toContain(`| \`${synopsis}\` |`);
   });
 
@@ -184,8 +185,10 @@ describe("the documentation is in step with the code", () => {
     expect(api).toContain("access-token renewal: 2 minutes before expiry");
     expect([TOKEN_ENDPOINT_TIMEOUT_MS, RENEWAL_RETRY_AFTER_MS]).toEqual([30_000, 30_000]);
     expect(api).toContain("bounded by 30 s; a transient renewal failure keeps a still-valid token and retries after 30 s");
-    for (const ttl of [CLAUDE_CATALOG.ttlMs, CATALOG_TTL_MS, REFERENCE_TTL_MS]) expect(ttl).toBe(24 * 3_600_000);
-    expect(api).toContain("model lists and the reference catalog: 24 h");
+    expect(DEFAULT_MODEL_LIST_MAX_AGE_MINUTES).toBe(24 * 60);
+    expect(api).toContain(`model lists and the reference catalog: \`modelListMaxAgeMinutes\`, default ${DEFAULT_MODEL_LIST_MAX_AGE_MINUTES} minutes (24 h)`);
+    expect(api).toContain(`| \`modelListMaxAgeMinutes\` | positive integer; default ${DEFAULT_MODEL_LIST_MAX_AGE_MINUTES}`);
+    expect(api).toContain(`model refresh: ${REFRESH_TIMEOUT_MS} ms`);
   });
 
   test("providers: a section for each in the providers, models and format-fields references", () => {

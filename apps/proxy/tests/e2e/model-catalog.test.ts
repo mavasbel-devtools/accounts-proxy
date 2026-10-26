@@ -218,6 +218,86 @@ describe("detailed model list and opencode configuration", () => {
   });
 });
 
+describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
+  const OPENROUTER = "/api/v1/models";
+  const reads = (path: string) => upstreams.find(path).length;
+  const firstLine = (stdout: string) => stdout.split("\n")[0];
+  /** The `# <provider>: …` header lines only (the model rows are the committed lists'). */
+  const headers = (stdout: string) => stdout.split("\n").filter((l) => l.startsWith("# "));
+
+  test("without a daemon: `models --refresh` reads every list now in this process; a list younger than the age is reused", async () => {
+    home = await makeHome(`modelListMaxAgeMinutes: 1440\n${ALL}`);
+    expect((await run(["models", "openrouter"])).code).toBe(0);
+    const listed = reads(OPENROUTER);
+    // Within modelListMaxAgeMinutes the stored copy answers; no read.
+    expect(headers((await run(["models", "openrouter"])).stdout)).toEqual(["# openrouter: 459 models (stored copy of the live catalog)"]);
+    expect(reads(OPENROUTER)).toBe(listed);
+
+    const reference = reads("/api.json");
+    const refreshed = await run(["models", "--refresh"]);
+    expect([refreshed.code, refreshed.stderr]).toEqual([0, ""]);
+    expect(firstLine(refreshed.stdout)).toBe(`no daemon at http://127.0.0.1:${home.port}: refreshed by this process (the stored copies a daemon reads when it starts)`);
+    const lines = headers(refreshed.stdout);
+    expect(lines).toContain("# openrouter: 459 models (live catalog)");
+    // Antigravity has no account: `unavailable` in a refresh of every provider, as in a listing.
+    expect(lines).toContain("# antigravity: 0 models (unavailable: antigravity: no active account; run `accounts-proxy login antigravity`)");
+    expect([reads(OPENROUTER) - listed, reads("/api.json") - reference]).toEqual([1, 1]);
+
+    // A provider without a reference provider: its list only, the reference catalog is not read.
+    const before = [reads("/public/models"), reads("/api.json")];
+    const cheaper = JSON.parse((await run(["models", "cheaper-inference", "--refresh", "--json"])).stdout) as { refreshedBy: string; url: string; catalogs: Catalog[] };
+    expect([cheaper.refreshedBy, cheaper.url, cheaper.catalogs.map((c) => [c.provider, c.source])]).toEqual(["this process", `http://127.0.0.1:${home.port}`, [["cheaper-inference", "live"]]]);
+    expect([reads("/public/models") - before[0]!, reads("/api.json") - before[1]!]).toEqual([1, 0]);
+
+    // Asked by name, the provider's own error; a defect in a refresh of every provider is never hidden.
+    const named = await run(["models", "antigravity", "--refresh"]);
+    expect([named.code, named.stderr]).toEqual([1, "error: antigravity: no active account; run `accounts-proxy login antigravity`\n"]);
+    mkdirSync(join(home.dir, "accounts-antigravity.json"));
+    const broken = await run(["models", "--refresh"]);
+    expect([broken.code, broken.stderr]).toEqual([1, expect.stringContaining("EISDIR")]);
+  });
+
+  test("with a daemon: `models --refresh` asks the daemon, whose memory then answers; its errors are reported", async () => {
+    home = await makeHome(ALL);
+    daemon = await startDaemon(home, upstreams.seamEnv());
+    const listed = reads(OPENROUTER);
+    const refreshed = await run(["models", "openrouter", "--refresh"]);
+    expect([refreshed.code, firstLine(refreshed.stdout), headers(refreshed.stdout)]).toEqual([0, `refreshed by the daemon at ${daemon.url}`, ["# openrouter: 459 models (live catalog)"]]);
+    const json = JSON.parse((await run(["models", "openrouter", "--refresh", "--json"])).stdout) as { refreshedBy: string; catalogs: Catalog[] };
+    expect([json.refreshedBy, json.catalogs[0]!.source]).toEqual(["daemon", "live"]);
+    expect(reads(OPENROUTER) - listed).toBe(2);
+
+    const refused = await run(["models", "antigravity", "--refresh"]);
+    expect([refused.code, refused.stderr]).toEqual([
+      1,
+      `error: the daemon at ${daemon.url} answered the refresh with HTTP 401: antigravity: no active account; run \`accounts-proxy login antigravity\`\n`,
+    ]);
+  });
+
+  test("something else on the daemon's port, an unreadable proxy token, a model-list age that is not a positive integer", async () => {
+    home = await makeHome(ALL);
+    const answers = [new Response("boom", { status: 500 }), Response.json({ catalogs: 7 })];
+    const other = Bun.serve({ hostname: "127.0.0.1", port: home.port, fetch: () => answers.shift()! });
+    try {
+      const plain = await run(["models", "--refresh"]);
+      expect([plain.code, plain.stderr]).toEqual([1, `error: the daemon at http://127.0.0.1:${home.port} answered the refresh with HTTP 500\n`]);
+      const shapeless = await run(["models", "--refresh"]);
+      expect([shapeless.code, shapeless.stderr]).toEqual([1, `error: the daemon at http://127.0.0.1:${home.port} answered the refresh with HTTP 200: the answer has no catalogs\n`]);
+    } finally {
+      await other.stop(true);
+    }
+    writeFileSync(join(home.dir, "token.json"), '{"token":""}');
+    const token = await run(["models", "--refresh"]);
+    expect([token.code, token.stderr.includes("token.json is not valid")]).toEqual([1, true]);
+
+    for (const age of ["x", "1.5", "0"]) {
+      writeFileSync(join(home.dir, "proxy.yaml"), `modelListMaxAgeMinutes: ${age}\n${ALL}`);
+      const result = await run(["help"]);
+      expect([result.code, result.stderr]).toEqual([1, expect.stringContaining("modelListMaxAgeMinutes must be a positive integer (minutes)")]);
+    }
+  });
+});
+
 /** Committed lists with one row of each shape added (the rows are this test's; every other row is the vendor's). */
 function scriptShapes(): void {
   const json = (value: unknown): Response => Response.json(value);

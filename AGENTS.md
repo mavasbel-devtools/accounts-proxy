@@ -123,7 +123,10 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   opencode v2's `providers` schema, one `ap-<provider>` each, variants from opencode's own rules (none for
   Antigravity). `claude` and `openai` models carry opencode `compatibility` overrides that switch off what those cells
   refuse (thinking-prefix controls, per-message effort updates; rule O6, live C6).
-  [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md).
+  [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md). A fetched model list and the reference
+  catalog are reused for `proxy.yaml` `modelListMaxAgeMinutes` (default 1440); `POST /proxy/v1/models/refresh` and
+  `models --refresh` read them now, the latter through the running daemon when one listens
+  ([plan 2026-10-26](docs/plans/2026-10-26-08-06-model-list-refresh-plan.md) R1–R2).
 - **Test seams.** `ACCOUNTS_PROXY_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
   OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
   origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference)

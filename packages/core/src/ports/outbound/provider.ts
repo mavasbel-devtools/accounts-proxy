@@ -10,6 +10,13 @@ export abstract class ProviderPort {
    */
   abstract nativeFormats(model: string): Promise<ReadonlySet<WireFormat> | undefined>;
   abstract models(): Promise<ModelCatalog>;
+  /**
+   * The model list read from its source now, whatever the age of the kept copy (plan 2026-10-26 R2). A provider that
+   * reads its list on every use (Antigravity) or takes it from the reference catalog (OpenAI) keeps this default.
+   */
+  async refreshModels(): Promise<ModelCatalog> {
+    return this.models();
+  }
   /** Native cell: the client's own wire request, upstream response streamed back unchanged. */
   abstract passthrough(model: string, request: RawRequest): Promise<HttpResponse>;
 }

@@ -1,6 +1,7 @@
 // Live model catalog. Contract of opencode-claude-auth @ 6292741 (AGENTS.md §9, AnthropicModelsApiAdapter,
-// RefreshModelCatalogUseCase): fresh cache (< 24 h) → live paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per
-// page, cursor last_id else final id) → on failure or empty: stale non-empty cache → static minimum. Never empty.
+// RefreshModelCatalogUseCase): fresh cache (younger than `modelListMaxAgeMinutes`, default 24 h as in the plugin; a
+// refresh skips it) → live paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per page, cursor last_id else final
+// id) → on failure or empty: stale non-empty cache → static minimum. Never empty.
 import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
 import { readAll } from "@accounts-proxy/core/domain/wire.ts";
 import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
@@ -24,15 +25,24 @@ export class ClaudeCatalog extends ClaudeCatalogPort {
     private readonly clock: ClockPort,
     private readonly logger: LoggerPort,
     private readonly apiBase: string,
+    private readonly maxAgeMs: number,
   ) {
     super();
   }
 
-  /** `live` when fetched by this call (memoized for the TTL), `cache` from the stored copy, `static` the minimum. */
-  async listing(): Promise<CatalogListing> {
+  /** `live` when fetched by this process (memoized for the max age), `cache` from the stored copy, `static` the minimum. */
+  listing(): Promise<CatalogListing> {
+    return this.load(false);
+  }
+
+  refresh(): Promise<CatalogListing> {
+    return this.load(true);
+  }
+
+  private async load(now: boolean): Promise<CatalogListing> {
     const fromMemory = this.memory !== undefined;
     const cached = this.memory ?? (await this.loadCache());
-    if (cached !== undefined && this.clock.now() - cached.fetchedAt < CATALOG.ttlMs) return { source: fromMemory ? "live" : "cache", entries: cached.models };
+    if (!now && cached !== undefined && this.clock.now() - cached.fetchedAt < this.maxAgeMs) return { source: fromMemory ? "live" : "cache", entries: cached.models };
     try {
       const models = await this.fetchLive();
       if (models.length === 0) throw new Error("live catalog is empty");

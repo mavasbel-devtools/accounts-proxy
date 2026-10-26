@@ -5,7 +5,7 @@ import type { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import type { AccountAdminPort, LoginPort, UsagePort } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import type { DaemonStatusPort } from "@accounts-proxy/core/ports/inbound/daemon.ts";
 import type { OpencodeConfigPort, OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
-import type { DescribeModelsPort, HealthPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import type { DescribeModelsPort, HealthPort, RequestModelRefreshPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { CommandHelp } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { ACCOUNT_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -19,6 +19,7 @@ export type CliPorts = {
   readonly accounts: AccountAdminPort;
   readonly usage: UsagePort;
   readonly models: DescribeModelsPort;
+  readonly refresh: RequestModelRefreshPort;
   readonly opencode: OpencodeConfigPort;
   readonly origin: OpencodeOrigin;
   readonly access: AccessPort;

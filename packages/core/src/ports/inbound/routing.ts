@@ -13,6 +13,29 @@ export abstract class DescribeModelsPort {
   abstract describeModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]>;
 }
 
+/** The daemon's route that refreshes the model lists (POST, token-protected; `?provider=<id>` for one provider). */
+export const MODEL_REFRESH_PATH = "/proxy/v1/models/refresh";
+
+export abstract class RefreshModelsPort {
+  /**
+   * Every enabled provider's model list (or one provider's) read now from its source whatever the age of the kept copy
+   * (the reference catalog first when a listed provider uses it), then described as by DescribeModelsPort (plan
+   * 2026-10-26 R2).
+   */
+  abstract refreshModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]>;
+}
+
+/** Who refreshed: the running daemon at `url`, or this process when nothing listens there. */
+export type RefreshOutcome = { readonly by: "daemon" | "this process"; readonly url: string; readonly catalogs: readonly DetailedCatalog[] };
+
+export abstract class RequestModelRefreshPort {
+  /**
+   * `models --refresh`: asks the running daemon to refresh its lists (they live in its memory); with nothing listening
+   * on its address, refreshes them in this process, which updates the stored copies a daemon reads when it starts.
+   */
+  abstract request(provider?: ProviderId): Promise<RefreshOutcome>;
+}
+
 export abstract class PassthroughPort {
   /**
    * Resolves `model` (`<provider>/<model>` or an alias) and forwards the client's own request to that provider's

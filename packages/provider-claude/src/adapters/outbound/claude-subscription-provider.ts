@@ -17,7 +17,7 @@ import { entryDetails } from "@accounts-proxy/provider-claude/domain/catalog.ts"
 import { ANTHROPIC_VERSION_HEADER } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import type { ClaudeTokens } from "@accounts-proxy/provider-claude/domain/credential.ts";
 import { capturedBetaHeader, mergeBetaHeader, transformRequest, type WireRequestBody } from "@accounts-proxy/provider-claude/domain/request-transform.ts";
-import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
+import type { CatalogListing, ClaudeCatalogPort, ClaudeIdentityPort, ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
 
 /** Native routes (relative to the dialect prefix) → upstream path. */
 export const NATIVE_PATHS: Readonly<Record<string, string>> = {
@@ -58,7 +58,14 @@ export class ClaudeSubscriptionProvider extends ProviderPort {
   }
 
   async models(): Promise<ModelCatalog> {
-    const { source, entries } = await this.catalog.listing();
+    return this.catalogOf(await this.catalog.listing());
+  }
+
+  override async refreshModels(): Promise<ModelCatalog> {
+    return this.catalogOf(await this.catalog.refresh());
+  }
+
+  private catalogOf({ source, entries }: CatalogListing): ModelCatalog {
     return {
       provider: this.id,
       formats: this.formats,

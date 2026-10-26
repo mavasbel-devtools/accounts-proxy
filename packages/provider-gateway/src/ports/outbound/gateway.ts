@@ -28,6 +28,8 @@ export abstract class GatewayCatalogSourcePort {
 export type GatewayListing = { readonly source: ModelsSource; readonly models: readonly GatewayModel[] };
 
 export abstract class GatewayCatalogPort {
-  /** Live list (24 h cache), else the stored copy, else the built-in list (G5). */
+  /** Live list (cached for `modelListMaxAgeMinutes`), else the stored copy, else the built-in list (G5). */
   abstract listing(): Promise<GatewayListing>;
+  /** The live list read now whatever the cache's age, with the same fallbacks (plan 2026-10-26 R2). */
+  abstract refresh(): Promise<GatewayListing>;
 }

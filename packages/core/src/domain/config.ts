@@ -3,6 +3,8 @@
 // without the acknowledgement is a named configuration error. An API-key gateway (plan P4.6) needs only `enabled: true`.
 // No file means every provider is disabled.
 // Plan E5: the default port is 4141 (measured free, outside every Windows excluded range).
+// Plan 2026-10-26 R1: `modelListMaxAgeMinutes` is how long a fetched model list (and the reference catalog) is reused
+// before the next use reads it again; default 1440 (24 h, the value the source plugins use).
 import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
 import { isProviderId, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS, type ProviderId } from "@accounts-proxy/core/domain/models.ts";
 import { resolveModelAddress } from "@accounts-proxy/core/domain/services/model-address.ts";
@@ -19,12 +21,19 @@ export type ProxyConfig = {
   readonly port: number;
   readonly providers: Readonly<Record<ProviderId, ProviderSettings>>;
   readonly aliases: Readonly<Record<string, string>>;
+  readonly modelListMaxAgeMinutes: number;
 };
 
 export const DEFAULT_PORT = 4141;
+export const DEFAULT_MODEL_LIST_MAX_AGE_MINUTES = 1440;
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
 const ALL_OFF: Readonly<Record<ProviderId, ProviderSettings>> = Object.fromEntries(PROVIDER_IDS.map((id) => [id, OFF])) as Record<ProviderId, ProviderSettings>;
-export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {} };
+export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {}, modelListMaxAgeMinutes: DEFAULT_MODEL_LIST_MAX_AGE_MINUTES };
+
+/** The configured model-list age in milliseconds. */
+export function modelListMaxAgeMs(config: ProxyConfig): number {
+  return config.modelListMaxAgeMinutes * 60_000;
+}
 
 function only(value: Record<string, unknown>, allowed: readonly string[], where: string): void {
   const unknown = Object.keys(value).filter((k) => !allowed.includes(k));
@@ -40,9 +49,13 @@ function bool(value: unknown, where: string, fallback: boolean): boolean {
 export function parseProxyConfig(raw: unknown): ProxyConfig {
   if (raw === undefined || raw === null) return DEFAULT_CONFIG;
   if (!isJsonObject(raw)) throw new ConfigError("the document must be a mapping");
-  only(raw, ["port", "providers", "aliases"], "the document");
+  only(raw, ["port", "providers", "aliases", "modelListMaxAgeMinutes"], "the document");
   const port = raw.port ?? DEFAULT_PORT;
   if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) throw new ConfigError("port must be an integer 1-65535");
+  const modelListMaxAgeMinutes = raw.modelListMaxAgeMinutes ?? DEFAULT_MODEL_LIST_MAX_AGE_MINUTES;
+  if (typeof modelListMaxAgeMinutes !== "number" || !Number.isInteger(modelListMaxAgeMinutes) || modelListMaxAgeMinutes < 1) {
+    throw new ConfigError("modelListMaxAgeMinutes must be a positive integer (minutes)");
+  }
   const providers: Record<ProviderId, ProviderSettings> = { ...ALL_OFF };
   const rawProviders = raw.providers ?? {};
   if (!isJsonObject(rawProviders)) throw new ConfigError("providers must be a mapping");
@@ -68,7 +81,7 @@ export function parseProxyConfig(raw: unknown): ProxyConfig {
     }
     aliases[alias] = target;
   }
-  return { port, providers, aliases };
+  return { port, providers, aliases, modelListMaxAgeMinutes };
 }
 
 export function enabledProviders(config: ProxyConfig): ProviderId[] {

@@ -8,7 +8,7 @@ import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import { forwardedResponseHeaders, keyHeaders, servedFormats, upstreamCall, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
-import type { GatewayCatalogPort, GatewayKeySessionPort } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
+import type { GatewayCatalogPort, GatewayKeySessionPort, GatewayListing } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
 
 export class GatewayProvider extends ProviderPort {
   constructor(
@@ -32,7 +32,14 @@ export class GatewayProvider extends ProviderPort {
   }
 
   async models(): Promise<ModelCatalog> {
-    const { source, models } = await this.catalog.listing();
+    return this.catalogOf(await this.catalog.listing());
+  }
+
+  override async refreshModels(): Promise<ModelCatalog> {
+    return this.catalogOf(await this.catalog.refresh());
+  }
+
+  private catalogOf({ source, models }: GatewayListing): ModelCatalog {
     return {
       provider: this.id,
       formats: this.spec.uniformFormats ?? [],

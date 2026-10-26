@@ -6,7 +6,7 @@ import * as nodeFs from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Readable, Writable } from "node:stream";
-import { enabledProviders, parseProxyConfig, type ProxyConfig } from "@accounts-proxy/core/domain/config.ts";
+import { enabledProviders, modelListMaxAgeMs, parseProxyConfig, type ProxyConfig } from "@accounts-proxy/core/domain/config.ts";
 import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
 import { UPSTREAM_IDLE_TIMEOUT_MS } from "@accounts-proxy/core/domain/wire.ts";
 import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
@@ -107,12 +107,15 @@ import { AccountAdminService, UsageService } from "@accounts-proxy/proxy/applica
 import { DaemonStatusService } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
 import { LoggingErrorReporter } from "@accounts-proxy/proxy/application/error-reporter.ts";
 import type { OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { ModelReferencePort } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
 import { BUILTIN_REFERENCE } from "@accounts-proxy/proxy/adapters/outbound/builtin-model-reference.ts";
 import { MODEL_REFERENCE_URL, ModelReferenceCatalog } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
 import { DescribeModelsService } from "@accounts-proxy/proxy/application/describe-models-service.ts";
 import { ListModelsService } from "@accounts-proxy/proxy/application/list-models-service.ts";
+import { RefreshModelsService } from "@accounts-proxy/proxy/application/refresh-models-service.ts";
+import { RequestModelRefreshService } from "@accounts-proxy/proxy/application/request-model-refresh-service.ts";
 import { LoginService } from "@accounts-proxy/proxy/application/login-service.ts";
 import { HealthService, PassthroughService } from "@accounts-proxy/proxy/application/passthrough-service.ts";
 
@@ -344,6 +347,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const state = new FileKeyValueStore(options.home);
   const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
   const store = new FileCredentialStore(options.home, lock);
+  const maxAgeMs = modelListMaxAgeMs(config);
 
   let claude: ClaudeGraph | undefined;
   if (enabled.includes("claude")) {
@@ -353,7 +357,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       tokenUrl: onOrigin(CLAUDE_ENDPOINTS.tokenUrl, seams.claudeOAuth),
     });
     const session = new ClaudeSession(store, oauth, lock, clock, logger);
-    const catalog = new ClaudeCatalog(transport, session, state, clock, logger, apiBase);
+    const catalog = new ClaudeCatalog(transport, session, state, clock, logger, apiBase, maxAgeMs);
     const identity = new ClaudeIdentity(state, random);
     claude = { oauth, session, identity, catalog, provider: new ClaudeSubscriptionProvider(session, catalog, identity, transport, random, logger, apiBase) };
   }
@@ -378,9 +382,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       provider: new AntigravityProvider(catalog, new AntigravityNative(runner, antigravityState, logger), logger),
     };
   }
-  const reference = new ModelReferenceCatalog(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE);
+  const reference = new ModelReferenceCatalog(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE, maxAgeMs);
   const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger, reference }) : undefined;
-  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference });
+  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference, maxAgeMs });
   return {
     config,
     enabled,
@@ -433,16 +437,18 @@ type GatewayDeps = {
   readonly logger: LoggerPort;
   readonly hash: HashPort;
   readonly reference: ModelReferencePort;
+  /** How long a fetched model list is reused (proxy.yaml `modelListMaxAgeMinutes`). */
+  readonly maxAgeMs: number;
 };
 
 /** The enabled API-key gateways (plan P4.6), each on its production hosts or on the gateways seam. */
 function buildGateways(deps: GatewayDeps): GatewayGraph[] {
-  const { seams, transport, store, state, clock, lock, logger, hash, reference } = deps;
+  const { seams, transport, store, state, clock, lock, logger, hash, reference, maxAgeMs } = deps;
   const at = (url: string) => onOrigin(url, seams.gateways);
   const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[], keySession?: GatewayKeySessionPort) => {
     const spec: GatewaySpec = { ...base, apiBase: at(base.apiBase) };
     const session = keySession ?? new GatewayKeySession(spec.provider, store);
-    const catalog = new GatewayCatalog(spec.provider, source(spec), session, state, clock, logger, builtin);
+    const catalog = new GatewayCatalog(spec.provider, source(spec), session, state, clock, logger, builtin, maxAgeMs);
     return { spec, session, catalog, provider: new GatewayProvider(spec, session, catalog, transport, logger) };
   };
   const out: GatewayGraph[] = [];
@@ -481,6 +487,8 @@ export type Routes = {
   readonly handler: HttpHandler;
   readonly errors: ErrorReporterPort;
   readonly ports: Pick<CliPorts, "models" | "opencode" | "origin" | "access" | "health">;
+  /** The daemon's refresh of the model lists, also run by `models --refresh` when no daemon listens. */
+  readonly refresh: RefreshModelsPort;
 };
 
 export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly string[]): Routes {
@@ -490,6 +498,7 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const access = new AccessService(new FileProxyTokenStore(home), graph.random, new NodeHash());
   const models = new ListModelsService(providers);
   const describe = new DescribeModelsService(models, graph.reference);
+  const refresh = new RefreshModelsService(providers, graph.reference, describe);
   const opencode = new OpencodeConfigCodec();
   const origin: OpencodeOrigin = {
     origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
@@ -500,10 +509,10 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const errors = new LoggingErrorReporter(graph.logger);
   const handler = new RouteHandler(
     [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
-    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, opencode, origin },
+    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, refresh, opencode, origin },
     errors,
   );
-  return { handler, errors, ports: { models: describe, opencode, origin, access, health } };
+  return { handler, errors, refresh, ports: { models: describe, opencode, origin, access, health } };
 }
 
 export async function buildCli(options: ContainerOptions): Promise<{ readonly config: ProxyConfig; readonly driver: Driver }> {
@@ -537,7 +546,8 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     timer: graph.timer,
     logger: graph.logger,
   });
-  const { handler, errors, ports } = buildRoutes(graph, options.home, options.entry);
+  const { handler, errors, refresh, ports } = buildRoutes(graph, options.home, options.entry);
+  const daemonUrl = `http://${LOOPBACK_HOST}:${graph.config.port}`;
   const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
   const commands = proxyCommands(
     {
@@ -545,7 +555,8 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       accounts: new AccountAdminService(graph.store),
       usage: new UsageService(graph.enabled, reporters),
       ...ports,
-      status: new DaemonStatusService(graph.transport, `http://${LOOPBACK_HOST}:${graph.config.port}`),
+      refresh: new RequestModelRefreshService(graph.transport, ports.access, daemonUrl, refresh),
+      status: new DaemonStatusService(graph.transport, daemonUrl),
     },
     { server, shutdown: options.shutdown },
   );
@@ -559,7 +570,7 @@ export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
     new LoginCommand(ports.login),
     new AccountCommand([new AccountListCommand(ports.accounts), new AccountUseCommand(ports.accounts)]),
     new QuotaCommand(ports.usage),
-    new ModelsCommand(ports.models),
+    new ModelsCommand(ports.models, ports.refresh),
     new OpencodeConfigCommand(ports.models, ports.opencode, ports.origin),
     new ServeCommand(daemon, ports.access, ports.health),
     new TokenCommand(ports.access),

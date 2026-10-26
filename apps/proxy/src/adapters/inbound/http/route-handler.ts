@@ -5,6 +5,7 @@
 // plain JSON `{error: {code, message}}`.
 //
 //   /proxy/v1/models     GET: every enabled provider's models in detail (`?provider=<id>`: one provider)
+//   /proxy/v1/models/refresh POST: the same, each list read now from its source (plan 2026-10-26 R2)
 //   /opencode/config.json GET: the opencode v2 configuration of those models
 //   /.well-known/opencode GET: the manifest of `opencode auth login <origin>`
 //
@@ -22,7 +23,7 @@ import { bodyOf, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import type { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import type { DialectCodecPort, EncodedResponse } from "@accounts-proxy/core/ports/inbound/dialect.ts";
 import type { OpencodeConfigPort, OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
-import type { DescribeModelsPort, HealthPort, PassthroughPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import { MODEL_REFRESH_PATH, type DescribeModelsPort, type HealthPort, type PassthroughPort, type RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { ErrorReporterPort } from "@accounts-proxy/core/ports/inbound/diagnostics.ts";
 import { HttpHandler, type InboundRequest, type OutboundResponse } from "@accounts-proxy/proxy/adapters/inbound/http/http-handler.ts";
 
@@ -34,6 +35,7 @@ export type RoutePorts = {
   readonly passthrough: PassthroughPort;
   readonly health: HealthPort;
   readonly describe: DescribeModelsPort;
+  readonly refresh: RefreshModelsPort;
   readonly opencode: OpencodeConfigPort;
   readonly origin: OpencodeOrigin;
 };
@@ -79,7 +81,7 @@ export class RouteHandler extends HttpHandler {
       return encoded({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "ok", providers: this.ports.health.enabledProviders() }) });
     }
     if (request.method === "GET" && request.path === WELL_KNOWN_PATH) return json(this.ports.opencode.manifest(this.ports.origin));
-    const own = request.path === OPENCODE_CONFIG_PATH || request.path === DETAILED_MODELS_PATH;
+    const own = request.path === OPENCODE_CONFIG_PATH || request.path === DETAILED_MODELS_PATH || request.path === MODEL_REFRESH_PATH;
     const codec = this.codecs.find((c) => request.path === c.prefix || request.path.startsWith(`${c.prefix}/`));
     if (codec === undefined && !own) return plainError(new RouteNotFoundError(request.method, request.path));
     try {
@@ -95,11 +97,12 @@ export class RouteHandler extends HttpHandler {
 
   /** The proxy's own token-protected routes (plain JSON errors). */
   private async own(request: InboundRequest): Promise<OutboundResponse> {
-    if (request.method !== "GET") throw new RouteNotFoundError(request.method, request.path);
+    const refresh = request.path === MODEL_REFRESH_PATH;
+    if (request.method !== (refresh ? "POST" : "GET")) throw new RouteNotFoundError(request.method, request.path);
     if (request.path === OPENCODE_CONFIG_PATH) return json(this.ports.opencode.config(await this.ports.describe.describeModels(), this.ports.origin));
     const provider = request.query["provider"];
     if (provider !== undefined && !isProviderId(provider)) throw new InvalidRequestError(`unknown provider ${JSON.stringify(provider)}`);
-    return json({ catalogs: await this.ports.describe.describeModels(provider) });
+    return json({ catalogs: await (refresh ? this.ports.refresh.refreshModels(provider) : this.ports.describe.describeModels(provider)) });
   }
 
   private async route(codec: DialectCodecPort, request: InboundRequest, path: string): Promise<OutboundResponse> {

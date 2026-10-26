@@ -154,6 +154,47 @@
         }
       }
     },
+    "/proxy/v1/models/refresh": {
+      "post": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "refreshModels",
+        "summary": "Reads every enabled provider's model list (or the named one's) and the reference catalog now from their sources, instead of reusing a copy younger than proxy.yaml `modelListMaxAgeMinutes`, and answers the detailed records of GET /proxy/v1/models (plan 2026-10-26 R2).",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "description": "Only this provider.",
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One catalog per provider, as refreshed; a failed read keeps the stored copy, then the built-in list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailedModels"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/PlainError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PlainError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PlainError"
+          }
+        }
+      }
+    },
     "/anthropic/v1/messages": {
       "post": {
         "tags": [

@@ -9,7 +9,7 @@ import { GatewayCatalog } from "@accounts-proxy/provider-gateway/adapters/outbou
 import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
 import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
 import { GatewayProvider } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-provider.ts";
-import { CATALOG_TTL_MS, type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
+import { type GatewayModel, type GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
 import { GatewayCatalogPort, GatewayCatalogSourcePort, type GatewayListing } from "@accounts-proxy/provider-gateway/ports/outbound/gateway.ts";
 import { collect, FixedClock, MemoryCredentialStore, MemoryKeyValueStore, MemoryLogger, ScriptedTransport } from "@accounts-proxy/test-support/fakes.ts";
 
@@ -51,26 +51,44 @@ class Source extends GatewayCatalogSourcePort {
 const BUILTIN: GatewayModel[] = [{ id: "builtin", displayName: "Builtin" }];
 const LIVE: GatewayModel[] = [{ id: "live", displayName: "Live", formats: ["openai-chat"] }];
 const LIVE_JSON = LIVE as unknown as JsonValue;
+const MAX_AGE_MS = 10 * 60_000;
 
 describe("GatewayCatalog (rule G5)", () => {
   const make = (answer: () => readonly GatewayModel[], store = new MemoryKeyValueStore()) => {
     const clock = new FixedClock();
     const logger = new MemoryLogger();
     const source = new Source(answer);
-    const catalog = new GatewayCatalog("cheaper-inference", source, new GatewayKeySession("cheaper-inference", storeWithKey()), store, clock, logger, BUILTIN);
+    const catalog = new GatewayCatalog("cheaper-inference", source, new GatewayKeySession("cheaper-inference", storeWithKey()), store, clock, logger, BUILTIN, MAX_AGE_MS);
     return { catalog, clock, logger, source, store };
   };
 
-  test("live (with the key), then memory within 24 h, then a refresh", async () => {
+  test("live (with the key), then memory within the max age, then read again", async () => {
     const { catalog, clock, source, store } = make(() => LIVE);
     expect(await catalog.listing()).toEqual({ source: "live", models: LIVE });
     expect(source.keys).toEqual(["ci_live_1"]);
     expect(store.values.get("cheaper-inference/model-catalog") as unknown).toEqual({ version: 2, fetchedAt: clock.time, models: LIVE });
     expect(await catalog.listing()).toEqual({ source: "live", models: LIVE });
     expect(source.keys).toHaveLength(1);
-    clock.time += CATALOG_TTL_MS;
+    clock.time += MAX_AGE_MS - 1;
+    await catalog.listing();
+    expect(source.keys).toHaveLength(1);
+    clock.time += 1;
     await catalog.listing();
     expect(source.keys).toHaveLength(2);
+  });
+
+  test("refresh reads the list now, even with a fresh copy; a failed refresh falls back to the copy", async () => {
+    let fail = false;
+    const { catalog, source } = make(() => {
+      if (fail) throw new Error("down");
+      return LIVE;
+    });
+    await catalog.listing();
+    expect(await catalog.refresh()).toEqual({ source: "live", models: LIVE });
+    expect(source.keys).toHaveLength(2);
+    fail = true;
+    expect(await catalog.refresh()).toEqual({ source: "cache", models: LIVE });
+    expect(source.keys).toHaveLength(3);
   });
 
   test("a fresh stored copy is used without a fetch; a stale one is the fallback when the live list fails", async () => {
@@ -106,6 +124,9 @@ class FixedListing extends GatewayCatalogPort {
   }
   async listing(): Promise<GatewayListing> {
     return { source: "live", models: this.models };
+  }
+  async refresh(): Promise<GatewayListing> {
+    return { source: "live", models: [...this.models, { id: "refreshed", displayName: "Refreshed" }] };
   }
 }
 
@@ -144,6 +165,11 @@ describe("GatewayProvider", () => {
       ],
     });
     expect((await make({ ...SPEC, uniformFormats: ["openai-chat"] }).provider.models()).formats).toEqual(["openai-chat"]);
+  });
+
+  test("refreshModels: the catalog's refreshed list, in the same shape", async () => {
+    const { provider } = make();
+    expect((await provider.refreshModels()).models.map((m) => m.address.model)).toEqual(["chat-only", "unknown", "refreshed"]);
   });
 
   test("passthrough: the vendor endpoint, the bare model, the key header, the client's signal; the stream unchanged (G1–G3)", async () => {

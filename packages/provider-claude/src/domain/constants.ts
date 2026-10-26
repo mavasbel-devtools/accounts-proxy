@@ -47,5 +47,8 @@ export const ANTHROPIC_IDENTITY = CLAUDE_PROFILE.identityText;
 /** [P] credentialExpired default buffer: refresh when fewer than 120 s remain. */
 export const EXPIRY_BUFFER_MS = 120_000;
 
-/** [P] AnthropicModelsApiAdapter / RefreshModelCatalogUseCase catalog contract (AGENTS.md §9). */
-export const CATALOG = { pageSize: 100, maxPages: 10, timeoutMs: 3_000, ttlMs: 24 * 60 * 60 * 1000 } as const;
+/**
+ * [P] AnthropicModelsApiAdapter / RefreshModelCatalogUseCase catalog contract (AGENTS.md §9). The plugin's 24 h cache
+ * age is the proxy's default `modelListMaxAgeMinutes` (core DEFAULT_MODEL_LIST_MAX_AGE_MINUTES), configurable.
+ */
+export const CATALOG = { pageSize: 100, maxPages: 10, timeoutMs: 3_000 } as const;
