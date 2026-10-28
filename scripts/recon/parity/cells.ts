@@ -26,8 +26,8 @@ export type Cell = {
   readonly daemon?: {
     /** `providers:` entries appended to the daemon's proxy.yaml. */
     readonly providers: string;
-    /** Account files placed in the data directory before the daemon starts (a test account, never a real one). */
-    readonly accountFiles: Readonly<Record<string, unknown>>;
+    /** Provider pools written to the daemon's accounts file before it starts (a test account, never a real one). */
+    readonly pools: Readonly<Record<string, unknown>>;
   };
   /** Transport residual headers or ordering differences precluded by runtime language difference (Go vs Bun). */
   readonly ignoreHeaders?: ReadonlySet<string>;
@@ -116,8 +116,8 @@ const opencode: Cell = {
     "both sides. The proxy is signed in to a Console workspace whose config names `x-opencode-org-id`.",
   daemon: {
     providers: "  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n",
-    accountFiles: {
-      "accounts-opencode.json": {
+    pools: {
+      opencode: {
         activeId: "parity/workspace",
         accounts: [
           {
@@ -170,8 +170,8 @@ const openai: Cell = {
     "on both sides. The proxy is signed in to a test ChatGPT account.",
   daemon: {
     providers: "  openai: {enabled: true, acknowledgeTermsRisk: true}\n",
-    accountFiles: {
-      "accounts-openai.json": {
+    pools: {
+      openai: {
         activeId: "parity-client",
         accounts: [
           {

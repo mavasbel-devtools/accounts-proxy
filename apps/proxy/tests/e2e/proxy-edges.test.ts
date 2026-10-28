@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { join } from "node:path";
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { accountsFile, BOTH_PROVIDERS, logFiles, makeHome, runProxy, startDaemon, usageOf, type Daemon, type Home, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams, stalledStream } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -43,7 +43,7 @@ async function serve(env: Record<string, string> = {}): Promise<Session> {
 }
 const auth = (s: Session) => ({ "x-api-key": s.token });
 const claudeBody = (extra: Record<string, unknown> = {}) => JSON.stringify({ model: "claude/claude-opus-4-8", max_tokens: 64, messages: [{ role: "user", content: "hi" }], ...extra });
-const proxyLog = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
+const proxyLog = () => proxyLogOf(home!);
 const errorOf = async (res: Response) => ((await res.json()) as { error: { type?: string; status?: string; message: string } }).error;
 async function until(condition: () => boolean, what: string): Promise<void> {
   for (let i = 0; i < 1000; i++) {
@@ -78,6 +78,27 @@ describe("HTTP edges", () => {
     const fits = await fetch(`${s.url}/anthropic${MESSAGES}`, { method: "POST", headers: auth(s), body: new Blob([small]).stream() });
     expect(fits.status).toBe(200);
     await fits.text();
+  });
+
+  test("logs.maxFileMegabytes: past the size a new usage file starts; after SIGTERM every record is on disk and whole (L2, L3a, L6)", async () => {
+    home = await makeHome(`logs: {maxFileMegabytes: 1}\n${CLAUDE_ONLY}`);
+    await login("claude");
+    const s = await serve();
+    const big = claudeBody({ system: "s".repeat(400_000) });
+    for (let i = 0; i < 4; i++) {
+      const answer = await fetch(`${s.url}/anthropic${MESSAGES}`, { method: "POST", headers: auth(s), body: big });
+      expect(answer.status).toBe(200);
+      await answer.text();
+    }
+    const stopped = await daemon!.stop();
+    daemon = undefined;
+    expect(stopped.code).toBe(0);
+    const files = logFiles(home, "usage");
+    expect(files.length).toBeGreaterThanOrEqual(2);
+    expect(files.some((name) => /-usage\.1\.jsonl$/.test(name))).toBe(true);
+    const records = usageOf(home);
+    expect(records.filter((r) => r["kind"] === "client-request")).toHaveLength(4);
+    expect(records.filter((r) => r["kind"] === "client-response")).toHaveLength(4);
   });
 
   test("unmatched routes are 404s in the dialect's shape; a request without a token is a 401", async () => {
@@ -207,7 +228,7 @@ describe("HTTP edges", () => {
     expect(quiet.status).toBe(200);
     expect(await quiet.text()).toContain("ping");
     await until(() => proxyLog().includes("response stream failed"), "the stream failure report");
-    expect(proxyLog()).toContain("sent nothing for 500 ms");
+    expect(await loggedEventually(home!, "sent nothing for 500 ms")).toContain("sent nothing for 500 ms");
   });
 
   test("hook: an address the OS cannot bind is fatal with the OS error", async () => {
@@ -234,7 +255,7 @@ describe("logins", () => {
     expect([denied.code, denied.stderr]).toEqual([1, "error: claude: authorization failed: access_denied; run `accounts-proxy login claude`\n"]);
     const paste = (answer: (state: string) => string) =>
       run(["login", "claude", "--manual"], {}, async (stdout) => {
-        for (let i = 0; i < 500 && !stdout().includes("code> "); i++) await Bun.sleep(10);
+        for (let i = 0; i < 3000 && !stdout().includes("code> "); i++) await Bun.sleep(10);
         const url = new URL(stdout().split("\n").find((l) => l.startsWith("http"))!);
         return `${answer(url.searchParams.get("state")!)}\n`;
       });
@@ -278,10 +299,13 @@ describe("configuration and stored files", () => {
     expect((await run(["models", "claude"])).stderr).toBe("error: claude is disabled; enable it with acknowledgeTermsRisk: true in proxy.yaml\n");
   });
 
-  test("an accounts file with a BOM is read; one that is a directory is an error", async () => {
+  test("an accounts file and a token file with a BOM are read; an accounts file that is a directory is an error", async () => {
     home = await makeHome(CLAUDE_ONLY);
     await login("claude");
-    const file = join(home.dir, "accounts-claude.json");
+    const token = (await run(["token"])).stdout;
+    writeFileSync(join(home.dir, "token.json"), `\uFEFF${readFileSync(join(home.dir, "token.json"), "utf8")}`);
+    expect(await run(["token"])).toEqual({ code: 0, stdout: token, stderr: "" });
+    const file = accountsFile(home);
     writeFileSync(file, `\uFEFF${readFileSync(file, "utf8")}`);
     expect((await run(["account", "list", "claude"])).code).toBe(0);
     rmSync(file);

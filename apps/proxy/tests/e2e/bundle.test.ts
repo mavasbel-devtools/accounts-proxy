@@ -23,7 +23,7 @@ afterAll(() => {
   removeTemporary(home.dir);
 });
 
-const env = () => ({ ...process.env, ACCOUNTS_PROXY_HOME: home.dir });
+const env = () => ({ ...process.env, ACCOUNTS_PROXY_HOME: home.dir, ACCOUNTS_PROXY_ACCOUNTS_FILE: join(home.dir, "accounts.json") });
 
 describe("built bundle", () => {
   test("help", async () => {

@@ -2,7 +2,7 @@
 // preload (AGENTS.md §5): every source file the process loads is instrumented, and the process writes its coverage on
 // a normal exit. The child gets its own data directory, the replay seams and a PATH whose first `xdg-open` is the fake
 // browser. A daemon is stopped with SIGTERM, which it handles (ProcessShutdownSignal), so it exits normally.
-import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { makeTemporary, temporaryRoot } from "@accounts-proxy/test-support/temporary.ts";
@@ -13,8 +13,100 @@ const PRELOAD = join(repo, "scripts", "gate", "e2e-coverage-preload.ts");
 
 export type Home = { readonly dir: string; readonly port: number; readonly browserLog: string; readonly bin: string };
 
-const claimDir = join(temporaryRoot(), "accounts-proxy-claimed-ports");
+/** The accounts file of a test home (plan 2026-10-26-23-32): every e2e process is pointed at it. */
+export const accountsFile = (home: Home) => join(home.dir, "accounts.json");
+
+/** The log folder of a test home: `logs/` next to its accounts file (plan 2026-10-27-23-29 L1). */
+export const logsDir = (home: Home) => join(home.dir, "logs");
+
+/** The log files of one kind, every process's, in name order (`<day>-<pid>-<kind>[.<n>].<ext>`, L2). */
+export function logFiles(home: Home, kind: "usage" | "proxy"): string[] {
+  if (!existsSync(logsDir(home))) return [];
+  const pattern = new RegExp(`^\\d{4}-\\d{2}-\\d{2}-\\d+-${kind}(\\.\\d+)?\\.(jsonl|log)$`);
+  return readdirSync(logsDir(home)).filter((name) => pattern.test(name)).sort();
+}
+
+/** Every daemon-log line of a home, all processes (the files a process wrote are complete once it has exited). */
+export function proxyLogOf(home: Home): string {
+  return logFiles(home, "proxy").map((name) => readFileSync(join(logsDir(home), name), "utf8")).join("");
+}
+
+/**
+ * Waits until the proxy log of a home contains `text` (5 s at most): a running daemon's winston stream writes a line
+ * shortly after the answer that caused it, so a log read right after a response can precede the line (L3a).
+ */
+export async function loggedEventually(home: Home, text: string): Promise<string> {
+  for (let i = 0; i < 100; i++) {
+    const log = proxyLogOf(home);
+    if (log.includes(text)) return log;
+    await Bun.sleep(50);
+  }
+  return proxyLogOf(home);
+}
+
+/** Every usage record of a home, all processes, parsed. */
+export function usageOf(home: Home): Record<string, unknown>[] {
+  return logFiles(home, "usage")
+    .flatMap((name) => readFileSync(join(logsDir(home), name), "utf8").split("\n"))
+    .filter((line) => line !== "")
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
+/** Waits (up to 5 s) until a running daemon's log has the text: the daemon writes its files asynchronously. */
+export async function proxyLogWith(home: Home, text: string): Promise<string> {
+  for (let i = 0; i < 500 && !proxyLogOf(home).includes(text); i++) await Bun.sleep(10);
+  return proxyLogOf(home);
+}
+
+type StoredPool = { accounts: { provider: string; id: string; label: string; needsLogin?: string; data: Record<string, unknown> }[]; activeId?: string };
+
+/** One provider's pool as stored in the home's accounts file (undefined when the provider has none). */
+export function readPool(home: Home, provider: string): StoredPool | undefined {
+  if (!existsSync(accountsFile(home))) return undefined;
+  return (JSON.parse(readFileSync(accountsFile(home), "utf8")) as { providers: Record<string, StoredPool> }).providers[provider];
+}
+
+/** Sets one provider's pool in the home's accounts file (0600), keeping the other providers. */
+export function writePool(home: Home, provider: string, pool: unknown): void {
+  const current = existsSync(accountsFile(home)) ? (JSON.parse(readFileSync(accountsFile(home), "utf8")) as { providers: Record<string, unknown> }) : { providers: {} };
+  writeFileSync(accountsFile(home), JSON.stringify({ schema: "accounts-proxy/accounts/1", providers: { ...current.providers, [provider]: pool } }), { mode: 0o600 });
+}
+
+// A claim is a file holding the claiming test process's pid, so parallel test processes never share a port. A claim
+// whose process has exited is stale and taken over: claims are never left to pile up across runs (the former
+// directory-per-port claims were never released and, on a disk-backed /tmp, came to cover every port the kernel hands
+// out, so freePort looped forever).
+const claimDir = join(temporaryRoot(), "accounts-proxy-port-claims");
 mkdirSync(claimDir, { recursive: true });
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+function claim(port: number): boolean {
+  const file = join(claimDir, String(port));
+  try {
+    writeFileSync(file, String(process.pid), { flag: "wx" });
+    return true;
+  } catch {
+    const owner = Number.parseInt(readFileSync(file, "utf8"), 10);
+    if (owner === process.pid || (Number.isInteger(owner) && alive(owner))) return false;
+    // Only one process wins the rename of a stale claim, so a fresh claim is never removed by a slower process.
+    const stale = `${file}.stale-${process.pid}`;
+    try {
+      renameSync(file, stale);
+    } catch {
+      return false;
+    }
+    rmSync(stale, { force: true });
+    return claim(port);
+  }
+}
 
 export async function freePort(): Promise<number> {
   while (true) {
@@ -22,12 +114,8 @@ export async function freePort(): Promise<number> {
     await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", () => resolve()));
     const port = (probe.address() as { port: number }).port;
     await new Promise<void>((resolve) => probe.close(() => resolve()));
-    try {
-      mkdirSync(join(claimDir, String(port)));
-      return port;
-    } catch {
-      await Bun.sleep(5);
-    }
+    if (claim(port)) return port;
+    await Bun.sleep(5);
   }
 }
 
@@ -54,7 +142,8 @@ function environment(home: Home, extra: Record<string, string>): Record<string, 
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith("ACCOUNTS_PROXY_TEST_")) env[k] = v;
   // XDG_DATA_HOME: OpenCode's credential file (`login --from-opencode`) is read only from inside the home, never the user's.
-  const merged: Record<string, string> = { ...env, ACCOUNTS_PROXY_HOME: home.dir, ACCOUNTS_PROXY_E2E_BROWSER_LOG: home.browserLog, XDG_DATA_HOME: join(home.dir, "xdg-data"), PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
+  // ACCOUNTS_PROXY_ACCOUNTS_FILE: the accounts file (and its locks) inside the home, never the repository's .cache/.
+  const merged: Record<string, string> = { ...env, ACCOUNTS_PROXY_HOME: home.dir, ACCOUNTS_PROXY_ACCOUNTS_FILE: accountsFile(home), ACCOUNTS_PROXY_E2E_BROWSER_LOG: home.browserLog, XDG_DATA_HOME: join(home.dir, "xdg-data"), PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
   for (const [k, v] of Object.entries(merged)) if (v === "") delete merged[k];
   return merged;
 }

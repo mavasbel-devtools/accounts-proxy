@@ -4,13 +4,13 @@
 // browser logins) receives the request the client would send to it, and a wire tap between the daemon and the replay
 // upstream records the proxy's outbound request byte for byte. No provider is contacted.
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { canonicalise, type WireRequest } from "@accounts-proxy/scripts/recon/parity/canon.ts";
 import { cellOf } from "@accounts-proxy/scripts/recon/parity/cells.ts";
 import { diffRequests, type Gap } from "@accounts-proxy/scripts/recon/parity/diff.ts";
 import { WireTap, type TappedRequest } from "@accounts-proxy/scripts/recon/parity/tap.ts";
-import { BOTH_PROVIDERS, startSignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { BOTH_PROVIDERS, startSignedInDaemon, writePool } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
@@ -103,7 +103,7 @@ export async function compare(runDir: string, seqs: readonly number[]): Promise<
   const yaml = `${BOTH_PROVIDERS}${setups.map((setup) => setup.providers).join("")}`;
   const env = await startSignedInDaemon(seams, yaml, (home) => {
     for (const setup of setups) {
-      for (const [file, content] of Object.entries(setup.accountFiles)) writeFileSync(join(home.dir, file), JSON.stringify(content), { mode: 0o600 });
+      for (const [provider, pool] of Object.entries(setup.pools)) writePool(home, provider, pool);
     }
   });
   try {

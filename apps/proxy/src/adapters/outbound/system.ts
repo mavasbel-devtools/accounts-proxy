@@ -1,9 +1,6 @@
 // Runtime-backed system ports.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { appendFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { ClockPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
-import { PRIVATE_DIRECTORY_MODE, PRIVATE_FILE_MODE } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
+import { ClockPort, HashPort, LoggerPort, RandomPort, TimerPort, type LogStreamPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 
 export class SystemClock extends ClockPort {
   now(): number {
@@ -38,12 +35,13 @@ export function logLine(now: number, level: string, message: string): string {
 }
 
 /**
- * Append-only file log: ISO timestamp, level, message. Never writes to the console (the CLI owns the terminal) and
- * never throws into the caller — a logging failure must not break a request or a login. Callers never pass secrets.
+ * The daemon log: ISO timestamp, level, message, one line each into the process's proxy log stream (plan
+ * 2026-10-27-23-29 L2). Never writes to the console (the CLI owns the terminal) and never throws into the caller — a
+ * logging failure must not break a request or a login. Callers never pass secrets.
  */
-export class FileLogger extends LoggerPort {
+export class StreamLogger extends LoggerPort {
   constructor(
-    private readonly path: string,
+    private readonly stream: LogStreamPort,
     private readonly clock: ClockPort,
   ) {
     super();
@@ -61,11 +59,6 @@ export class FileLogger extends LoggerPort {
   }
 
   private write(level: string, message: string): void {
-    try {
-      mkdirSync(dirname(this.path), { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
-      appendFileSync(this.path, `${logLine(this.clock.now(), level, message)}\n`, { mode: PRIVATE_FILE_MODE });
-    } catch {
-      // logging is best-effort by contract
-    }
+    this.stream.line(logLine(this.clock.now(), level, message));
   }
 }

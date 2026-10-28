@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { request } from "node:http";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { captured, openRouterExample, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -33,10 +33,10 @@ async function serve(): Promise<{ url: string; token: string }> {
   daemon = await startDaemon(home!, upstreams.seamEnv());
   return { url: daemon.url, token };
 }
-const pool = (provider: string) => JSON.parse(readFileSync(join(home!.dir, `accounts-${provider}.json`), "utf8")) as { activeId: string; accounts: { id: string; data: { apiKey: string } }[] };
+const pool = (provider: string) => readPool(home!, provider)! as unknown as { activeId: string; accounts: { id: string; data: { apiKey: string } }[] };
 /** The proxy's own account file, written directly (a key the vendor's check could not confirm without a capture). */
 function writeKeyAccount(provider: string, data: Record<string, unknown>): void {
-  writeFileSync(join(home!.dir, `accounts-${provider}.json`), JSON.stringify({ accounts: [{ provider, id: "key-e2e", label: "key-e2e", data }], activeId: "key-e2e" }), { mode: 0o600 });
+  writePool(home!, provider, { accounts: [{ provider, id: "key-e2e", label: "key-e2e", data }], activeId: "key-e2e" });
 }
 /** The captured OpenCode gateway refusal (probe z0), as a scripted answer. */
 const zenRefusal = () => {
@@ -130,7 +130,7 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     expect([code.body, code.headers["content-type"], code.headers["user-agent"]]).toEqual(["client_id=accounts-proxy&supports_org_scope=true", "application/x-www-form-urlencoded", "accounts-proxy/0.1.0"]);
     const polls = upstreams.find("/console/auth/device/token");
     expect(polls.map((p) => p.body).slice(-1)).toEqual(["grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=%3CREDACTED%3Adevice_code%3E&client_id=accounts-proxy"]);
-    expect(existsSync(join(home.dir, "accounts-opencode.json"))).toBe(false);
+    expect(readPool(home, "opencode")).toBeUndefined();
   });
 
   test("device login edges: a browser that cannot start is only warned; the Console refusing the code or the poll fails the login; --manual/--new do not apply", async () => {
@@ -138,7 +138,7 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     upstreams.script("/console/auth/device/token", zenRefusal);
     const refusedPoll = await run(["login", "opencode-go", "--timeout-seconds", "30"], undefined, { PATH: join(home.dir, "no-such-dir") });
     expect([refusedPoll.code, refusedPoll.stderr]).toEqual([1, expect.stringContaining("error: opencode upstream HTTP 403: ")]);
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN opencode-go: could not open the browser");
+    expect(await loggedEventually(home, "WARN opencode-go: could not open the browser")).toContain("WARN opencode-go: could not open the browser");
     upstreams.script("/console/auth/device/code", zenRefusal);
     expect(await run(["login", "opencode-go"])).toMatchObject({ code: 1, stderr: expect.stringContaining("error: opencode upstream HTTP 403: ") });
     // A web page instead of the JSON answer (the committed Console API page stands for one).
@@ -157,15 +157,15 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
     expect(await run(["login", "opencode", "--key"], "oc_sk_e2e\n")).toMatchObject({ code: 1, stderr: expect.stringContaining("error: opencode upstream HTTP 400: ") });
     const refused = await run(["login", "opencode", "--key"], "oc_sk_refused\n");
     expect([refused.code, refused.stderr]).toEqual([1, 'error: opencode: the Console refused the credential: HTTP 401 {"_tag":"Unauthorized"}; run `accounts-proxy login opencode`\n']);
-    expect(existsSync(join(home.dir, "accounts-opencode.json"))).toBe(false);
+    expect(readPool(home, "opencode")).toBeUndefined();
     const login = await run(["login", "opencode-go", "--key"], "oc_sk_e2e\n");
     expect([login.code, login.stdout]).toEqual([0, expect.stringMatching(/^OpenCode Console API key \(opencode\.ai Console → Keys → service account → Add API Key; starts oc_sk_\): \nsigned in to opencode-go as key-[0-9a-f]{8} \(active account\)\n$/)]);
     expect(login.stdout).not.toContain("oc_sk_e2e");
     const config = upstreams.find("/console/api/v2/config").at(-1)!;
     expect([config.headers["authorization"], config.headers["user-agent"]]).toEqual(["Bearer oc_sk_e2e", "accounts-proxy/0.1.0"]);
-    const stored = JSON.parse(readFileSync(join(home.dir, "accounts-opencode.json"), "utf8")) as { accounts: { provider: string; data: Record<string, unknown> }[] };
+    const stored = readPool(home, "opencode")! as { accounts: { provider: string; data: Record<string, unknown> }[] };
     expect([stored.accounts[0]!.provider, stored.accounts[0]!.data]).toEqual(["opencode", { workspaceHeaders: { opencode: { "x-opencode-org-id": "org_..." } }, apiKey: "oc_sk_e2e" }]);
-    expect(existsSync(join(home.dir, "accounts-opencode-go.json"))).toBe(false);
+    expect(readPool(home, "opencode-go")).toBeUndefined();
     expect((await run(["account", "list", "opencode"])).stdout).toMatch(/^\* key-[0-9a-f]{8}\n$/);
     expect((await run(["account", "list", "opencode-go"])).stdout).toMatch(/^\* key-[0-9a-f]{8}\n$/);
   });
@@ -315,7 +315,7 @@ describe("API keys imported from OpenCode (K5, rule Z22) and typed keys (K3)", (
     const imported = await run(["login", "openrouter", "--from-opencode"]);
     expect([imported.code, imported.stdout]).toEqual([0, expect.stringMatching(/^signed in to openrouter as .+ \(active account\)\n$/)]);
     expect(upstreams.find("/api/v1/key").at(-1)!.headers["authorization"]).toBe("Bearer sk-or-v1-imported");
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("INFO openrouter: API key imported from opencode");
+    expect(await loggedEventually(home, "INFO openrouter: API key imported from opencode")).toContain("INFO openrouter: API key imported from opencode");
     const typed = await run(["login", "openrouter", "--key"], "sk-or-v1-typed\n");
     expect([typed.code, typed.stdout.startsWith("OpenRouter API key (https://openrouter.ai/keys): \nsigned in to openrouter as ")]).toEqual([0, true]);
     expect(pool("openrouter").accounts.map((a) => a.data.apiKey).sort()).toEqual(["sk-or-v1-imported", "sk-or-v1-typed"]);
@@ -328,7 +328,7 @@ describe("API keys imported from OpenCode (K5, rule Z22) and typed keys (K3)", (
     expect(await run(["login", "openrouter", "--key", "--from-opencode"])).toMatchObject({ code: 2, stderr: expect.stringContaining("--key and --from-opencode exclude each other") });
     upstreams.script("/api/v1/key", documented("/key", "get", "401"));
     expect(await run(["login", "openrouter", "--key"], "sk-or-v1-bad\n")).toMatchObject({ code: 1, stderr: expect.stringContaining("error: openrouter: the key was refused: HTTP 401") });
-  });
+  }, 180_000); // twelve instrumented CLI processes, ~31 s alone; measured past 60 s under the 4x-parallel e2e run on a loaded host
 });
 
 describe("gateway edges", () => {
@@ -363,10 +363,10 @@ describe("gateway edges", () => {
       "# opencode: 124 models (built-in list)",
       "# opencode-go: 31 models (built-in list)",
     ]);
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))");
+    expect(await loggedEventually(home, "WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))")).toContain("WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))");
     // The built-in copy of the reference catalog still names the models and gives their formats.
     expect(listed.stdout).toContain("opencode/big-pickle  Big Pickle  context 200000 / output 32000\n");
-    const log = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
+    const log = proxyLogOf(home);
     expect(log).toContain("WARN model reference: http://127.0.0.1:");
     expect(log).toContain("/api.json HTTP 403)");
     expect(log).toContain("WARN openrouter: live model list unavailable (model list HTTP 500)");
@@ -382,7 +382,7 @@ describe("gateway edges", () => {
     chmodSync(join(home.dir, "state", "opencode"), 0o500);
     chmodSync(join(home.dir, "state", "opencode", "model-catalog.json"), 0o000);
     expect((await run(["models", "opencode"])).stdout.split("\n")[0]).toBe("# opencode: 124 models (live catalog)");
-    const warned = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
+    const warned = proxyLogOf(home);
     expect(warned).toContain("WARN opencode: model list cache unreadable");
     expect(warned).toContain("WARN opencode: model list cache write failed");
     chmodSync(join(home.dir, "state", "opencode", "model-catalog.json"), 0o600);
@@ -425,7 +425,7 @@ describe("cheaper-inference (rules C1–C9)", () => {
     // A captured gateway refusal (probe z0) stands for any non-200 answer: only the status is read.
     upstreams.script("/public/models", zenRefusal);
     expect((await run(["models", "cheaper-inference"])).stdout.split("\n")[0]).toBe("# cheaper-inference: 91 models (built-in list)");
-    expect(readFileSync(join(home.dir, "logs", "proxy.log"), "utf8")).toContain("WARN cheaper-inference: live model list unavailable (model list HTTP 403)");
+    expect(await loggedEventually(home, "WARN cheaper-inference: live model list unavailable (model list HTTP 403)")).toContain("WARN cheaper-inference: live model list unavailable (model list HTTP 403)");
   });
 
   test("a refused key stores nothing; without an account requests need a login; disabled gateways name enabled: true", async () => {

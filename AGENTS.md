@@ -99,7 +99,14 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   endpoint polled every interval (+5 s after `slow_down`). `opencode` and `opencode-go` share one account, stored as
   `opencode`. Device tokens renew under the Phase H rules (single-use refresh tokens, Z18); a key never renews. The
   credential is checked by reading the workspace config (`GET /console/api/v2/config`), whose headers the requests carry.
-- **Own credentials.** The proxy's credentials live only in `~/.local/share/accounts-proxy/`. The proxy never
+- **Own credentials** (amended by [plan 2026-10-26-23-32](docs/plans/2026-10-26-23-32-accounts-file-plan.md)). The
+  proxy's accounts (sign-ins, API keys, the active account of every provider) live only in one file,
+  `<repo>/.cache/accounts.json` (0600, `.cache/` 0700 and ignored by git), or the absolute path in
+  `ACCOUNTS_PROXY_ACCOUNTS_FILE`; every read takes it from the file, so a hand edit applies to the next request. Every
+  writer takes the locks in `<dir of the file>/locks/` (one store lock `accounts`, the renewal locks), writes atomically
+  (temp file + rename) and re-reads before the rename, applying its change again over a hand edit saved meanwhile. A
+  file that is not valid is an error naming it, never overwritten. The rest of the proxy's data stays in
+  `~/.local/share/accounts-proxy/` (`ACCOUNTS_PROXY_HOME`). The proxy never
   writes Claude Code's, OpenCode's or the plugins' credential files, and reads one only for
   `login <gateway> --from-opencode` (decision K5): OpenCode's `auth.json`, read once, from which an **API key** only is
   imported, never a sign-in token (rule Z22).
@@ -156,7 +163,8 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 - **Hermetic test hooks** (only with every upstream seam set; validated; read only by `main()`):
   `ACCOUNTS_PROXY_TEST_PLATFORM`, `ACCOUNTS_PROXY_TEST_UPSTREAM_IDLE_MS`, `ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS`,
   `ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES=1`, `ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED=1` (binds RFC 5737
-  `192.0.2.1`, so listen fails). They exist only for paths no outside test can otherwise reach.
+  `192.0.2.1`, so listen fails), `ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED=<n>` (the first n accounts-file writes see a hand
+  edit before their rename). They exist only for paths no outside test can otherwise reach.
 - **Recursive deletes** in tests go only through `tests/support/temporary.ts#removeTemporary`, which refuses anything
   outside `os.tmpdir()`.
 - **`bun run verify`** runs typecheck → unit+component+arch coverage gate → build → e2e gate → merged gate → docs lint.

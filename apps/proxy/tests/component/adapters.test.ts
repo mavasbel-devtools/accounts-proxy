@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -9,14 +9,15 @@ import { ConfigError } from "@accounts-proxy/core/domain/config.ts";
 import { base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.ts";
 import { InvalidRequestError, UpstreamTimeoutError, UpstreamUnreachableError } from "@accounts-proxy/core/domain/errors.ts";
 import { readAll, UPSTREAM_IDLE_TIMEOUT_MS } from "@accounts-proxy/core/domain/wire.ts";
-import { FixedClock } from "@accounts-proxy/test-support/fakes.ts";
+import { FixedClock, RecordingLock } from "@accounts-proxy/test-support/fakes.ts";
+import { PROXY_LOG, WinstonLogStream } from "@accounts-proxy/proxy/adapters/outbound/log-files.ts";
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { browserCommand, SystemBrowserLauncher, type Spawner } from "@accounts-proxy/proxy/adapters/outbound/browser-launcher.ts";
 import { FetchTransport, type FetchFunction, type FetchInit } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
 import { DEFAULT_LOCK_OPTIONS, FileLock, LockTimeoutError, vanishingStatFs } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
-import { FileCredentialStore, FileKeyValueStore, FileProxyTokenStore, StoreCorruptError, writeJsonAtomic } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
+import { ACCOUNTS_FILE_SCHEMA, ACCOUNTS_WRITE_ATTEMPTS, AccountsFileChangedError, AccountsFileStore, editedAccountsFs, FileKeyValueStore, FileProxyTokenStore, StoreCorruptError, writeJsonAtomic, type AccountsFileFs } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { CallbackTimeoutError, LoopbackCallbackServer, LoopbackCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/loopback-callback-server.ts";
-import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
+import { CryptoRandom, NodeHash, StreamLogger, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
 import { TerminalManualCode } from "@accounts-proxy/proxy/adapters/outbound/terminal-manual-code.ts";
 import { TerminalSecretPrompt } from "@accounts-proxy/proxy/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@accounts-proxy/proxy/adapters/outbound/yaml-config-file.ts";
@@ -28,82 +29,158 @@ afterEach(() => {
   dir = undefined;
 });
 const temp = () => (dir = makeTemporary("proxy-adapters"));
-const credentialStore = (root: string) => new FileCredentialStore(root, new FileLock(root, new SystemClock(), new SystemTimer(), { ...DEFAULT_LOCK_OPTIONS, pollMs: 2 }, nodeFs));
+const lockAt = (root: string) => new FileLock(root, new SystemClock(), new SystemTimer(), { ...DEFAULT_LOCK_OPTIONS, pollMs: 2 }, nodeFs);
+const credentialStore = (root: string, fs: AccountsFileFs = nodeFs) => new AccountsFileStore(join(root, "accounts.json"), lockAt(root), fs);
+const fileOf = (store: AccountsFileStore) => JSON.parse(readFileSync(store.path, "utf8")) as { schema: string; providers: Record<string, unknown> };
 
 describe("file stores", () => {
-  test("credential pool: missing → empty; atomic round trip; 0600 where supported; BOM tolerated", async () => {
+  test("accounts file: missing → empty; one file for every provider; atomic round trip; 0600; BOM tolerated", async () => {
     const store = credentialStore(temp());
     expect(await store.load("antigravity")).toBe(EMPTY_POOL);
     const pool = upsertAccount(EMPTY_POOL, { provider: "antigravity", id: "me@x", label: "me@x", data: { tokens: { accessToken: "a" } } });
     expect(await store.update("antigravity", () => pool)).toBe(pool);
+    const key = upsertAccount(EMPTY_POOL, { provider: "openrouter", id: "k", label: "k", data: { apiKey: "sk" } });
+    await store.update("openrouter", () => key);
     expect(await store.load("antigravity")).toEqual(pool);
-    const path = store.path("antigravity");
-    expect(path).toBe(join(dir!, "accounts-antigravity.json"));
-    if (process.platform !== "win32") expect(statSync(path).mode & 0o777).toBe(0o600);
-    writeFileSync(path, `\uFEFF${readFileSync(path, "utf8")}`);
+    expect(fileOf(store)).toEqual({ schema: ACCOUNTS_FILE_SCHEMA, providers: { antigravity: pool, openrouter: key } });
+    expect(store.path).toBe(join(dir!, "accounts.json"));
+    if (process.platform !== "win32") expect(statSync(store.path).mode & 0o777).toBe(0o600);
+    writeFileSync(store.path, `\uFEFF${readFileSync(store.path, "utf8")}`);
     expect(await store.load("antigravity")).toEqual(pool);
     await store.update("antigravity", () => ({ accounts: pool.accounts }));
     expect(await store.load("antigravity")).toEqual({ accounts: pool.accounts });
+    await store.update("antigravity", () => ({ accounts: [] }));
+    expect(fileOf(store)).toEqual({ schema: ACCOUNTS_FILE_SCHEMA, providers: { openrouter: key } });
   });
 
-  test("update: a change returning the same pool writes nothing; needsLogin round-trips", async () => {
+  test("update: a change returning the same pool writes nothing; needsLogin round-trips; other keys are kept", async () => {
     const store = credentialStore(temp());
     expect(await store.update("claude", (p) => p)).toBe(EMPTY_POOL);
-    expect(() => statSync(store.path("claude"))).toThrow();
+    expect(() => statSync(store.path)).toThrow();
+    writeFileSync(store.path, JSON.stringify({ schema: ACCOUNTS_FILE_SCHEMA, note: "mine", providers: {} }));
     const marked = upsertAccount(EMPTY_POOL, { provider: "claude", id: "a", label: "a", data: {}, needsLogin: "grant rejected" });
     await store.update("claude", () => marked);
     expect(await store.load("claude")).toEqual(marked);
+    expect(fileOf(store)).toEqual({ schema: ACCOUNTS_FILE_SCHEMA, note: "mine", providers: { claude: marked } } as never);
   });
 
-  test("update holds across processes: concurrent read-change-writes from two stores lose nothing (H1)", async () => {
+  test("update holds across processes: concurrent read-change-writes from two stores lose nothing (H1, A3a)", async () => {
     const root = temp();
     const one = credentialStore(root);
     const two = credentialStore(root);
-    const add = (id: string) => (p: typeof EMPTY_POOL) => ({ ...p, accounts: [...p.accounts, { provider: "claude" as const, id, label: id, data: {} }] });
-    await Promise.all(Array.from({ length: 10 }, (_, i) => (i % 2 === 0 ? one : two).update("claude", add(`acct-${i}`))));
-    expect((await one.load("claude")).accounts.map((a) => a.id).sort()).toEqual(Array.from({ length: 10 }, (_, i) => `acct-${i}`).sort());
+    const add = (provider: "claude" | "openai", id: string) => (p: typeof EMPTY_POOL) => ({ ...p, accounts: [...p.accounts, { provider, id, label: id, data: {} }] });
+    await Promise.all(Array.from({ length: 10 }, (_, i) => (i % 2 === 0 ? one : two).update(i % 3 === 0 ? "openai" : "claude", add(i % 3 === 0 ? "openai" : "claude", `acct-${i}`))));
+    const ids = [...(await one.load("claude")).accounts, ...(await one.load("openai")).accounts].map((a) => a.id).sort();
+    expect(ids).toEqual(Array.from({ length: 10 }, (_, i) => `acct-${i}`).sort());
   });
 
-  test("directories the stores, the lock and the logger create are 0700; lock and log files are 0600", async () => {
+  test("a hand edit saved between read and rename: the change is applied again to the edited file (A3b)", async () => {
+    const store = credentialStore(temp());
+    const first = upsertAccount(EMPTY_POOL, { provider: "claude", id: "a", label: "a", data: {} });
+    await store.update("claude", () => first);
+    let edits = 0;
+    const editing: AccountsFileFs = {
+      ...nodeFs,
+      writeFile: (async (file: string, data: string, options: { encoding: "utf8"; mode: number }) => {
+        await nodeFs.writeFile(file, data, options);
+        if (edits++ === 0) writeFileSync(store.path, JSON.stringify({ schema: ACCOUNTS_FILE_SCHEMA, providers: { claude: first, openrouter: { accounts: [{ provider: "openrouter", id: "hand", label: "hand", data: { apiKey: "k" } }], activeId: "hand" } } }));
+      }) as AccountsFileFs["writeFile"],
+    };
+    const racing = credentialStore(dir!, editing);
+    await racing.update("claude", (p) => upsertAccount(p, { provider: "claude", id: "b", label: "b", data: {} }));
+    expect(edits).toBe(2);
+    expect((await store.load("openrouter")).activeId).toBe("hand");
+    expect((await store.load("claude")).accounts.map((a) => a.id)).toEqual(["a", "b"]);
+    expect(readdirSync(dir!).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+  });
+
+  test("an edit during every attempt: AccountsFileChangedError, the file keeps the edit, no temp file is left (A3b)", async () => {
+    const store = credentialStore(temp());
+    writeFileSync(store.path, JSON.stringify({ schema: ACCOUNTS_FILE_SCHEMA, providers: {} }));
+    const racing = credentialStore(dir!, editedAccountsFs(nodeFs, store.path, ACCOUNTS_WRITE_ATTEMPTS));
+    await expect(racing.update("claude", (p) => upsertAccount(p, { provider: "claude", id: "b", label: "b", data: {} }))).rejects.toThrow(new AccountsFileChangedError(store.path));
+    expect(readFileSync(store.path, "utf8")).toBe(`${JSON.stringify({ schema: ACCOUNTS_FILE_SCHEMA, providers: {} })}${"\n".repeat(ACCOUNTS_WRITE_ATTEMPTS)}`);
+    expect(readdirSync(dir!).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+    const once = credentialStore(dir!, editedAccountsFs(nodeFs, store.path, 1));
+    await once.update("claude", (p) => upsertAccount(p, { provider: "claude", id: "c", label: "c", data: {} }));
+    expect((await store.load("claude")).activeId).toBe("c");
+  });
+
+  test("a failing rename removes the temp file, even when that removal fails too", async () => {
+    const store = credentialStore(temp());
+    const failing: AccountsFileFs = { ...nodeFs, rename: (() => Promise.reject(new Error("EXDEV"))) as AccountsFileFs["rename"], unlink: (() => Promise.reject(new Error("EPERM"))) as AccountsFileFs["unlink"] };
+    await expect(credentialStore(dir!, failing).update("claude", () => upsertAccount(EMPTY_POOL, { provider: "claude", id: "a", label: "a", data: {} }))).rejects.toThrow("EXDEV");
+    expect(() => statSync(store.path)).toThrow();
+  });
+
+  test("directories the stores, the lock and the log stream create are 0700; lock and log files are 0600", async () => {
     const root = join(temp(), "data");
-    await credentialStore(root).update("antigravity", () => ({ accounts: [] }));
-    await new FileKeyValueStore(root).write("claude/device-id", "ab");
+    await credentialStore(root).update("antigravity", () => ({ accounts: [], activeId: "x" }));
+    await new FileKeyValueStore(root, lockAt(root)).write("claude/device-id", "ab");
     await new FileLock(root, new SystemClock(), new SystemTimer(), DEFAULT_LOCK_OPTIONS, nodeFs).withLock("x", async () => {
       if (process.platform !== "win32") expect(statSync(join(root, "locks", "x.lock")).mode & 0o777).toBe(0o600);
     });
-    new FileLogger(join(root, "logs", "proxy.log"), new FixedClock(0)).info("i");
+    const stream = new WinstonLogStream(join(root, "logs"), PROXY_LOG, 7, 100, () => undefined);
+    stream.line("i");
+    await stream.close();
     if (process.platform === "win32") return;
     for (const d of [root, join(root, "state"), join(root, "state", "claude"), join(root, "locks"), join(root, "logs")]) expect(statSync(d).mode & 0o777).toBe(0o700);
-    expect(statSync(join(root, "logs", "proxy.log")).mode & 0o777).toBe(0o600);
+    const [file] = readdirSync(join(root, "logs")).filter((name) => name.endsWith("-7-proxy.log"));
+    expect(statSync(join(root, "logs", file!)).mode & 0o777).toBe(0o600);
   });
 
-  test.each([["{oops"], ["[]"], ['{"accounts":{}}'], ['{"accounts":[{"provider":"claude","id":"x","label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}'], ['{"accounts":[{"provider":"antigravity","id":"x","label":"x","data":{},"needsLogin":1}]}']])(
-    "a corrupt pool %p is an error, never an empty pool",
-    async (content) => {
-      const store = credentialStore(temp());
-      writeFileSync(store.path("antigravity"), content);
-      await expect(store.load("antigravity")).rejects.toBeInstanceOf(StoreCorruptError);
-    },
-  );
+  const doc = (providers: string) => `{"schema":"accounts-proxy/accounts/1","providers":${providers}}`;
+  test.each([
+    ["{oops"],
+    ["[]"],
+    ['{"providers":{}}'],
+    ['{"schema":"other","providers":{}}'],
+    ['{"schema":"accounts-proxy/accounts/1","providers":[]}'],
+    [doc('{"antigravity":[]}')],
+    [doc('{"antigravity":{"accounts":{}}}')],
+    [doc('{"antigravity":{"accounts":[{"provider":"claude","id":"x","label":"x","data":{}}]}}')],
+    [doc('{"antigravity":{"accounts":[{"provider":"antigravity","id":1,"label":"x","data":{}}]}}')],
+    [doc('{"antigravity":{"accounts":[{"provider":"antigravity","id":"x","label":"x","data":{},"needsLogin":1}]}}')],
+    [doc('{"antigravity":{"accounts":[],"activeId":1}}')],
+  ])("a corrupt accounts file %p is an error, never an empty pool, and is never overwritten", async (content) => {
+    const store = credentialStore(temp());
+    writeFileSync(store.path, content);
+    await expect(store.load("antigravity")).rejects.toBeInstanceOf(StoreCorruptError);
+    await expect(store.update("antigravity", () => ({ accounts: [] }))).rejects.toBeInstanceOf(StoreCorruptError);
+    expect(readFileSync(store.path, "utf8")).toBe(content);
+  });
 
   test("an unreadable path is not mistaken for a missing file", async () => {
     const store = credentialStore(temp());
-    mkdirSync(store.path("antigravity"));
+    mkdirSync(store.path);
     await expect(store.load("antigravity")).rejects.toHaveProperty("code");
   });
 
-  test("key-value store: nested keys, missing → undefined", async () => {
-    const kv = new FileKeyValueStore(temp());
+  test("key-value store: nested keys, missing → undefined; every write takes the state lock (W1)", async () => {
+    const lock = new RecordingLock();
+    const kv = new FileKeyValueStore(temp(), lock);
     expect(await kv.read("claude/device-id")).toBeUndefined();
     await kv.write("claude/device-id", "ab");
     expect(await kv.read("claude/device-id")).toBe("ab");
     expect(kv.path("a/b")).toBe(join(dir!, "state", "a", "b.json"));
+    expect(lock.acquired).toEqual(["state"]);
+  });
+
+  test("key-value store: BOM tolerated; a corrupt file is StoreCorruptError; other read errors propagate", async () => {
+    const kv = new FileKeyValueStore(temp(), new RecordingLock());
+    mkdirSync(join(dir!, "state", "claude"), { recursive: true });
+    writeFileSync(kv.path("claude/device-id"), '\ufeff"ab"');
+    expect(await kv.read("claude/device-id")).toBe("ab");
+    writeFileSync(kv.path("claude/device-id"), "{broken");
+    await expect(kv.read("claude/device-id")).rejects.toBeInstanceOf(StoreCorruptError);
+    mkdirSync(kv.path("claude/session"));
+    await expect(kv.read("claude/session")).rejects.toHaveProperty("code", "EISDIR");
   });
 
   test("atomic write removes its temp file when the rename fails", async () => {
     const root = temp();
     mkdirSync(join(root, "target"));
-    await expect(writeJsonAtomic(join(root, "target"), {}, 0o600)).rejects.toBeDefined();
+    await expect(writeJsonAtomic(join(root, "target"), {}, 0o600, nodeFs)).rejects.toBeDefined();
     const { readdirSync } = await import("node:fs");
     expect(readdirSync(root)).toEqual(["target"]);
     const fs = await import("node:fs/promises");
@@ -113,10 +190,13 @@ describe("file stores", () => {
 });
 
 describe("FileProxyTokenStore", () => {
-  test("missing → undefined; written 0600 as JSON; read back; corrupt values are errors", async () => {
-    const store = new FileProxyTokenStore(temp());
+  test("missing → undefined; created 0600 as JSON under the token lock; read back; corrupt values are errors", async () => {
+    const lock = new RecordingLock();
+    const store = new FileProxyTokenStore(temp(), lock);
     expect(await store.read()).toBeUndefined();
-    await store.write("tok-123");
+    expect(await store.createIfAbsent("tok-123")).toBe("tok-123");
+    expect(await store.createIfAbsent("tok-other")).toBe("tok-123");
+    expect(lock.acquired).toEqual(["token", "token"]);
     expect(store.path()).toBe(join(dir!, "token.json"));
     expect(JSON.parse(readFileSync(store.path(), "utf8"))).toEqual({ token: "tok-123" });
     if (process.platform !== "win32") expect(statSync(store.path()).mode & 0o777).toBe(0o600);
@@ -358,18 +438,14 @@ describe("system adapters", () => {
     expect(base64UrlEncode(new NodeHash().sha256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"))).toBe("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
   });
 
-  test("file logger writes ISO-stamped lines and never throws", () => {
-    const root = temp();
-    const path = join(root, "logs", "proxy.log");
-    const logger = new FileLogger(path, new FixedClock(0));
+  test("stream logger writes ISO-stamped lines to its stream", () => {
+    const lines: string[] = [];
+    const logger = new StreamLogger({ line: (text: string) => void lines.push(text), close: async () => undefined }, new FixedClock(0));
     logger.info("i");
     logger.warn("w");
     logger.error("e3", new Error("boom"));
-    const text = readFileSync(path, "utf8");
-    expect(text.split("\n").slice(0, 2)).toEqual(["1970-01-01T00:00:00.000Z INFO i", "1970-01-01T00:00:00.000Z WARN w"]);
-    expect(text).toContain("1970-01-01T00:00:00.000Z ERROR e3 :: Error: boom\n    at ");
-    mkdirSync(join(root, "dir.log"));
-    expect(() => new FileLogger(join(root, "dir.log"), new FixedClock(0)).info("x")).not.toThrow();
+    expect(lines.slice(0, 2)).toEqual(["1970-01-01T00:00:00.000Z INFO i", "1970-01-01T00:00:00.000Z WARN w"]);
+    expect(lines[2]).toStartWith("1970-01-01T00:00:00.000Z ERROR e3 :: Error: boom\n    at ");
   });
 });
 

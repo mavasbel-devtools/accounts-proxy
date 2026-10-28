@@ -17,7 +17,9 @@ const params = authorize.searchParams;
 // OAuth providers name the loopback `redirect_uri`; OpenRouter's PKCE page names it `callback_url` (rule R5).
 const redirect = (params.get("redirect_uri") ?? params.get("callback_url"))!;
 const state = encodeURIComponent(params.get("state")!);
-const visit = (url: string) => fetch(url, { redirect: "manual" }).then((res) => appendFileSync(process.env["ACCOUNTS_PROXY_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
+// Each visit on its own connection (keepalive: false), as two browser tabs would be: a pooled connection would hold the
+// second callback until the first one's answer, by which time the login may have closed the server.
+const visit = (url: string) => fetch(url, { redirect: "manual", keepalive: false }).then((res) => appendFileSync(process.env["ACCOUNTS_PROXY_E2E_BROWSER_LOG"]!, `callback ${res.status}\n`));
 
 switch (process.env["ACCOUNTS_PROXY_E2E_BROWSER_MODE"] ?? "approve") {
   case "deny":

@@ -1,4 +1,4 @@
-// Outbound system ports: time, randomness, hashing, logging, locking, browser.
+// Outbound system ports: time, randomness, hashing, logging, log files, locking, browser.
 
 export abstract class ClockPort {
   /** Milliseconds since the Unix epoch. */
@@ -22,6 +22,20 @@ export abstract class LoggerPort {
   abstract info(message: string): void;
   abstract warn(message: string): void;
   abstract error(message: string, cause: unknown): void;
+}
+
+/**
+ * An append-only family of log files that takes complete lines (plan 2026-10-27-23-29 L2). `line` never throws;
+ * `close` writes out what is buffered and releases the files (L6).
+ */
+export abstract class LogStreamPort {
+  abstract line(text: string): void;
+  abstract close(): Promise<void>;
+}
+
+/** Removes the log files past the retention (plan 2026-10-27-23-29 L3). Never rejects. */
+export abstract class LogRetentionPort {
+  abstract sweep(): Promise<void>;
 }
 
 /** Mutual exclusion that holds across processes (the proxy daemon and a concurrent CLI command). */

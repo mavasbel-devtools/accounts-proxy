@@ -6,6 +6,8 @@ dist/
 docs/temp/*
 !docs/temp/.gitkeep
 .cortexkit/
+# the accounts file and its locks (plan 2026-10-26-23-32 A4): credentials, never committed
+.cache/
 
 # recon
 __pycache__/

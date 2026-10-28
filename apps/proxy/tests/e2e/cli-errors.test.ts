@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, te
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Home, accountsFile, writePool, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -21,7 +21,6 @@ afterEach(() => {
 });
 const run = (argv: string[], env: Record<string, string> = {}) => runProxy(home!, argv, { ...upstreams.seamEnv(), ...env });
 const writeYaml = (text: string) => writeFileSync(join(home!.dir, "proxy.yaml"), text);
-const log = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
 
 describe("configuration", () => {
   test.each([
@@ -78,7 +77,7 @@ describe("browser login failures", () => {
     expect([ignored.code, ignored.stderr]).toEqual([1, "error: no browser callback within 1 s\n"]);
     const missing = await run(["login", "claude", "--timeout-seconds", "1"], { PATH: join(home.dir, "no-such-dir") });
     expect(missing.code).toBe(1);
-    expect(log()).toContain("WARN claude: could not open the browser");
+    expect(await loggedEventually(home!, "WARN claude: could not open the browser")).toContain("WARN claude: could not open the browser");
   });
 
   test("other paths get 404 and a second callback 409; the first one signs in", async () => {
@@ -105,12 +104,19 @@ describe("browser login failures", () => {
 describe("stores", () => {
   test("a damaged accounts file is an error, never silently replaced; a hand-edited label is shown", async () => {
     home = await makeHome();
-    writeFileSync(join(home.dir, "accounts-claude.json"), "{not json");
+    writeFileSync(accountsFile(home), "{not json");
     const broken = await run(["account", "list", "claude"]);
-    expect([broken.code, broken.stderr.includes("accounts-claude.json is not valid")]).toEqual([1, true]);
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [{ provider: "antigravity", id: "x", label: "x", data: {} }] }));
-    expect((await run(["account", "list", "claude"])).stderr).toContain("expected { accounts: AccountCredential[], activeId? }");
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [{ provider: "claude", id: "a@x", label: "Work", data: {} }] }));
+    expect([broken.code, broken.stderr.includes(`${accountsFile(home)} is not valid`)]).toEqual([1, true]);
+    // Valid JSON that is not the accounts file's shape (a list, the former per-provider shape, providers as a list).
+    for (const shape of [[], { accounts: [] }, { schema: "accounts-proxy/accounts/1", providers: [] }]) {
+      writeFileSync(accountsFile(home), JSON.stringify(shape));
+      const wrong = await run(["account", "list", "claude"]);
+      expect([wrong.code, wrong.stderr.includes('expected { "schema": "accounts-proxy/accounts/1", "providers": { ... } }')]).toEqual([1, true]);
+      expect(readFileSync(accountsFile(home), "utf8")).toBe(JSON.stringify(shape));
+    }
+    writeFileSync(accountsFile(home), JSON.stringify({ schema: "accounts-proxy/accounts/1", providers: { claude: { accounts: [{ provider: "antigravity", id: "x", label: "x", data: {} }] } } }));
+    expect((await run(["account", "list", "claude"])).stderr).toContain("providers.claude: expected { accounts: AccountCredential[], activeId? }");
+    writePool(home, "claude", { accounts: [{ provider: "claude", id: "a@x", label: "Work", data: {} }] });
     expect((await run(["account", "list", "claude"])).stdout).toBe("  a@x  (Work)\n");
     expect((await run(["account", "list", "antigravity"])).stdout).toBe("no antigravity accounts; run: bun run proxy login antigravity\n");
   });

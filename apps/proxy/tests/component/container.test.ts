@@ -2,7 +2,7 @@
 // only the network (ScriptedTransport) and the browser are replaced. The fake browser behaves like a user who
 // approves: it calls the loopback redirect with the code and the state from the authorization URL.
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -12,7 +12,8 @@ import { ScriptedTransport, type ScriptedResponse } from "@accounts-proxy/test-s
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
 import { FetchTransport, type FetchFunction } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
-import { buildCli, defaultHome, hooksFrom, PRODUCTION_LOCK, runCli, seamsFrom, TestHookError, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
+import { AccountsFileVariableError, accountsFileOf, buildCli, defaultHome, hooksFrom, PRODUCTION_LOCK, runCli, seamsFrom, TestHookError, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
+import * as nodeFs from "node:fs/promises";
 
 let home: string | undefined;
 afterEach(() => {
@@ -53,6 +54,12 @@ class ManualSignal extends ShutdownSignal {
   }
 }
 
+/** This process's log files of one kind in the test home's `logs/` (plan 2026-10-27-23-29 L1-L2). */
+const logFilesOf = (kind: "usage" | "proxy") => (existsSync(join(home!, "logs")) ? readdirSync(join(home!, "logs")).filter((name) => name.includes(`-${process.pid}-${kind}`)).sort() : []);
+const logText = (kind: "usage" | "proxy") => logFilesOf(kind).map((name) => readFileSync(join(home!, "logs", name), "utf8")).join("");
+/** One provider's pool in the accounts file (plan 2026-10-26-23-32). */
+const storedPool = (provider: string) => (JSON.parse(readFileSync(join(home!, "accounts.json"), "utf8")) as { providers: Record<string, unknown> }).providers[provider];
+
 function options(extra: Partial<ContainerOptions> = {}) {
   home = makeTemporary("proxy-container");
   const out: string[] = [];
@@ -61,6 +68,7 @@ function options(extra: Partial<ContainerOptions> = {}) {
   const browser = new ApprovingBrowser();
   const opts: ContainerOptions = {
     home,
+    accounts: { path: join(home, "accounts.json"), fs: nodeFs },
     out: (t) => out.push(t),
     err: (t) => err.push(t),
     stdin: new PassThrough(),
@@ -97,7 +105,7 @@ describe("composition root", () => {
     expect(browser.opened).toHaveLength(1);
     expect(new URL(browser.opened[0]!).searchParams.get("redirect_uri")).toMatch(/^http:\/\/localhost:\d+\/oauth-callback$/);
     expect(out.at(-1)).toBe("signed in to antigravity as me@x (active account)\n");
-    const stored = JSON.parse(readFileSync(join(home!, "accounts-antigravity.json"), "utf8")) as { activeId: string };
+    const stored = storedPool("antigravity") as { activeId: string };
     expect(stored.activeId).toBe("me@x");
     expect(await runCli(["account", "list", "antigravity"], opts)).toBe(0);
     expect(await runCli(["models", "antigravity"], opts)).toBe(0);
@@ -106,7 +114,7 @@ describe("composition root", () => {
     expect(out).toContain("* me@x\n");
     expect(out).toContain("antigravity/gemini-3.6-flash-low  Gemini 3.6 Flash (Low)  context 80000 / output 65536\n");
     expect(transport.requests.some((r) => r.url.endsWith("v1internal:fetchAvailableModels"))).toBe(true);
-    expect(readFileSync(join(home!, "logs", "proxy.log"), "utf8")).toContain("INFO antigravity: signed in account me@x");
+    expect(logText("proxy")).toContain("INFO antigravity: signed in account me@x");
   });
 
   test("openai is wired when enabled, on the production hosts or on the seams; its list is the reference's, with or without an account", async () => {
@@ -176,7 +184,7 @@ describe("composition root", () => {
       ["https://api.cheaperinference.com/v1/account/balance", "Bearer ci_live_1"],
       ["https://api.cheaperinference.com/v1/models", "Bearer ci_live_1"],
     ]);
-    expect(JSON.parse(readFileSync(join(home!, "accounts-cheaper-inference.json"), "utf8"))).toEqual({ accounts: [{ provider: "cheaper-inference", id: "me@x", label: "Team", data: { apiKey: "ci_live_1" } }], activeId: "me@x" });
+    expect(storedPool("cheaper-inference")).toEqual({ accounts: [{ provider: "cheaper-inference", id: "me@x", label: "Team", data: { apiKey: "ci_live_1" } }], activeId: "me@x" });
   });
 
   test("OpenCode (amendment A): one Console account for opencode and opencode-go; --from-opencode imports OpenCode's key, checked against the workspace config", async () => {
@@ -190,7 +198,7 @@ describe("composition root", () => {
     writeFileSync(join(home!, "opencode-data", "auth.json"), JSON.stringify({ "opencode-go": { type: "api", key: "oc_sk_go" } }));
     expect(await runCli(["login", "opencode-go", "--from-opencode"], opts)).toBe(0);
     expect(out.at(-1)).toBe("signed in to opencode-go as key-5645e3d2 (active account)\n");
-    expect(JSON.parse(readFileSync(join(home!, "accounts-opencode.json"), "utf8"))).toEqual({
+    expect(storedPool("opencode")).toEqual({
       accounts: [{ provider: "opencode", id: "key-5645e3d2", label: "key-5645e3d2", data: { workspaceHeaders: { opencode: { "x-opencode-org-id": "org_1" }, "opencode-go": { "x-opencode-org-id": "org_1" } }, apiKey: "oc_sk_go" } }],
       activeId: "key-5645e3d2",
     });
@@ -282,7 +290,7 @@ function replayGoogle() {
 }
 
 describe("daemon wiring (serve, token, status) over the upstream seams", () => {
-  test.each([true, false])("login, serve, authenticated native Gemini stream, model lists with their source, status, SIGTERM drain (exchange log %p)", async (logged) => {
+  test.each([true, false])("login, serve, authenticated native Gemini stream, model lists with their source, status, SIGTERM drain (usage log %p)", async (logged) => {
     const upstream = replayGoogle();
     try {
       const origin = `http://127.0.0.1:${upstream.port}`;
@@ -290,7 +298,7 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       const shutdown = new ManualSignal();
       const { opts: real, out, err } = options({ seams, shutdown, transport: new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS) });
       const port = await freePort();
-      writeFileSync(join(home!, "proxy.yaml"), `port: ${port}\n${BOTH}exchangeLog: {enabled: ${logged}}\n`);
+      writeFileSync(join(home!, "proxy.yaml"), `port: ${port}\n${BOTH}logs: {usage: ${logged}}\n`);
       expect(await runCli(["login", "antigravity", "--timeout-seconds", "10"], real)).toBe(0);
       expect(await runCli(["status"], real)).toBe(1);
       expect(out.at(-1)).toMatch(new RegExp(`^not running at http://127\\.0\\.0\\.1:${port} \\(`));
@@ -321,15 +329,16 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       expect(await serving).toBe(0);
       expect(out.slice(-2)).toEqual(["SIGTERM: stopping (in-flight responses get 10 s)\n", "stopped\n"]);
       expect(err).toEqual([]);
-      // The exchange log (plan 2026-10-26 X1-X4): every kind, client and upstream linked, no credential value.
-      const logs = join(home!, "logs");
-      const day = readdirSync(logs).filter((name) => name.startsWith("exchanges-"));
+      // The usage log (plan 2026-10-26 X1-X4, plan 2026-10-27-23-29 L2): every kind, client and upstream linked, no
+      // credential value; the console got the log lines only (L5).
+      expect(out.some((line) => line.includes('"schema":"accounts-proxy-exchange/1"'))).toBe(false);
+      const day = logFilesOf("usage");
       if (!logged) {
         expect(day).toEqual([]);
         return;
       }
-      expect(day).toHaveLength(1);
-      const text = readFileSync(join(logs, day[0]!), "utf8");
+      expect(day).toEqual([expect.stringMatching(new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${process.pid}-usage\\.jsonl$`))]);
+      const text = logText("usage");
       expect(text).not.toContain(token);
       const records = text.trimEnd().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
       expect(new Set(records.map((r) => r["kind"]))).toEqual(new Set(["browser-open", "login-callback", "upstream-request", "upstream-response", "client-request", "client-response"]));
@@ -374,13 +383,24 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
   });
 });
 
+describe("accounts file location (plan 2026-10-26-23-32 A2)", () => {
+  const repo = join(import.meta.dir, "..", "..", "..", "..");
+  test("ACCOUNTS_PROXY_ACCOUNTS_FILE when absolute; else .cache/accounts.json of the repository above the script", () => {
+    expect(accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "/x/accounts.json" }, "/any/cli.ts")).toBe("/x/accounts.json");
+    expect(() => accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "rel/accounts.json" }, "/any/cli.ts")).toThrow(new AccountsFileVariableError("rel/accounts.json"));
+    expect(accountsFileOf({}, join(repo, "apps", "proxy", "src", "main", "cli.ts"))).toBe(join(repo, ".cache", "accounts.json"));
+    expect(accountsFileOf({}, join(repo, "dist", "accounts-proxy.js"))).toBe(join(repo, ".cache", "accounts.json"));
+    expect(accountsFileOf({}, "/nowhere/near/a/repository.js")).toBe("/.cache/accounts.json");
+  });
+});
+
 describe("hermetic test hooks", () => {
   const seams = { claudeApi: "http://127.0.0.1:1", claudeOAuth: "http://127.0.0.1:1", antigravityApi: "http://127.0.0.1:1", googleOAuth: "http://127.0.0.1:1", openaiApi: "http://127.0.0.1:1", openaiAuth: "http://127.0.0.1:1", gateways: "http://127.0.0.1:1" };
 
   test("absent: nothing changes; present: parsed", () => {
-    expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false, listenUnassigned: false });
-    const env = { ACCOUNTS_PROXY_TEST_PLATFORM: "win32", ACCOUNTS_PROXY_TEST_UPSTREAM_IDLE_MS: "1000", ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS: "200", ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES: "1", ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED: "1" };
-    expect(hooksFrom(env, seams)).toEqual({ platform: "win32", upstreamIdleMs: 1000, lockTimeoutMs: 200, lockStatVanishes: true, listenUnassigned: true });
+    expect(hooksFrom({}, {})).toEqual({ platform: undefined, upstreamIdleMs: undefined, lockTimeoutMs: undefined, lockStatVanishes: false, listenUnassigned: false, accountsEdited: undefined });
+    const env = { ACCOUNTS_PROXY_TEST_PLATFORM: "win32", ACCOUNTS_PROXY_TEST_UPSTREAM_IDLE_MS: "1000", ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS: "200", ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES: "1", ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED: "1", ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED: "2" };
+    expect(hooksFrom(env, seams)).toEqual({ platform: "win32", upstreamIdleMs: 1000, lockTimeoutMs: 200, lockStatVanishes: true, listenUnassigned: true, accountsEdited: 2 });
   });
 
   test.each([
@@ -395,7 +415,7 @@ describe("hermetic test hooks", () => {
 
   test("main wires the vanishing-stat and unassigned-listen hooks", async () => {
     home = makeTemporary("proxy-hooks");
-    const keys = { ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_AUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_GATEWAYS: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES: "1", ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED: "1", ACCOUNTS_PROXY_HOME: home };
+    const keys = { ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_OAUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_ANTIGRAVITY_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_GOOGLE_OAUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_API: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_OPENAI_AUTH: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_UPSTREAM_GATEWAYS: "http://127.0.0.1:1", ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES: "1", ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED: "1", ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED: "1", ACCOUNTS_PROXY_HOME: home, ACCOUNTS_PROXY_ACCOUNTS_FILE: join(home, "accounts.json") };
     const saved = Object.fromEntries(Object.keys(keys).map((k) => [k, process.env[k]]));
     const write = process.stdout.write;
     Object.assign(process.env, keys);

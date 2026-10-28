@@ -1,10 +1,10 @@
 // The CLI black-box: each command is the real entry in its own process against the replay upstreams. Browser logins
 // go through the fake `xdg-open`; the paste-code login reads the code from stdin.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, type Home, accountsFile, readPool } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -19,6 +19,31 @@ afterEach(() => {
   home = undefined;
 });
 const run = (argv: string[], input?: Parameters<typeof runProxy>[3]) => runProxy(home!, argv, upstreams.seamEnv(), input);
+
+/**
+ * Waits until the proxy process of `homeDir` (found by its ACCOUNTS_PROXY_HOME in /proc/<pid>/environ) is idle in its
+ * lock-wait loop: its CPU time (utime + stime, /proc/<pid>/stat fields 14-15) grows by at most one tick over 1 s. Its
+ * start, instrumented for coverage, keeps the CPU busy; a process polling a busy lock does not.
+ */
+async function idleWaiting(homeDir: string): Promise<void> {
+  const marker = `ACCOUNTS_PROXY_HOME=${homeDir}\0`;
+  const cpu = (pid: string) => readFileSync(`/proc/${pid}/stat`, "utf8").split(") ")[1]!.split(" ").slice(11, 13).reduce((sum, ticks) => sum + Number(ticks), 0);
+  for (let i = 0; i < 600; i++) {
+    const pid = readdirSync("/proc").find((entry) => /^\d+$/.test(entry) && (() => {
+      try {
+        return readFileSync(`/proc/${entry}/environ`, "latin1").includes(marker);
+      } catch {
+        return false;
+      }
+    })());
+    if (pid !== undefined) {
+      const before = cpu(pid);
+      await Bun.sleep(1_000);
+      if (cpu(pid) - before <= 1) return;
+    } else await Bun.sleep(100);
+  }
+  throw new Error("the proxy process never waited for the lock");
+}
 
 describe("accounts-proxy CLI (e2e)", () => {
   test("help, usage errors, and a refused seam", async () => {
@@ -89,7 +114,7 @@ describe("accounts-proxy CLI (e2e)", () => {
     expect(opened[0]!.searchParams.get("redirect_uri")).toMatch(/^http:\/\/localhost:\d+\/oauth-callback$/);
     expect(opened[1]!.searchParams.get("redirect_uri")).toMatch(/^http:\/\/localhost:\d+\/callback$/);
     expect(opened[1]!.searchParams.get("code_challenge_method")).toBe("S256");
-    expect(statSync(join(home.dir, "accounts-claude.json")).mode & 0o777).toBe(0o600);
+    expect(statSync(accountsFile(home)).mode & 0o777).toBe(0o600);
 
     const accounts = await run(["account", "list", "antigravity"]);
     expect(accounts.stdout).toBe("* e2e@example.com\n");
@@ -112,13 +137,13 @@ describe("accounts-proxy CLI (e2e)", () => {
     // account remove (plan 2026-10-26 A1): unknown id fails; removing the only, active account leaves none active.
     expect(await run(["account", "remove", "antigravity", "nobody"])).toMatchObject({ code: 1, stderr: "error: no antigravity account \"nobody\"\n" });
     expect(await run(["account", "remove", "antigravity", "e2e@example.com"])).toMatchObject({ code: 0, stdout: "removed antigravity account: e2e@example.com\nno antigravity accounts left; run: bun run proxy login antigravity\n" });
-    expect(JSON.parse(readFileSync(join(home.dir, "accounts-antigravity.json"), "utf8"))).toEqual({ accounts: [] });
+    expect(readPool(home, "antigravity")).toBeUndefined();
   });
 
   test("paste-code login (--manual) reads code#state from stdin", async () => {
     home = await makeHome();
     const result = await run(["login", "claude", "--manual"], async (stdout) => {
-      for (let i = 0; i < 500 && !stdout().includes("code> "); i++) await Bun.sleep(10);
+      for (let i = 0; i < 3000 && !stdout().includes("code> "); i++) await Bun.sleep(10);
       const url = new URL(stdout().split("\n").find((l) => l.startsWith("http"))!);
       expect(url.searchParams.get("redirect_uri")).toBe("https://platform.claude.com/oauth/code/callback");
       return `e2e-code#${url.searchParams.get("state")}\n`;
@@ -126,6 +151,22 @@ describe("accounts-proxy CLI (e2e)", () => {
     expect([result.code, result.stderr]).toEqual([0, ""]);
     expect(result.stdout).toContain("signed in to claude as");
     expect((await run(["login", "antigravity", "--manual"])).stderr).toBe("error: antigravity has no paste-code login; use the browser login\n");
+  });
+
+  test("the token is created under the token lock: a token another process stored while this one waited is kept (W1)", async () => {
+    home = await makeHome();
+    mkdirSync(join(home.dir, "locks"), { recursive: true, mode: 0o700 });
+    const lock = join(home.dir, "locks", "token.lock");
+    writeFileSync(lock, `${process.pid} ${Date.now()}\n`);
+    const waiting = run(["token"]);
+    // The process reads no token, then waits for the lock; meanwhile "another process" stores one and releases it.
+    await idleWaiting(home.dir);
+    const other = "o".repeat(43);
+    writeFileSync(join(home.dir, "token.json"), JSON.stringify({ token: other }));
+    rmSync(lock);
+    const result = await waiting;
+    expect([result.code, result.stdout]).toEqual([0, `${other}\n`]);
+    expect(JSON.parse(readFileSync(join(home.dir, "token.json"), "utf8"))).toEqual({ token: other });
   });
 
   test("token is created once (0600) and reprinted; status reports a stopped daemon", async () => {

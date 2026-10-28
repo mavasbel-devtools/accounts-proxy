@@ -53,6 +53,11 @@ await claude.messages.create({ model: "claude/claude-haiku-4-5-20251001", max_to
 
 Models are addressed as `<provider>/<model>` (or an alias from `proxy.yaml`).
 
+Every provider's accounts are kept in one file, `.cache/accounts.json` in this repository (0600, ignored by git); it is
+read on every use, so it can be edited by hand or copied
+([API reference §8](docs/reference/2026-10-17-19-26-proxy-api.md#8-data-directory)). Two running proxies must not share
+a copy for `claude` or `openai`: their refresh tokens are single-use, so the second to renew is signed out.
+
 Every request and answer — the client's and each one the proxy sends upstream, with headers, bodies, timings and token
 usage, credentials redacted — is written to `~/.local/share/accounts-proxy/logs/exchanges-YYYY-MM-DD.jsonl`
 (`exchangeLog` in `proxy.yaml`, default on, 14 days; [API reference §8](docs/reference/2026-10-17-19-26-proxy-api.md#8-data-directory)).

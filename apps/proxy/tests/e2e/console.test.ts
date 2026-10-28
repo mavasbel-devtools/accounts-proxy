@@ -5,10 +5,8 @@
 // grants): the approved and refreshed answers below have the fields of the device-token answer the proxy stores
 // (access_token, refresh_token, expires_in, org_id), and the RFC 8628 error answers the captured pending answer's shape.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { captured, jsonResponse, ReplayUpstreams, type Responder } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(120_000);
@@ -41,7 +39,7 @@ const quickCode: Responder = () => jsonResponse({ ...(JSON.parse(captured("conso
 const pollError = (error: string): Responder => () => jsonResponse({ _tag: "DeviceTokenError", error, error_description: `e2e ${error}` }, 400);
 const tokens = (extra: Record<string, unknown> = { org_id: ORG }): Responder => () => jsonResponse({ access_token: "console-access", refresh_token: "console-refresh", expires_in: 2_592_000, token_type: "Bearer", ...extra });
 const identity = () => upstreams.script("/console/api/user", replay("l4/console-identity.json", 0)).script("/console/api/orgs", replay("l4/console-identity.json", 1));
-const pool = () => JSON.parse(readFileSync(join(home!.dir, "accounts-opencode.json"), "utf8")) as { activeId: string; accounts: { id: string; label: string; needsLogin?: string; data: Record<string, unknown> }[] };
+const pool = () => readPool(home!, "opencode")! as { activeId: string; accounts: { id: string; label: string; needsLogin?: string; data: Record<string, unknown> }[] };
 
 describe("the Console device login (K1, Z17–Z20)", () => {
   test("approved after a slow_down: the tokens, the user and workspace (captured), the workspace headers; one account for both providers", async () => {
@@ -101,7 +99,7 @@ describe("the Console session (Z18, plan v4 Phase H)", () => {
   /** An expired device sign-in in the proxy's own account file. */
   const expired = () => {
     const headers = { opencode: { "x-opencode-org-id": ORG }, "opencode-go": { "x-opencode-org-id": ORG } };
-    writeFileSync(join(home!.dir, "accounts-opencode.json"), JSON.stringify({ accounts: [{ provider: "opencode", id: "e2e/org", label: "e2e", data: { accessToken: "console-old", refreshToken: "console-refresh-old", expiresAt: Date.now() - 1000, orgId: ORG, workspaceHeaders: headers } }], activeId: "e2e/org" }), { mode: 0o600 });
+    writePool(home!, "opencode", { accounts: [{ provider: "opencode", id: "e2e/org", label: "e2e", data: { accessToken: "console-old", refreshToken: "console-refresh-old", expiresAt: Date.now() - 1000, orgId: ORG, workspaceHeaders: headers } }], activeId: "e2e/org" });
   };
   async function serve(): Promise<{ url: string; token: string }> {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n");

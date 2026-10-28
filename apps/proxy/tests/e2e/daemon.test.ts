@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { ApiError, GoogleGenAI, Type, type Content } from "@google/genai";
 import OpenAI from "openai";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, startDaemon, usageOf, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -251,10 +251,14 @@ describe("daemon: shutdown", () => {
     const stopped = await daemon.stop();
     expect(stopped.code).toBe(0);
     expect(stopped.stdout).toContain("SIGTERM: stopping (in-flight responses get 10 s)\nstopped\n");
-    // plan 2026-10-27 C1: after "listening on" every exchange record is printed too, credentials replaced.
-    const records = stopped.stdout.split("\n").filter((line) => line.startsWith("{")).map((line) => JSON.parse(line) as Record<string, unknown>);
-    expect(new Set(records.map((r) => r["kind"]))).toEqual(new Set(["client-request", "client-response", "upstream-request", "upstream-response"]));
+    // plan 2026-10-27-23-29 L5, L6: the console has the log lines only; the usage records are in the daemon's own usage
+    // file, complete once it has exited, credentials replaced.
+    expect(stopped.stdout.split("\n").filter((line) => line.startsWith("{"))).toEqual([]);
+    const records = usageOf(home);
+    const daemonPid = records.find((r) => r["kind"] === "client-request")!["pid"];
+    expect(new Set(records.filter((r) => r["pid"] === daemonPid).map((r) => r["kind"]))).toEqual(new Set(["client-request", "client-response", "upstream-request", "upstream-response"]));
     expect(records.every((r) => r["schema"] === "accounts-proxy-exchange/1")).toBe(true);
+    expect(JSON.stringify(records).includes(token)).toBe(false);
     expect(stopped.stdout.includes(token)).toBe(false);
     daemon = undefined as never;
   });

@@ -28,11 +28,11 @@ describe("parseProxyConfig", () => {
     expect(() => parseProxyConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
   });
 
-  test("exchangeLog: default on for 14 days; enabled and retentionDays read (plan 2026-10-26 X5)", () => {
-    expect(DEFAULT_CONFIG.exchangeLog).toEqual({ enabled: true, retentionDays: 14 });
-    expect(parseProxyConfig({}).exchangeLog).toEqual({ enabled: true, retentionDays: 14 });
-    expect(parseProxyConfig({ exchangeLog: { enabled: false } }).exchangeLog).toEqual({ enabled: false, retentionDays: 14 });
-    expect(parseProxyConfig({ exchangeLog: { retentionDays: 1 } }).exchangeLog).toEqual({ enabled: true, retentionDays: 1 });
+  test("logs: usage on, 15 days, 100 MB by default; each key read (plan 2026-10-27-23-29 L4)", () => {
+    expect(DEFAULT_CONFIG.logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100 });
+    expect(parseProxyConfig({}).logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100 });
+    expect(parseProxyConfig({ logs: { usage: false } }).logs).toEqual({ usage: false, retentionDays: 15, maxFileMegabytes: 100 });
+    expect(parseProxyConfig({ logs: { retentionDays: 1, maxFileMegabytes: 7 } }).logs).toEqual({ usage: true, retentionDays: 1, maxFileMegabytes: 7 });
   });
 
   test("modelListMaxAgeMinutes: default 1440 (24 h), any positive integer (plan 2026-10-26 R1)", () => {
@@ -59,11 +59,13 @@ describe("parseProxyConfig", () => {
     [{ providers: { antigravity: { enabled: "yes" } } }, "providers.antigravity.enabled must be true or false"],
     [{ providers: { antigravity: { enabled: true } } }, "enabled without acknowledgeTermsRisk: true"],
     [{ providers: { antigravity: { enabled: true, acknowledgeTermsRisk: false } } }, "enabled without acknowledgeTermsRisk: true"],
-    [{ exchangeLog: [] }, "exchangeLog must be a mapping"],
-    [{ exchangeLog: { keep: 1 } }, "unknown key(s) keep in exchangeLog"],
-    [{ exchangeLog: { retentionDays: 0 } }, "exchangeLog.retentionDays must be a positive integer (days)"],
-    [{ exchangeLog: { retentionDays: "7" } }, "exchangeLog.retentionDays must be a positive integer (days)"],
-    [{ exchangeLog: { enabled: "yes" } }, "exchangeLog.enabled must be true or false"],
+    [{ exchangeLog: { enabled: true } }, "exchangeLog was replaced by logs: { usage, retentionDays, maxFileMegabytes } (plan 2026-10-27-23-29)"],
+    [{ logs: [] }, "logs must be a mapping"],
+    [{ logs: { keep: 1 } }, "unknown key(s) keep in logs"],
+    [{ logs: { retentionDays: 0 } }, "logs.retentionDays must be a positive integer (days)"],
+    [{ logs: { retentionDays: "7" } }, "logs.retentionDays must be a positive integer (days)"],
+    [{ logs: { maxFileMegabytes: 1.5 } }, "logs.maxFileMegabytes must be a positive integer (megabytes)"],
+    [{ logs: { usage: "yes" } }, "logs.usage must be true or false"],
     [{ modelListMaxAgeMinutes: 0 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ modelListMaxAgeMinutes: 1.5 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ modelListMaxAgeMinutes: "10" }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],

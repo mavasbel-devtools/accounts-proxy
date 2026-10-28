@@ -13,7 +13,8 @@ import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain
 import { TrajectoryState, type TrajectorySnapshot } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 import type { ChatMessage } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
 import { FetchTransport, type FetchFunction } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
-import { buildGraph, defaultHome, PRODUCTION_LOCK, type AntigravityGraph, type ClaudeGraph, type GatewayGraph, type OpenAIGraph, type ProviderGraph } from "@accounts-proxy/proxy/composition/container.ts";
+import * as nodeFs from "node:fs/promises";
+import { accountsFileOf, buildGraph, defaultHome, PRODUCTION_LOCK, type AccountsFileConfig, type AntigravityGraph, type ClaudeGraph, type GatewayGraph, type OpenAIGraph, type ProviderGraph } from "@accounts-proxy/proxy/composition/container.ts";
 import { repositoryRoot } from "@accounts-proxy/scripts/gate/instrument.ts";
 import { Redactor } from "@accounts-proxy/scripts/evidence/live/redact.ts";
 import { RecordingTransport, type Exchange } from "@accounts-proxy/scripts/evidence/live/recording-transport.ts";
@@ -35,6 +36,8 @@ export type Live = {
   readonly redactor: Redactor;
   readonly trajectory: TrajectoryState;
   readonly home: string;
+  /** The accounts file the live run reads and renews (plan 2026-10-26-23-32 A2). */
+  readonly accounts: AccountsFileConfig;
 };
 
 export function requireLive(): void {
@@ -48,7 +51,8 @@ export async function openLive(): Promise<Live> {
   requireLive();
   const home = defaultHome(process.env);
   const recorder = new RecordingTransport(new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS));
-  const graph = await buildGraph({ home, out: (text) => void process.stdout.write(text), transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
+  const accounts: AccountsFileConfig = { path: accountsFileOf(process.env, join(repositoryRoot, "apps", "proxy", "src", "main", "cli.ts")), fs: nodeFs };
+  const graph = await buildGraph({ home, accounts, out: (text) => void process.stdout.write(text), transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in proxy.yaml");
   const redactor = new Redactor();
   for (const provider of PROVIDER_IDS) {
@@ -68,7 +72,7 @@ export async function openLive(): Promise<Live> {
   const sessionId = await graph.antigravity.state.sessionId();
   redactor.add("antigravity_session_id", sessionId);
   const trajectory = new TrajectoryState({ sessionUuid: graph.random.uuid(), sessionId, uuid: () => graph.random.uuid(), now: () => graph.clock.now() });
-  return { graph, claude: graph.claude, antigravity: graph.antigravity, openai: graph.openai, gateways: graph.gateways, recorder, redactor, trajectory, home };
+  return { graph, claude: graph.claude, antigravity: graph.antigravity, openai: graph.openai, gateways: graph.gateways, recorder, redactor, trajectory, home, accounts };
 }
 
 /** Every string leaf of an account record that names or authenticates the user is a secret. */

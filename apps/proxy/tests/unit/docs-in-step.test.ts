@@ -50,6 +50,7 @@ import { synopses as helpSynopses } from "@accounts-proxy/proxy/adapters/inbound
 import { MAX_BODY_BYTES } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
 import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
 import { DEFAULT_LOCK_OPTIONS } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
+import { ACCOUNTS_LOCK } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { STATUS_TIMEOUT_MS } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
 import { REFRESH_TIMEOUT_MS } from "@accounts-proxy/proxy/application/request-model-refresh-service.ts";
 
@@ -289,7 +290,8 @@ describe("the architecture diagram is in step with the code", () => {
     for (const [name, value] of stated) expect([name, value]).toEqual([name, underscored(constants[name]!)]);
     const renewal = page("Renewal under locks");
     for (const lock of [CLAUDE_REFRESH_LOCK, ANTIGRAVITY_REFRESH_LOCK, OPENAI_REFRESH_LOCK, OPENCODE_REFRESH_LOCK]) expect(renewal).toContain(lock);
-    expect(renewal).toContain("accounts-<provider>");
+    expect(renewal).toContain(`→ ${ACCOUNTS_LOCK},`);
+    expect(renewal).toContain(`under the lock ${ACCOUNTS_LOCK} `);
   });
 
   test("the matrix page is the README's format × provider matrix", () => {

@@ -23,7 +23,9 @@
     "@accounts-proxy/provider-gateway": "workspace:*",
     "@accounts-proxy/provider-openai": "workspace:*",
     "@accounts-proxy/provider-opencode": "workspace:*",
-    "@accounts-proxy/provider-openrouter": "workspace:*"
+    "@accounts-proxy/provider-openrouter": "workspace:*",
+    "winston": "3.19.0",
+    "winston-daily-rotate-file": "5.0.0"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.133.0",

@@ -4,12 +4,12 @@
 // id in the callback, S2/S9), token answers with the live shape (fields of the token reference; scopes as granted
 // live), and ID tokens with the live claim names signed by the replay's own key (openai-signing.ts).
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
 import OpenAI from "openai";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, proxyLogOf } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { claims, GRANTED_SCOPES, idToken, jwks, signingKey } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
 import { jsonResponse, ReplayUpstreams, spec, stalledStream, type Recorded, type Responder } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
@@ -45,9 +45,9 @@ const granted =
     const id = token(form(request).get("client_id")!, opened().searchParams.get("nonce")!);
     return jsonResponse({ access_token: "e2e-openai-access", refresh_token: "e2e-openai-refresh", ...(id !== undefined ? { id_token: id } : {}), expires_in: 3600, scope: GRANTED_SCOPES, token_type: "Bearer", ...over });
   };
-const accounts = () => JSON.parse(readFileSync(join(home!.dir, "accounts-openai.json"), "utf8")) as { activeId: string; accounts: { id: string; label: string; needsLogin?: string; data: Record<string, unknown> }[] };
+const accounts = () => readPool(home!, "openai")! as { activeId: string; accounts: { id: string; label: string; needsLogin?: string; data: Record<string, unknown> }[] };
 function storeAccount(data: Record<string, unknown>, extra: Record<string, unknown> = {}): void {
-  writeFileSync(join(home!.dir, "accounts-openai.json"), JSON.stringify({ accounts: [{ provider: "openai", id: "oaiapp_e2e", label: "e2e@example.com", data, ...extra }], activeId: "oaiapp_e2e" }), { mode: 0o600 });
+  writePool(home!, "openai", { accounts: [{ provider: "openai", id: "oaiapp_e2e", label: "e2e@example.com", data, ...extra }], activeId: "oaiapp_e2e" });
 }
 /** gpt-5.6-luna in the list, its name and limits from the reference catalog (rule M1). */
 const MODELS_LINE = "openai/gpt-5.6-luna  GPT-5.6 Luna  context 1050000 / output 128000\n";
@@ -113,7 +113,7 @@ describe("sign-in (rules S1–S16)", () => {
       const result = await login();
       expect([result.code, result.stderr]).toEqual([1, expect.stringContaining(message)]);
     }
-    expect(existsSync(join(home.dir, "accounts-openai.json"))).toBe(false);
+    expect(readPool(home, "openai")).toBeUndefined();
   });
 
   test("ID tokens that do not verify (S12): form, algorithm, key, signature and each claim", async () => {
@@ -343,7 +343,7 @@ describe("the native Responses cell (rules I1–I6, E1–E3, O7–O9)", () => {
     expect(cancelled).toBe(true);
     await daemon!.stop();
     daemon = undefined;
-    const log = readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
+    const log = proxyLogOf(home!);
     expect(log).toContain("INFO openai: stream end model=gpt-5.6-luna terminal=none");
     expect(log).toContain("INFO openai: stream closed by the client model=gpt-5.6-luna terminal=none");
   });

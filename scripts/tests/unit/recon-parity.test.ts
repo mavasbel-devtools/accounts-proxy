@@ -231,7 +231,7 @@ describe("cells", () => {
       body: JSON.stringify({ model: "openai/gpt-6-luna", input: [] }),
     });
     expect([cell.client, cell.upstreamPath, cell.daemon!.providers]).toEqual(["opencode", "/v1/responses", "  openai: {enabled: true, acknowledgeTermsRisk: true}\n"]);
-    expect(Object.keys(cell.daemon!.accountFiles!)).toEqual(["accounts-openai.json"]);
+    expect(Object.keys(cell.daemon!.pools)).toEqual(["openai"]);
     expect(cellOf("opencode", "https://opencode.ai/inference/openai/v1/responses")).toBe(cellFor("opencode"));
     expect(cellOf("claude", "https://api.anthropic.com/v1/messages")).toBe(cellFor("claude"));
   });

@@ -2,10 +2,10 @@
 // forced rotation on 401, the geo-gate retry, quota answers, project onboarding, catalog fallbacks and the stored
 // per-install state. Each test signs in its own data directory with scripted token answers.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { accountsFile, BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, logFiles, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -45,13 +45,78 @@ const claudeMessage = (s: { url: string; token: string }, model = "claude/claude
 const gemini = (s: { url: string; token: string }) =>
   fetch(`${s.url}/gemini/v1beta/models/antigravity%2Fgemini-3.6-flash-low:generateContent`, { method: "POST", headers: { "x-goog-api-key": s.token }, body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] }) });
 const tokenCalls = (path: string, grant: string) => upstreams.find(path).filter((r) => r.body.includes(grant)).length;
-const accounts = (provider: string) => JSON.parse(readFileSync(join(home!.dir, `accounts-${provider}.json`), "utf8")) as { accounts: { id: string; data: Record<string, unknown> }[] };
-const proxyLog = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
+const accounts = (provider: string) => readPool(home!, provider)! as { accounts: { id: string; data: Record<string, unknown> }[] };
+
+describe("one accounts file (plan 2026-10-26-23-32)", () => {
+  test("A3a: two daemons with different data folders and the same accounts file renew once; both answer", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
+    await login("claude");
+    const s = await serve();
+    const other = await makeHome();
+    const shared = { ...upstreams.seamEnv(), ACCOUNTS_PROXY_ACCOUNTS_FILE: accountsFile(home) };
+    const second = await startDaemon(other, shared);
+    try {
+      const token2 = (await runProxy(other, ["token"], shared)).stdout.trim();
+      const before = tokenCalls("/v1/oauth/token", "refresh_token");
+      const answers = await Promise.all([claudeMessage(s), claudeMessage({ url: second.url, token: token2 }), claudeMessage(s), claudeMessage({ url: second.url, token: token2 })]);
+      expect(answers.map((a) => a.status)).toEqual([200, 200, 200, 200]);
+      await Promise.all(answers.map((a) => a.text()));
+      expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
+      // The second daemon's own folder has neither an accounts file nor locks: both live beside the shared file.
+      expect([existsSync(join(other.dir, "accounts.json")), existsSync(join(other.dir, "locks")), existsSync(join(home.dir, "locks"))]).toEqual([false, false, true]);
+    } finally {
+      await second.stop();
+      removeTemporary(other.dir);
+    }
+  });
+
+  test("A3b: a hand edit saved during a write is kept and the change applied again; an edit during every attempt is an error", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken());
+    await login("claude");
+    const id = accounts("claude").accounts[0]!.id;
+    writePool(home, "claude", { ...accounts("claude"), accounts: [...accounts("claude").accounts, { provider: "claude", id: "spare", label: "spare", data: {} }] });
+    const once = await run(["account", "use", "claude", "spare"], { ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED: "1" });
+    expect([once.code, once.stderr, readPool(home, "claude")!.activeId]).toEqual([0, "", "spare"]);
+    const before = readFileSync(accountsFile(home), "utf8");
+    const always = await run(["account", "use", "claude", id], { ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED: "3" });
+    expect([always.code, always.stderr]).toEqual([1, `error: ${accountsFile(home)} changed during each of 3 writes (edited while the proxy was writing); retry\n`]);
+    expect(readFileSync(accountsFile(home), "utf8")).toBe(`${before}\n\n\n`);
+    expect(readPool(home, "claude")!.activeId).toBe("spare");
+    expect(readdirSync(home.dir).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+  });
+
+  test("a write that fails leaves the file and no temp file; the location variable must be absolute; unset, the repository's .cache/ is named", async () => {
+    home = await makeHome();
+    upstreams.script("/v1/oauth/token", claudeToken());
+    await login("claude");
+    const before = readFileSync(accountsFile(home), "utf8");
+    chmodSync(home.dir, 0o500);
+    try {
+      const denied = await run(["account", "remove", "claude", accounts("claude").accounts[0]!.id]);
+      expect([denied.code, denied.stderr]).toEqual([1, expect.stringContaining("EACCES")]);
+    } finally {
+      chmodSync(home.dir, 0o700);
+    }
+    expect(readFileSync(accountsFile(home), "utf8")).toBe(before);
+    expect(readdirSync(home.dir).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+    const relative = await run(["help"], { ACCOUNTS_PROXY_ACCOUNTS_FILE: "accounts.json" });
+    expect([relative.code, relative.stderr]).toEqual([1, 'error: ACCOUNTS_PROXY_ACCOUNTS_FILE must be an absolute path (got "accounts.json")\n']);
+    // `help` reads no account and logs no line: the default location is resolved (the repository's .cache/accounts.json)
+    // and nothing in that folder is opened or created (plan 2026-10-27-23-29 L2-L3).
+    const cache = join(import.meta.dir, "..", "..", "..", "..", ".cache");
+    const listing = () => (existsSync(cache) ? readdirSync(cache, { recursive: true }).map(String).sort() : []);
+    const untouched = listing();
+    expect((await run(["help"], { ACCOUNTS_PROXY_ACCOUNTS_FILE: "" })).code).toBe(0);
+    expect(listing()).toEqual(untouched);
+  });
+});
 
 describe("claude sessions", () => {
-  test("an expiring token is refreshed once for concurrent requests (stored scopes sent), then reused; exchange log off", async () => {
-    // exchangeLog.enabled: false (plan 2026-10-26 X5): login and daemon run unwrapped and no exchange file appears.
-    home = await makeHome(`exchangeLog: {enabled: false}\n${BOTH_PROVIDERS}`);
+  test("an expiring token is refreshed once for concurrent requests (stored scopes sent), then reused; usage log off", async () => {
+    // logs.usage: false (plan 2026-10-27-23-29 L4): login and daemon run unwrapped and no usage file appears.
+    home = await makeHome(`logs: {usage: false}\n${BOTH_PROVIDERS}`);
     upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
@@ -65,7 +130,8 @@ describe("claude sessions", () => {
     expect((accounts("claude").accounts[0]!.data["expiresAt"] as number) > Date.now() + 60_000).toBe(true);
     expect((await claudeMessage(s)).status).toBe(200);
     expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
-    expect(readdirSync(join(home.dir, "logs")).filter((name) => name.startsWith("exchanges-"))).toEqual([]);
+    expect(logFiles(home, "usage")).toEqual([]);
+    expect(logFiles(home, "proxy").length).toBeGreaterThan(0);
   });
 
   test("H6: a rejected refresh marks the account needsLogin, later requests fail fast, a new login clears it; H4: a 5xx renewal keeps a valid token", async () => {
@@ -91,11 +157,11 @@ describe("claude sessions", () => {
     expect((await run(["account", "list", "claude"])).stdout).toBe(`* ${id}\n`);
     upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "server" }, 503));
     expect((await claudeMessage(s)).status).toBe(200);
-    expect(proxyLog()).toContain(`WARN claude: token renewal failed (claude upstream HTTP 503: {"error":"server"}); using the stored token of ${id} until it expires`);
+    expect(await loggedEventually(home!, `WARN claude: token renewal failed (claude upstream HTTP 503: {"error":"server"}); using the stored token of ${id} until it expires`)).toContain(`WARN claude: token renewal failed (claude upstream HTTP 503: {"error":"server"}); using the stored token of ${id} until it expires`);
 
     const pool = accounts("claude");
     pool.accounts[0]!.data["expiresAt"] = 0;
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify(pool));
+    writePool(home, "claude", pool);
     upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "server" }, 503));
     expect((await claudeMessage(s)).status).toBe(503);
   });
@@ -112,7 +178,7 @@ describe("claude sessions", () => {
     expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
     const sent = upstreams.find("/v1/messages").slice(-2);
     expect(sent[0]!.body).toBe(sent[1]!.body);
-    expect(proxyLog()).toContain("INFO claude: upstream 401; renewing the token once and retrying");
+    expect(await loggedEventually(home!, "INFO claude: upstream 401; renewing the token once and retrying")).toContain("INFO claude: upstream 401; renewing the token once and retrying");
   });
 
   /** Holds the next token-endpoint answer until `release`; then answers with `answer`. */
@@ -146,11 +212,11 @@ describe("claude sessions", () => {
     renewal.release();
     expect((await pending).status).toBe(200);
     expect(accounts("claude").accounts[0]!.data["accessToken"]).toBe("e2e-login-1");
-    expect(proxyLog()).toContain("was written meanwhile (new login); the renewed token serves this call only");
+    expect(await loggedEventually(home!, "was written meanwhile (new login); the renewed token serves this call only")).toContain("was written meanwhile (new login); the renewed token serves this call only");
 
     const expiring = accounts("claude");
     expiring.accounts[0]!.data["expiresAt"] = Date.now() + 60_000;
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify(expiring));
+    writePool(home, "claude", expiring);
     const rejected = holdRenewal(() => jsonResponse({ error: "invalid_grant" }, 400));
     upstreams.script("/v1/oauth/token", claudeToken({ access_token: "e2e-login-2" }));
     const failing = claudeMessage(s);
@@ -171,7 +237,7 @@ describe("claude sessions", () => {
     const renewal = holdRenewal(claudeToken({ access_token: "e2e-renewed" }));
     const pending = claudeMessage(s);
     await renewal.entered();
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [] }));
+    writePool(home, "claude", { accounts: [] });
     renewal.release();
     expect((await pending).status).toBe(200);
     expect(accounts("claude").accounts).toEqual([]);
@@ -196,7 +262,7 @@ describe("claude sessions", () => {
     await login("claude");
     const first = accounts("claude").accounts[0]!.id;
     const pool = accounts("claude");
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }, { provider: "claude", id: "third", label: "third", data: pool.accounts[0]!.data }], activeId: first }));
+    writePool(home, "claude", { accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }, { provider: "claude", id: "third", label: "third", data: pool.accounts[0]!.data }], activeId: first });
     const s = await serve();
     let release: () => void = () => undefined;
     const held = new Promise<void>((resolve) => (release = resolve));
@@ -211,7 +277,7 @@ describe("claude sessions", () => {
     expect((await run(["account", "use", "claude", "spare"])).code).toBe(0);
     release();
     expect((await pending).status).toBe(200);
-    const after = JSON.parse(readFileSync(join(home.dir, "accounts-claude.json"), "utf8")) as { activeId: string; accounts: { id: string; data: Record<string, unknown> }[] };
+    const after = readPool(home, "claude")! as { activeId: string; accounts: { id: string; data: Record<string, unknown> }[] };
     expect(after.activeId).toBe("spare");
     expect(after.accounts.find((a) => a.id === first)!.data["accessToken"]).toBe("e2e-renewed");
 
@@ -219,7 +285,7 @@ describe("claude sessions", () => {
     // active one leaves none active (the proxy never picks another), and requests answer 401 until `account use`.
     expect(await run(["account", "remove", "claude", "third"])).toMatchObject({ code: 0, stdout: "removed claude account: third\n" });
     expect(await run(["account", "remove", "claude", "spare"])).toMatchObject({ code: 0, stdout: "removed claude account: spare\nno active claude account; run: bun run proxy account use claude <account-id>\n" });
-    const removed = JSON.parse(readFileSync(join(home.dir, "accounts-claude.json"), "utf8")) as { activeId?: string; accounts: { id: string }[] };
+    const removed = readPool(home, "claude")! as { activeId?: string; accounts: { id: string }[] };
     expect([removed.activeId, removed.accounts.map((a) => a.id)]).toEqual([undefined, [first]]);
     const refused = await claudeMessage(s);
     expect([refused.status, ((await refused.json()) as { error: { type: string; message: string } }).error]).toEqual([401, { type: "authentication_error", message: expect.stringContaining("login claude") }]);
@@ -248,11 +314,11 @@ describe("claude sessions", () => {
   test("a damaged or missing active account is a 401 asking for a login", async () => {
     home = await makeHome();
     await login("claude");
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [{ provider: "claude", id: "x", label: "x", data: { broken: true } }], activeId: "x" }));
+    writePool(home, "claude", { accounts: [{ provider: "claude", id: "x", label: "x", data: { broken: true } }], activeId: "x" });
     const s = await serve();
     const unreadable = await claudeMessage(s);
     expect([unreadable.status, ((await unreadable.json()) as { error: { message: string } }).error.message]).toEqual([401, "claude: stored credential of x is unreadable; run `accounts-proxy login claude`"]);
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [] }));
+    writePool(home, "claude", { accounts: [] });
     await daemon!.stop();
     const t = await serve();
     expect(((await (await claudeMessage(t)).json()) as { error: { message: string } }).error.message).toBe("claude: no active account; run `accounts-proxy login claude`");
@@ -265,7 +331,7 @@ describe("claude catalog", () => {
     await login("claude");
     upstreams.script("/v1/models", () => jsonResponse({ data: [], has_more: false }));
     expect((await run(["models", "claude"])).stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(built-in list\)$/);
-    expect(proxyLog()).toContain("WARN claude: live catalog unavailable (live catalog is empty)");
+    expect(await loggedEventually(home!, "WARN claude: live catalog unavailable (live catalog is empty)")).toContain("WARN claude: live catalog unavailable (live catalog is empty)");
     upstreams.script(
       "/v1/models",
       () => jsonResponse({ data: [{ type: "model", id: "claude-opus-5", display_name: "Claude Opus 5", created_at: "2026-07-24T00:00:00Z", max_input_tokens: 1_000_000, max_tokens: 128_000 }], has_more: true, last_id: "claude-opus-5" }),
@@ -280,7 +346,7 @@ describe("claude catalog", () => {
     writeFileSync(cache, JSON.stringify({ ...JSON.parse(readFileSync(cache, "utf8")), fetchedAt: 0 }));
     upstreams.script("/v1/models", () => jsonResponse({ type: "error", error: { type: "api_error", message: "down" } }, 500));
     expect((await run(["models", "claude"])).stdout.split("\n")[0]).toBe("# claude: 2 models (stored copy of the live catalog)");
-    expect(proxyLog()).toContain("live catalog unavailable (models catalog HTTP 500)");
+    expect(await loggedEventually(home!, "live catalog unavailable (models catalog HTTP 500)")).toContain("live catalog unavailable (models catalog HTTP 500)");
   });
 });
 
@@ -341,7 +407,7 @@ describe("antigravity sessions", () => {
     await login("antigravity");
     const minted = accounts("antigravity").accounts[0]!;
     expect(minted.id).toMatch(/^antigravity-[0-9a-f-]{36}$/);
-    expect(proxyLog()).toContain("WARN antigravity: loadCodeAssist failed");
+    expect(await loggedEventually(home!, "WARN antigravity: loadCodeAssist failed")).toContain("WARN antigravity: loadCodeAssist failed");
     const s = await serve();
     expect((await gemini(s)).status).toBe(200);
     expect((JSON.parse(upstreams.find("/v1internal:streamGenerateContent").at(-1)!.body) as { project: string }).project).toBe("onboarded-1");

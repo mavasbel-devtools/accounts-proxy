@@ -3,8 +3,9 @@
 // for hermetic e2e: ACCOUNTS_PROXY_TEST_UPSTREAM_* repoint a provider's hosts, and only to http://127.0.0.1 — any
 // other value is a fatal configuration error, so a production configuration can never be redirected.
 import * as nodeFs from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { enabledProviders, modelListMaxAgeMs, parseProxyConfig, type ProxyConfig } from "@accounts-proxy/core/domain/config.ts";
 import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
@@ -15,7 +16,7 @@ import type { DeviceLoginClientPort } from "@accounts-proxy/core/ports/outbound/
 import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
 import type { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
-import type { BrowserLauncherPort, ClockPort, ConsoleMirrorPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { BrowserLauncherPort, ClockPort, ConsoleMirrorPort, HashPort, LockPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import type { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
 import { AnthropicCodec } from "@accounts-proxy/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
@@ -94,12 +95,13 @@ import type { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/serv
 import { SystemBrowserLauncher } from "@accounts-proxy/proxy/adapters/outbound/browser-launcher.ts";
 import { FetchTransport, type FetchFunction } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
 import { DEFAULT_LOCK_OPTIONS, FileLock, vanishingStatFs, type FileLockOptions, type LockFs } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
-import { FileCredentialStore, FileKeyValueStore, FileProxyTokenStore } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
+import { AccountsFileStore, editedAccountsFs, FileKeyValueStore, FileProxyTokenStore, type AccountsFileFs } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { LoopbackCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/loopback-callback-server.ts";
-import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
+import { CryptoRandom, NodeHash, StreamLogger, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
+import { LockedLogRetention, PROXY_LOG, USAGE_LOG, WinstonLogStream, type LogKind } from "@accounts-proxy/proxy/adapters/outbound/log-files.ts";
 import { ZstdContentDecoder, ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
-import { AsyncExchangeScope, FileExchangeSink } from "@accounts-proxy/proxy/adapters/outbound/exchange-log-file.ts";
-import { MirroredExchangeSink, MirroredLogger, TerminalMirror } from "@accounts-proxy/proxy/adapters/outbound/console-mirror.ts";
+import { AsyncExchangeScope, StreamExchangeSink } from "@accounts-proxy/proxy/adapters/outbound/exchange-log-file.ts";
+import { MirroredLogger, TerminalMirror } from "@accounts-proxy/proxy/adapters/outbound/console-mirror.ts";
 import { DaemonConsoleService } from "@accounts-proxy/proxy/application/daemon-console-service.ts";
 import { LoggingTransport } from "@accounts-proxy/proxy/adapters/outbound/logging-transport.ts";
 import { LoggingBrowserLauncher, LoggingCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/logging-login.ts";
@@ -194,6 +196,8 @@ export type TestHooks = {
   readonly lockStatVanishes: boolean;
   /** The daemon binds UNASSIGNED_TEST_HOST, so listen fails with an error other than EADDRINUSE. */
   readonly listenUnassigned: boolean;
+  /** The first n writes of the accounts file see a hand edit before their rename (plan 2026-10-26-23-32 A3b). */
+  readonly accountsEdited: number | undefined;
 };
 
 /** RFC 5737 TEST-NET-1: documentation-only, never assigned to a host, so binding it always fails (EADDRNOTAVAIL). */
@@ -205,6 +209,7 @@ const HOOK_VARIABLES = {
   lockTimeoutMs: "ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS",
   lockStatVanishes: "ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES",
   listenUnassigned: "ACCOUNTS_PROXY_TEST_LISTEN_UNASSIGNED",
+  accountsEdited: "ACCOUNTS_PROXY_TEST_ACCOUNTS_EDITED",
 } as const;
 const PLATFORMS: readonly string[] = ["linux", "darwin", "win32"];
 
@@ -224,11 +229,11 @@ export function hooksFrom(env: Readonly<Record<string, string | undefined>>, sea
   }
   const platform = env[HOOK_VARIABLES.platform];
   if (platform !== undefined && !PLATFORMS.includes(platform)) throw new TestHookError(`${HOOK_VARIABLES.platform} must be one of ${PLATFORMS.join(", ")}`);
-  const milliseconds = (name: string): number | undefined => {
+  const positive = (name: string, unit: string): number | undefined => {
     const value = env[name];
     if (value === undefined) return undefined;
     const n = Number(value);
-    if (!Number.isInteger(n) || n < 1) throw new TestHookError(`${name} must be a positive integer (milliseconds)`);
+    if (!Number.isInteger(n) || n < 1) throw new TestHookError(`${name} must be a positive integer (${unit})`);
     return n;
   };
   const flag = (name: string): boolean => {
@@ -238,10 +243,11 @@ export function hooksFrom(env: Readonly<Record<string, string | undefined>>, sea
   };
   return {
     platform: platform as NodeJS.Platform | undefined,
-    upstreamIdleMs: milliseconds(HOOK_VARIABLES.upstreamIdleMs),
-    lockTimeoutMs: milliseconds(HOOK_VARIABLES.lockTimeoutMs),
+    upstreamIdleMs: positive(HOOK_VARIABLES.upstreamIdleMs, "milliseconds"),
+    lockTimeoutMs: positive(HOOK_VARIABLES.lockTimeoutMs, "milliseconds"),
     lockStatVanishes: flag(HOOK_VARIABLES.lockStatVanishes),
     listenUnassigned: flag(HOOK_VARIABLES.listenUnassigned),
+    accountsEdited: positive(HOOK_VARIABLES.accountsEdited, "writes"),
   };
 }
 
@@ -253,8 +259,10 @@ function onOrigin(production: string, origin: string | undefined): string {
 }
 
 export type ContainerOptions = {
-  /** Data directory: proxy.yaml, token.json, accounts-*.json, state/, locks/, logs/. */
+  /** Data directory: proxy.yaml, token.json, state/, logs/. */
   readonly home: string;
+  /** The one accounts file (plan 2026-10-26-23-32); the locks live in its directory's locks/. */
+  readonly accounts: AccountsFileConfig;
   readonly out: Writer;
   readonly err: Writer;
   readonly stdin: Readable;
@@ -280,8 +288,43 @@ export function defaultHome(env: Readonly<Record<string, string | undefined>>): 
   return env["ACCOUNTS_PROXY_HOME"] ?? join(homedir(), ".local", "share", "accounts-proxy");
 }
 
+export const ACCOUNTS_FILE_VARIABLE = "ACCOUNTS_PROXY_ACCOUNTS_FILE";
+
+export class AccountsFileVariableError extends Error {
+  constructor(value: string) {
+    super(`${ACCOUNTS_FILE_VARIABLE} must be an absolute path (got ${JSON.stringify(value)})`);
+    this.name = "AccountsFileVariableError";
+  }
+}
+
+function isRepositoryRoot(dir: string): boolean {
+  const manifest = join(dir, "package.json");
+  return existsSync(manifest) && (JSON.parse(readFileSync(manifest, "utf8")) as { name?: unknown }).name === "accounts-proxy";
+}
+
+/**
+ * The accounts file (plan 2026-10-26-23-32 A2): ACCOUNTS_PROXY_ACCOUNTS_FILE (an absolute path), else `.cache/accounts.json`
+ * in the repository the program runs from — the nearest directory above `script` whose package.json is named
+ * `accounts-proxy` (the source entry and the built bundle alike).
+ */
+export function accountsFileOf(env: Readonly<Record<string, string | undefined>>, script: string): string {
+  const given = env[ACCOUNTS_FILE_VARIABLE];
+  if (given !== undefined) {
+    if (!isAbsolute(given)) throw new AccountsFileVariableError(given);
+    return given;
+  }
+  let dir = dirname(resolve(script));
+  while (!isRepositoryRoot(dir) && dirname(dir) !== dir) dir = dirname(dir);
+  return join(dir, ".cache", "accounts.json");
+}
+
+/** The accounts file and the filesystem calls it is written with (plan 2026-10-26-23-32 A1–A3b). */
+export type AccountsFileConfig = { readonly path: string; readonly fs: AccountsFileFs };
+
 export type GraphOptions = {
   readonly home: string;
+  /** The one accounts file; its directory also holds the locks every writer of it takes (A3a). */
+  readonly accounts: AccountsFileConfig;
   /** Where `serve` prints its log lines and exchange records once started (plan 2026-10-27 C1). */
   readonly out: Writer;
   readonly transport: HttpTransportPort;
@@ -336,6 +379,8 @@ export type ProviderGraph = {
   readonly timer: TimerPort;
   readonly logger: LoggerPort;
   readonly store: CredentialStorePort;
+  /** The cross-process lock every file write takes (plan 2026-10-27-23-29 W1). */
+  readonly lock: LockPort;
   readonly transport: HttpTransportPort;
   readonly claude?: ClaudeGraph;
   readonly antigravity?: AntigravityGraph;
@@ -343,17 +388,19 @@ export type ProviderGraph = {
   readonly gateways: readonly GatewayGraph[];
   /** The reference model catalog (plan 2026-10-16 rule M4), shared by the OpenCode catalogs and the detailed list. */
   readonly reference: ModelReferencePort;
-  /** The exchange log (plan 2026-10-26 X1–X6), when `exchangeLog.enabled`; `transport` already records through it. */
+  /** The usage log (plan 2026-10-26 X1–X6, plan 2026-10-27-23-29 L2), when `logs.usage`; `transport` already records through it. */
   readonly exchangeLog?: ExchangeLog;
-  /** The console copy of `logger` and of the exchange log, silent until `serve` starts it (plan 2026-10-27 C1). */
+  /** The console copy of `logger`, silent until `serve` starts it (plan 2026-10-27 C1, L5). */
   readonly console: ConsoleMirrorPort;
+  /** Ends every log stream of this process, so the last line is on disk (plan 2026-10-27-23-29 L6). */
+  readonly closeLogs: () => Promise<void>;
 };
 
 export type ExchangeLog = { readonly sink: ExchangeSinkPort; readonly scope: ExchangeScopePort };
 
-function exchangeLogOf(home: string, config: ProxyConfig, clock: ClockPort, mirror: ConsoleMirrorPort): ExchangeLog {
-  const file = new FileExchangeSink(join(home, "logs"), clock, new NodeHash(), config.exchangeLog.retentionDays, process.pid);
-  return { sink: new MirroredExchangeSink(file, mirror, clock, new NodeHash(), process.pid), scope: new AsyncExchangeScope() };
+/** The log folder: `logs/` next to the accounts file and its `locks/` (plan 2026-10-27-23-29 L1). */
+export function logsDirectoryOf(accountsFile: string): string {
+  return join(dirname(accountsFile), "logs");
 }
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
@@ -364,12 +411,22 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const random = new CryptoRandom();
   const timer = new SystemTimer();
   const mirror = new TerminalMirror(options.out);
-  const logger = new MirroredLogger(new FileLogger(join(options.home, "logs", "proxy.log"), clock), mirror, clock);
-  const exchangeLog = config.exchangeLog.enabled ? exchangeLogOf(options.home, config, clock, mirror) : undefined;
+  const lock = new FileLock(dirname(options.accounts.path), clock, timer, options.lock.options, options.lock.fs);
+  const logsDirectory = logsDirectoryOf(options.accounts.path);
+  const retention = new LockedLogRetention(logsDirectory, lock, clock, config.logs.retentionDays, nodeFs);
+  // The last sweep a new file started; the process waits for it before it exits (L3, L6).
+  let swept: Promise<void> = Promise.resolve();
+  const streamOf = (kind: LogKind) =>
+    new WinstonLogStream(logsDirectory, kind, process.pid, config.logs.maxFileMegabytes, () => {
+      swept = retention.sweep();
+    });
+  const proxyLog = streamOf(PROXY_LOG);
+  const usageLog = config.logs.usage ? streamOf(USAGE_LOG) : undefined;
+  const logger = new MirroredLogger(new StreamLogger(proxyLog, clock), mirror, clock);
+  const exchangeLog = usageLog !== undefined ? { sink: new StreamExchangeSink(usageLog, clock, new NodeHash(), process.pid), scope: new AsyncExchangeScope() } : undefined;
   const transport = exchangeLog !== undefined ? new LoggingTransport(options.transport, exchangeLog.sink, exchangeLog.scope, clock, random, new ZstdContentDecoder()) : options.transport;
-  const state = new FileKeyValueStore(options.home);
-  const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
-  const store = new FileCredentialStore(options.home, lock);
+  const state = new FileKeyValueStore(options.home, lock);
+  const store = new AccountsFileStore(options.accounts.path, lock, options.accounts.fs);
   const maxAgeMs = modelListMaxAgeMs(config);
 
   let claude: ClaudeGraph | undefined;
@@ -416,6 +473,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     timer,
     logger,
     store,
+    lock,
     transport,
     gateways,
     reference,
@@ -424,6 +482,10 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     ...(openai ? { openai } : {}),
     ...(exchangeLog ? { exchangeLog } : {}),
     console: mirror,
+    closeLogs: async () => {
+      await Promise.all([proxyLog.close(), usageLog?.close()]);
+      await swept;
+    },
   };
 }
 
@@ -520,7 +582,7 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const providers: ProviderPort[] = [];
   for (const wired of [graph.claude, graph.antigravity, graph.openai]) if (wired !== undefined) providers.push(wired.provider);
   for (const gateway of graph.gateways) providers.push(gateway.provider);
-  const access = new AccessService(new FileProxyTokenStore(home), graph.random, new NodeHash());
+  const access = new AccessService(new FileProxyTokenStore(home, graph.lock), graph.random, new NodeHash());
   const models = new ListModelsService(providers);
   const describe = new DescribeModelsService(models, graph.reference);
   const refresh = new RefreshModelsService(providers, graph.reference, describe);
@@ -542,7 +604,7 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   return { handler, errors, refresh, ports: { models: describe, opencode, origin, access, health } };
 }
 
-export async function buildCli(options: ContainerOptions): Promise<{ readonly config: ProxyConfig; readonly driver: Driver }> {
+export async function buildCli(options: ContainerOptions): Promise<{ readonly config: ProxyConfig; readonly driver: Driver; readonly closeLogs: () => Promise<void> }> {
   const graph = await buildGraph(options);
   const clients: OAuthClientPort[] = [];
   const reporters: UsageReporterPort[] = [];
@@ -589,7 +651,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     { server, shutdown: options.shutdown, console: new DaemonConsoleService(graph.console) },
   );
   const driver = new CommandLineDriver(commands, PROGRAM, options.out, options.err);
-  return { config: graph.config, driver };
+  return { config: graph.config, driver, closeLogs: graph.closeLogs };
 }
 
 /** The proxy's command tree: every command over the inbound ports it drives. */
@@ -609,14 +671,18 @@ export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
 
 /** Builds and runs the CLI; configuration and store errors are reported, never thrown. */
 export async function runCli(argv: readonly string[], options: ContainerOptions): Promise<number> {
-  let driver: Driver;
+  let cli: Awaited<ReturnType<typeof buildCli>>;
   try {
-    driver = (await buildCli(options)).driver;
+    cli = await buildCli(options);
   } catch (error) {
     options.err(`error: ${errorMessage(error)}\n`);
     return 1;
   }
-  return driver.run(argv);
+  try {
+    return await cli.driver.run(argv);
+  } finally {
+    await cli.closeLogs();
+  }
 }
 
 /** Production entry: real home, terminal, network and process signals (seams only from the hermetic variables). */
@@ -624,15 +690,18 @@ export async function main(argv: readonly string[]): Promise<number> {
   const err = (text: string) => void process.stderr.write(text);
   let seams: UpstreamSeams;
   let hooks: TestHooks;
+  let accountsFile: string;
   try {
     seams = seamsFrom(process.env);
     hooks = hooksFrom(process.env, seams);
+    accountsFile = accountsFileOf(process.env, process.argv[1]!);
   } catch (error) {
     err(`error: ${errorMessage(error)}\n`);
     return 1;
   }
   return runCli(argv, {
     home: defaultHome(process.env),
+    accounts: { path: accountsFile, fs: hooks.accountsEdited !== undefined ? editedAccountsFs(nodeFs, accountsFile, hooks.accountsEdited) : nodeFs },
     opencodeData: opencodeDataDir(process.env),
     entry: [process.execPath, ...process.argv.slice(1, 2)],
     out: (text) => process.stdout.write(text),

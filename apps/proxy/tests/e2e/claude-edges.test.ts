@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, te
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, readPool, runProxy, startDaemon, writePool, type Daemon, type Home, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -53,13 +53,11 @@ async function sentFor(s: Session, body: Record<string, unknown>): Promise<Recor
   await res.text();
   return JSON.parse(upstreams.find(MESSAGES).at(-1)!.body) as Record<string, unknown>;
 }
-const accountsFile = () => join(home!.dir, "accounts-claude.json");
-const pool = () => JSON.parse(readFileSync(accountsFile(), "utf8")) as { activeId?: string; accounts: { id: string; data: Record<string, unknown> }[] };
+const pool = () => readPool(home!, "claude")! as { activeId?: string; accounts: { id: string; data: Record<string, unknown> }[] };
 function setTokens(fields: Record<string, unknown>): void {
   const current = pool();
-  writeFileSync(accountsFile(), JSON.stringify({ ...current, accounts: current.accounts.map((a) => ({ ...a, data: { ...a.data, ...fields } })) }));
+  writePool(home!, "claude", { ...current, accounts: current.accounts.map((a) => ({ ...a, data: { ...a.data, ...fields } })) });
 }
-const proxyLog = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
 
 describe("model envelope from live capabilities", () => {
   test("adaptive with high effort, and enabled-only without limits, both absent from the captured table", async () => {
@@ -159,7 +157,7 @@ describe("accounts and upstream answers", () => {
     upstreams.script("/v1/models", ...Array.from({ length: 10 }, (_, n) => page(n)));
     const listed = await run(["models", "claude"]);
     expect(listed.stdout.split("\n")[0]).toBe("# claude: 10 models (live catalog)");
-    expect(proxyLog()).toContain("WARN claude: catalog cache unreadable: StoreCorruptError");
+    expect(await loggedEventually(home!, "WARN claude: catalog cache unreadable: StoreCorruptError")).toContain("WARN claude: catalog cache unreadable: StoreCorruptError");
   });
 
   test("a catalog copy that cannot be written is logged; the live list is still used", async () => {
@@ -172,7 +170,7 @@ describe("accounts and upstream answers", () => {
     const listed = await run(["models", "claude"]);
     chmodSync(join(home.dir, "state", "claude"), 0o700);
     expect(listed.stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(live catalog\)$/);
-    expect(proxyLog()).toContain("WARN claude: catalog cache write failed: Error: EACCES");
+    expect(await loggedEventually(home!, "WARN claude: catalog cache write failed: Error: EACCES")).toContain("WARN claude: catalog cache write failed: Error: EACCES");
   });
 
   test("model_selector failure falls back to /v1/models in live catalog", async () => {
@@ -183,7 +181,7 @@ describe("accounts and upstream answers", () => {
     upstreams.script("/v1/models", page);
     const listed = await run(["models", "claude"]);
     expect(listed.stdout.split("\n")[0]).toBe("# claude: 1 models (live catalog)");
-    expect(proxyLog()).toContain("INFO claude: model_selector failed (model_selector HTTP 500), trying /v1/models");
+    expect(await loggedEventually(home!, "INFO claude: model_selector failed (model_selector HTTP 500), trying /v1/models")).toContain("INFO claude: model_selector failed (model_selector HTTP 500), trying /v1/models");
   });
 
   test("model_selector with empty or malformed entries parses valid entries and falls back if empty", async () => {

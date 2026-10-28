@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, te
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, readPool, runProxy, startDaemon, writePool as writeStoredPool, type Daemon, type Home, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { envelopeStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -60,10 +60,9 @@ const hello = { contents: [{ role: "user", parts: [{ text: "hi" }] }] };
 const candidate = (text: string) => ({ candidates: [{ content: { role: "model", parts: [{ text }] }, finishReason: "STOP" }] });
 const texts = (a: Answer) => ((a.body["candidates"] as { content: { parts: { text?: string }[] } }[])[0]!.content.parts.map((p) => p.text ?? "").join(""));
 const message = (a: Answer) => (a.body["error"] as { message: string }).message;
-const accountsFile = () => join(home!.dir, "accounts-antigravity.json");
-const pool = () => JSON.parse(readFileSync(accountsFile(), "utf8")) as { activeId?: string; accounts: { id: string; label: string; data: Record<string, unknown> }[] };
-const writePool = (value: unknown) => writeFileSync(accountsFile(), JSON.stringify(value));
-const proxyLog = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
+const pool = () => readPool(home!, "antigravity")! as { activeId?: string; accounts: { id: string; label: string; data: Record<string, unknown> }[] };
+const writePool = (value: unknown) => writeStoredPool(home!, "antigravity", value);
+const proxyLog = () => proxyLogOf(home!);
 const lastBearer = () => upstreams.find(GENERATE).at(-1)!.headers["authorization"];
 /** Sets fields of the active account's stored tokens (e.g. expiresAt 0 makes the next request refresh). */
 function setTokens(tokens: Record<string, unknown>): void {
@@ -112,7 +111,7 @@ describe("stream shapes", () => {
     );
     const answer = await generate(s, hello);
     expect([answer.status, texts(answer)]).toEqual([200, "framed"]);
-    expect(proxyLog()).toContain("WARN antigravity: dropping malformed SSE event (SyntaxError: JSON Parse error");
+    expect(await loggedEventually(home!, "WARN antigravity: dropping malformed SSE event (SyntaxError: JSON Parse error")).toContain("WARN antigravity: dropping malformed SSE event (SyntaxError: JSON Parse error");
   });
 
   test("a bare candidates envelope; a non-object or non-response payload is a 502, or an error element after the first byte", async () => {
@@ -139,7 +138,7 @@ describe("stream shapes", () => {
     expect(texts(await generate(s, hello))).toBe("one");
     upstreams.script(GENERATE, () => jsonResponse([5, { response: candidate("two") }]));
     expect(texts(await generate(s, hello))).toBe("two");
-    expect(proxyLog()).toContain("WARN antigravity: dropping non-object JSON stream envelope (number)");
+    expect(await loggedEventually(home!, "WARN antigravity: dropping non-object JSON stream envelope (number)")).toContain("WARN antigravity: dropping non-object JSON stream envelope (number)");
     const untypedBody = new TextEncoder().encode(`data: ${JSON.stringify({ response: candidate("untyped") })}\n\n`);
     upstreams.script(GENERATE, () => new Response(new ReadableStream({ start: (c) => (c.enqueue(untypedBody), c.close()) })));
     const untyped = await generate(s, hello);
@@ -398,15 +397,18 @@ describe("refresh lock", () => {
     const refused = await generate(session, hello);
     chmodSync(join(home.dir, "locks"), 0o700);
     expect([refused.status, (refused.body["error"] as { status: string }).status]).toEqual([500, "INTERNAL"]);
-    expect(proxyLog()).toContain("EACCES");
+    expect(await loggedEventually(home!, "EACCES")).toContain("EACCES");
   });
 
   test("a lock that cannot be released is left behind; hooks: a lock timeout is a 500, a lock that vanishes is not stale", async () => {
     home = await makeHome();
     await login();
     let session = await serve({ ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS: "300" });
-    // An expiring (still valid) token whose renewal fails with a 5xx is used as stored (H4): nothing is written, so the
-    // only file the locks directory still needs is the release of the renewal lock, which the chmod makes fail.
+    // A first answer stores the session id (its write takes the state lock, plan 2026-10-27-23-29 W1), so the next one
+    // writes no state. An expiring (still valid) token whose renewal fails with a 5xx is used as stored (H4): nothing
+    // is written, so the only file the locks directory still needs is the release of the renewal lock, which the chmod
+    // makes fail.
+    expect((await generate(session, hello)).status).toBe(200);
     setTokens({ expiresAt: Date.now() + 60_000 });
     let release: () => void = () => undefined;
     const refreshing = new Promise<void>((resolve) => (release = resolve));
@@ -427,7 +429,7 @@ describe("refresh lock", () => {
     setTokens({ expiresAt: 0 });
     const timedOut = await generate(session, hello);
     expect([timedOut.status, (timedOut.body["error"] as { status: string }).status]).toEqual([500, "INTERNAL"]);
-    expect(proxyLog()).toContain(`could not acquire ${LOCK()} within 300 ms`);
+    expect(await loggedEventually(home!, `could not acquire ${LOCK()} within 300 ms`)).toContain(`could not acquire ${LOCK()} within 300 ms`);
 
     session = await restart({ ACCOUNTS_PROXY_TEST_LOCK_STAT_VANISHES: "1" });
     const waiting = generate(session, hello);

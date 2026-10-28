@@ -33,8 +33,6 @@ export class AccessService extends AccessPort {
   private async loadOrCreate(): Promise<string> {
     const stored = await this.store.read();
     if (stored !== undefined) return stored;
-    const token = base64UrlEncode(this.random.bytes(TOKEN_BYTES));
-    await this.store.write(token);
-    return token;
+    return this.store.createIfAbsent(base64UrlEncode(this.random.bytes(TOKEN_BYTES)));
   }
 }

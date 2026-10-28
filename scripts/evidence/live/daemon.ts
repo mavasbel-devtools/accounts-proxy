@@ -23,6 +23,7 @@ export class ManualShutdown extends ShutdownSignal {
 export function daemonOptions(live: Live, out: (text: string) => void, shutdown: ShutdownSignal): ContainerOptions {
   return {
     home: live.home,
+    accounts: live.accounts,
     opencodeData: opencodeDataDir(process.env),
     entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "proxy", "src", "main", "cli.ts")],
     out,

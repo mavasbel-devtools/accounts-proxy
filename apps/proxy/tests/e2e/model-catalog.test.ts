@@ -3,11 +3,11 @@
 // committed extract of models.opencode.ai, the routes `/proxy/v1/models`, `/opencode/config.json` and
 // `/.well-known/opencode`, the commands `models --json` and `opencode-config`, and the reference catalog's fallbacks.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { validate } from "@accounts-proxy/test-support/json-schema.ts";
-import { ENTRY, makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { ENTRY, makeHome, runProxy, startDaemon, type Daemon, type Home, accountsFile, writePool, proxyLogOf, logFiles, logsDir, usageOf } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { GRANTED_SCOPES } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
 import { captured, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
@@ -137,13 +137,13 @@ describe("detailed model list and opencode configuration", () => {
       writeFileSync(copy, "[]");
       expect(await source()).toBe("static");
     }
-    const log = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
+    const log = proxyLogOf(home);
     expect(log).toContain("/api.json: no reference provider in the document)");
     // A directory where the copy belongs: unreadable, and the new copy cannot be written; the live read still answers.
     unlinkSync(copy);
     mkdirSync(copy);
     expect(await source()).toBe("live");
-    const warned = readFileSync(join(home.dir, "logs", "proxy.log"), "utf8");
+    const warned = proxyLogOf(home);
     expect(warned).toContain("WARN model reference: cache unreadable");
     expect(warned).toContain("WARN model reference: cache write failed");
   });
@@ -153,7 +153,7 @@ describe("detailed model list and opencode configuration", () => {
     for (const provider of ["claude", "antigravity"]) expect((await run(["login", provider, "--timeout-seconds", "30"])).code).toBe(0);
     // An OpenAI account as the sign-in stores it (openai.test.ts covers the sign-in itself).
     const account = { accessToken: "e2e-openai-access", refreshToken: "e2e-openai-refresh", expiresAt: Date.now() + 3_600_000, scopes: GRANTED_SCOPES, clientId: "oaiapp_e2e", subject: "e2e-subject", idToken: "x.y.z", email: "e2e@example.com" };
-    writeFileSync(join(home.dir, "accounts-openai.json"), JSON.stringify({ accounts: [{ provider: "openai", id: "oaiapp_e2e", label: "e2e@example.com", data: account }], activeId: "oaiapp_e2e" }), { mode: 0o600 });
+    writePool(home, "openai", { accounts: [{ provider: "openai", id: "oaiapp_e2e", label: "e2e@example.com", data: account }], activeId: "oaiapp_e2e" });
     if (existsSync(join(home.dir, "state", "model-reference.json"))) unlinkSync(join(home.dir, "state", "model-reference.json"));
     // A fresh stored Claude list whose entry states no capabilities and no limits (the type allows it; every list the
     // proxy fetches fills them, so only a stored copy can lack them).
@@ -211,8 +211,8 @@ describe("detailed model list and opencode configuration", () => {
     const without = (JSON.parse((await run(["models", "opencode", "--json"])).stdout) as { catalogs: { source: string; models: { id: string; formats: string[] }[] }[] }).catalogs[0]!;
     expect([without.source, without.models.find((m) => m.id === "opencode/big-pickle")!.formats]).toEqual(["static", ["openai-chat"]]);
     // A defect while listing (an account file that is a directory) is never hidden as `unavailable`.
-    unlinkSync(join(home.dir, "accounts-antigravity.json"));
-    mkdirSync(join(home.dir, "accounts-antigravity.json"));
+    rmSync(accountsFile(home), { force: true });
+    mkdirSync(accountsFile(home));
     const broken = await run(["models"]);
     expect([broken.code, broken.stderr]).toEqual([1, expect.stringContaining("EISDIR")]);
   });
@@ -252,7 +252,8 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
     // Asked by name, the provider's own error; a defect in a refresh of every provider is never hidden.
     const named = await run(["models", "antigravity", "--refresh"]);
     expect([named.code, named.stderr]).toEqual([1, "error: antigravity: no active account; run `accounts-proxy login antigravity`\n"]);
-    mkdirSync(join(home.dir, "accounts-antigravity.json"));
+    rmSync(accountsFile(home), { force: true });
+    mkdirSync(accountsFile(home));
     const broken = await run(["models", "--refresh"]);
     expect([broken.code, broken.stderr]).toEqual([1, expect.stringContaining("EISDIR")]);
   });
@@ -296,8 +297,10 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
       expect([result.code, result.stderr]).toEqual([1, expect.stringContaining("modelListMaxAgeMinutes must be a positive integer (minutes)")]);
     }
     for (const [setting, message] of [
-      ["exchangeLog: on", "exchangeLog must be a mapping"],
-      ["exchangeLog: {retentionDays: 0}", "exchangeLog.retentionDays must be a positive integer (days)"],
+      ["exchangeLog: {enabled: true}", "exchangeLog was replaced by logs: { usage, retentionDays, maxFileMegabytes }"],
+      ["logs: on", "logs must be a mapping"],
+      ["logs: {retentionDays: 0}", "logs.retentionDays must be a positive integer (days)"],
+      ["logs: {maxFileMegabytes: 0}", "logs.maxFileMegabytes must be a positive integer (megabytes)"],
     ] as const) {
       writeFileSync(join(home.dir, "proxy.yaml"), `${setting}\n${ALL}`);
       const result = await run(["help"]);
@@ -305,16 +308,27 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
     }
   });
 
-  test("the exchange log (plan 2026-10-26 X1-X5): every list read recorded; a day file past exchangeLog.retentionDays is removed", async () => {
-    home = await makeHome(`exchangeLog: {retentionDays: 2}\n${ALL}`);
-    const logs = join(home.dir, "logs");
+  test("the usage log (plan 2026-10-27-23-29 L1-L3): every list read recorded in this process's day file; files past logs.retentionDays are removed under the logs lock", async () => {
+    home = await makeHome(`logs: {retentionDays: 2}\n${ALL}`);
+    const logs = logsDir(home);
     mkdirSync(logs, { recursive: true });
-    writeFileSync(join(logs, "exchanges-2020-01-01.jsonl"), "{}\n");
-    writeFileSync(join(logs, "exchanges-notes.txt"), "kept: not a day file\n");
+    for (const name of ["2020-01-01-1-usage.jsonl", "2020-01-01-1-proxy.2.log", "exchanges-2020-01-01.jsonl", "proxy-2020-01-01.log", "notes.txt"]) writeFileSync(join(logs, name), "{}\n");
+    // A logs lock another process holds: the sweep gives up after the lock timeout and the command still succeeds.
+    mkdirSync(join(home.dir, "locks"), { recursive: true, mode: 0o700 });
+    const held = join(home.dir, "locks", "logs.lock");
+    writeFileSync(held, `${process.pid} ${Date.now()}\n`);
+    expect((await runProxy(home, ["models", "--refresh"], { ...upstreams.seamEnv(), ACCOUNTS_PROXY_TEST_LOCK_TIMEOUT_MS: "300" })).code).toBe(0);
+    expect(readdirSync(logs).filter((name) => name.startsWith("2020-"))).toHaveLength(2);
+    rmSync(held);
     expect((await run(["models", "--refresh"])).code).toBe(0);
-    const files = readdirSync(logs).filter((name) => name.startsWith("exchanges-")).sort();
-    expect(files).toEqual(["exchanges-notes.txt", `exchanges-${new Date().toISOString().slice(0, 10)}.jsonl`].sort());
-    const records = readFileSync(join(logs, files.find((f) => f.endsWith(".jsonl"))!), "utf8").trimEnd().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(readdirSync(logs).filter((name) => !name.startsWith(today)).sort()).toEqual(["notes.txt"]);
+    // One day file per process (the held-lock run and this one).
+    const usage = logFiles(home, "usage");
+    expect(usage).toHaveLength(2);
+    expect(usage.every((name) => new RegExp(`^${today}-\\d+-usage\\.jsonl$`).test(name))).toBe(true);
+    expect(readdirSync(join(home.dir, "locks"))).toEqual([]);
+    const records = usageOf(home);
     expect(records.some((r) => r["kind"] === "upstream-request" && String(r["url"]).endsWith(OPENROUTER))).toBe(true);
     expect(records.every((r) => r["schema"] === "accounts-proxy-exchange/1")).toBe(true);
   });

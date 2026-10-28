@@ -98,8 +98,9 @@ class MemoryTokenStore extends ProxyTokenStorePort {
     this.reads += 1;
     return this.value;
   }
-  async write(token: string) {
-    this.value = token;
+  async createIfAbsent(token: string) {
+    this.value ??= token;
+    return this.value;
   }
 }
 class TextHash extends HashPort {

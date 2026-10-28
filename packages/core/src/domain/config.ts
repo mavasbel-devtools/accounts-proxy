@@ -5,7 +5,9 @@
 // Plan E5: the default port is 4141 (measured free, outside every Windows excluded range).
 // Plan 2026-10-26 R1: `modelListMaxAgeMinutes` is how long a fetched model list (and the reference catalog) is reused
 // before the next use reads it again; default 1440 (24 h, the value the source plugins use).
-// Plan 2026-10-26 X5: `exchangeLog: { enabled, retentionDays }` records every HTTP exchange (default on, 14 days).
+// Plan 2026-10-27-23-29 L4: `logs: { usage, retentionDays, maxFileMegabytes }` — the usage records (default on), the days
+// a log file is kept (default 15) and the size past which a new file starts (default 100 MB). It replaces the former
+// `exchangeLog` (X5), which is refused with a message naming `logs`.
 import { isJsonObject } from "@accounts-proxy/core/domain/json.ts";
 import { isProviderId, PROVIDER_IDS, SUBSCRIPTION_PROVIDERS, type ProviderId } from "@accounts-proxy/core/domain/models.ts";
 import { resolveModelAddress } from "@accounts-proxy/core/domain/services/model-address.ts";
@@ -23,16 +25,16 @@ export type ProxyConfig = {
   readonly providers: Readonly<Record<ProviderId, ProviderSettings>>;
   readonly aliases: Readonly<Record<string, string>>;
   readonly modelListMaxAgeMinutes: number;
-  readonly exchangeLog: ExchangeLogSettings;
+  readonly logs: LogSettings;
 };
-export type ExchangeLogSettings = { readonly enabled: boolean; readonly retentionDays: number };
+export type LogSettings = { readonly usage: boolean; readonly retentionDays: number; readonly maxFileMegabytes: number };
 
 export const DEFAULT_PORT = 4141;
 export const DEFAULT_MODEL_LIST_MAX_AGE_MINUTES = 1440;
-export const DEFAULT_EXCHANGE_LOG: ExchangeLogSettings = { enabled: true, retentionDays: 14 };
+export const DEFAULT_LOGS: LogSettings = { usage: true, retentionDays: 15, maxFileMegabytes: 100 };
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
 const ALL_OFF: Readonly<Record<ProviderId, ProviderSettings>> = Object.fromEntries(PROVIDER_IDS.map((id) => [id, OFF])) as Record<ProviderId, ProviderSettings>;
-export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {}, modelListMaxAgeMinutes: DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, exchangeLog: DEFAULT_EXCHANGE_LOG };
+export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {}, modelListMaxAgeMinutes: DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, logs: DEFAULT_LOGS };
 
 /** The configured model-list age in milliseconds. */
 export function modelListMaxAgeMs(config: ProxyConfig): number {
@@ -53,14 +55,15 @@ function bool(value: unknown, where: string, fallback: boolean): boolean {
 export function parseProxyConfig(raw: unknown): ProxyConfig {
   if (raw === undefined || raw === null) return DEFAULT_CONFIG;
   if (!isJsonObject(raw)) throw new ConfigError("the document must be a mapping");
-  only(raw, ["port", "providers", "aliases", "modelListMaxAgeMinutes", "exchangeLog"], "the document");
+  if (raw.exchangeLog !== undefined) throw new ConfigError("exchangeLog was replaced by logs: { usage, retentionDays, maxFileMegabytes } (plan 2026-10-27-23-29)");
+  only(raw, ["port", "providers", "aliases", "modelListMaxAgeMinutes", "logs"], "the document");
   const port = raw.port ?? DEFAULT_PORT;
   if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) throw new ConfigError("port must be an integer 1-65535");
   const modelListMaxAgeMinutes = raw.modelListMaxAgeMinutes ?? DEFAULT_MODEL_LIST_MAX_AGE_MINUTES;
   if (typeof modelListMaxAgeMinutes !== "number" || !Number.isInteger(modelListMaxAgeMinutes) || modelListMaxAgeMinutes < 1) {
     throw new ConfigError("modelListMaxAgeMinutes must be a positive integer (minutes)");
   }
-  const exchangeLog = parseExchangeLog(raw.exchangeLog ?? {});
+  const logs = parseLogs(raw.logs ?? {});
   const providers: Record<ProviderId, ProviderSettings> = { ...ALL_OFF };
   const rawProviders = raw.providers ?? {};
   if (!isJsonObject(rawProviders)) throw new ConfigError("providers must be a mapping");
@@ -86,15 +89,23 @@ export function parseProxyConfig(raw: unknown): ProxyConfig {
     }
     aliases[alias] = target;
   }
-  return { port, providers, aliases, modelListMaxAgeMinutes, exchangeLog };
+  return { port, providers, aliases, modelListMaxAgeMinutes, logs };
 }
 
-function parseExchangeLog(raw: unknown): ExchangeLogSettings {
-  if (!isJsonObject(raw)) throw new ConfigError("exchangeLog must be a mapping");
-  only(raw, ["enabled", "retentionDays"], "exchangeLog");
-  const retentionDays = raw.retentionDays ?? DEFAULT_EXCHANGE_LOG.retentionDays;
-  if (typeof retentionDays !== "number" || !Number.isInteger(retentionDays) || retentionDays < 1) throw new ConfigError("exchangeLog.retentionDays must be a positive integer (days)");
-  return { enabled: bool(raw.enabled, "exchangeLog.enabled", DEFAULT_EXCHANGE_LOG.enabled), retentionDays };
+function positive(value: unknown, where: string, unit: string, fallback: number): number {
+  const n = value ?? fallback;
+  if (typeof n !== "number" || !Number.isInteger(n) || n < 1) throw new ConfigError(`${where} must be a positive integer (${unit})`);
+  return n;
+}
+
+function parseLogs(raw: unknown): LogSettings {
+  if (!isJsonObject(raw)) throw new ConfigError("logs must be a mapping");
+  only(raw, ["usage", "retentionDays", "maxFileMegabytes"], "logs");
+  return {
+    usage: bool(raw.usage, "logs.usage", DEFAULT_LOGS.usage),
+    retentionDays: positive(raw.retentionDays, "logs.retentionDays", "days", DEFAULT_LOGS.retentionDays),
+    maxFileMegabytes: positive(raw.maxFileMegabytes, "logs.maxFileMegabytes", "megabytes", DEFAULT_LOGS.maxFileMegabytes),
+  };
 }
 
 export function enabledProviders(config: ProxyConfig): ProviderId[] {
