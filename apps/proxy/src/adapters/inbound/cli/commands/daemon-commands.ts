@@ -1,6 +1,6 @@
 // `serve`, `token` and `status`: the daemon, its access token and whether it answers.
 import type { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
-import type { DaemonStatusPort } from "@accounts-proxy/core/ports/inbound/daemon.ts";
+import type { DaemonConsolePort, DaemonStatusPort } from "@accounts-proxy/core/ports/inbound/daemon.ts";
 import type { HealthPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CliCommand, type CommandHelp, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { HOME_VARIABLE, noArguments, PROGRAM, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -10,7 +10,7 @@ import type { Server, ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbo
 export const SHUTDOWN_GRACE_MS = 10_000;
 
 /** What `serve` runs: the socket server until the process is asked to stop. */
-export type CliDaemon = { readonly server: Server; readonly shutdown: ShutdownSignal };
+export type CliDaemon = { readonly server: Server; readonly shutdown: ShutdownSignal; readonly console: DaemonConsolePort };
 
 export const SERVE_HELP: CommandHelp = {
   name: "serve",
@@ -18,6 +18,7 @@ export const SERVE_HELP: CommandHelp = {
   summary: "run the daemon in the foreground (Ctrl-C stops it)",
   description: [
     `Listens on 127.0.0.1 at the port of proxy.yaml (default 4141) and serves every enabled provider. Every route except /health and /.well-known/opencode needs the proxy token (\`token\`). Ctrl-C (SIGINT) or SIGTERM stops it; in-flight responses get ${SHUTDOWN_GRACE_MS} ms (${SHUTDOWN_GRACE_MS / 1000} s) to finish. A port in use is fatal.`,
+    "Once it listens it prints, on stdout, every line it writes to <data>/logs/proxy.log and every exchange-log record (one JSON line each, credentials replaced as in the file; none while proxy.yaml has `exchangeLog.enabled: false`). The files are written as well.",
   ],
   exits: [{ name: "0", text: "stopped by SIGINT or SIGTERM" }, { name: "1", text: "the configuration is invalid or the port could not be bound: `error: <message>` on stderr" }, USAGE_EXIT],
   environment: [HOME_VARIABLE],
@@ -75,6 +76,7 @@ export class ServeCommand extends CliCommand {
     const providers = this.health.enabledProviders();
     out(`accounts-proxy listening on http://${listening.host}:${listening.port} (providers: ${providers.join(", ") || "none"})\n`);
     out(`clients authenticate with the proxy token: ${PROGRAM} token\n`);
+    this.daemon.console.attach();
     const signal = await this.daemon.shutdown.wait();
     out(`${signal}: stopping (in-flight responses get ${SHUTDOWN_GRACE_MS / 1000} s)\n`);
     await this.daemon.server.stop(SHUTDOWN_GRACE_MS);

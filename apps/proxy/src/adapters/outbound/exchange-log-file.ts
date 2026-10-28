@@ -15,6 +15,16 @@ const DAY_MS = 86_400_000;
 
 const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
+/** The redaction fingerprint: the first 12 hex digits of the value's SHA-256 (X4). */
+export function fingerprintOf(hash: HashPort): (value: string) => string {
+  return (value) => [...hash.sha256(value).slice(0, 6)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** One exchange-log line (without its newline) of an already redacted entry. */
+export function exchangeLine(redacted: ExchangeEntry, now: number, pid: number): string {
+  return JSON.stringify({ schema: EXCHANGE_LOG_SCHEMA, at: new Date(now).toISOString(), pid, ...redacted });
+}
+
 export class FileExchangeSink extends ExchangeSinkPort {
   private readonly redactor: Redactor;
   private prunedFor: string | undefined;
@@ -28,7 +38,7 @@ export class FileExchangeSink extends ExchangeSinkPort {
     private readonly pid: number,
   ) {
     super();
-    this.redactor = new Redactor((value) => [...hash.sha256(value).slice(0, 6)].map((b) => b.toString(16).padStart(2, "0")).join(""));
+    this.redactor = new Redactor(fingerprintOf(hash));
   }
 
   write(entry: ExchangeEntry): void {
@@ -40,8 +50,7 @@ export class FileExchangeSink extends ExchangeSinkPort {
         this.prunedFor = day;
         this.prune(now);
       }
-      const record = { schema: EXCHANGE_LOG_SCHEMA, at: new Date(now).toISOString(), pid: this.pid, ...redactEntry(entry, this.redactor) };
-      appendFileSync(join(this.directory, `exchanges-${day}.jsonl`), `${JSON.stringify(record)}\n`, { mode: PRIVATE_FILE_MODE });
+      appendFileSync(join(this.directory, `exchanges-${day}.jsonl`), `${exchangeLine(redactEntry(entry, this.redactor), now, this.pid)}\n`, { mode: PRIVATE_FILE_MODE });
     } catch {
       // the exchange log is best-effort by contract (X6)
     }

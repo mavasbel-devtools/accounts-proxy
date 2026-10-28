@@ -32,3 +32,10 @@ export abstract class LockPort {
 export abstract class BrowserLauncherPort {
   abstract open(url: string): Promise<void>;
 }
+
+/** The terminal copy of the daemon's log lines and exchange records: silent until started (plan 2026-10-27 C1). */
+export abstract class ConsoleMirrorPort {
+  abstract start(): void;
+  /** One complete line, without its newline; dropped while not started. Never throws. */
+  abstract line(text: string): void;
+}

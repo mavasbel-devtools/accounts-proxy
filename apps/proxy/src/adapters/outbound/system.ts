@@ -32,6 +32,11 @@ export class SystemTimer extends TimerPort {
   }
 }
 
+/** One log line: ISO timestamp, level, message (proxy.log and the daemon's console, plan 2026-10-27 C1). */
+export function logLine(now: number, level: string, message: string): string {
+  return `${new Date(now).toISOString()} ${level} ${message}`;
+}
+
 /**
  * Append-only file log: ISO timestamp, level, message. Never writes to the console (the CLI owns the terminal) and
  * never throws into the caller — a logging failure must not break a request or a login. Callers never pass secrets.
@@ -58,7 +63,7 @@ export class FileLogger extends LoggerPort {
   private write(level: string, message: string): void {
     try {
       mkdirSync(dirname(this.path), { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
-      appendFileSync(this.path, `${new Date(this.clock.now()).toISOString()} ${level} ${message}\n`, { mode: PRIVATE_FILE_MODE });
+      appendFileSync(this.path, `${logLine(this.clock.now(), level, message)}\n`, { mode: PRIVATE_FILE_MODE });
     } catch {
       // logging is best-effort by contract
     }

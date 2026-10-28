@@ -8,3 +8,8 @@ export type DaemonStatus =
 export abstract class DaemonStatusPort {
   abstract status(): Promise<DaemonStatus>;
 }
+
+/** `serve`: from the moment the daemon listens, every log line and exchange record is printed too (plan 2026-10-27 C1). */
+export abstract class DaemonConsolePort {
+  abstract attach(): void;
+}

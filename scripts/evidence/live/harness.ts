@@ -48,7 +48,7 @@ export async function openLive(): Promise<Live> {
   requireLive();
   const home = defaultHome(process.env);
   const recorder = new RecordingTransport(new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS));
-  const graph = await buildGraph({ home, transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
+  const graph = await buildGraph({ home, out: (text) => void process.stdout.write(text), transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in proxy.yaml");
   const redactor = new Redactor();
   for (const provider of PROVIDER_IDS) {

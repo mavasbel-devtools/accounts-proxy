@@ -15,7 +15,7 @@ import type { DeviceLoginClientPort } from "@accounts-proxy/core/ports/outbound/
 import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
 import type { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
 import type { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
-import type { BrowserLauncherPort, ClockPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { BrowserLauncherPort, ClockPort, ConsoleMirrorPort, HashPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
 import type { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
 import { AnthropicCodec } from "@accounts-proxy/dialect-anthropic/adapters/inbound/anthropic-codec.ts";
@@ -99,6 +99,8 @@ import { LoopbackCallbackServerFactory } from "@accounts-proxy/proxy/adapters/ou
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
 import { ZstdContentDecoder, ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
 import { AsyncExchangeScope, FileExchangeSink } from "@accounts-proxy/proxy/adapters/outbound/exchange-log-file.ts";
+import { MirroredExchangeSink, MirroredLogger, TerminalMirror } from "@accounts-proxy/proxy/adapters/outbound/console-mirror.ts";
+import { DaemonConsoleService } from "@accounts-proxy/proxy/application/daemon-console-service.ts";
 import { LoggingTransport } from "@accounts-proxy/proxy/adapters/outbound/logging-transport.ts";
 import { LoggingBrowserLauncher, LoggingCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/logging-login.ts";
 import { LoggingHttpHandler } from "@accounts-proxy/proxy/adapters/inbound/http/logging-http-handler.ts";
@@ -280,6 +282,8 @@ export function defaultHome(env: Readonly<Record<string, string | undefined>>): 
 
 export type GraphOptions = {
   readonly home: string;
+  /** Where `serve` prints its log lines and exchange records once started (plan 2026-10-27 C1). */
+  readonly out: Writer;
   readonly transport: HttpTransportPort;
   readonly lock: LockConfig;
   readonly seams: UpstreamSeams;
@@ -341,12 +345,15 @@ export type ProviderGraph = {
   readonly reference: ModelReferencePort;
   /** The exchange log (plan 2026-10-26 X1–X6), when `exchangeLog.enabled`; `transport` already records through it. */
   readonly exchangeLog?: ExchangeLog;
+  /** The console copy of `logger` and of the exchange log, silent until `serve` starts it (plan 2026-10-27 C1). */
+  readonly console: ConsoleMirrorPort;
 };
 
 export type ExchangeLog = { readonly sink: ExchangeSinkPort; readonly scope: ExchangeScopePort };
 
-function exchangeLogOf(home: string, config: ProxyConfig, clock: ClockPort): ExchangeLog {
-  return { sink: new FileExchangeSink(join(home, "logs"), clock, new NodeHash(), config.exchangeLog.retentionDays, process.pid), scope: new AsyncExchangeScope() };
+function exchangeLogOf(home: string, config: ProxyConfig, clock: ClockPort, mirror: ConsoleMirrorPort): ExchangeLog {
+  const file = new FileExchangeSink(join(home, "logs"), clock, new NodeHash(), config.exchangeLog.retentionDays, process.pid);
+  return { sink: new MirroredExchangeSink(file, mirror, clock, new NodeHash(), process.pid), scope: new AsyncExchangeScope() };
 }
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
@@ -356,8 +363,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const clock = new SystemClock();
   const random = new CryptoRandom();
   const timer = new SystemTimer();
-  const logger = new FileLogger(join(options.home, "logs", "proxy.log"), clock);
-  const exchangeLog = config.exchangeLog.enabled ? exchangeLogOf(options.home, config, clock) : undefined;
+  const mirror = new TerminalMirror(options.out);
+  const logger = new MirroredLogger(new FileLogger(join(options.home, "logs", "proxy.log"), clock), mirror, clock);
+  const exchangeLog = config.exchangeLog.enabled ? exchangeLogOf(options.home, config, clock, mirror) : undefined;
   const transport = exchangeLog !== undefined ? new LoggingTransport(options.transport, exchangeLog.sink, exchangeLog.scope, clock, random, new ZstdContentDecoder()) : options.transport;
   const state = new FileKeyValueStore(options.home);
   const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
@@ -415,6 +423,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     ...(antigravity ? { antigravity } : {}),
     ...(openai ? { openai } : {}),
     ...(exchangeLog ? { exchangeLog } : {}),
+    console: mirror,
   };
 }
 
@@ -577,7 +586,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       refresh: new RequestModelRefreshService(graph.transport, ports.access, daemonUrl, refresh),
       status: new DaemonStatusService(graph.transport, daemonUrl),
     },
-    { server, shutdown: options.shutdown },
+    { server, shutdown: options.shutdown, console: new DaemonConsoleService(graph.console) },
   );
   const driver = new CommandLineDriver(commands, PROGRAM, options.out, options.err);
   return { config: graph.config, driver };

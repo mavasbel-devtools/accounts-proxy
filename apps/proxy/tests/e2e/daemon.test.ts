@@ -251,6 +251,11 @@ describe("daemon: shutdown", () => {
     const stopped = await daemon.stop();
     expect(stopped.code).toBe(0);
     expect(stopped.stdout).toContain("SIGTERM: stopping (in-flight responses get 10 s)\nstopped\n");
+    // plan 2026-10-27 C1: after "listening on" every exchange record is printed too, credentials replaced.
+    const records = stopped.stdout.split("\n").filter((line) => line.startsWith("{")).map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(new Set(records.map((r) => r["kind"]))).toEqual(new Set(["client-request", "client-response", "upstream-request", "upstream-response"]));
+    expect(records.every((r) => r["schema"] === "accounts-proxy-exchange/1")).toBe(true);
+    expect(stopped.stdout.includes(token)).toBe(false);
     daemon = undefined as never;
   });
 });
