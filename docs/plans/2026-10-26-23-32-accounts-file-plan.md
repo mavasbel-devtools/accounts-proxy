@@ -67,3 +67,8 @@ always writes them to it, so the file can be edited by hand or copied.
 5. `bun run verify` (100 % unit+component, e2e, merged).
 6. A5 move-in on the live installation, daemon restart, live check per provider, report.
 7. Commit and push.
+
+## Amendment (2026-10-27)
+
+F4 is superseded: the systemd user unit `accounts-proxy.service` was removed at the user's request; the daemon runs
+from a terminal as `bun run proxy serve` in the repository, with the default data folder `~/.local/share/accounts-proxy`.
