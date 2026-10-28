@@ -28,3 +28,8 @@ aliases: {}
 # Minutes a fetched model list (and the reference catalog models.opencode.ai) is reused before the next request reads it
 # again; default 1440 (24 h). `accounts-proxy models --refresh` reads every list now (plan 2026-10-26 R1, R2).
 modelListMaxAgeMinutes: 1440
+# Every HTTP exchange (client and upstream, headers, bodies, timings, token usage; credentials redacted) as JSON lines in
+# logs/exchanges-YYYY-MM-DD.jsonl; day files older than retentionDays are deleted (plan 2026-10-26 X1-X6).
+exchangeLog:
+  enabled: true
+  retentionDays: 14

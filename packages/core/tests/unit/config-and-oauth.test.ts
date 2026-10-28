@@ -28,6 +28,13 @@ describe("parseProxyConfig", () => {
     expect(() => parseProxyConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
   });
 
+  test("exchangeLog: default on for 14 days; enabled and retentionDays read (plan 2026-10-26 X5)", () => {
+    expect(DEFAULT_CONFIG.exchangeLog).toEqual({ enabled: true, retentionDays: 14 });
+    expect(parseProxyConfig({}).exchangeLog).toEqual({ enabled: true, retentionDays: 14 });
+    expect(parseProxyConfig({ exchangeLog: { enabled: false } }).exchangeLog).toEqual({ enabled: false, retentionDays: 14 });
+    expect(parseProxyConfig({ exchangeLog: { retentionDays: 1 } }).exchangeLog).toEqual({ enabled: true, retentionDays: 1 });
+  });
+
   test("modelListMaxAgeMinutes: default 1440 (24 h), any positive integer (plan 2026-10-26 R1)", () => {
     expect([DEFAULT_CONFIG.modelListMaxAgeMinutes, DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, modelListMaxAgeMs(DEFAULT_CONFIG)]).toEqual([1440, 1440, 86_400_000]);
     const config = parseProxyConfig({ modelListMaxAgeMinutes: 10 });
@@ -52,6 +59,11 @@ describe("parseProxyConfig", () => {
     [{ providers: { antigravity: { enabled: "yes" } } }, "providers.antigravity.enabled must be true or false"],
     [{ providers: { antigravity: { enabled: true } } }, "enabled without acknowledgeTermsRisk: true"],
     [{ providers: { antigravity: { enabled: true, acknowledgeTermsRisk: false } } }, "enabled without acknowledgeTermsRisk: true"],
+    [{ exchangeLog: [] }, "exchangeLog must be a mapping"],
+    [{ exchangeLog: { keep: 1 } }, "unknown key(s) keep in exchangeLog"],
+    [{ exchangeLog: { retentionDays: 0 } }, "exchangeLog.retentionDays must be a positive integer (days)"],
+    [{ exchangeLog: { retentionDays: "7" } }, "exchangeLog.retentionDays must be a positive integer (days)"],
+    [{ exchangeLog: { enabled: "yes" } }, "exchangeLog.enabled must be true or false"],
     [{ modelListMaxAgeMinutes: 0 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ modelListMaxAgeMinutes: 1.5 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ modelListMaxAgeMinutes: "10" }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],

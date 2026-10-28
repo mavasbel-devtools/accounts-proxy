@@ -27,7 +27,7 @@ class Login extends LoginPort {
   }
 }
 class Accounts extends AccountAdminPort {
-  constructor(private readonly accounts: AccountSummary[]) {
+  constructor(private accounts: AccountSummary[]) {
     super();
   }
   async list() {
@@ -35,6 +35,10 @@ class Accounts extends AccountAdminPort {
   }
   async use(provider: ProviderId, id: string) {
     return { provider, id, label: id, active: true };
+  }
+  async remove(_provider: ProviderId, id: string) {
+    this.accounts = this.accounts.filter((a) => a.id !== id);
+    return this.accounts;
   }
 }
 class Usage extends UsagePort {
@@ -151,6 +155,7 @@ describe("the proxy's commands", () => {
     [["help", "account", "list"], "account list"],
     [["account", "list", "--help"], "account list"],
     [["account", "use", "-h"], "account use"],
+    [["account", "remove", "--help"], "account remove"],
     [["help", "quota"], "quota"],
     [["models", "-h"], "models"],
     [["opencode-config", "--help"], "opencode-config"],
@@ -172,7 +177,7 @@ describe("the proxy's commands", () => {
 
   test("every command's help has a description, its exit codes and at least two examples run as printed", () => {
     const all = [PROXY_HELP, ...PROXY_HELP.subcommands!, ...PROXY_HELP.subcommands!.flatMap((sub) => sub.subcommands ?? [])];
-    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "help", "list", "use"]);
+    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "help", "list", "use", "remove"]);
     for (const help of all) {
       expect(help.description.length).toBeGreaterThan(0);
       expect(help.exits.map((exit) => exit.name)).toContain("2");
@@ -217,13 +222,15 @@ describe("the proxy's commands", () => {
     [["login", "antigravity", "--timeout-seconds"], "--timeout-seconds needs a positive integer", "login"],
     [["login", "antigravity", "--bogus"], "unknown login option --bogus", "login"],
     [["login", "openrouter", "--key", "--from-opencode"], "--key and --from-opencode exclude each other", "login"],
-    [["account"], "missing account subcommand: one of list, use", "account"],
+    [["account"], "missing account subcommand: one of list, use, remove", "account"],
     [["account", "lst", "antigravity"], "unknown account subcommand lst (did you mean list?)", "account"],
     [["account", "bogus", "--help"], "unknown account subcommand bogus", "account"],
     [["account", "list"], "account list needs a provider", "account list"],
     [["account", "list", "antigravity", "extra"], "account list takes one provider", "account list"],
     [["account", "use", "antigravity"], "account use needs a provider and one account id", "account use"],
     [["account", "use", "antigravity", "a", "b"], "account use needs a provider and one account id", "account use"],
+    [["account", "remove", "antigravity"], "account remove needs a provider and one account id", "account remove"],
+    [["account", "remove"], "account remove needs a provider", "account remove"],
     [["quota"], "quota needs a provider", "quota"],
     [["quota", "antigravity", "x"], "quota takes one provider", "quota"],
     [["models", "a", "b"], "models takes at most one provider, --json and --refresh", "models"],
@@ -260,6 +267,20 @@ describe("the proxy's commands", () => {
     expect(await c.run("account", "list", "antigravity")).toBe(0);
     expect(await c.run("account", "use", "antigravity", "b")).toBe(0);
     expect(c.out).toEqual(["* a@x\n", "  b  (Bee)\n", "  c  [needs login: grant rejected]\n", "active antigravity account: b\n"]);
+  });
+
+  test("account remove: the active one (another left, or none left) and an inactive one", async () => {
+    const two = () => [
+      { provider: "antigravity" as const, id: "a", label: "a", active: true },
+      { provider: "antigravity" as const, id: "b", label: "b", active: false },
+    ];
+    const c = cli(two());
+    expect(await c.run("account", "remove", "antigravity", "b")).toBe(0);
+    expect(await c.run("account", "remove", "antigravity", "a")).toBe(0);
+    expect(c.out).toEqual(["removed antigravity account: b\n", "removed antigravity account: a\n", "no antigravity accounts left; run: bun run proxy login antigravity\n"]);
+    const d = cli(two());
+    expect(await d.run("account", "remove", "antigravity", "a")).toBe(0);
+    expect(d.out).toEqual(["removed antigravity account: a\n", "no active antigravity account; run: bun run proxy account use antigravity <account-id>\n"]);
   });
 
   test("quota and models (all or one provider; limits only when known)", async () => {

@@ -252,6 +252,7 @@ describe("RouteHandler", () => {
     path,
     query: {},
     headers: { authorization: "Bearer T" },
+    rawHeaders: [["Authorization", "Bearer T"]],
     readBody: async () => '{"model":"claude/claude-opus-5","messages":[]}',
     signal: new AbortController().signal,
     ...over,

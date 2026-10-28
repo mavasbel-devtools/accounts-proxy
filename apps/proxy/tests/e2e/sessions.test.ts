@@ -2,10 +2,10 @@
 // forced rotation on 401, the geo-gate retry, quota answers, project onboarding, catalog fallbacks and the stored
 // per-install state. Each test signs in its own data directory with scripted token answers.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -49,8 +49,9 @@ const accounts = (provider: string) => JSON.parse(readFileSync(join(home!.dir, `
 const proxyLog = () => readFileSync(join(home!.dir, "logs", "proxy.log"), "utf8");
 
 describe("claude sessions", () => {
-  test("an expiring token is refreshed once for concurrent requests (stored scopes sent), then reused", async () => {
-    home = await makeHome();
+  test("an expiring token is refreshed once for concurrent requests (stored scopes sent), then reused; exchange log off", async () => {
+    // exchangeLog.enabled: false (plan 2026-10-26 X5): login and daemon run unwrapped and no exchange file appears.
+    home = await makeHome(`exchangeLog: {enabled: false}\n${BOTH_PROVIDERS}`);
     upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
@@ -64,6 +65,7 @@ describe("claude sessions", () => {
     expect((accounts("claude").accounts[0]!.data["expiresAt"] as number) > Date.now() + 60_000).toBe(true);
     expect((await claudeMessage(s)).status).toBe(200);
     expect(tokenCalls("/v1/oauth/token", "refresh_token") - before).toBe(1);
+    expect(readdirSync(join(home.dir, "logs")).filter((name) => name.startsWith("exchanges-"))).toEqual([]);
   });
 
   test("H6: a rejected refresh marks the account needsLogin, later requests fail fast, a new login clears it; H4: a 5xx renewal keeps a valid token", async () => {
@@ -194,7 +196,7 @@ describe("claude sessions", () => {
     await login("claude");
     const first = accounts("claude").accounts[0]!.id;
     const pool = accounts("claude");
-    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }], activeId: first }));
+    writeFileSync(join(home.dir, "accounts-claude.json"), JSON.stringify({ accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }, { provider: "claude", id: "third", label: "third", data: pool.accounts[0]!.data }], activeId: first }));
     const s = await serve();
     let release: () => void = () => undefined;
     const held = new Promise<void>((resolve) => (release = resolve));
@@ -212,6 +214,15 @@ describe("claude sessions", () => {
     const after = JSON.parse(readFileSync(join(home.dir, "accounts-claude.json"), "utf8")) as { activeId: string; accounts: { id: string; data: Record<string, unknown> }[] };
     expect(after.activeId).toBe("spare");
     expect(after.accounts.find((a) => a.id === first)!.data["accessToken"]).toBe("e2e-renewed");
+
+    // account remove (plan 2026-10-26 A1) against the running daemon: a non-active account goes quietly; removing the
+    // active one leaves none active (the proxy never picks another), and requests answer 401 until `account use`.
+    expect(await run(["account", "remove", "claude", "third"])).toMatchObject({ code: 0, stdout: "removed claude account: third\n" });
+    expect(await run(["account", "remove", "claude", "spare"])).toMatchObject({ code: 0, stdout: "removed claude account: spare\nno active claude account; run: bun run proxy account use claude <account-id>\n" });
+    const removed = JSON.parse(readFileSync(join(home.dir, "accounts-claude.json"), "utf8")) as { activeId?: string; accounts: { id: string }[] };
+    expect([removed.activeId, removed.accounts.map((a) => a.id)]).toEqual([undefined, [first]]);
+    const refused = await claudeMessage(s);
+    expect([refused.status, ((await refused.json()) as { error: { type: string; message: string } }).error]).toEqual([401, { type: "authentication_error", message: expect.stringContaining("login claude") }]);
   });
 
   test("without a refresh token an expired login cannot be renewed; without scopes the refresh asks for the default set", async () => {

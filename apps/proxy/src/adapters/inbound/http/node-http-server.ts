@@ -33,6 +33,13 @@ function headersOf(message: IncomingMessage): Record<string, string> {
   return out;
 }
 
+/** `rawHeaders` is a flat [name, value, name, value, ...] list in the order received. */
+function rawPairs(raw: readonly string[]): (readonly [string, string])[] {
+  const pairs: (readonly [string, string])[] = [];
+  for (let i = 0; i + 1 < raw.length; i += 2) pairs.push([raw[i]!, raw[i + 1]!]);
+  return pairs;
+}
+
 function readBody(message: IncomingMessage, limit: number): Promise<string> {
   const declared = Number(message.headers["content-length"] ?? "0");
   if (declared > limit) {
@@ -108,6 +115,7 @@ export class NodeHttpServer extends Server {
       path: url.pathname,
       query: Object.fromEntries(url.searchParams),
       headers: headersOf(req),
+      rawHeaders: rawPairs(req.rawHeaders),
       readBody: () => readBody(req, this.options.maxBodyBytes),
       signal: controller.signal,
     };

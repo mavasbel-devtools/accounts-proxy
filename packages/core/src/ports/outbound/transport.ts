@@ -11,3 +11,10 @@ export abstract class ContentEncoderPort {
 export abstract class HttpTransportPort {
   abstract send(request: HttpRequest): Promise<HttpResponse>;
 }
+
+/** The inverse of a ContentEncoderPort, for the exchange log: the text of a body the proxy compressed. */
+export abstract class ContentDecoderPort {
+  /** The `content-encoding` value it decodes, e.g. `zstd`. */
+  abstract readonly encoding: string;
+  abstract decode(body: Uint8Array): string;
+}

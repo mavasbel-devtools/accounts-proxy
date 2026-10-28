@@ -130,6 +130,7 @@ describe("usage errors (exit 2)", () => {
     [["login", "claude", "--bogus"], "unknown login option --bogus"],
     [["login", "claude", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer"],
     [["account", "use", "claude"], "account use needs a provider and one account id\nusage: bun run proxy account use <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account use\n"],
+    [["account", "remove", "claude"], "account remove needs a provider and one account id\nusage: bun run proxy account remove <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account remove\n"],
     [["quota"], "quota needs a provider\nusage: bun run proxy quota <provider>\n"],
     [["models", "claude", "antigravity"], "models takes at most one provider"],
     [["account", "list", "claude", "extra"], "account list takes one provider"],

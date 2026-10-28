@@ -151,7 +151,7 @@ describe("the documentation is in step with the code", () => {
 
   test("command line: every synopsis of the command tree is a row of the API reference", () => {
     const synopses = helpSynopses(PROXY_HELP);
-    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
+    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "account remove <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
     for (const synopsis of synopses) expect(api).toContain(`| \`${synopsis}\` |`);
   });
 

@@ -1,6 +1,6 @@
 // Account administration and usage reporting (plan D4: the user picks the active account by hand). A provider that
 // shares another's accounts (opencode-go, P4.6 K2) lists and chooses among the owner's.
-import { accountOwner, activeAccount, useAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { accountOwner, activeAccount, removeAccount, useAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
 import { InvalidRequestError, ProviderDisabledError } from "@accounts-proxy/core/domain/errors.ts";
 import type { ProviderId } from "@accounts-proxy/core/domain/models.ts";
 import type { UsageReport } from "@accounts-proxy/core/domain/usage.ts";
@@ -22,6 +22,11 @@ export class AccountAdminService extends AccountAdminPort {
   async use(provider: ProviderId, accountId: string): Promise<AccountSummary> {
     const pool = await this.store.update(accountOwner(provider), (current) => useAccount(current, provider, accountId));
     return summary(provider, activeAccount(pool)!, true);
+  }
+
+  async remove(provider: ProviderId, accountId: string): Promise<readonly AccountSummary[]> {
+    const pool = await this.store.update(accountOwner(provider), (current) => removeAccount(current, provider, accountId));
+    return pool.accounts.map((a) => summary(provider, a, a.id === pool.activeId));
   }
 }
 

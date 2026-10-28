@@ -7,6 +7,8 @@ import { CredentialStorePort, type PoolChange } from "@accounts-proxy/core/ports
 import { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
 import { ClockPort, LockPort, LoggerPort, RandomPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
+import type { ExchangeEntry } from "@accounts-proxy/core/domain/exchange-log.ts";
+import { ExchangeScopePort, ExchangeSinkPort } from "@accounts-proxy/core/ports/outbound/exchange-log.ts";
 
 export class FixedClock extends ClockPort {
   constructor(public time = 1_800_000_000_000) {
@@ -131,4 +133,28 @@ export async function collect(body: AsyncIterable<Uint8Array>): Promise<string[]
   const out: string[] = [];
   for await (const chunk of body) out.push(decoder.decode(chunk));
   return out;
+}
+
+/** Keeps every exchange-log entry in memory. */
+export class MemoryExchangeSink extends ExchangeSinkPort {
+  readonly entries: ExchangeEntry[] = [];
+  write(entry: ExchangeEntry): void {
+    this.entries.push(entry);
+  }
+}
+
+/** A scope without asynchronous context: `current` is whatever `run` set last (tests run one exchange at a time). */
+export class StackExchangeScope extends ExchangeScopePort {
+  private readonly stack: string[] = [];
+  async run<T>(exchange: string, work: () => Promise<T>): Promise<T> {
+    this.stack.push(exchange);
+    try {
+      return await work();
+    } finally {
+      this.stack.pop();
+    }
+  }
+  current(): string | undefined {
+    return this.stack.at(-1);
+  }
 }

@@ -78,7 +78,7 @@ import { AUTH_URL as OPENROUTER_AUTH_URL, OPENROUTER_SPEC } from "@accounts-prox
 import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
 import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 import { type CliCommand, CommandRoot, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
-import { AccountCommand, AccountListCommand, AccountUseCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
+import { AccountCommand, AccountListCommand, AccountRemoveCommand, AccountUseCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
 import { ModelsCommand, OpencodeConfigCommand, QuotaCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
 import { type CliDaemon, ServeCommand, StatusCommand, TokenCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
 import { LoginCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
@@ -97,7 +97,13 @@ import { DEFAULT_LOCK_OPTIONS, FileLock, vanishingStatFs, type FileLockOptions, 
 import { FileCredentialStore, FileKeyValueStore, FileProxyTokenStore } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { LoopbackCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/loopback-callback-server.ts";
 import { CryptoRandom, FileLogger, NodeHash, SystemClock, SystemTimer } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
-import { ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
+import { ZstdContentDecoder, ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
+import { AsyncExchangeScope, FileExchangeSink } from "@accounts-proxy/proxy/adapters/outbound/exchange-log-file.ts";
+import { LoggingTransport } from "@accounts-proxy/proxy/adapters/outbound/logging-transport.ts";
+import { LoggingBrowserLauncher, LoggingCallbackServerFactory } from "@accounts-proxy/proxy/adapters/outbound/logging-login.ts";
+import { LoggingHttpHandler } from "@accounts-proxy/proxy/adapters/inbound/http/logging-http-handler.ts";
+import { ClientExchangeService } from "@accounts-proxy/proxy/application/client-exchange-service.ts";
+import type { ExchangeScopePort, ExchangeSinkPort } from "@accounts-proxy/core/ports/outbound/exchange-log.ts";
 import { TerminalManualCode } from "@accounts-proxy/proxy/adapters/outbound/terminal-manual-code.ts";
 import { OpencodeAuthFile, opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
 import { TerminalSecretPrompt } from "@accounts-proxy/proxy/adapters/outbound/terminal-secret-prompt.ts";
@@ -333,7 +339,15 @@ export type ProviderGraph = {
   readonly gateways: readonly GatewayGraph[];
   /** The reference model catalog (plan 2026-10-16 rule M4), shared by the OpenCode catalogs and the detailed list. */
   readonly reference: ModelReferencePort;
+  /** The exchange log (plan 2026-10-26 X1–X6), when `exchangeLog.enabled`; `transport` already records through it. */
+  readonly exchangeLog?: ExchangeLog;
 };
+
+export type ExchangeLog = { readonly sink: ExchangeSinkPort; readonly scope: ExchangeScopePort };
+
+function exchangeLogOf(home: string, config: ProxyConfig, clock: ClockPort): ExchangeLog {
+  return { sink: new FileExchangeSink(join(home, "logs"), clock, new NodeHash(), config.exchangeLog.retentionDays, process.pid), scope: new AsyncExchangeScope() };
+}
 
 export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> {
   const config = parseProxyConfig(await new YamlConfigFile(join(options.home, "proxy.yaml")).read());
@@ -343,7 +357,8 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const random = new CryptoRandom();
   const timer = new SystemTimer();
   const logger = new FileLogger(join(options.home, "logs", "proxy.log"), clock);
-  const transport = options.transport;
+  const exchangeLog = config.exchangeLog.enabled ? exchangeLogOf(options.home, config, clock) : undefined;
+  const transport = exchangeLog !== undefined ? new LoggingTransport(options.transport, exchangeLog.sink, exchangeLog.scope, clock, random, new ZstdContentDecoder()) : options.transport;
   const state = new FileKeyValueStore(options.home);
   const lock = new FileLock(options.home, clock, timer, options.lock.options, options.lock.fs);
   const store = new FileCredentialStore(options.home, lock);
@@ -399,6 +414,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     ...(claude ? { claude } : {}),
     ...(antigravity ? { antigravity } : {}),
     ...(openai ? { openai } : {}),
+    ...(exchangeLog ? { exchangeLog } : {}),
   };
 }
 
@@ -507,11 +523,13 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   };
   const health = new HealthService(graph.enabled);
   const errors = new LoggingErrorReporter(graph.logger);
-  const handler = new RouteHandler(
+  const routes = new RouteHandler(
     [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
     { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, refresh, opencode, origin },
     errors,
   );
+  const log = graph.exchangeLog;
+  const handler = log !== undefined ? new LoggingHttpHandler(routes, new ClientExchangeService(log.sink, log.scope, graph.clock, graph.random)) : routes;
   return { handler, errors, refresh, ports: { models: describe, opencode, origin, access, health } };
 }
 
@@ -530,13 +548,14 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     if (gateway.quota) reporters.push(gateway.quota);
   }
 
+  const log = graph.exchangeLog;
   const login = new LoginService({
     clients,
     devices,
     keyClients,
     keySources: [new OpencodeAuthFile(options.opencodeData)],
-    servers: new LoopbackCallbackServerFactory(),
-    browser: options.browser,
+    servers: log !== undefined ? new LoggingCallbackServerFactory(new LoopbackCallbackServerFactory(), log.sink, graph.clock, graph.random) : new LoopbackCallbackServerFactory(),
+    browser: log !== undefined ? new LoggingBrowserLauncher(options.browser, log.sink, graph.random) : options.browser,
     manual: new TerminalManualCode(options.stdin, options.stdout),
     secrets: new TerminalSecretPrompt(options.stdin, options.stdout),
     store: graph.store,
@@ -568,7 +587,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
 export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
   return new CommandRoot(PROXY_HELP, [
     new LoginCommand(ports.login),
-    new AccountCommand([new AccountListCommand(ports.accounts), new AccountUseCommand(ports.accounts)]),
+    new AccountCommand([new AccountListCommand(ports.accounts), new AccountUseCommand(ports.accounts), new AccountRemoveCommand(ports.accounts)]),
     new QuotaCommand(ports.usage),
     new ModelsCommand(ports.models, ports.refresh),
     new OpencodeConfigCommand(ports.models, ports.opencode, ports.origin),

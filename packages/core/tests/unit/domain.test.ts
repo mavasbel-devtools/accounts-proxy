@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeAccount, EMPTY_POOL, markNeedsLogin, replaceAccount, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount, useAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
+import { activeAccount, EMPTY_POOL, markNeedsLogin, removeAccount, replaceAccount, TOKEN_ENDPOINT_TIMEOUT_MS, upsertAccount, useAccount, type AccountCredential } from "@accounts-proxy/core/domain/accounts.ts";
 import {
   ClientRequestError,
   InvalidRequestError,
@@ -131,6 +131,10 @@ describe("accounts", () => {
     const pool = upsertAccount(upsertAccount(EMPTY_POOL, a), b);
     expect(useAccount(pool, "antigravity", "a@x").activeId).toBe("a@x");
     expect(() => useAccount(pool, "antigravity", "zz")).toThrow(UnknownAccountError);
+    expect(removeAccount(pool, "antigravity", "a@x")).toEqual({ accounts: pool.accounts.filter((x) => x.id !== "a@x"), activeId: pool.activeId! });
+    expect(removeAccount(pool, "antigravity", pool.activeId!).activeId).toBeUndefined();
+    expect(removeAccount({ accounts: pool.accounts }, "antigravity", "a@x").activeId).toBeUndefined();
+    expect(() => removeAccount(pool, "antigravity", "zz")).toThrow(UnknownAccountError);
   });
   test("activeAccount is undefined for an empty pool; replace keeps order and active", () => {
     expect(activeAccount(EMPTY_POOL)).toBeUndefined();

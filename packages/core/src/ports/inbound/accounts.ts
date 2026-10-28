@@ -35,6 +35,8 @@ export abstract class LoginPort {
 export abstract class AccountAdminPort {
   abstract list(provider: ProviderId): Promise<readonly AccountSummary[]>;
   abstract use(provider: ProviderId, accountId: string): Promise<AccountSummary>;
+  /** Deletes the account; returns the accounts left (none is active when the removed one was). */
+  abstract remove(provider: ProviderId, accountId: string): Promise<readonly AccountSummary[]>;
 }
 
 export abstract class UsagePort {

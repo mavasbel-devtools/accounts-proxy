@@ -2,7 +2,7 @@
 // only the network (ScriptedTransport) and the browser are replaced. The fake browser behaves like a user who
 // approves: it calls the loopback redirect with the code and the state from the authorization URL.
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -282,7 +282,7 @@ function replayGoogle() {
 }
 
 describe("daemon wiring (serve, token, status) over the upstream seams", () => {
-  test("login, serve, authenticated native Gemini stream, model lists with their source, status, SIGTERM drain", async () => {
+  test.each([true, false])("login, serve, authenticated native Gemini stream, model lists with their source, status, SIGTERM drain (exchange log %p)", async (logged) => {
     const upstream = replayGoogle();
     try {
       const origin = `http://127.0.0.1:${upstream.port}`;
@@ -290,7 +290,7 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       const shutdown = new ManualSignal();
       const { opts: real, out, err } = options({ seams, shutdown, transport: new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS) });
       const port = await freePort();
-      writeFileSync(join(home!, "proxy.yaml"), `port: ${port}\n${BOTH}`);
+      writeFileSync(join(home!, "proxy.yaml"), `port: ${port}\n${BOTH}exchangeLog: {enabled: ${logged}}\n`);
       expect(await runCli(["login", "antigravity", "--timeout-seconds", "10"], real)).toBe(0);
       expect(await runCli(["status"], real)).toBe(1);
       expect(out.at(-1)).toMatch(new RegExp(`^not running at http://127\\.0\\.0\\.1:${port} \\(`));
@@ -321,8 +321,28 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       expect(await serving).toBe(0);
       expect(out.slice(-2)).toEqual(["SIGTERM: stopping (in-flight responses get 10 s)\n", "stopped\n"]);
       expect(err).toEqual([]);
+      // The exchange log (plan 2026-10-26 X1-X4): every kind, client and upstream linked, no credential value.
+      const logs = join(home!, "logs");
+      const day = readdirSync(logs).filter((name) => name.startsWith("exchanges-"));
+      if (!logged) {
+        expect(day).toEqual([]);
+        return;
+      }
+      expect(day).toHaveLength(1);
+      const text = readFileSync(join(logs, day[0]!), "utf8");
+      expect(text).not.toContain(token);
+      const records = text.trimEnd().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
+      expect(new Set(records.map((r) => r["kind"]))).toEqual(new Set(["browser-open", "login-callback", "upstream-request", "upstream-response", "client-request", "client-response"]));
+      const call = records.find((r) => r["kind"] === "client-request" && String(r["path"]).includes(":streamGenerateContent"))!;
+      const upstreamCalls = records.filter((r) => r["kind"] === "upstream-request" && r["exchange"] === call["id"]);
+      expect(upstreamCalls.length).toBeGreaterThan(0);
+      const answer = records.find((r) => r["kind"] === "client-response" && r["id"] === call["id"])!;
+      expect(answer["outcome"]).toBe("complete");
+      expect((answer["usage"] as { tokens: Record<string, number> }).tokens["input"]).toBeGreaterThan(0);
     } finally {
       upstream.stop(true);
+      removeTemporary(home!);
+      home = undefined;
     }
   });
 

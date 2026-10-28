@@ -368,6 +368,11 @@ describe("AccountAdminService and UsageService", () => {
     expect((await admin.use("opencode-go", "k")).id).toBe("k");
     store.seed("antigravity", markNeedsLogin(await store.load("antigravity"), credential("b"), "grant rejected"));
     expect((await admin.list("antigravity"))[1]).toEqual({ provider: "antigravity", id: "b", label: "b", active: false, needsLogin: "grant rejected" });
+    // remove (plan 2026-10-26 A1): an inactive one keeps the active; the active one leaves none active; unknown id refused
+    expect(await admin.remove("antigravity", "b")).toEqual([{ provider: "antigravity", id: "a", label: "Alpha", active: true }]);
+    await expect(admin.remove("antigravity", "zz")).rejects.toBeInstanceOf(UnknownAccountError);
+    expect(await admin.remove("antigravity", "a")).toEqual([]);
+    expect(await store.load("antigravity")).toEqual({ accounts: [] });
   });
 
   test("usage: disabled, enabled without a reporter, and reported", async () => {

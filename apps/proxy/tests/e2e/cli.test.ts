@@ -60,7 +60,7 @@ describe("accounts-proxy CLI (e2e)", () => {
     const leaf = await run(["help", "login", "claude"]);
     expect([leaf.code, leaf.stderr.split("\n")[0]]).toEqual([2, "login has no subcommands"]);
     const group = await run(["account"]);
-    expect([group.code, group.stderr]).toEqual([2, "missing account subcommand: one of list, use\nusage: bun run proxy account list <provider>\n       bun run proxy account use <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account\n"]);
+    expect([group.code, group.stderr]).toEqual([2, "missing account subcommand: one of list, use, remove\nusage: bun run proxy account list <provider>\n       bun run proxy account use <provider> <account-id>\n       bun run proxy account remove <provider> <account-id>\nfor options, exit codes and examples: bun run proxy help account\n"]);
     // After `--` a help flag is an argument like any other: `serve` takes none.
     const separated = await run(["serve", "--", "--help"]);
     expect([separated.code, separated.stderr.split("\n")[0]]).toEqual([2, "serve takes no arguments"]);
@@ -108,6 +108,11 @@ describe("accounts-proxy CLI (e2e)", () => {
     const quota = await run(["quota", "antigravity"]);
     expect([quota.code, quota.stdout.startsWith("Antigravity usage:")]).toEqual([0, true]);
     expect(await run(["quota", "claude"])).toMatchObject({ code: 1, stderr: "error: claude does not report usage\n" });
+
+    // account remove (plan 2026-10-26 A1): unknown id fails; removing the only, active account leaves none active.
+    expect(await run(["account", "remove", "antigravity", "nobody"])).toMatchObject({ code: 1, stderr: "error: no antigravity account \"nobody\"\n" });
+    expect(await run(["account", "remove", "antigravity", "e2e@example.com"])).toMatchObject({ code: 0, stdout: "removed antigravity account: e2e@example.com\nno antigravity accounts left; run: bun run proxy login antigravity\n" });
+    expect(JSON.parse(readFileSync(join(home.dir, "accounts-antigravity.json"), "utf8"))).toEqual({ accounts: [] });
   });
 
   test("paste-code login (--manual) reads code#state from stdin", async () => {

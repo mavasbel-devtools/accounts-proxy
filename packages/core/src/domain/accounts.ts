@@ -60,6 +60,16 @@ export function useAccount(pool: AccountPool, provider: ProviderId, id: string):
   return { accounts: pool.accounts, activeId: id };
 }
 
+/**
+ * Delete a stored account (plan 2026-10-26 A1). When it was the active one no account is active afterwards: the proxy
+ * never picks another by itself.
+ */
+export function removeAccount(pool: AccountPool, provider: ProviderId, id: string): AccountPool {
+  if (!pool.accounts.some((a) => a.id === id)) throw new UnknownAccountError(provider, id);
+  const accounts = pool.accounts.filter((a) => a.id !== id);
+  return pool.activeId !== undefined && pool.activeId !== id ? { accounts, activeId: pool.activeId } : { accounts };
+}
+
 export function activeAccount(pool: AccountPool): AccountCredential | undefined {
   return pool.accounts.find((a) => a.id === pool.activeId);
 }

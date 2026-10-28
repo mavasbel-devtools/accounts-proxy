@@ -3,7 +3,7 @@
 // committed extract of models.opencode.ai, the routes `/proxy/v1/models`, `/opencode/config.json` and
 // `/.well-known/opencode`, the commands `models --json` and `opencode-config`, and the reference catalog's fallbacks.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { validate } from "@accounts-proxy/test-support/json-schema.ts";
@@ -295,6 +295,28 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
       const result = await run(["help"]);
       expect([result.code, result.stderr]).toEqual([1, expect.stringContaining("modelListMaxAgeMinutes must be a positive integer (minutes)")]);
     }
+    for (const [setting, message] of [
+      ["exchangeLog: on", "exchangeLog must be a mapping"],
+      ["exchangeLog: {retentionDays: 0}", "exchangeLog.retentionDays must be a positive integer (days)"],
+    ] as const) {
+      writeFileSync(join(home.dir, "proxy.yaml"), `${setting}\n${ALL}`);
+      const result = await run(["help"]);
+      expect([result.code, result.stderr]).toEqual([1, expect.stringContaining(message)]);
+    }
+  });
+
+  test("the exchange log (plan 2026-10-26 X1-X5): every list read recorded; a day file past exchangeLog.retentionDays is removed", async () => {
+    home = await makeHome(`exchangeLog: {retentionDays: 2}\n${ALL}`);
+    const logs = join(home.dir, "logs");
+    mkdirSync(logs, { recursive: true });
+    writeFileSync(join(logs, "exchanges-2020-01-01.jsonl"), "{}\n");
+    writeFileSync(join(logs, "exchanges-notes.txt"), "kept: not a day file\n");
+    expect((await run(["models", "--refresh"])).code).toBe(0);
+    const files = readdirSync(logs).filter((name) => name.startsWith("exchanges-")).sort();
+    expect(files).toEqual(["exchanges-notes.txt", `exchanges-${new Date().toISOString().slice(0, 10)}.jsonl`].sort());
+    const records = readFileSync(join(logs, files.find((f) => f.endsWith(".jsonl"))!), "utf8").trimEnd().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(records.some((r) => r["kind"] === "upstream-request" && String(r["url"]).endsWith(OPENROUTER))).toBe(true);
+    expect(records.every((r) => r["schema"] === "accounts-proxy-exchange/1")).toBe(true);
   });
 });
 
