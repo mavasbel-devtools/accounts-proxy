@@ -6,7 +6,7 @@ import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/po
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonConsolePort, DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
-import { HealthPort, DescribeModelsPort, RequestModelRefreshPort, type RefreshOutcome } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import { HealthPort, DescribeModelsPort, RequestModelRefreshPort, WarmModelsPort, type RefreshOutcome } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
 import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 import { SHUTDOWN_GRACE_MS } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
@@ -125,6 +125,12 @@ class FakeConsole extends DaemonConsolePort {
     this.attached += 1;
   }
 }
+class FakeWarm extends WarmModelsPort {
+  warmed = 0;
+  async warm() {
+    this.warmed += 1;
+  }
+}
 class FakeSignal extends ShutdownSignal {
   async wait() {
     return "SIGTERM";
@@ -135,7 +141,7 @@ function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
   const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
-  const daemon = { server: new FakeServer(), shutdown: new FakeSignal(), console: new FakeConsole() };
+  const daemon = { server: new FakeServer(), shutdown: new FakeSignal(), console: new FakeConsole(), models: new FakeWarm() };
   const driver = new CommandLineDriver(proxyCommands(ports, daemon), PROGRAM, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
 }
@@ -337,6 +343,7 @@ describe("the proxy's commands", () => {
     c.out.length = 0;
     expect(await c.run("serve")).toBe(0);
     expect(c.daemon.console.attached).toBe(1);
+    expect(c.daemon.models.warmed).toBe(1);
     expect(c.ports.access.calls).toBe(1);
     expect(c.daemon.server.events).toEqual(["start", `stop ${SHUTDOWN_GRACE_MS}`]);
     expect(c.out).toEqual([

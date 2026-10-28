@@ -25,6 +25,14 @@ export abstract class RefreshModelsPort {
   abstract refreshModels(provider?: ProviderId): Promise<readonly DetailedCatalog[]>;
 }
 
+export abstract class WarmModelsPort {
+  /**
+   * The daemon's start-up fetch (plan 2026-10-28-13-40 M2): every kept model list fetched once, all at the same time;
+   * resolves when every fetch has ended, a failed one included (each logs its own outcome).
+   */
+  abstract warm(): Promise<void>;
+}
+
 /** Who refreshed: the running daemon at `url`, or this process when nothing listens there. */
 export type RefreshOutcome = { readonly by: "daemon" | "this process"; readonly url: string; readonly catalogs: readonly DetailedCatalog[] };
 

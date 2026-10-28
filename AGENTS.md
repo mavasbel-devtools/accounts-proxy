@@ -133,7 +133,11 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md). A fetched model list and the reference
   catalog are reused for `proxy.yaml` `modelListMaxAgeMinutes` (default 1440); `POST /proxy/v1/models/refresh` and
   `models --refresh` read them now, the latter through the running daemon when one listens
-  ([plan 2026-10-26](docs/plans/2026-10-26-08-06-model-list-refresh-plan.md) R1–R2).
+  ([plan 2026-10-26](docs/plans/2026-10-26-08-06-model-list-refresh-plan.md) R1–R2). Every list, Antigravity's included, is
+  kept in memory and stored (`ModelListCacheBase`): `serve` fetches them all once at start, a read past the age or
+  `MODEL_LIST_RETRY_MS` (60 s) after a failed fetch answers the kept list and fetches in the background, a failed fetch
+  keeps the kept list, and every fetch logs its start and its outcome
+  ([plan 2026-10-28-13-40](docs/plans/2026-10-28-13-40-cached-model-lists-plan.md) M1–M6).
 - **Test seams.** `ACCOUNTS_PROXY_TEST_UPSTREAM_{CLAUDE_API,CLAUDE_OAUTH,ANTIGRAVITY_API,GOOGLE_OAUTH,OPENAI_API,
   OPENAI_AUTH,GATEWAYS}` repoint a provider's hosts for hermetic e2e only, and only to an `http://127.0.0.1:<port>`
   origin; any other value is fatal. `GATEWAYS` repoints every gateway host (OpenRouter, opencode.ai, Cheaper Inference)

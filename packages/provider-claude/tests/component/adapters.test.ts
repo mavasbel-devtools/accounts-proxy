@@ -15,7 +15,7 @@ import {
   SequenceRandom,
   type ScriptedResponse,
 } from "@accounts-proxy/test-support/fakes.ts";
-import { CATALOG_KEY, ClaudeCatalog } from "@accounts-proxy/provider-claude/adapters/outbound/claude-catalog.ts";
+import { CATALOG_KEY, ClaudeCatalog, ClaudeModelList } from "@accounts-proxy/provider-claude/adapters/outbound/claude-catalog.ts";
 import { ClaudeIdentity, DEVICE_ID_KEY } from "@accounts-proxy/provider-claude/adapters/outbound/claude-identity.ts";
 import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS } from "@accounts-proxy/provider-claude/adapters/outbound/claude-oauth-client.ts";
 import { API_BASE } from "@accounts-proxy/provider-claude/domain/constants.ts";
@@ -261,7 +261,7 @@ describe("ClaudeCatalog", () => {
   const make = (handler: ConstructorParameters<typeof ScriptedTransport>[0], kv = new MemoryKeyValueStore(), clock = new FixedClock(100_000_000)) => {
     const transport = new ScriptedTransport(handler);
     const logger = new MemoryLogger();
-    return { transport, kv, logger, clock, catalog: new ClaudeCatalog(transport, new FixedSession(), kv, clock, logger, "http://up", DAY_MS) };
+    return { transport, kv, logger, clock, catalog: new ClaudeCatalog(new ClaudeModelList(transport, new FixedSession(), kv, clock, logger, "http://up", DAY_MS)) };
   };
 
   test("fetches live (contract headers, limit, timeout), caches in memory and on disk", async () => {
@@ -300,10 +300,10 @@ describe("ClaudeCatalog", () => {
     kv.values.set(CATALOG_KEY, { version: 2, fetchedAt: 0, models: [{ id: "stale", displayName: "S", createdAt: "", maxInputTokens: 0, maxTokens: 0 }] });
     const withStale = make(() => ({ status: 503, body: "down" }), kv);
     expect((await withStale.catalog.entries()).map((e) => e.id)).toEqual(["stale"]);
-    expect(withStale.logger.lines[0]).toContain("models catalog HTTP 503");
+    expect(withStale.logger.lines.join("\n")).toContain("models catalog HTTP 503");
     const empty = make(() => ok({ data: [] }));
     expect(await empty.catalog.entries()).toBe(STATIC_CATALOG);
-    expect(empty.logger.lines[0]).toContain("live catalog is empty");
+    expect(empty.logger.lines.join("\n")).toContain("live catalog is empty");
   });
 
   test("unreadable cache and failed cache write are non-fatal", async () => {
@@ -312,15 +312,13 @@ describe("ClaudeCatalog", () => {
     kv.failWrite = new Error("ENOSPC");
     const { catalog, logger } = make(() => ok({ data: [{ id: "live" }] }), kv);
     expect((await catalog.entries()).map((e) => e.id)).toEqual(["live"]);
-    expect(logger.lines).toEqual([
-      "WARN claude: catalog cache unreadable: Error: EACCES",
-      "WARN claude: catalog cache write failed: Error: ENOSPC",
-    ]);
+    expect(logger.lines).toContain("WARN claude: model list cache unreadable: Error: EACCES");
+    expect(logger.lines).toContain("WARN claude: model list cache write failed: Error: ENOSPC");
   });
 
   test("production api base; pages without data; entries without id are skipped", async () => {
     const transport = new ScriptedTransport((_r, i) => ok(i === 0 ? { has_more: true, last_id: "c" } : { data: [{}, { id: "only" }] }));
-    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger(), API_BASE, DAY_MS);
+    const catalog = new ClaudeCatalog(new ClaudeModelList(transport, new FixedSession(), new MemoryKeyValueStore(), new FixedClock(), new MemoryLogger(), API_BASE, DAY_MS));
     expect((await catalog.entries()).map((e) => e.id)).toEqual(["only"]);
     expect(transport.requests[0]!.url).toBe("https://api.anthropic.com/v1/models?limit=100");
   });
@@ -354,7 +352,7 @@ describe("ClaudeCatalog", () => {
     });
     const kv = new MemoryKeyValueStore();
     const clock = new FixedClock(100_000_000);
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), kv, clock, new MemoryLogger(), "http://up", DAY_MS);
+    const catalog = new ClaudeCatalog(new ClaudeModelList(transport, new OrgSession(), kv, clock, new MemoryLogger(), "http://up", DAY_MS));
     const entries = await catalog.entries();
     expect(entries).toHaveLength(1);
     expect(entries[0]!.id).toBe("claude-opus-5-5");
@@ -380,7 +378,7 @@ describe("ClaudeCatalog", () => {
       return ok({ data: [{ id: "fallback-model" }], has_more: false });
     });
     const logger = new MemoryLogger();
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), logger, "http://up", DAY_MS);
+    const catalog = new ClaudeCatalog(new ClaudeModelList(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), logger, "http://up", DAY_MS));
     const entries = await catalog.entries();
     expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
   });
@@ -397,7 +395,7 @@ describe("ClaudeCatalog", () => {
       }
       return ok({ data: [{ id: "fallback-model" }], has_more: false });
     });
-    const catalog = new ClaudeCatalog(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), new MemoryLogger(), "http://up", DAY_MS);
+    const catalog = new ClaudeCatalog(new ClaudeModelList(transport, new OrgSession(), new MemoryKeyValueStore(), new FixedClock(100_000_000), new MemoryLogger(), "http://up", DAY_MS));
     const entries = await catalog.entries();
     expect(entries.map((e) => e.id)).toEqual(["fallback-model"]);
   });
@@ -419,16 +417,17 @@ describe("ClaudeCatalog", () => {
     expect(await make(() => ({ status: 503, body: "down" })).catalog.listing()).toEqual({ source: "static", entries: STATIC_CATALOG });
   });
 
-  test("the configured max age decides when a kept list is read again", async () => {
+  test("the configured max age decides when a kept list is read again (in the background)", async () => {
     const transport = new ScriptedTransport(() => ok({ data: [{ id: "live" }] }));
     const clock = new FixedClock(100_000_000);
-    const catalog = new ClaudeCatalog(transport, new FixedSession(), new MemoryKeyValueStore(), clock, new MemoryLogger(), "http://up", 60_000);
+    const catalog = new ClaudeCatalog(new ClaudeModelList(transport, new FixedSession(), new MemoryKeyValueStore(), clock, new MemoryLogger(), "http://up", 60_000));
     await catalog.listing();
     clock.time += 59_999;
     await catalog.listing();
     expect(transport.requests).toHaveLength(1);
     clock.time += 1;
     await catalog.listing();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(transport.requests).toHaveLength(2);
   });
 
@@ -446,7 +445,7 @@ describe("ClaudeCatalog", () => {
   test("a transport failure is logged with its message", async () => {
     const { catalog, logger } = make(() => Promise.reject(new TypeError("connection refused")));
     expect(await catalog.entries()).toBe(STATIC_CATALOG);
-    expect(logger.lines[0]).toBe("WARN claude: live catalog unavailable (connection refused)");
+    expect(logger.lines[1]).toBe(`WARN claude: model list first use → failed after 0 ms (connection refused) → the built-in list: ${STATIC_CATALOG.length} models`);
   });
 });
 

@@ -12,7 +12,7 @@ export abstract class ProviderPort {
   abstract models(): Promise<ModelCatalog>;
   /**
    * The model list read from its source now, whatever the age of the kept copy (plan 2026-10-26 R2). A provider that
-   * reads its list on every use (Antigravity) or takes it from the reference catalog (OpenAI) keeps this default.
+   * takes its list from the reference catalog (OpenAI) keeps this default: the reference is refreshed first.
    */
   async refreshModels(): Promise<ModelCatalog> {
     return this.models();

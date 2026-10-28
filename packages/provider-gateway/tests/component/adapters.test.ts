@@ -5,7 +5,7 @@ import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts
 import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
 import type { RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
-import { GatewayCatalog } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-catalog.ts";
+import { GatewayCatalog, GatewayModelList } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-catalog.ts";
 import { GatewayKeyLogin, type KeyIdentity } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-login.ts";
 import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
 import { GatewayProvider } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-provider.ts";
@@ -58,11 +58,11 @@ describe("GatewayCatalog (rule G5)", () => {
     const clock = new FixedClock();
     const logger = new MemoryLogger();
     const source = new Source(answer);
-    const catalog = new GatewayCatalog("cheaper-inference", source, new GatewayKeySession("cheaper-inference", storeWithKey()), store, clock, logger, BUILTIN, MAX_AGE_MS);
+    const catalog = new GatewayCatalog(new GatewayModelList("cheaper-inference", source, new GatewayKeySession("cheaper-inference", storeWithKey()), store, clock, logger, BUILTIN, MAX_AGE_MS));
     return { catalog, clock, logger, source, store };
   };
 
-  test("live (with the key), then memory within the max age, then read again", async () => {
+  test("live (with the key), then memory within the max age, then read again in the background", async () => {
     const { catalog, clock, source, store } = make(() => LIVE);
     expect(await catalog.listing()).toEqual({ source: "live", models: LIVE });
     expect(source.keys).toEqual(["ci_live_1"]);
@@ -74,6 +74,7 @@ describe("GatewayCatalog (rule G5)", () => {
     expect(source.keys).toHaveLength(1);
     clock.time += 1;
     await catalog.listing();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(source.keys).toHaveLength(2);
   });
 
@@ -100,7 +101,7 @@ describe("GatewayCatalog (rule G5)", () => {
       throw new Error("down");
     }, store);
     expect(await failing.catalog.listing()).toEqual({ source: "cache", models: LIVE });
-    expect(failing.logger.lines).toEqual(["WARN cheaper-inference: live model list unavailable (down)"]);
+    expect(failing.logger.lines.at(-1)).toBe("WARN cheaper-inference: model list stale → failed after 0 ms (down) → the saved copy fetched 1970-01-01T00:00:00.001Z: 1 models");
   });
 
   test("an empty live list is shown as answered; no copy and a failing source give the built-in list; a failed cache write is only warned", async () => {
@@ -114,7 +115,8 @@ describe("GatewayCatalog (rule G5)", () => {
     store.failWrite = new Error("EROFS");
     const broken = make(() => LIVE, store);
     expect(await broken.catalog.listing()).toEqual({ source: "live", models: LIVE });
-    expect(broken.logger.lines).toEqual(["WARN cheaper-inference: model list cache unreadable: Error: EACCES", "WARN cheaper-inference: model list cache write failed: Error: EROFS"]);
+    expect(broken.logger.lines).toContain("WARN cheaper-inference: model list cache unreadable: Error: EACCES");
+    expect(broken.logger.lines).toContain("WARN cheaper-inference: model list cache write failed: Error: EROFS");
   });
 });
 

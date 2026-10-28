@@ -386,7 +386,8 @@ describe("session and catalog (T1–T5, M1–M2)", () => {
     const token = (await run(["token"])).stdout.trim();
     daemon = await startDaemon(home, upstreams.seamEnv());
     const served = await fetch(`${daemon.url}/openai/v1/models`, { headers: { authorization: `Bearer ${token}` } });
-    expect(served.headers.get("x-proxy-models-source")).toBe("openai=cache");
+    // The daemon fetched the list at start (plan 2026-10-28-13-40 M2); it is answered from memory.
+    expect(served.headers.get("x-proxy-models-source")).toBe("openai=live");
     expect(upstreams.find("/v1/models")).toHaveLength(0);
     // An account without an e-mail is used as it is.
     const { email: _email, ...withoutEmail } = ACCOUNT;

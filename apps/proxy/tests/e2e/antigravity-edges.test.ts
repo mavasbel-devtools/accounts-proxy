@@ -163,8 +163,17 @@ describe("control-plane shapes", () => {
     expect(listed.stdout).not.toContain("m-tab");
     expect(listed.stdout).not.toContain("m-old");
     expect(listed.stdout).not.toContain("m-gone");
+    // A fresh stored copy is reused (plan 2026-10-28-13-40 M1), so each shape is read with --refresh.
     upstreams.script("/v1internal:fetchAvailableModels", () => jsonResponse({ tabModelIds: "x", deprecatedModelIds: ["m"] }), () => jsonResponse([1, 2]), () => new Response("not json"));
-    for (let i = 0; i < 3; i++) expect((await run(["models", "antigravity"])).stdout.split("\n")[0]).toMatch(/^# antigravity: /);
+    for (let i = 0; i < 3; i++) expect((await run(["models", "antigravity", "--refresh"])).stdout).toMatch(/^# antigravity: /m);
+    // A stored copy of another shape is not used, and one kept for another account is fetched again.
+    const copy = join(home!.dir, "state", "antigravity", "model-catalog.json");
+    writeFileSync(copy, JSON.stringify({ version: 1, fetchedAt: Date.now(), account: 7, descriptors: [] }));
+    const reads = upstreams.find("/v1internal:fetchAvailableModels").length;
+    expect((await run(["models", "antigravity"])).stdout.split("\n")[0]).toMatch(/^# antigravity: \d+ models \(live catalog\)$/);
+    writeFileSync(copy, JSON.stringify({ version: 1, fetchedAt: Date.now(), account: "another-account", descriptors: [] }));
+    expect((await run(["models", "antigravity"])).stdout.split("\n")[0]).toMatch(/^# antigravity: \d+ models \(live catalog\)$/);
+    expect(upstreams.find("/v1internal:fetchAvailableModels").length - reads).toBe(2);
   });
 
   test("quota: groups without a model list, buckets with missing fields and unknown windows, no groups at all", async () => {

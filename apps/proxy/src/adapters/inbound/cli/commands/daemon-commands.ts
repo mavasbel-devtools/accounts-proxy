@@ -1,7 +1,7 @@
 // `serve`, `token` and `status`: the daemon, its access token and whether it answers.
 import type { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import type { DaemonConsolePort, DaemonStatusPort } from "@accounts-proxy/core/ports/inbound/daemon.ts";
-import type { HealthPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
+import type { HealthPort, WarmModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CliCommand, type CommandHelp, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { HOME_VARIABLE, noArguments, PROGRAM, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 import type { Server, ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
@@ -10,7 +10,7 @@ import type { Server, ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbo
 export const SHUTDOWN_GRACE_MS = 10_000;
 
 /** What `serve` runs: the socket server until the process is asked to stop. */
-export type CliDaemon = { readonly server: Server; readonly shutdown: ShutdownSignal; readonly console: DaemonConsolePort };
+export type CliDaemon = { readonly server: Server; readonly shutdown: ShutdownSignal; readonly console: DaemonConsolePort; readonly models: WarmModelsPort };
 
 export const SERVE_HELP: CommandHelp = {
   name: "serve",
@@ -77,9 +77,12 @@ export class ServeCommand extends CliCommand {
     out(`accounts-proxy listening on http://${listening.host}:${listening.port} (providers: ${providers.join(", ") || "none"})\n`);
     out(`clients authenticate with the proxy token: ${PROGRAM} token\n`);
     this.daemon.console.attach();
+    // The model lists are fetched once now, all at the same time; requests meanwhile join these fetches (M2).
+    const warming = this.daemon.models.warm();
     const signal = await this.daemon.shutdown.wait();
     out(`${signal}: stopping (in-flight responses get ${SHUTDOWN_GRACE_MS / 1000} s)\n`);
     await this.daemon.server.stop(SHUTDOWN_GRACE_MS);
+    await warming;
     out("stopped\n");
   }
 }

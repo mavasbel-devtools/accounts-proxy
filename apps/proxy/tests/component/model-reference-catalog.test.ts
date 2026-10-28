@@ -2,7 +2,7 @@
 // built-in copy; a refresh reads it now (plan 2026-10-26 R2).
 import { describe, expect, test } from "bun:test";
 import { BUILTIN_REFERENCE } from "@accounts-proxy/proxy/adapters/outbound/builtin-model-reference.ts";
-import { MODEL_REFERENCE_URL, ModelReferenceCatalog, REFERENCE_TIMEOUT_MS } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
+import { MODEL_REFERENCE_URL, ModelReferenceCatalog, ModelReferenceList, REFERENCE_TIMEOUT_MS } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
 import { FixedClock, MemoryKeyValueStore, MemoryLogger, ScriptedTransport, type ScriptedResponse } from "@accounts-proxy/test-support/fakes.ts";
 
 const DOC = JSON.stringify({ anthropic: { npm: "@ai-sdk/anthropic", models: { c: { name: "C" } } }, other: { models: {} } });
@@ -13,11 +13,11 @@ const make = (handler: (i: number) => ScriptedResponse, store = new MemoryKeyVal
   const transport = new ScriptedTransport((_, i) => handler(i));
   const clock = new FixedClock();
   const logger = new MemoryLogger();
-  return { transport, clock, logger, store, catalog: new ModelReferenceCatalog(transport, store, clock, logger, "http://gw/api.json", BUILTIN, MAX_AGE_MS) };
+  return { transport, clock, logger, store, catalog: new ModelReferenceCatalog(new ModelReferenceList(transport, store, clock, logger, "http://gw/api.json", BUILTIN, MAX_AGE_MS)) };
 };
 
 describe("ModelReferenceCatalog", () => {
-  test("live, then memory for the max age, then read again; the parsed copy is stored", async () => {
+  test("live, then memory for the max age, then read again in the background; the parsed copy is stored", async () => {
     const m = make(() => ({ status: 200, body: DOC }));
     const a = await m.catalog.reference();
     expect(a.source).toBe("live");
@@ -32,6 +32,7 @@ describe("ModelReferenceCatalog", () => {
     expect(m.transport.requests).toHaveLength(1);
     m.clock.time += 1;
     await m.catalog.reference();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(m.transport.requests).toHaveLength(2);
   });
 
@@ -58,11 +59,11 @@ describe("ModelReferenceCatalog", () => {
     const stale = make(() => ({ status: 503, body: "down" }), store);
     const fallback = await stale.catalog.reference();
     expect([fallback.source, fallback.catalog.get("openai")!.get("o")]).toEqual(["cache", { name: "O" }]);
-    expect(stale.logger.lines).toEqual(["WARN model reference: http://gw/api.json unavailable (GET http://gw/api.json HTTP 503)"]);
+    expect(stale.logger.lines.at(-1)).toBe("WARN model reference: model list stale → failed after 0 ms (GET http://gw/api.json HTTP 503) → the saved copy fetched 1970-01-01T00:00:00.000Z: 1 models");
     const empty = make(() => ({ status: 200, body: JSON.stringify({ nope: {} }) }));
     const builtin = await empty.catalog.reference();
     expect([builtin.source, builtin.catalog.get("google")!.get("g")]).toEqual(["static", { name: "G" }]);
-    expect(empty.logger.lines).toEqual(["WARN model reference: http://gw/api.json unavailable (GET http://gw/api.json: no reference provider in the document)"]);
+    expect(empty.logger.lines.at(-1)).toBe("WARN model reference: model list first use → failed after 0 ms (GET http://gw/api.json: no reference provider in the document) → the built-in list: 1 models");
   });
 
   test("cache faults are warned, never fatal; a malformed stored copy is ignored", async () => {
@@ -71,7 +72,8 @@ describe("ModelReferenceCatalog", () => {
     store.failWrite = new Error("full");
     const m = make(() => ({ status: 200, body: DOC }), store);
     expect((await m.catalog.reference()).source).toBe("live");
-    expect(m.logger.lines).toEqual(["WARN model reference: cache unreadable: Error: disk", "WARN model reference: cache write failed: Error: full"]);
+    expect(m.logger.lines).toContain("WARN model reference: model list cache unreadable: Error: disk");
+    expect(m.logger.lines).toContain("WARN model reference: model list cache write failed: Error: full");
     for (const bad of [null, [], { version: 2, fetchedAt: 1, catalog: {} }, { version: 1, fetchedAt: "1", catalog: {} }, { version: 1, fetchedAt: 1, catalog: null }, { version: 1, fetchedAt: 1, catalog: [] }]) {
       const s = new MemoryKeyValueStore();
       s.values.set("model-reference", bad);

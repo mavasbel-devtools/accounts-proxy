@@ -1,10 +1,12 @@
 // Live model catalog. Contract of opencode-claude-auth @ 6292741 (AGENTS.md §9, AnthropicModelsApiAdapter,
-// RefreshModelCatalogUseCase): fresh cache (younger than `modelListMaxAgeMinutes`, default 24 h as in the plugin; a
-// refresh skips it) → live paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per page, cursor last_id else final
-// id) → on failure or empty: stale non-empty cache → static minimum. Never empty.
-import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+// RefreshModelCatalogUseCase): live model selector, else paginated GET /v1/models (limit 100, ≤ 10 pages, 3 s per page,
+// cursor last_id else final id); an empty answer is a failure. Reuse, background refresh and fallbacks (stored copy,
+// then the static minimum; never empty) are the shared model-list rules (ModelListCacheBase, plan 2026-10-28-13-40).
 import { readAll } from "@accounts-proxy/core/domain/wire.ts";
 import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
+import type { ListSnapshot } from "@accounts-proxy/core/domain/model-list.ts";
+import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
+import { ModelListCacheBase, type ModelListCachePort } from "@accounts-proxy/core/ports/outbound/model-list-cache.ts";
 import type { KeyValueStorePort } from "@accounts-proxy/core/ports/outbound/state.ts";
 import type { ClockPort, LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { HttpTransportPort } from "@accounts-proxy/core/ports/outbound/transport.ts";
@@ -15,60 +17,66 @@ import { ClaudeCatalogPort, type CatalogListing, type ClaudeSessionPort } from "
 
 export const CATALOG_KEY = "claude/model-catalog";
 
+type Entries = readonly CatalogModelEntry[];
+
+/** The Claude list over the shared model-list rules. */
 export class ClaudeCatalog extends ClaudeCatalogPort {
-  private memory: CatalogSnapshot | undefined;
+  constructor(private readonly list: ModelListCachePort<Entries>) {
+    super();
+  }
+
+  async listing(): Promise<CatalogListing> {
+    const { source, value } = await this.list.read();
+    return { source, entries: value };
+  }
+
+  async refresh(): Promise<CatalogListing> {
+    const { source, value } = await this.list.fetch("refresh");
+    return { source, entries: value };
+  }
+}
+
+/** The Claude model list's source (model selector, else /v1/models) and its stored copy. */
+export class ClaudeModelList extends ModelListCacheBase<Entries> {
+  protected readonly label = "claude";
+  protected readonly cacheKey = CATALOG_KEY;
 
   constructor(
     private readonly transport: HttpTransportPort,
     private readonly session: ClaudeSessionPort,
-    private readonly store: KeyValueStorePort,
-    private readonly clock: ClockPort,
-    private readonly logger: LoggerPort,
+    store: KeyValueStorePort,
+    clock: ClockPort,
+    logger: LoggerPort,
     private readonly apiBase: string,
-    private readonly maxAgeMs: number,
+    maxAgeMs: number,
   ) {
-    super();
+    super(store, clock, logger, maxAgeMs);
   }
 
-  /** `live` when fetched by this process (memoized for the max age), `cache` from the stored copy, `static` the minimum. */
-  listing(): Promise<CatalogListing> {
-    return this.load(false);
+  protected decode(value: JsonValue | undefined): ListSnapshot<Entries> | undefined {
+    return isSnapshot(value) ? { fetchedAt: value.fetchedAt, value: value.models } : undefined;
   }
 
-  refresh(): Promise<CatalogListing> {
-    return this.load(true);
+  protected encode(snapshot: ListSnapshot<Entries>): JsonValue {
+    const stored: CatalogSnapshot = { version: 2, fetchedAt: snapshot.fetchedAt, models: snapshot.value };
+    return stored as unknown as JsonValue;
   }
 
-  private async load(now: boolean): Promise<CatalogListing> {
-    const fromMemory = this.memory !== undefined;
-    const cached = this.memory ?? (await this.loadCache());
-    if (!now && cached !== undefined && this.clock.now() - cached.fetchedAt < this.maxAgeMs) return { source: fromMemory ? "live" : "cache", entries: cached.models };
-    try {
-      const models = await this.fetchLive();
-      if (models.length === 0) throw new Error("live catalog is empty");
-      const snapshot: CatalogSnapshot = { version: 2, fetchedAt: this.clock.now(), models };
-      this.memory = snapshot;
-      await this.store.write(CATALOG_KEY, snapshot as unknown as JsonValue).catch((error: unknown) => {
-        this.logger.warn(`claude: catalog cache write failed: ${String(error)}`);
-      });
-      return { source: "live", entries: models };
-    } catch (error) {
-      this.logger.warn(`claude: live catalog unavailable (${errorMessage(error)})`);
-      return cached !== undefined ? { source: "cache", entries: cached.models } : { source: "static", entries: STATIC_CATALOG };
-    }
+  protected count(value: Entries): number {
+    return value.length;
   }
 
-  private async loadCache(): Promise<CatalogSnapshot | undefined> {
-    try {
-      const value = await this.store.read(CATALOG_KEY);
-      return isSnapshot(value) ? value : undefined;
-    } catch (error) {
-      this.logger.warn(`claude: catalog cache unreadable: ${String(error)}`);
-      return undefined;
-    }
+  protected builtin(): Entries {
+    return STATIC_CATALOG;
   }
 
-  private async fetchLive(): Promise<CatalogModelEntry[]> {
+  protected async fetchLive(): Promise<Entries> {
+    const models = await this.fetchFromSource();
+    if (models.length === 0) throw new Error("live catalog is empty");
+    return models;
+  }
+
+  private async fetchFromSource(): Promise<CatalogModelEntry[]> {
     const active = await this.session.active();
     const { accessToken, organizationUuid } = active.account;
 

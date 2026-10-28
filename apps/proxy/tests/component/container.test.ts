@@ -126,8 +126,9 @@ describe("composition root", () => {
       expect(await runCli(["account", "list", "openai"], opts)).toBe(0);
       expect(out.at(-1)).toBe("no openai accounts; run: bun run proxy login openai\n");
       // The list and the detailed list read the reference catalog (rules M2, M4; the gateways seam, unset here, would
-      // repoint it); the scripted transport answers no read, so the built-in copy is used and nothing is stored.
-      expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json", "https://models.opencode.ai/api.json"]);
+      // repoint it); the scripted transport answers no read, so the built-in copy is used and nothing is stored. The
+      // failed read is not repeated within 60 s (plan 2026-10-28-13-40 M4), so the detailed list asks no more.
+      expect(transport.requests.map((r) => r.url)).toEqual(["https://models.opencode.ai/api.json"]);
       removeTemporary(home!);
       home = undefined;
     }
@@ -151,11 +152,10 @@ describe("composition root", () => {
       const at = (url: string) => (origin === undefined ? url : `${origin}${new URL(url).pathname}`);
       expect(transport.requests.map((r) => r.url)).toEqual([
         at("https://openrouter.ai/api/v1/models"),
-        // O5: OpenCode's lists are the reference catalog's (its unreachable answer is not kept, so each list asks).
-        at("https://models.opencode.ai/api.json"),
+        // O5: OpenCode's lists are the reference catalog's, read once; a failed read is not repeated within 60 s
+        // (plan 2026-10-28-13-40 M4).
         at("https://models.opencode.ai/api.json"),
         at("https://api.cheaperinference.com/public/models"),
-        at("https://models.opencode.ai/api.json"),
       ]);
       removeTemporary(home!);
       home = undefined;

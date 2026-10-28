@@ -19,6 +19,9 @@ import { DescribeModelsService } from "@accounts-proxy/proxy/application/describ
 import { ListModelsService } from "@accounts-proxy/proxy/application/list-models-service.ts";
 import { LoginService } from "@accounts-proxy/proxy/application/login-service.ts";
 import { RefreshModelsService } from "@accounts-proxy/proxy/application/refresh-models-service.ts";
+import { WarmModelsService } from "@accounts-proxy/proxy/application/warm-models-service.ts";
+import { ModelListCachePort } from "@accounts-proxy/core/ports/outbound/model-list-cache.ts";
+import type { KeptList, ListFetchReason } from "@accounts-proxy/core/domain/model-list.ts";
 import { DaemonRefreshError, REFRESH_TIMEOUT_MS, RequestModelRefreshService } from "@accounts-proxy/proxy/application/request-model-refresh-service.ts";
 import type { LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 
@@ -580,5 +583,28 @@ describe("RequestModelRefreshService (plan 2026-10-26 R2)", () => {
     await expect(make({ status: 404, body: JSON.stringify({ error: "x" }) }).service.request()).rejects.toThrow(/HTTP 404$/);
     await expect(make({ status: 200, body: JSON.stringify({ nope: 1 }) }).service.request()).rejects.toBeInstanceOf(DaemonRefreshError);
     await expect(make({ status: 200, body: "[]" }).service.request()).rejects.toThrow("the answer has no catalogs");
+  });
+});
+
+class RecordingList extends ModelListCachePort<string> {
+  reasons: ListFetchReason[] = [];
+  constructor(private readonly fails: boolean) {
+    super();
+  }
+  async read(): Promise<KeptList<string>> {
+    return { source: "live", value: "x" };
+  }
+  async fetch(reason: ListFetchReason): Promise<KeptList<string>> {
+    this.reasons.push(reason);
+    if (this.fails) throw new Error("no list");
+    return { source: "live", value: "x" };
+  }
+}
+
+describe("WarmModelsService (plan 2026-10-28-13-40 M2)", () => {
+  test("fetches every list once with reason start, all at once; a failed fetch does not stop the others", async () => {
+    const lists = [new RecordingList(false), new RecordingList(true), new RecordingList(false)];
+    await new WarmModelsService(lists).warm();
+    expect(lists.map((l) => l.reasons)).toEqual([["start"], ["start"], ["start"]]);
   });
 });

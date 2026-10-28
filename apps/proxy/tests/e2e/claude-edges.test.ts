@@ -157,7 +157,7 @@ describe("accounts and upstream answers", () => {
     upstreams.script("/v1/models", ...Array.from({ length: 10 }, (_, n) => page(n)));
     const listed = await run(["models", "claude"]);
     expect(listed.stdout.split("\n")[0]).toBe("# claude: 10 models (live catalog)");
-    expect(await loggedEventually(home!, "WARN claude: catalog cache unreadable: StoreCorruptError")).toContain("WARN claude: catalog cache unreadable: StoreCorruptError");
+    expect(await loggedEventually(home!, "WARN claude: model list cache unreadable: StoreCorruptError")).toContain("WARN claude: model list cache unreadable: StoreCorruptError");
   });
 
   test("a catalog copy that cannot be written is logged; the live list is still used", async () => {
@@ -170,7 +170,7 @@ describe("accounts and upstream answers", () => {
     const listed = await run(["models", "claude"]);
     chmodSync(join(home.dir, "state", "claude"), 0o700);
     expect(listed.stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(live catalog\)$/);
-    expect(await loggedEventually(home!, "WARN claude: catalog cache write failed: Error: EACCES")).toContain("WARN claude: catalog cache write failed: Error: EACCES");
+    expect(await loggedEventually(home!, "WARN claude: model list cache write failed: Error: EACCES")).toContain("WARN claude: model list cache write failed: Error: EACCES");
   });
 
   test("model_selector failure falls back to /v1/models in live catalog", async () => {

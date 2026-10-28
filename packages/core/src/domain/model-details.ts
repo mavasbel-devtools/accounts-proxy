@@ -272,6 +272,11 @@ export function referenceRecord(catalog: ReferenceCatalog): ReferenceRecord {
   return Object.fromEntries([...catalog].map(([provider, models]) => [provider, Object.fromEntries(models)]));
 }
 
+/** The number of models over every provider of a reference record. */
+export function countReferenceModels(record: ReferenceRecord): number {
+  return Object.values(record).reduce((sum, models) => sum + Object.keys(models).length, 0);
+}
+
 export function referenceCatalog(record: ReferenceRecord): ReferenceCatalog {
   return new Map(Object.entries(record).map(([provider, models]) => [provider, new Map(Object.entries(models))]));
 }

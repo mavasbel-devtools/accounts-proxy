@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { activeAccount, EMPTY_POOL, upsertAccount, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
-import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError } from "@accounts-proxy/core/domain/errors.ts";
+import { InvalidRequestError, ProviderAuthRequiredError, QuotaExhaustedError, UnknownModelError, UnsupportedFeatureError, UpstreamError, UpstreamUnreachableError } from "@accounts-proxy/core/domain/errors.ts";
 import type { JsonValue } from "@accounts-proxy/core/domain/json.ts";
 import { orderedHeaders, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import { TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
@@ -17,7 +17,7 @@ import {
   type ScriptedResponse,
 } from "@accounts-proxy/test-support/fakes.ts";
 import { AntigravityApiClient } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
-import { AntigravityCatalog } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
+import { ANTIGRAVITY_CATALOG_KEY, AntigravityCatalog, AntigravityModelList } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
 import { AntigravityNative, unwrapEnvelope } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-native.ts";
 import { AntigravityRunner } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-runner.ts";
 import { AntigravityProvider } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-provider.ts";
@@ -426,16 +426,74 @@ describe("withActive", () => {
 });
 
 describe("AntigravityCatalog and AntigravityQuota", () => {
-  test("descriptors fetched live and memoized; a miss refetches once; unknown stays undefined", async () => {
+  const signedIn = (...ids: string[]) => {
+    const store = new MemoryCredentialStore();
+    let pool = EMPTY_POOL;
+    for (const id of ids) pool = upsertAccount(pool, { provider: "antigravity", id, label: id, data: {} });
+    store.seed("antigravity", pool);
+    return store;
+  };
+  const make = (store = signedIn("me@x"), kv = new MemoryKeyValueStore(), session = new FixedSession()) => {
     const api = new ScriptedApi();
     const logger = new MemoryLogger();
-    const catalog = new AntigravityCatalog(api, new FixedSession(), logger);
+    const list = new AntigravityModelList(api, session, kv, new FixedClock(), logger, 24 * 3_600_000);
+    return { api, logger, kv, store, catalog: new AntigravityCatalog(list, store) };
+  };
+
+  test("the list is fetched once, kept in memory and on disk; a miss fetches once more; unknown stays undefined", async () => {
+    const { api, logger, kv, catalog } = make();
     expect((await catalog.descriptor("gemini-3.6-flash-low"))?.enumPlaceholder).toBe("MODEL_PLACEHOLDER_M73");
     expect(await catalog.descriptor("gemini-3.6-flash-low")).toBeDefined();
     expect(api.calls).toEqual(["fetchAvailableModels"]);
+    expect(kv.values.get(ANTIGRAVITY_CATALOG_KEY)).toMatchObject({ version: 1, account: "me@x" });
     expect(await catalog.descriptor("nope")).toBeUndefined();
     expect(api.calls).toEqual(["fetchAvailableModels", "fetchAvailableModels"]);
-    expect(logger.lines[0]).toBe("INFO antigravity: resolved 4 models for me@x");
+    expect(logger.lines[0]).toBe("INFO antigravity: model list first use: fetching");
+    expect(logger.lines[1]).toBe("INFO antigravity: model list first use → live: 4 models (0 ms)");
+    expect(logger.lines[2]).toBe("INFO antigravity: model list unknown model: fetching");
+  });
+
+  test("a failed fetch answers the saved copy (M1) and the provider keeps its models", async () => {
+    const saved = make();
+    await saved.catalog.listing();
+    const offline = make(signedIn("me@x"), saved.kv);
+    offline.api.models = () => Promise.reject(new UpstreamUnreachableError("antigravity", "getaddrinfo ENOTFOUND cloudcode-pa.googleapis.com"));
+    offline.kv.values.set(ANTIGRAVITY_CATALOG_KEY, { ...(saved.kv.values.get(ANTIGRAVITY_CATALOG_KEY) as object), fetchedAt: 0 });
+    const listing = await offline.catalog.listing();
+    expect([listing.source, listing.descriptors.length]).toEqual(["cache", 4]);
+    expect(offline.logger.lines.at(-1)).toContain("failed after 0 ms");
+    expect(offline.logger.lines.at(-1)).toContain("→ the saved copy fetched 1970-01-01T00:00:00.000Z: 4 models");
+  });
+
+  test("a list kept for another account is fetched again for the active one; no active account is a 401", async () => {
+    const first = make(signedIn("me@x"));
+    await first.catalog.listing();
+    const other = make(signedIn("me@x", "other@x"), first.kv, new FixedSession({ id: "other@x", account: acct() }));
+    expect((await other.catalog.listing()).source).toBe("live");
+    expect(other.api.calls).toEqual(["fetchAvailableModels"]);
+    expect(other.logger.lines).toContain("INFO antigravity: model list account changed: fetching");
+    expect(other.kv.values.get(ANTIGRAVITY_CATALOG_KEY)).toMatchObject({ account: "other@x" });
+    await expect(make(new MemoryCredentialStore()).catalog.listing()).rejects.toBeInstanceOf(ProviderAuthRequiredError);
+  });
+
+  test("no saved copy and a failed fetch is an error (there is no built-in Antigravity list)", async () => {
+    const m = make();
+    m.api.models = () => Promise.reject(new UpstreamUnreachableError("antigravity", "offline"));
+    await expect(m.catalog.listing()).rejects.toBeInstanceOf(UpstreamUnreachableError);
+    expect(m.logger.lines.at(-1)).toBe("WARN antigravity: model list first use → failed after 0 ms (upstream antigravity could not be reached: offline) → no list");
+  });
+
+  test("refresh fetches now; a malformed saved copy is ignored", async () => {
+    const kv = new MemoryKeyValueStore();
+    for (const bad of [null, [], { version: 2, fetchedAt: 1, account: "me@x", descriptors: [] }, { version: 1, fetchedAt: "1", account: "me@x", descriptors: [] }, { version: 1, fetchedAt: 1, account: 1, descriptors: [] }, { version: 1, fetchedAt: 1, account: "me@x", descriptors: {} }]) {
+      kv.values.set(ANTIGRAVITY_CATALOG_KEY, bad);
+      const m = make(signedIn("me@x"), kv);
+      expect((await m.catalog.listing()).source).toBe("live");
+    }
+    const m = make();
+    await m.catalog.listing();
+    expect((await m.catalog.refresh()).source).toBe("live");
+    expect(m.api.calls).toHaveLength(2);
   });
 
   test("quota usage view", async () => {
@@ -541,11 +599,14 @@ describe("AntigravityRunner", () => {
 });
 
 class SampleCatalog extends AntigravityCatalogPort {
-  async descriptors() {
-    return toModelDescriptors(JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>);
+  async listing() {
+    return { source: "live" as const, descriptors: toModelDescriptors(JSON.parse(text("fetch-available-models.sample.json")) as Record<string, unknown>) };
+  }
+  async refresh() {
+    return { source: "live" as const, descriptors: (await this.listing()).descriptors.slice(0, 1) };
   }
   async descriptor(wireId: string) {
-    return (await this.descriptors()).find((d) => d.wireId === wireId);
+    return (await this.listing()).descriptors.find((d) => d.wireId === wireId);
   }
 }
 
@@ -613,6 +674,8 @@ describe("AntigravityProvider", () => {
     expect([catalog.provider, catalog.source]).toEqual(["antigravity", "live"]);
     expect(catalog.models.find((m) => m.address.model === "gemini-3.6-flash-low")).toEqual({ address: { provider: "antigravity", model: "gemini-3.6-flash-low" }, displayName: "Gemini 3.6 Flash (Low)", contextWindow: 80_000, maxOutputTokens: 65_536, details: { input: ["text", "image", "video"], reasoning: true } });
     expect(catalog.models.find((m) => m.address.model === "chat_20706")).toEqual({ address: { provider: "antigravity", model: "chat_20706" }, displayName: "Chat (no output limit)", details: { input: ["text"], reasoning: false } });
+    const refreshed = await provider.refreshModels();
+    expect([refreshed.source, refreshed.models]).toEqual(["live", [catalog.models[0]!]]);
   });
 
   test("route, method, model and body checks happen before any upstream call", async () => {

@@ -7,9 +7,9 @@ import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync }
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { validate } from "@accounts-proxy/test-support/json-schema.ts";
-import { ENTRY, makeHome, runProxy, startDaemon, type Daemon, type Home, accountsFile, writePool, proxyLogOf, logFiles, logsDir, usageOf } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { ENTRY, makeHome, runProxy, startDaemon, type Daemon, type Home, accountsFile, writePool, proxyLogOf, logFiles, logsDir, usageOf, startFetchesEnded, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { GRANTED_SCOPES } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
-import { captured, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
+import { captured, jsonResponse, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
 /** The committed reference's openai models with one of opencode's 16 ChatGPT ids, in the reference's order (P4). */
@@ -144,8 +144,8 @@ describe("detailed model list and opencode configuration", () => {
     mkdirSync(copy);
     expect(await source()).toBe("live");
     const warned = proxyLogOf(home);
-    expect(warned).toContain("WARN model reference: cache unreadable");
-    expect(warned).toContain("WARN model reference: cache write failed");
+    expect(warned).toContain("WARN model reference: model list cache unreadable");
+    expect(warned).toContain("WARN model reference: model list cache write failed");
   });
 
   test("the shapes the lists may take: each provider's own list and the reference catalog, through the configuration and its variants", async () => {
@@ -168,7 +168,12 @@ describe("detailed model list and opencode configuration", () => {
     expect(model("claude", "claude-edge-nocaps")["input"]).toBeUndefined();
     // A model whose lists state no limits has none in the Anthropic list or the Gemini list either.
     const token = (await run(["token"])).stdout.trim();
+    // The daemon fetches every list at start (plan 2026-10-28-13-40 M2) and stores what it gets: it meets the same
+    // shapes, and its Claude fetch fails, so it answers the stored copy.
+    scriptShapes();
+    upstreams.script("/v1/models", () => jsonResponse({ type: "error", error: { type: "api_error", message: "down" } }, 500));
     daemon = await startDaemon(home, upstreams.seamEnv());
+    await startFetchesEnded(home);
     const anthropic = (await (await fetch(`${daemon.url}/anthropic/v1/models`, { headers: { "x-api-key": token } })).json()) as { data: { id: string; max_input_tokens: number | null; max_tokens: number | null }[] };
     expect(anthropic.data.find((m) => m.id === "claude/claude-edge-nocaps")).toMatchObject({ max_input_tokens: null, max_tokens: null });
     const geminiList = (await (await fetch(`${daemon.url}/gemini/v1beta/models`, { headers: { "x-goog-api-key": token } })).json()) as { models: Record<string, unknown>[] };
@@ -261,6 +266,7 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
   test("with a daemon: `models --refresh` asks the daemon, whose memory then answers; its errors are reported", async () => {
     home = await makeHome(ALL);
     daemon = await startDaemon(home, upstreams.seamEnv());
+    await startFetchesEnded(home);
     const listed = reads(OPENROUTER);
     const refreshed = await run(["models", "openrouter", "--refresh"]);
     expect([refreshed.code, firstLine(refreshed.stdout), headers(refreshed.stdout)]).toEqual([0, `refreshed by the daemon at ${daemon.url}`, ["# openrouter: 459 models (live catalog)"]]);
@@ -274,6 +280,32 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
       `error: the daemon at ${daemon.url} answered the refresh with HTTP 401: antigravity: no active account; run \`accounts-proxy login antigravity\`\n`,
     ]);
   });
+
+  test("a daemon's kept lists (plan 2026-10-28-13-40 M3–M4): a failed refresh keeps the built-in or fetched list; a read after the retry wait or the age starts a background fetch", async () => {
+    home = await makeHome(`modelListMaxAgeMinutes: 1\n${ALL}`);
+    daemon = await startDaemon(home, upstreams.seamEnv());
+    // Claude has no account: its start-up fetch failed and the daemon keeps the built-in list.
+    expect(await startFetchesEnded(home)).toContain("WARN claude: model list start → failed after ");
+    const builtin = await run(["models", "claude", "--refresh"]);
+    expect([builtin.code, headers(builtin.stdout)]).toEqual([0, [expect.stringMatching(/^# claude: \d+ models \(built-in list\)$/)]]);
+    expect(await loggedEventually(home!, "WARN claude: model list refresh → failed after ")).toMatch(/WARN claude: model list refresh → failed after \d+ ms \(claude: no active account; run `accounts-proxy login claude`\) → the built-in list: \d+ models/);
+    upstreams.script(OPENROUTER, () => new Response("down", { status: 503 }));
+    const kept = await run(["models", "openrouter", "--refresh"]);
+    // The answer describes the kept list, the one this daemon fetched live at start.
+    expect([kept.code, headers(kept.stdout)]).toEqual([0, ["# openrouter: 459 models (live catalog)"]]);
+    expect(await loggedEventually(home!, "WARN openrouter: model list refresh → failed after ")).toMatch(/WARN openrouter: model list refresh → failed after \d+ ms \(.+\) → the list fetched \d{4}-\d{2}-\d{2}T[\d:.]+Z: 459 models/);
+
+    // After the retry wait (MODEL_LIST_RETRY_MS, 60 s) and the age (1 minute), a read answers the kept lists at once
+    // and fetches in the background: Claude and OpenRouter retry, the reference catalog is stale.
+    await Bun.sleep(61_000);
+    const token = (await run(["token"])).stdout.trim();
+    const listed = await fetch(`${daemon.url}/proxy/v1/models`, { headers: { authorization: `Bearer ${token}` } });
+    expect(listed.status).toBe(200);
+    await listed.text();
+    for (const line of ["INFO claude: model list retry: fetching", "INFO openrouter: model list retry: fetching", "INFO model reference: model list stale: fetching"]) {
+      expect(await loggedEventually(home!, line)).toContain(line);
+    }
+  }, 120_000);
 
   test("something else on the daemon's port, an unreadable proxy token, a model-list age that is not a positive integer", async () => {
     home = await makeHome(ALL);

@@ -23,7 +23,7 @@ import { AnthropicCodec } from "@accounts-proxy/dialect-anthropic/adapters/inbou
 import { GeminiCodec } from "@accounts-proxy/dialect-gemini/adapters/inbound/gemini-codec.ts";
 import { OpenAiCodec } from "@accounts-proxy/dialect-openai/adapters/inbound/openai-codec.ts";
 import { AntigravityApiClient } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-api-client.ts";
-import { AntigravityCatalog } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
+import { AntigravityCatalog, AntigravityModelList } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-catalog.ts";
 import { AntigravityNative } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-native.ts";
 import { AntigravityProvider } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-provider.ts";
 import { AntigravityQuota } from "@accounts-proxy/provider-antigravity/adapters/outbound/antigravity-quota.ts";
@@ -43,14 +43,14 @@ import type {
 import { CheaperCatalogSource, CheaperKeyLogin, CheaperQuota } from "@accounts-proxy/provider-cheaper-inference/adapters/outbound/cheaper-inference-adapters.ts";
 import { CHEAPER_BUILTIN } from "@accounts-proxy/provider-cheaper-inference/domain/builtin-models.ts";
 import { CHEAPER_SPEC, PUBLIC_MODELS_URL as CHEAPER_PUBLIC_MODELS_URL } from "@accounts-proxy/provider-cheaper-inference/domain/cheaper-inference.ts";
-import { ClaudeCatalog } from "@accounts-proxy/provider-claude/adapters/outbound/claude-catalog.ts";
+import { ClaudeCatalog, ClaudeModelList } from "@accounts-proxy/provider-claude/adapters/outbound/claude-catalog.ts";
 import { ClaudeIdentity } from "@accounts-proxy/provider-claude/adapters/outbound/claude-identity.ts";
 import { ClaudeOAuthClient, PRODUCTION_ENDPOINTS as CLAUDE_ENDPOINTS } from "@accounts-proxy/provider-claude/adapters/outbound/claude-oauth-client.ts";
 import { ClaudeSession } from "@accounts-proxy/provider-claude/adapters/outbound/claude-session.ts";
 import { ClaudeSubscriptionProvider } from "@accounts-proxy/provider-claude/adapters/outbound/claude-subscription-provider.ts";
 import { API_BASE as CLAUDE_API_BASE } from "@accounts-proxy/provider-claude/domain/constants.ts";
 import type { ClaudeCatalogPort, ClaudeIdentityPort, ClaudeOAuthPort, ClaudeSessionPort } from "@accounts-proxy/provider-claude/ports/outbound/claude.ts";
-import { GatewayCatalog } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-catalog.ts";
+import { GatewayCatalog, GatewayModelList } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-catalog.ts";
 import { GatewayKeySession } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-key-session.ts";
 import { GatewayProvider } from "@accounts-proxy/provider-gateway/adapters/outbound/gateway-provider.ts";
 import type { GatewayModel, GatewaySpec } from "@accounts-proxy/provider-gateway/domain/gateway.ts";
@@ -121,7 +121,9 @@ import type { RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routi
 import type { ModelReferencePort } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
 import { BUILTIN_REFERENCE } from "@accounts-proxy/proxy/adapters/outbound/builtin-model-reference.ts";
-import { MODEL_REFERENCE_URL, ModelReferenceCatalog } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
+import { MODEL_REFERENCE_URL, ModelReferenceCatalog, ModelReferenceList } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
+import type { ModelListCachePort } from "@accounts-proxy/core/ports/outbound/model-list-cache.ts";
+import { WarmModelsService } from "@accounts-proxy/proxy/application/warm-models-service.ts";
 import { DescribeModelsService } from "@accounts-proxy/proxy/application/describe-models-service.ts";
 import { ListModelsService } from "@accounts-proxy/proxy/application/list-models-service.ts";
 import { RefreshModelsService } from "@accounts-proxy/proxy/application/refresh-models-service.ts";
@@ -388,6 +390,8 @@ export type ProviderGraph = {
   readonly gateways: readonly GatewayGraph[];
   /** The reference model catalog (plan 2026-10-16 rule M4), shared by the OpenCode catalogs and the detailed list. */
   readonly reference: ModelReferencePort;
+  /** Every kept model list (the reference catalog first), fetched once by `serve` at start (plan 2026-10-28-13-40 M2). */
+  readonly modelLists: readonly ModelListCachePort<unknown>[];
   /** The usage log (plan 2026-10-26 X1–X6, plan 2026-10-27-23-29 L2), when `logs.usage`; `transport` already records through it. */
   readonly exchangeLog?: ExchangeLog;
   /** The console copy of `logger`, silent until `serve` starts it (plan 2026-10-27 C1, L5). */
@@ -428,6 +432,8 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const state = new FileKeyValueStore(options.home, lock);
   const store = new AccountsFileStore(options.accounts.path, lock, options.accounts.fs);
   const maxAgeMs = modelListMaxAgeMs(config);
+  const referenceList = new ModelReferenceList(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE, maxAgeMs);
+  const modelLists: ModelListCachePort<unknown>[] = [referenceList];
 
   let claude: ClaudeGraph | undefined;
   if (enabled.includes("claude")) {
@@ -437,7 +443,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       tokenUrl: onOrigin(CLAUDE_ENDPOINTS.tokenUrl, seams.claudeOAuth),
     });
     const session = new ClaudeSession(store, oauth, lock, clock, logger);
-    const catalog = new ClaudeCatalog(transport, session, state, clock, logger, apiBase, maxAgeMs);
+    const list = new ClaudeModelList(transport, session, state, clock, logger, apiBase, maxAgeMs);
+    modelLists.push(list);
+    const catalog = new ClaudeCatalog(list);
     const identity = new ClaudeIdentity(state, random);
     claude = { oauth, session, identity, catalog, provider: new ClaudeSubscriptionProvider(session, catalog, identity, transport, random, logger, apiBase) };
   }
@@ -449,7 +457,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       tokenUrl: onOrigin(GOOGLE_ENDPOINTS.tokenUrl, seams.googleOAuth),
     });
     const session = new AntigravitySession(store, oauth, lock, clock, logger);
-    const catalog = new AntigravityCatalog(api, session, logger);
+    const list = new AntigravityModelList(api, session, state, clock, logger, maxAgeMs);
+    modelLists.push(list);
+    const catalog = new AntigravityCatalog(list, store);
     const antigravityState = new AntigravityState(state, random);
     const runner = new AntigravityRunner(api, session, antigravityState, random, clock, timer, logger);
     antigravity = {
@@ -462,9 +472,9 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
       provider: new AntigravityProvider(catalog, new AntigravityNative(runner, antigravityState, logger), logger),
     };
   }
-  const reference = new ModelReferenceCatalog(transport, state, clock, logger, onOrigin(MODEL_REFERENCE_URL, seams.gateways), BUILTIN_REFERENCE, maxAgeMs);
+  const reference = new ModelReferenceCatalog(referenceList);
   const openai = enabled.includes("openai") ? wireOpenAI({ seams, transport, store, state, random, clock, lock, logger, reference }) : undefined;
-  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference, maxAgeMs });
+  const gateways = buildGateways({ enabled, seams, transport, store, state, clock, lock, logger, hash: new NodeHash(), reference, maxAgeMs, modelLists });
   return {
     config,
     enabled,
@@ -477,6 +487,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
     transport,
     gateways,
     reference,
+    modelLists,
     ...(claude ? { claude } : {}),
     ...(antigravity ? { antigravity } : {}),
     ...(openai ? { openai } : {}),
@@ -526,16 +537,20 @@ type GatewayDeps = {
   readonly reference: ModelReferencePort;
   /** How long a fetched model list is reused (proxy.yaml `modelListMaxAgeMinutes`). */
   readonly maxAgeMs: number;
+  /** Each gateway's model list is added here. */
+  readonly modelLists: ModelListCachePort<unknown>[];
 };
 
 /** The enabled API-key gateways (plan P4.6), each on its production hosts or on the gateways seam. */
 function buildGateways(deps: GatewayDeps): GatewayGraph[] {
-  const { seams, transport, store, state, clock, lock, logger, hash, reference, maxAgeMs } = deps;
+  const { seams, transport, store, state, clock, lock, logger, hash, reference, maxAgeMs, modelLists } = deps;
   const at = (url: string) => onOrigin(url, seams.gateways);
   const wire = (base: GatewaySpec, source: (spec: GatewaySpec) => GatewayCatalogSourcePort, builtin: readonly GatewayModel[], keySession?: GatewayKeySessionPort) => {
     const spec: GatewaySpec = { ...base, apiBase: at(base.apiBase) };
     const session = keySession ?? new GatewayKeySession(spec.provider, store);
-    const catalog = new GatewayCatalog(spec.provider, source(spec), session, state, clock, logger, builtin, maxAgeMs);
+    const list = new GatewayModelList(spec.provider, source(spec), session, state, clock, logger, builtin, maxAgeMs);
+    modelLists.push(list);
+    const catalog = new GatewayCatalog(list);
     return { spec, session, catalog, provider: new GatewayProvider(spec, session, catalog, transport, logger) };
   };
   const out: GatewayGraph[] = [];
@@ -648,7 +663,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       refresh: new RequestModelRefreshService(graph.transport, ports.access, daemonUrl, refresh),
       status: new DaemonStatusService(graph.transport, daemonUrl),
     },
-    { server, shutdown: options.shutdown, console: new DaemonConsoleService(graph.console) },
+    { server, shutdown: options.shutdown, console: new DaemonConsoleService(graph.console), models: new WarmModelsService(graph.modelLists) },
   );
   const driver = new CommandLineDriver(commands, PROGRAM, options.out, options.err);
   return { config: graph.config, driver, closeLogs: graph.closeLogs };

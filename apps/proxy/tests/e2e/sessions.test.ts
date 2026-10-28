@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, te
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { accountsFile, BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, logFiles, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { accountsFile, BOTH_PROVIDERS, makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, logFiles, loggedEventually, startFetchesEnded } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(60_000);
@@ -38,6 +38,7 @@ async function login(provider: "claude" | "antigravity"): Promise<void> {
 async function serve(): Promise<{ url: string; token: string }> {
   const token = (await run(["token"])).stdout.trim();
   daemon = await startDaemon(home!, upstreams.seamEnv());
+  await startFetchesEnded(home!);
   return { url: daemon.url, token };
 }
 const claudeMessage = (s: { url: string; token: string }, model = "claude/claude-haiku-4-5-20251001") =>
@@ -46,16 +47,27 @@ const gemini = (s: { url: string; token: string }) =>
   fetch(`${s.url}/gemini/v1beta/models/antigravity%2Fgemini-3.6-flash-low:generateContent`, { method: "POST", headers: { "x-goog-api-key": s.token }, body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] }) });
 const tokenCalls = (path: string, grant: string) => upstreams.find(path).filter((r) => r.body.includes(grant)).length;
 const accounts = (provider: string) => readPool(home!, provider)! as { accounts: { id: string; data: Record<string, unknown> }[] };
+/**
+ * Sets every Claude account's expiry to `at` (default: inside the renewal margin) by a hand edit of the accounts file,
+ * after the daemon's start-up model-list fetch (plan 2026-10-28-13-40 M2), so the renewal a test scripts is the one its
+ * own request makes. The daemon reads the file on every request.
+ */
+const expireSoon = (at = Date.now() + 60_000) => {
+  const pool = readPool(home!, "claude")! as { accounts: { data: Record<string, unknown> }[] };
+  for (const account of pool.accounts) account.data["expiresAt"] = at;
+  writePool(home!, "claude", pool);
+};
 
 describe("one accounts file (plan 2026-10-26-23-32)", () => {
   test("A3a: two daemons with different data folders and the same accounts file renew once; both answer", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
     const other = await makeHome();
     const shared = { ...upstreams.seamEnv(), ACCOUNTS_PROXY_ACCOUNTS_FILE: accountsFile(home) };
     const second = await startDaemon(other, shared);
+    await startFetchesEnded(other);
+    expireSoon();
     try {
       const token2 = (await runProxy(other, ["token"], shared)).stdout.trim();
       const before = tokenCalls("/v1/oauth/token", "refresh_token");
@@ -117,9 +129,9 @@ describe("claude sessions", () => {
   test("an expiring token is refreshed once for concurrent requests (stored scopes sent), then reused; usage log off", async () => {
     // logs.usage: false (plan 2026-10-27-23-29 L4): login and daemon run unwrapped and no usage file appears.
     home = await makeHome(`logs: {usage: false}\n${BOTH_PROVIDERS}`);
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
+    expireSoon();
     const before = tokenCalls("/v1/oauth/token", "refresh_token");
     const answers = await Promise.all([claudeMessage(s), claudeMessage(s)]);
     expect(answers.map((a) => a.status)).toEqual([200, 200]);
@@ -136,10 +148,10 @@ describe("claude sessions", () => {
 
   test("H6: a rejected refresh marks the account needsLogin, later requests fail fast, a new login clears it; H4: a 5xx renewal keeps a valid token", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const id = accounts("claude").accounts[0]!.id;
     const s = await serve();
+    expireSoon();
     upstreams.script("/v1/oauth/token", () => jsonResponse({ error: "invalid_grant" }, 400));
     const rejected = await claudeMessage(s);
     expect([rejected.status, ((await rejected.json()) as { error: { message: string } }).error.message]).toEqual([401, "claude: token endpoint rejected the grant (HTTP 400); run `accounts-proxy login claude`"]);
@@ -201,9 +213,9 @@ describe("claude sessions", () => {
 
   test("H1: a new login during a renewal is kept: the renewed token serves only that request; a rejected renewal does not mark the new login", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
+    expireSoon();
     const renewal = holdRenewal(claudeToken({ access_token: "e2e-renewed" }));
     upstreams.script("/v1/oauth/token", claudeToken({ access_token: "e2e-login-1" }));
     const pending = claudeMessage(s);
@@ -231,9 +243,9 @@ describe("claude sessions", () => {
 
   test("H1: an account removed from the file during a renewal stays removed; the renewed token serves that request", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const s = await serve();
+    expireSoon();
     const renewal = holdRenewal(claudeToken({ access_token: "e2e-renewed" }));
     const pending = claudeMessage(s);
     await renewal.entered();
@@ -258,12 +270,12 @@ describe("claude sessions", () => {
 
   test("H1: `account use` while the daemon renews a token is not undone, and the renewed token is stored", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }));
     await login("claude");
     const first = accounts("claude").accounts[0]!.id;
     const pool = accounts("claude");
     writePool(home, "claude", { accounts: [...pool.accounts, { provider: "claude", id: "spare", label: "spare", data: pool.accounts[0]!.data }, { provider: "claude", id: "third", label: "third", data: pool.accounts[0]!.data }], activeId: first });
     const s = await serve();
+    expireSoon();
     let release: () => void = () => undefined;
     const held = new Promise<void>((resolve) => (release = resolve));
     let entered = false;
@@ -293,20 +305,22 @@ describe("claude sessions", () => {
 
   test("without a refresh token an expired login cannot be renewed; without scopes the refresh asks for the default set", async () => {
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60 }, ["refresh_token", "account", "organization"]));
+    upstreams.script("/v1/oauth/token", claudeToken({}, ["refresh_token", "account", "organization"]));
     await login("claude");
     expect(accounts("claude").accounts[0]!.id).toBe("claude-account");
     const s = await serve();
+    expireSoon(0);
     const stuck = await claudeMessage(s);
     expect([stuck.status, ((await stuck.json()) as { error: { message: string } }).error.message]).toEqual([401, "claude: access token expired and no refresh token is stored; run `accounts-proxy login claude`"]);
     await daemon!.stop();
     daemon = undefined;
     removeTemporary(home.dir);
     home = await makeHome();
-    upstreams.script("/v1/oauth/token", claudeToken({ expires_in: 60, scope: "" }));
+    upstreams.script("/v1/oauth/token", claudeToken({ scope: "" }));
     await login("claude");
     expect(accounts("claude").accounts[0]!.data["scopes"]).toBe("");
     const t = await serve();
+    expireSoon();
     expect((await claudeMessage(t)).status).toBe(200);
     expect((JSON.parse(upstreams.find("/v1/oauth/token").at(-1)!.body) as Record<string, string>)["scope"]).toBe("user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload user:plugins");
   });
@@ -331,7 +345,7 @@ describe("claude catalog", () => {
     await login("claude");
     upstreams.script("/v1/models", () => jsonResponse({ data: [], has_more: false }));
     expect((await run(["models", "claude"])).stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(built-in list\)$/);
-    expect(await loggedEventually(home!, "WARN claude: live catalog unavailable (live catalog is empty)")).toContain("WARN claude: live catalog unavailable (live catalog is empty)");
+    expect(await loggedEventually(home!, "WARN claude: model list first use → failed after ")).toMatch(/WARN claude: model list first use → failed after \d+ ms \(live catalog is empty\) → the built-in list/);
     upstreams.script(
       "/v1/models",
       () => jsonResponse({ data: [{ type: "model", id: "claude-opus-5", display_name: "Claude Opus 5", created_at: "2026-07-24T00:00:00Z", max_input_tokens: 1_000_000, max_tokens: 128_000 }], has_more: true, last_id: "claude-opus-5" }),
@@ -346,16 +360,19 @@ describe("claude catalog", () => {
     writeFileSync(cache, JSON.stringify({ ...JSON.parse(readFileSync(cache, "utf8")), fetchedAt: 0 }));
     upstreams.script("/v1/models", () => jsonResponse({ type: "error", error: { type: "api_error", message: "down" } }, 500));
     expect((await run(["models", "claude"])).stdout.split("\n")[0]).toBe("# claude: 2 models (stored copy of the live catalog)");
-    expect(await loggedEventually(home!, "live catalog unavailable (models catalog HTTP 500)")).toContain("live catalog unavailable (models catalog HTTP 500)");
+    expect(await loggedEventually(home!, "WARN claude: model list stale → failed after ")).toMatch(/WARN claude: model list stale → failed after \d+ ms \(models catalog HTTP 500\) → the saved copy fetched 1970-01-01T00:00:00\.000Z: 2 models/);
   });
 });
 
 describe("antigravity sessions", () => {
   test("an expiring token is refreshed once for concurrent requests; a refresh without a new refresh token keeps the old one", async () => {
     home = await makeHome();
-    upstreams.script("/token", googleToken({ expires_in: 60 }));
     await login("antigravity");
     const s = await serve();
+    // After the start-up model-list fetch (M2), the token is put inside the renewal margin by a hand edit.
+    const pool = readPool(home!, "antigravity")! as unknown as { accounts: { data: { tokens: Record<string, unknown> } }[] };
+    pool.accounts[0]!.data.tokens["expiresAt"] = Date.now() + 60_000;
+    writePool(home!, "antigravity", pool);
     upstreams.script("/token", googleToken({ refresh_token: undefined }));
     const answers = await Promise.all([gemini(s), gemini(s)]);
     expect(answers.map((a) => a.status)).toEqual([200, 200]);
@@ -376,8 +393,11 @@ describe("antigravity sessions", () => {
     upstreams.script("/v1internal:streamGenerateContent", unauthorized, unauthorized);
     const twice = await gemini(s);
     expect([twice.status, ((await twice.json()) as { error: { status: string } }).error.status]).toEqual([401, "UNAUTHENTICATED"]);
+    // A 401 on the model list renews once and asks again (the refresh reads it now, whatever the kept copy's age).
+    const [lists, tokens] = [upstreams.find("/v1internal:fetchAvailableModels").length, upstreams.find("/token").length];
     upstreams.script("/v1internal:fetchAvailableModels", unauthorized);
-    expect((await run(["models", "antigravity"])).code).toBe(0);
+    expect((await run(["models", "antigravity", "--refresh"])).code).toBe(0);
+    expect([upstreams.find("/v1internal:fetchAvailableModels").length - lists, upstreams.find("/token").length - tokens]).toEqual([2, 1]);
   });
 
   test("the geo gate is retried twice with 2 s and 8 s waits; quota answers carry retry-after when it is a number", async () => {

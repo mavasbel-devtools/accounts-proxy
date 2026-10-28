@@ -13,7 +13,7 @@ import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { advertisedLimits, descriptorDetails } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
 import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
-import type { AntigravityCatalogPort, AntigravityNativePort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
+import type { AntigravityCatalogPort, AntigravityListing, AntigravityNativePort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
 /** Law 11 for the native cell: a stream that ends without any response is an upstream failure, never an empty 200. */
 const emptyStream = () => new UpstreamError("antigravity", 502, "empty stream: the upstream ended without any response");
@@ -35,12 +35,20 @@ export class AntigravityProvider extends ProviderPort {
     return new Set(this.formats);
   }
 
-  async models(): Promise<ModelCatalog> {
-    const descriptors = await this.catalog.descriptors();
+  models(): Promise<ModelCatalog> {
+    return this.catalogOf(this.catalog.listing());
+  }
+
+  override refreshModels(): Promise<ModelCatalog> {
+    return this.catalogOf(this.catalog.refresh());
+  }
+
+  private async catalogOf(pending: Promise<AntigravityListing>): Promise<ModelCatalog> {
+    const { source, descriptors } = await pending;
     return {
       provider: this.id,
       formats: this.formats,
-      source: "live",
+      source,
       models: descriptors.map((d) => {
         const limits = advertisedLimits(d);
         return {

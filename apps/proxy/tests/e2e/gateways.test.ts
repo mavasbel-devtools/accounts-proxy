@@ -64,8 +64,9 @@ describe("gateway catalogs (rule G5, live lists from the committed vendor lists)
     const methods = (name: string) => gemini.models.find((m) => m.name === `models/${name}`)!.supportedGenerationMethods;
     expect([methods("opencode/gemini-3.6-flash"), methods("opencode/big-pickle"), methods("openrouter/meta/muse-wonder")]).toEqual([["generateContent", "streamGenerateContent"], [], []]);
     const openai = await fetch(`${s.url}/openai/v1/models`, { headers: { authorization: `Bearer ${s.token}` } });
-    // The daemon reads the copies the CLI stored a moment ago (fresh for 24 h).
-    expect(openai.headers.get("x-proxy-models-source")).toBe("openrouter=cache,opencode=cache,opencode-go=cache,cheaper-inference=cache");
+    // The daemon fetched every list once at start (plan 2026-10-28-13-40 M2), the reference catalog once for all.
+    expect(openai.headers.get("x-proxy-models-source")).toBe("openrouter=live,opencode=live,opencode-go=live,cheaper-inference=live");
+    expect(upstreams.find("/api.json")).toHaveLength(2);
   });
 });
 
@@ -353,8 +354,8 @@ describe("gateway edges", () => {
 
   test("catalog fallbacks: the reference catalog or the list refused (captured gateway answer), a stale stored copy, an unreadable copy, an unwritable store", async () => {
     home = await makeHome("providers:\n  opencode: {enabled: true}\n  opencode-go: {enabled: true}\n  openrouter: {enabled: true}\n");
-    // A refused reference answer is not kept, so each OpenCode list reads it once more.
-    upstreams.script("/api.json", zenRefusal, zenRefusal, zenRefusal);
+    // A refused reference answer is not kept, and it is not read again within 60 s (plan 2026-10-28-13-40 M4).
+    upstreams.script("/api.json", zenRefusal);
     upstreams.script("/api/v1/models", documented("/models", "get", "500"));
     const listed = await run(["models"]);
     // O5: OpenCode's lists are the reference catalog's, so without it both fall back to their built-in lists.
@@ -363,13 +364,12 @@ describe("gateway edges", () => {
       "# opencode: 124 models (built-in list)",
       "# opencode-go: 31 models (built-in list)",
     ]);
-    expect(await loggedEventually(home, "WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))")).toContain("WARN opencode: live model list unavailable (the reference model catalog is unavailable (built-in copy only))");
+    expect(await loggedEventually(home, "WARN opencode: model list first use → failed after ")).toMatch(/WARN opencode: model list first use → failed after \d+ ms \(the reference model catalog is unavailable \(built-in copy only\)\) → the built-in list: 124 models/);
     // The built-in copy of the reference catalog still names the models and gives their formats.
     expect(listed.stdout).toContain("opencode/big-pickle  Big Pickle  context 200000 / output 32000\n");
     const log = proxyLogOf(home);
-    expect(log).toContain("WARN model reference: http://127.0.0.1:");
-    expect(log).toContain("/api.json HTTP 403)");
-    expect(log).toContain("WARN openrouter: live model list unavailable (model list HTTP 500)");
+    expect(log).toMatch(/WARN model reference: model list first use → failed after \d+ ms \(GET http:\/\/127\.0\.0\.1:\d+\/api\.json HTTP 403\) → the built-in list/);
+    expect(log).toMatch(/WARN openrouter: model list first use → failed after \d+ ms \(model list HTTP 500\) → the built-in list: 459 models/);
     // A stale copy (older than 24 h) is the fallback when the live list fails; an unreadable copy is ignored.
     for (const dir of ["opencode", "opencode-go", "openrouter"]) mkdirSync(join(home.dir, "state", dir), { recursive: true });
     writeFileSync(join(home.dir, "state", "opencode-go", "model-catalog.json"), JSON.stringify({ version: 2, fetchedAt: 1, models: [{ id: "stale", displayName: "Stale" }] }));
@@ -425,7 +425,7 @@ describe("cheaper-inference (rules C1–C9)", () => {
     // A captured gateway refusal (probe z0) stands for any non-200 answer: only the status is read.
     upstreams.script("/public/models", zenRefusal);
     expect((await run(["models", "cheaper-inference"])).stdout.split("\n")[0]).toBe("# cheaper-inference: 91 models (built-in list)");
-    expect(await loggedEventually(home, "WARN cheaper-inference: live model list unavailable (model list HTTP 403)")).toContain("WARN cheaper-inference: live model list unavailable (model list HTTP 403)");
+    expect(await loggedEventually(home, "WARN cheaper-inference: model list first use → failed after ")).toMatch(/WARN cheaper-inference: model list first use → failed after \d+ ms \(model list HTTP 403\) → the built-in list: 91 models/);
   });
 
   test("a refused key stores nothing; without an account requests need a login; disabled gateways name enabled: true", async () => {

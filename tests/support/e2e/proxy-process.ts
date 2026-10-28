@@ -44,6 +44,21 @@ export async function loggedEventually(home: Home, text: string): Promise<string
   return proxyLogOf(home);
 }
 
+/**
+ * Waits until every model-list fetch a daemon started at start-up (plan 2026-10-28-13-40 M2) has ended (5 s at most), so
+ * a test's scripted upstream answers meet the requests the test makes, not the start-up fetches. Returns the log.
+ */
+export async function startFetchesEnded(home: Home): Promise<string> {
+  for (let i = 0; i < 100; i++) {
+    const log = proxyLogOf(home);
+    const started = log.split("\n").filter((l) => l.includes(" model list start: fetching")).length;
+    const ended = log.split("\n").filter((l) => l.includes(" model list start → ")).length;
+    if (started > 0 && started === ended) return log;
+    await Bun.sleep(50);
+  }
+  return proxyLogOf(home);
+}
+
 /** Every usage record of a home, all processes, parsed. */
 export function usageOf(home: Home): Record<string, unknown>[] {
   return logFiles(home, "usage")

@@ -1,5 +1,6 @@
 // Provider-internal abstractions. Every Antigravity adapter depends only on these and the core ports;
 // composition wires the implementations.
+import type { ModelsSource } from "@accounts-proxy/core/domain/models.ts";
 import { OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
 import type { OAuthSessionPort, Session } from "@accounts-proxy/core/ports/outbound/session.ts";
 import { UsageReporterPort } from "@accounts-proxy/core/ports/outbound/usage.ts";
@@ -37,10 +38,14 @@ export abstract class AntigravityStatePort {
   abstract saveSignature(callId: string, signature: string): Promise<void>;
 }
 
+export type AntigravityListing = { readonly source: ModelsSource; readonly descriptors: readonly ModelDescriptor[] };
+
 export abstract class AntigravityCatalogPort {
-  /** Live catalog (always fetched), memoized for `descriptor`. */
-  abstract descriptors(): Promise<readonly ModelDescriptor[]>;
-  /** Memoized lookup; fetches the catalog when the memo is empty or lacks the id. */
+  /** The signed-in account's kept list (shared model-list rules, plan 2026-10-28-13-40). */
+  abstract listing(): Promise<AntigravityListing>;
+  /** The list fetched now. */
+  abstract refresh(): Promise<AntigravityListing>;
+  /** A model of the kept list; a model the list lacks fetches the list once more. */
   abstract descriptor(wireId: string): Promise<ModelDescriptor | undefined>;
 }
 
