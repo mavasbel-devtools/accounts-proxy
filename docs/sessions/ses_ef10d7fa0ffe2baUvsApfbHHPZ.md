@@ -156,3 +156,16 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - Backup profile cleanup: old `home.*.bak` directories purged (~1.1 GB freed).
 - Verification gate: `bun run verify` GATE: PASS (895 unit+component+arch, 257 e2e, 100% coverage on statements,
   branches, functions, lines across every tier, 11 recon parity checks pass with 0 differences, docs lint PASS).
+
+## 2026-10-29 — Cached model lists (plan 2026-10-28-13-40) pushed
+
+- Committed and pushed `9513f7f`: every model list (Antigravity included) kept in memory and stored
+  (`ModelListCacheBase`), fetched once at `serve` start (`WarmModelsService`), refreshed in the background past
+  `modelListMaxAgeMinutes` or `MODEL_LIST_RETRY_MS` (60 s) after a failure, every fetch logged
+  ([plan](../plans/2026-10-28-13-40-cached-model-lists-plan.md)). `bun run verify` GATE: PASS.
+- Live (daemon pid 979093, 16:38:09Z): one start-up fetch per provider, all `live`; 11 opencode config requests
+  added no upstream model-list call.
+- Secret audit of the pushed diff: 0 real values, 0 pattern matches.
+- Open: M8 (c), the offline-start check; data layout: only accounts, locks and logs are in `.cache/`, the rest
+  (`proxy.yaml`, `token.json`, `state/`, `backups/`, `recon/`) stays in `~/.local/share/accounts-proxy/`.
+
