@@ -49,7 +49,7 @@ describe("OpencodeConfigCodec.config", () => {
     expect(validate(schema, doc)).toEqual([]);
     const providers = doc["providers"] as Record<string, { name: string; settings: object; headers?: object; models: Record<string, Record<string, unknown>> }>;
     expect(Object.keys(providers)).toEqual(["ap-claude", "ap-openrouter", "ap-opencode", "ap-antigravity", "ap-openai"]);
-    expect(providers["ap-claude"]!.name).toBe("Accounts Proxy · Claude");
+    expect(providers["ap-claude"]!.name).toBe("AP · Claude");
     expect(providers["ap-claude"]!.settings).toEqual({ apiKey: "{env:ACCOUNTS_PROXY_TOKEN}" });
     expect(providers["ap-claude"]!.models["claude-opus-6"]).toEqual({
       modelID: "claude/claude-opus-6",

@@ -2,7 +2,8 @@
  * Per-client persistent profiles for the recon facility.
  *
  * A profile is the ONLY home a sandboxed client can see. It survives between runs so an interactive login is done
- * once per client and then reused, and it lives outside the repository (0600/0700) because it holds client tokens.
+ * once per client and then reused, and it lives in the repository's git-ignored `.cache/` (0600/0700) because it
+ * holds client tokens (plan 2026-10-29-14-38 S2); no sandbox sees it, since `/home` is a tmpfs there.
  *
  * A profile also carries the sandbox's own identity: a dedicated `/etc/machine-id` value. Two clients never share it,
  * and neither of them can observe the host's machine id, so state that a client keys by machine id (caches, device
@@ -29,13 +30,16 @@ export interface Profile {
   readonly work: string;
 }
 
-/** Root of all recon state: captures, profiles, run scratch. Never inside the repository. */
+/**
+ * Root of all recon state: captures, profiles, run scratch. ACCOUNTS_PROXY_RECON_ROOT, else `recon/` of the proxy's data
+ * directory (ACCOUNTS_PROXY_HOME, default the repository's `.cache/`; never a tracked path).
+ */
 export function reconRoot(): string {
   const explicit = process.env.ACCOUNTS_PROXY_RECON_ROOT;
   if (explicit && explicit.trim() !== "") {
     return resolve(explicit);
   }
-  const dataHome = process.env.ACCOUNTS_PROXY_HOME ?? join(homedir(), ".local", "share", "accounts-proxy");
+  const dataHome = process.env.ACCOUNTS_PROXY_HOME ?? join(import.meta.dir, "..", "..", "..", ".cache");
   return join(resolve(dataHome), "recon");
 }
 

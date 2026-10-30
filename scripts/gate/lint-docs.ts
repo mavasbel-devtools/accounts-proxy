@@ -31,7 +31,9 @@ function walk(dir: string, suffix: string): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry);
-    if (entry === "node_modules" || entry === "specs" || entry === "temp") return [];
+    // `.cache/` is the proxy's mutable, gitignored data home (including live recon profiles and runs), never source
+    // documentation or a diagram. Traversing it both lints untracked material and races clients that remove temp files.
+    if (entry === ".cache" || entry === "node_modules" || entry === "specs" || entry === "temp") return [];
     return statSync(full).isDirectory() ? walk(full, suffix) : full.endsWith(suffix) ? [full] : [];
   });
 }

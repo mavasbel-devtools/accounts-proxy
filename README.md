@@ -37,12 +37,12 @@ generateContent** endpoints on `127.0.0.1`, so any stock SDK or tool can call th
 
 ```sh
 bun install
-mkdir -p ~/.local/share/accounts-proxy
-cp config/proxy.example.yaml ~/.local/share/accounts-proxy/proxy.yaml   # every provider on; remove the ones you do not use
-bun run proxy login claude                                                # or any other provider
-bun run proxy serve                                                       # 127.0.0.1:4141
-bun run proxy token                                                       # the key clients send
-bun run proxy help login                                                  # any command's options, exit codes and examples (or: login --help)
+mkdir -p -m 700 .cache
+cp config/proxy.example.yaml .cache/proxy.yaml   # every provider on; remove the ones you do not use
+bun run proxy login claude                       # or any other provider
+bun run proxy serve                              # 127.0.0.1:4141
+bun run proxy token                              # the key clients send
+bun run proxy help login                         # any command's options, exit codes and examples (or: login --help)
 ```
 
 ```ts
@@ -53,14 +53,16 @@ await claude.messages.create({ model: "claude/claude-haiku-4-5-20251001", max_to
 
 Models are addressed as `<provider>/<model>` (or an alias from `proxy.yaml`).
 
-Every provider's accounts are kept in one file, `.cache/accounts.json` in this repository (0600, ignored by git); it is
+All of the proxy's data — `proxy.yaml`, the proxy token, every provider's accounts (`accounts.json`), saved provider
+state, locks, logs and the recon profiles and runs — is in this repository's `.cache/` (0700, ignored by git); nothing
+outside the repository is read or written (`ACCOUNTS_PROXY_HOME` names another directory). The accounts file is
 read on every use, so it can be edited by hand or copied
 ([API reference §8](docs/reference/2026-10-17-19-26-proxy-api.md#8-data-directory)). Two running proxies must not share
 a copy for `claude` or `openai`: their refresh tokens are single-use, so the second to renew is signed out.
 
 Every request and answer — the client's and each one the proxy sends upstream, with headers, bodies, timings and token
-usage, credentials redacted — is written to `~/.local/share/accounts-proxy/logs/exchanges-YYYY-MM-DD.jsonl`
-(`exchangeLog` in `proxy.yaml`, default on, 14 days; [API reference §8](docs/reference/2026-10-17-19-26-proxy-api.md#8-data-directory)).
+usage, credentials redacted — is written to `.cache/logs/<day>-<pid>-usage.jsonl` (`logs` in `proxy.yaml`: default on,
+15 days, 100 MB per file; [API reference §8](docs/reference/2026-10-17-19-26-proxy-api.md#8-data-directory)).
 
 ## Use it from
 

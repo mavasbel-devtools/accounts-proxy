@@ -2,13 +2,14 @@
 // output_config / system shape the transform accepts, tool-result turns without ids, an account without an account
 // uuid, upstream answers without a body or a content type, an unwritable catalog cache and the refresh lock.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, readPool, runProxy, startDaemon, writePool, type Daemon, type Home, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());

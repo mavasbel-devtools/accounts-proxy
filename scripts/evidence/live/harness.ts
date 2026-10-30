@@ -49,9 +49,9 @@ export function requireLive(): void {
 
 export async function openLive(): Promise<Live> {
   requireLive();
-  const home = defaultHome(process.env);
+  const home = defaultHome(process.env, join(repositoryRoot, "apps", "proxy", "src", "main", "cli.ts"));
   const recorder = new RecordingTransport(new FetchTransport(fetch as unknown as FetchFunction, UPSTREAM_IDLE_TIMEOUT_MS));
-  const accounts: AccountsFileConfig = { path: accountsFileOf(process.env, join(repositoryRoot, "apps", "proxy", "src", "main", "cli.ts")), fs: nodeFs };
+  const accounts: AccountsFileConfig = { path: accountsFileOf(process.env, home), fs: nodeFs };
   const graph = await buildGraph({ home, accounts, out: (text) => void process.stdout.write(text), transport: recorder, lock: PRODUCTION_LOCK, seams: {} });
   if (graph.claude === undefined || graph.antigravity === undefined) throw new Error("both providers must be enabled in proxy.yaml");
   const redactor = new Redactor();

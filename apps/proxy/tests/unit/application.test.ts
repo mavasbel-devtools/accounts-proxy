@@ -6,7 +6,7 @@ import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { ListModelsPort, RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { ModelReferencePort, type ReferenceListing } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { apiKeyAccount } from "@accounts-proxy/core/domain/api-key.ts";
-import { ApiKeyLoginPort, ForeignKeySourcePort, SecretPromptPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
+import { ApiKeyLoginPort, SecretPromptPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
 import type { DeviceAuthorization } from "@accounts-proxy/core/domain/device-flow.ts";
 import { DeviceLoginClientPort, type DevicePoll } from "@accounts-proxy/core/ports/outbound/device.ts";
 import { CallbackServerFactoryPort, CallbackServerPort, ManualCodePort, OAuthClientPort, type AuthorizeInput, type CallbackQuery, type ExchangeInput } from "@accounts-proxy/core/ports/outbound/oauth.ts";
@@ -145,15 +145,6 @@ class FakeDevice extends DeviceLoginClientPort {
   }
 }
 
-class FakeKeySource extends ForeignKeySourcePort {
-  readonly tool = "opencode";
-  entries: ProviderId[] = [];
-  async apiKey(entry: ProviderId) {
-    this.entries.push(entry);
-    return `imported-${entry}`;
-  }
-}
-
 /** Advances the clock by each sleep. */
 class ClockTimer extends TimerPort {
   readonly sleeps: number[] = [];
@@ -187,12 +178,10 @@ function setup(
   const manual = new FakeManual((url) => `pasted#${new URL(url).searchParams.get("state")}`);
   const clock = new FixedClock(0);
   const timer = new ClockTimer(clock);
-  const keySource = new FakeKeySource();
   const service = new LoginService({
     clients: client === undefined ? [] : [client],
     devices,
     keyClients,
-    keySources: [keySource],
     servers: factory,
     browser,
     manual,
@@ -206,11 +195,11 @@ function setup(
   });
   const urls: string[] = [];
   const codes: string[] = [];
-  const options: LoginOptions = { manual: false, fresh: false, key: false, importFrom: undefined, timeoutMs: 1000, onAuthorizeUrl: (u: string) => void urls.push(u), onUserCode: (c) => void codes.push(c) };
+  const options: LoginOptions = { manual: false, fresh: false, key: false, timeoutMs: 1000, onAuthorizeUrl: (u: string) => void urls.push(u), onUserCode: (c) => void codes.push(c) };
   const capture = () => {
     state = client?.authorizations.at(-1)?.state ?? "";
   };
-  return { factory, browser, store, logger, service, urls, codes, options, capture, timer, keySource };
+  return { factory, browser, store, logger, service, urls, codes, options, capture, timer };
 }
 
 describe("LoginService", () => {
@@ -309,20 +298,16 @@ describe("AccountAdminService and UsageService", () => {
     expect((await s.store.load("cheaper-inference")).accounts).toHaveLength(1);
   });
 
-  test("--key prompts even where a browser login exists; --from-opencode imports instead of prompting; providers without a key login refuse both", async () => {
+  test("--key prompts even where a browser login exists; providers without a key login refuse it", async () => {
     const keyLogin = new FakeKeyLogin("openrouter");
     const secrets = new FakeSecrets(["sk-or-1"]);
     const s = setup(new FakeClient("openrouter", undefined), undefined, [keyLogin], secrets);
     expect((await s.service.login("openrouter", { ...s.options, key: true })).id).toBe("id-sk-or-1");
     expect(s.factory.last).toBeUndefined();
-    expect((await s.service.login("openrouter", { ...s.options, importFrom: "opencode" })).id).toBe("id-imported-openrouter");
-    expect(s.keySource.entries).toEqual(["openrouter"]);
-    expect(keyLogin.keys).toEqual(["sk-or-1", "imported-openrouter"]);
-    expect(s.logger.lines).toContain("INFO openrouter: API key imported from opencode");
+    expect(keyLogin.keys).toEqual(["sk-or-1"]);
     await expect(s.service.login("openrouter", { ...s.options, key: true, manual: true })).rejects.toThrow("openrouter signs in with an API key; --manual and --new do not apply");
     const claude = setup(new FakeClient("claude", undefined));
     await expect(claude.service.login("claude", { ...claude.options, key: true })).rejects.toThrow("claude has no API-key login");
-    await expect(claude.service.login("claude", { ...claude.options, importFrom: "opencode" })).rejects.toBeInstanceOf(InvalidRequestError);
   });
 
   test("device login (amendment A): code and page shown, browser opened, polled every interval (+5 s after slow_down), stored under the owner", async () => {

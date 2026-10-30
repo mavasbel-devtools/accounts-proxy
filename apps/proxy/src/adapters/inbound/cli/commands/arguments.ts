@@ -10,7 +10,7 @@ export const PROVIDER_ARGUMENT: HelpEntry = { name: "<provider>", text: `one of 
 export const FAILED_EXIT: HelpEntry = { name: "1", text: "the command failed: `error: <message>` on stderr" };
 export const USAGE_EXIT: HelpEntry = { name: "2", text: "usage error: the message and the command's usage on stderr" };
 
-export const HOME_VARIABLE: HelpEntry = { name: "ACCOUNTS_PROXY_HOME", text: "the data directory (default ~/.local/share/accounts-proxy)" };
+export const HOME_VARIABLE: HelpEntry = { name: "ACCOUNTS_PROXY_HOME", text: "the data directory (default: .cache/ of the repository the program runs from)" };
 
 /** The provider named by a command's argument. */
 export function providerArgument(word: string | undefined, command: string): ProviderId {

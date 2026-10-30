@@ -1,13 +1,14 @@
 // The CLI black-box: each command is the real entry in its own process against the replay upstreams. Browser logins
 // go through the fake `xdg-open`; the paste-code login reads the code from stdin.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, type Home, accountsFile, readPool } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
@@ -90,7 +91,7 @@ describe("accounts-proxy CLI (e2e)", () => {
     const separated = await run(["serve", "--", "--help"]);
     expect([separated.code, separated.stderr.split("\n")[0]]).toEqual([2, "serve takes no arguments"]);
     const missing = await run(["login"]);
-    expect([missing.code, missing.stderr]).toEqual([2, "login needs a provider\nusage: bun run proxy login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]\nfor options, exit codes and examples: bun run proxy help login\n"]);
+    expect([missing.code, missing.stderr]).toEqual([2, "login needs a provider\nusage: bun run proxy login <provider> [--manual] [--new] [--key] [--timeout-seconds N]\nfor options, exit codes and examples: bun run proxy help login\n"]);
   });
 
   test("an invalid proxy.yaml and a disabled provider are reported", async () => {

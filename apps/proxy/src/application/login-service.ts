@@ -1,5 +1,5 @@
 // Logins (plan D10; P4.6; P4.6 amendment A). A provider signs in by the first of these it has:
-//   - an API key, when asked for (`--key` at a hidden prompt, `--from-opencode` imported once; N4, K3, K5);
+//   - an API key, when asked for (`--key` at a hidden prompt; N4, K3; the import of K5 was removed by plan 2026-10-29-14-38 S3);
 //   - the device login (RFC 8628; OpenCode Console, K1): the provider's page approves a code while the proxy polls;
 //   - the browser login: loopback listener on 127.0.0.1 + system browser + automatic redirect capture; `--manual` is
 //     the provider's paste-code page, only for providers that have one (Claude, OpenRouter headless);
@@ -15,7 +15,7 @@ import { base64UrlEncode } from "@accounts-proxy/core/domain/services/base64url.
 import { errorMessage } from "@accounts-proxy/core/domain/services/error-message.ts";
 import { codeFromCallback, codeFromManualInput } from "@accounts-proxy/core/domain/services/oauth-flow.ts";
 import { LoginPort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
-import type { ApiKeyLoginPort, ForeignKeySourcePort, SecretPromptPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
+import type { ApiKeyLoginPort, SecretPromptPort } from "@accounts-proxy/core/ports/outbound/api-key.ts";
 import type { CredentialStorePort } from "@accounts-proxy/core/ports/outbound/credentials.ts";
 import type { DeviceLoginClientPort } from "@accounts-proxy/core/ports/outbound/device.ts";
 import type { CallbackServerFactoryPort, ManualCodePort, OAuthClientPort } from "@accounts-proxy/core/ports/outbound/oauth.ts";
@@ -28,7 +28,6 @@ export type LoginDependencies = {
   readonly clients: readonly OAuthClientPort[];
   readonly devices: readonly DeviceLoginClientPort[];
   readonly keyClients: readonly ApiKeyLoginPort[];
-  readonly keySources: readonly ForeignKeySourcePort[];
   readonly servers: CallbackServerFactoryPort;
   readonly browser: BrowserLauncherPort;
   readonly manual: ManualCodePort;
@@ -60,10 +59,10 @@ export class LoginService extends LoginPort {
     const client = clients.find((c) => c.provider === provider);
     // Composition wires clients for every ENABLED provider only (plan D4).
     if (keyClient === undefined && device === undefined && client === undefined) throw new ProviderDisabledError(provider);
-    if (options.key || options.importFrom !== undefined) {
+    if (options.key) {
       if (keyClient === undefined) throw new InvalidRequestError(`${provider} has no API-key login`);
       this.noBrowserFlags(provider, options, "with an API key");
-      return keyClient.account(await this.apiKey(provider, keyClient, options));
+      return keyClient.account(await this.deps.secrets.prompt(keyClient.question));
     }
     if (device !== undefined) {
       this.noBrowserFlags(provider, options, "with a device code");
@@ -79,15 +78,6 @@ export class LoginService extends LoginPort {
 
   private noBrowserFlags(provider: ProviderId, options: LoginOptions, how: string): void {
     if (options.manual || options.fresh) throw new InvalidRequestError(`${provider} signs in ${how}; --manual and --new do not apply`);
-  }
-
-  private async apiKey(provider: ProviderId, keyClient: ApiKeyLoginPort, options: LoginOptions): Promise<string> {
-    if (options.importFrom === undefined) return this.deps.secrets.prompt(keyClient.question);
-    // Composition wires a source for every KeyImportSource.
-    const source = this.deps.keySources.find((s) => s.tool === options.importFrom)!;
-    const key = await source.apiKey(provider);
-    this.deps.logger.info(`${provider}: API key imported from ${source.tool}`);
-    return key;
   }
 
   /**

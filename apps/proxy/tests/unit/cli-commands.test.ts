@@ -20,7 +20,7 @@ import { Server, ShutdownSignal, type Listening } from "@accounts-proxy/proxy/ad
 class Login extends LoginPort {
   calls: [ProviderId, Omit<LoginOptions, "onAuthorizeUrl" | "onUserCode">][] = [];
   async login(provider: ProviderId, options: LoginOptions): Promise<AccountSummary> {
-    this.calls.push([provider, { manual: options.manual, fresh: options.fresh, key: options.key, importFrom: options.importFrom, timeoutMs: options.timeoutMs }]);
+    this.calls.push([provider, { manual: options.manual, fresh: options.fresh, key: options.key, timeoutMs: options.timeoutMs }]);
     if (provider === "opencode") options.onUserCode("ABCD-EFGH");
     options.onAuthorizeUrl("https://auth.example/");
     return { provider, id: "me@x", label: "Me", active: true };
@@ -198,22 +198,20 @@ describe("the proxy's commands", () => {
     }
   });
 
-  test("login: browser or device code by default with the default timeout; --manual, --new, --key, --from-opencode and --timeout-seconds", async () => {
+  test("login: browser or device code by default with the default timeout; --manual, --new, --key and --timeout-seconds", async () => {
     const c = cli();
-    const none = { key: false, importFrom: undefined };
+    const none = { key: false };
     expect(await c.run("login", "antigravity")).toBe(0);
     expect(await c.run("login", "claude", "--manual", "--timeout-seconds", "60")).toBe(0);
     expect(await c.run("login", "openai", "--new")).toBe(0);
     expect(await c.run("login", "opencode")).toBe(0);
     expect(await c.run("login", "openrouter", "--key")).toBe(0);
-    expect(await c.run("login", "opencode-go", "--from-opencode")).toBe(0);
     expect(c.ports.login.calls).toEqual([
       ["antigravity", { manual: false, fresh: false, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
       ["claude", { manual: true, fresh: false, ...none, timeoutMs: 60_000 }],
       ["openai", { manual: false, fresh: true, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
       ["opencode", { manual: false, fresh: false, ...none, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
-      ["openrouter", { manual: false, fresh: false, key: true, importFrom: undefined, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
-      ["opencode-go", { manual: false, fresh: false, key: false, importFrom: "opencode", timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
+      ["openrouter", { manual: false, fresh: false, key: true, timeoutMs: DEFAULT_LOGIN_TIMEOUT_S * 1000 }],
     ]);
     expect(c.out.slice(0, 8)).toEqual([
       "Opening your browser. If it does not open, visit:\nhttps://auth.example/\n",
@@ -233,7 +231,7 @@ describe("the proxy's commands", () => {
     [["login", "antigravity", "--timeout-seconds", "0"], "--timeout-seconds needs a positive integer", "login"],
     [["login", "antigravity", "--timeout-seconds"], "--timeout-seconds needs a positive integer", "login"],
     [["login", "antigravity", "--bogus"], "unknown login option --bogus", "login"],
-    [["login", "openrouter", "--key", "--from-opencode"], "--key and --from-opencode exclude each other", "login"],
+    [["login", "openrouter", "--from-opencode"], "unknown login option --from-opencode", "login"],
     [["account"], "missing account subcommand: one of list, use, remove", "account"],
     [["account", "lst", "antigravity"], "unknown account subcommand lst (did you mean list?)", "account"],
     [["account", "bogus", "--help"], "unknown account subcommand bogus", "account"],

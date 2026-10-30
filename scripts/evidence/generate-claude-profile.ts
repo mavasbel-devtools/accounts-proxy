@@ -4,10 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..", "..");
-const defaultCapture = join(
-  process.env.HOME ?? "",
-  ".local/share/accounts-proxy/recon/runs/claude/2026-10-22-02-04-42-workflow/captures/018-request.json",
-);
+const defaultCapture = join(root, ".cache", "recon", "runs", "claude", "2026-10-22-02-04-42-workflow", "captures", "018-request.json");
 
 const args = process.argv.slice(2);
 const checkOnly = args.includes("--check");

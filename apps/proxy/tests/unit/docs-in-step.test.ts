@@ -8,7 +8,8 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { RENEWAL_RETRY_AFTER_MS, TOKEN_ENDPOINT_TIMEOUT_MS } from "@accounts-proxy/core/domain/accounts.ts";
-import { DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, DEFAULT_PORT } from "@accounts-proxy/core/domain/config.ts";
+import { DEFAULT_LOGS, DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, DEFAULT_PORT, parseProxyConfig } from "@accounts-proxy/core/domain/config.ts";
+import { YamlConfigFile } from "@accounts-proxy/proxy/adapters/outbound/yaml-config-file.ts";
 import {
   InternalError,
   InvalidRequestError,
@@ -152,7 +153,7 @@ describe("the documentation is in step with the code", () => {
 
   test("command line: every synopsis of the command tree is a row of the API reference", () => {
     const synopses = helpSynopses(PROXY_HELP);
-    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "account remove <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
+    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "account remove <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "help [<command> [<subcommand>]]"]);
     for (const synopsis of synopses) expect(api).toContain(`| \`${synopsis}\` |`);
   });
 
@@ -190,6 +191,17 @@ describe("the documentation is in step with the code", () => {
     expect(api).toContain(`model lists and the reference catalog: \`modelListMaxAgeMinutes\`, default ${DEFAULT_MODEL_LIST_MAX_AGE_MINUTES} minutes (24 h)`);
     expect(api).toContain(`| \`modelListMaxAgeMinutes\` | positive integer; default ${DEFAULT_MODEL_LIST_MAX_AGE_MINUTES}`);
     expect(api).toContain(`model refresh: ${REFRESH_TIMEOUT_MS} ms`);
+  });
+
+  test("configuration: the example proxy.yaml is valid and the API reference documents every key and default", async () => {
+    const example = parseProxyConfig(await new YamlConfigFile(join(repo, "config", "proxy.example.yaml")).read());
+    expect(example.logs).toEqual(DEFAULT_LOGS);
+    expect(example.modelListMaxAgeMinutes).toBe(DEFAULT_MODEL_LIST_MAX_AGE_MINUTES);
+    expect(PROVIDER_IDS.every((id) => example.providers[id].enabled)).toBe(true);
+    expect(api).toContain(`| \`logs.usage\` | \`true\` or \`false\`; default \`${DEFAULT_LOGS.usage}\``);
+    expect(api).toContain(`| \`logs.retentionDays\` | positive integer; default ${DEFAULT_LOGS.retentionDays}`);
+    expect(api).toContain(`| \`logs.maxFileMegabytes\` | positive integer; default ${DEFAULT_LOGS.maxFileMegabytes}`);
+    expect(api).not.toContain("exchangeLog.");
   });
 
   test("providers: a section for each in the providers, models and format-fields references", () => {

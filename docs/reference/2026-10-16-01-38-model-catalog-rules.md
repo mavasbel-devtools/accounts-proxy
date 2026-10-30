@@ -61,6 +61,6 @@ again (version 2).
 ## Amendment 2026-10-16: project rename
 
 The project is now `accounts-proxy` ([project rename](2026-10-16-14-40-project-rename.md)). The rules above stand with the new names: the opencode provider
-ids are `ap-<provider>` and their names `Accounts Proxy · <name>` (O1), the detailed list is `GET /proxy/v1/models`,
+ids are `ap-<provider>` and their names `Accounts Proxy · <name>` (O1; `AP · <name>` since [plan 2026-10-29-14-38](../plans/2026-10-29-14-38-self-contained-cache-plan.md) S5), the detailed list is `GET /proxy/v1/models`,
 the headers are `x-proxy-lossy`, `x-proxy-dropped` and `x-proxy-models-source`, the token variable in the
 well-known manifest is `ACCOUNTS_PROXY_TOKEN` and its command `accounts-proxy token` (O5).

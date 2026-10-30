@@ -85,9 +85,10 @@ async function main(mode: string | undefined, workspace: string | undefined): Pr
     }
     const rawDir = join(coverageRoot, "e2e", "raw");
     rmSync(join(coverageRoot, "e2e"), { recursive: true, force: true });
-    // E2E tests spawn real processes (logins, daemons): a per-test budget of 60 s instead of bun's 5 s default.
-    // Cap parallel workers to 4 so concurrent daemon socket initialization doesn't starve under host load.
-    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), "--parallel=4", ...dirs], { ACCOUNTS_PROXY_E2E_COVERAGE_DIR: rawDir });
+    // E2E tests spawn real processes (logins and daemons): their one shared 120 s timeout applies both to Bun and to
+    // every suite's default. Two workers leave CPU for the spawned daemons on a loaded host; their unique port claims
+    // still make the runs hermetic.
+    const code = await bunTest(["--timeout", String(E2E_TEST_TIMEOUT_MS), "--parallel=2", ...dirs], { ACCOUNTS_PROXY_E2E_COVERAGE_DIR: rawDir });
     if (code !== 0) return code;
     const files = existsSync(rawDir) ? readdirSync(rawDir).map((f) => join(rawDir, f)) : [];
     if (files.length === 0) {

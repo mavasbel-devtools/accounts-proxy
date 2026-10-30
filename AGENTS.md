@@ -99,17 +99,16 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   endpoint polled every interval (+5 s after `slow_down`). `opencode` and `opencode-go` share one account, stored as
   `opencode`. Device tokens renew under the Phase H rules (single-use refresh tokens, Z18); a key never renews. The
   credential is checked by reading the workspace config (`GET /console/api/v2/config`), whose headers the requests carry.
-- **Own credentials** (amended by [plan 2026-10-26-23-32](docs/plans/2026-10-26-23-32-accounts-file-plan.md)). The
-  proxy's accounts (sign-ins, API keys, the active account of every provider) live only in one file,
-  `<repo>/.cache/accounts.json` (0600, `.cache/` 0700 and ignored by git), or the absolute path in
-  `ACCOUNTS_PROXY_ACCOUNTS_FILE`; every read takes it from the file, so a hand edit applies to the next request. Every
-  writer takes the locks in `<dir of the file>/locks/` (one store lock `accounts`, the renewal locks), writes atomically
-  (temp file + rename) and re-reads before the rename, applying its change again over a hand edit saved meanwhile. A
-  file that is not valid is an error naming it, never overwritten. The rest of the proxy's data stays in
-  `~/.local/share/accounts-proxy/` (`ACCOUNTS_PROXY_HOME`). The proxy never
-  writes Claude Code's, OpenCode's or the plugins' credential files, and reads one only for
-  `login <gateway> --from-opencode` (decision K5): OpenCode's `auth.json`, read once, from which an **API key** only is
-  imported, never a sign-in token (rule Z22).
+- **Own data** (amended by [plan 2026-10-26-23-32](docs/plans/2026-10-26-23-32-accounts-file-plan.md) and
+  [plan 2026-10-29-14-38](docs/plans/2026-10-29-14-38-self-contained-cache-plan.md)). All of the proxy's data lives in
+  `<repo>/.cache/` (0700, ignored by git; `ACCOUNTS_PROXY_HOME` overrides it, for tests): `proxy.yaml`, `token.json`,
+  `state/`, `locks/`, `logs/`, the recon root `recon/` and the accounts file `accounts.json` (0600; the absolute path in
+  `ACCOUNTS_PROXY_ACCOUNTS_FILE` overrides it). Nothing outside the repository is read or written by default. Every
+  read of the accounts takes them from the file, so a hand edit applies to the next request. Every writer takes the
+  locks in `<dir of the file>/locks/` (one store lock `accounts`, the renewal locks), writes atomically (temp file +
+  rename) and re-reads before the rename, applying its change again over a hand edit saved meanwhile. A file that is
+  not valid is an error naming it, never overwritten. The proxy never reads or writes Claude Code's, OpenCode's or the
+  plugins' credential files (decision K5, `login <gateway> --from-opencode`, was withdrawn by plan 2026-10-29-14-38 S3).
 - **Plugins** (user decision 2026-10-19, plan v4 §7b: P8 cancelled). This project never modifies the plugin
   repositories `opencode-claude-auth`, `opencode-antigravity-auth` and `opencode-cheaper-inference-auth`, nor the
   plugin files installed in OpenCode; the plugins and the proxy stay independent of each other.

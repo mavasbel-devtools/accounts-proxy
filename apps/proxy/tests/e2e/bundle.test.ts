@@ -2,11 +2,12 @@
 // on its own: help, then serve → GET /health → SIGTERM → exit 0. A bundle cannot carry per-source instrumentation, so
 // this check adds no coverage; the source entry under the coverage preload is what the other e2e tests measure.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { join } from "node:path";
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { ENTRY, makeHome, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 
 let out: string;
 let home: Home;

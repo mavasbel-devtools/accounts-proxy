@@ -2,11 +2,12 @@
 // normalization, thinking (F9/Q6), betas (F4), anthropic-version, the per-model envelope from the live catalog, and
 // how upstream answers come back. Assertions read what the replay upstream really received.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { startSignedInDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { brokenStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 
 const upstreams = new ReplayUpstreams();
 let env: SignedInDaemon;

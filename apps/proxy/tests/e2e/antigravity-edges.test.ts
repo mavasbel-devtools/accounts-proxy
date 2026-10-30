@@ -2,13 +2,14 @@
 // bodies, bare envelopes, odd catalog and quota answers), login bootstrap variants, damaged stored accounts and state,
 // tool schemas and turn shapes, and the cross-process refresh lock (held, stale, timed out, unwritable).
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, readPool, runProxy, startDaemon, writePool as writeStoredPool, type Daemon, type Home, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { envelopeStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());

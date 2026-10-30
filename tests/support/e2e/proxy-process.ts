@@ -152,13 +152,12 @@ export async function makeHome(yaml: string = BOTH_PROVIDERS, port?: number): Pr
 export type Result = { readonly code: number; readonly stdout: string; readonly stderr: string };
 
 /** The child's environment: the test process's (without seams or hooks), the home's variables, then `extra`, where an
- * empty value removes the variable (e.g. ACCOUNTS_PROXY_HOME, to exercise the default data directory). */
+ * empty value removes the variable (e.g. ACCOUNTS_PROXY_HOME, to exercise the default data directory, the repository's .cache/). */
 function environment(home: Home, extra: Record<string, string>): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith("ACCOUNTS_PROXY_TEST_")) env[k] = v;
-  // XDG_DATA_HOME: OpenCode's credential file (`login --from-opencode`) is read only from inside the home, never the user's.
   // ACCOUNTS_PROXY_ACCOUNTS_FILE: the accounts file (and its locks) inside the home, never the repository's .cache/.
-  const merged: Record<string, string> = { ...env, ACCOUNTS_PROXY_HOME: home.dir, ACCOUNTS_PROXY_ACCOUNTS_FILE: accountsFile(home), ACCOUNTS_PROXY_E2E_BROWSER_LOG: home.browserLog, XDG_DATA_HOME: join(home.dir, "xdg-data"), PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
+  const merged: Record<string, string> = { ...env, ACCOUNTS_PROXY_HOME: home.dir, ACCOUNTS_PROXY_ACCOUNTS_FILE: accountsFile(home), ACCOUNTS_PROXY_E2E_BROWSER_LOG: home.browserLog, PATH: `${home.bin}:${process.env["PATH"] ?? ""}`, ...extra };
   for (const [k, v] of Object.entries(merged)) if (v === "") delete merged[k];
   return merged;
 }

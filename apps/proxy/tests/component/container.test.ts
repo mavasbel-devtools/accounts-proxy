@@ -2,7 +2,7 @@
 // only the network (ScriptedTransport) and the browser are replaced. The fake browser behaves like a user who
 // approves: it calls the loopback redirect with the code and the state from the authorization URL.
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -12,7 +12,7 @@ import { ScriptedTransport, type ScriptedResponse } from "@accounts-proxy/test-s
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
 import { FetchTransport, type FetchFunction } from "@accounts-proxy/proxy/adapters/outbound/fetch-transport.ts";
-import { AccountsFileVariableError, accountsFileOf, buildCli, defaultHome, hooksFrom, PRODUCTION_LOCK, runCli, seamsFrom, TestHookError, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
+import { AccountsFileVariableError, accountsFileOf, buildCli, defaultHome, hooksFrom, PRODUCTION_LOCK, runCli, seamsFrom, TestHookError, tokenEntry, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
 import * as nodeFs from "node:fs/promises";
 
 let home: string | undefined;
@@ -79,7 +79,6 @@ function options(extra: Partial<ContainerOptions> = {}) {
     lock: PRODUCTION_LOCK,
     seams: {},
     listenHost: "127.0.0.1",
-    opencodeData: join(home, "opencode-data"),
     entry: ["/usr/bin/bun", "/app/cli.ts"],
     ...extra,
   };
@@ -187,16 +186,16 @@ describe("composition root", () => {
     expect(storedPool("cheaper-inference")).toEqual({ accounts: [{ provider: "cheaper-inference", id: "me@x", label: "Team", data: { apiKey: "ci_live_1" } }], activeId: "me@x" });
   });
 
-  test("OpenCode (amendment A): one Console account for opencode and opencode-go; --from-opencode imports OpenCode's key, checked against the workspace config", async () => {
+  test("OpenCode (amendment A): one Console account for opencode and opencode-go; --key stores a key, checked against the workspace config", async () => {
     const transport = new ScriptedTransport((request) => {
       if (request.url.endsWith("/console/api/v2/config")) return json({ providers: { opencode: { headers: { "x-opencode-org-id": "org_1" } }, "opencode-go": { headers: { "x-opencode-org-id": "org_1" } } } });
       return { status: 404 };
     });
-    const { opts, out } = options({ transport });
+    const stdin = new PassThrough();
+    const { opts, out } = options({ stdin, transport });
     writeFileSync(join(home!, "proxy.yaml"), "providers:\n  opencode-go: {enabled: true}\n");
-    mkdirSync(join(home!, "opencode-data"));
-    writeFileSync(join(home!, "opencode-data", "auth.json"), JSON.stringify({ "opencode-go": { type: "api", key: "oc_sk_go" } }));
-    expect(await runCli(["login", "opencode-go", "--from-opencode"], opts)).toBe(0);
+    stdin.write("oc_sk_go\n");
+    expect(await runCli(["login", "opencode-go", "--key"], opts)).toBe(0);
     expect(out.at(-1)).toBe("signed in to opencode-go as key-5645e3d2 (active account)\n");
     expect(storedPool("opencode")).toEqual({
       accounts: [{ provider: "opencode", id: "key-5645e3d2", label: "key-5645e3d2", data: { workspaceHeaders: { opencode: { "x-opencode-org-id": "org_1" }, "opencode-go": { "x-opencode-org-id": "org_1" } }, apiKey: "oc_sk_go" } }],
@@ -226,10 +225,17 @@ describe("composition root", () => {
     expect(err).toEqual(["error: no home\n"]);
   });
 
-  test("default home: ACCOUNTS_PROXY_HOME, else ~/.local/share/accounts-proxy", async () => {
-    const { homedir } = await import("node:os");
-    expect(defaultHome({ ACCOUNTS_PROXY_HOME: "X:/h" })).toBe("X:/h");
-    expect(defaultHome({})).toBe(join(homedir(), ".local", "share", "accounts-proxy"));
+  test("default home (plan 2026-10-29-14-38 S1): ACCOUNTS_PROXY_HOME, else .cache/ of the repository above the script", () => {
+    const repo = join(import.meta.dir, "..", "..", "..", "..");
+    expect(defaultHome({ ACCOUNTS_PROXY_HOME: "X:/h" }, "/any/cli.ts")).toBe("X:/h");
+    expect(defaultHome({}, join(repo, "apps", "proxy", "src", "main", "cli.ts"))).toBe(join(repo, ".cache"));
+    expect(defaultHome({}, join(repo, "dist", "accounts-proxy.js"))).toBe(join(repo, ".cache"));
+    expect(defaultHome({}, "/nowhere/near/a/repository.js")).toBe("/.cache");
+  });
+
+  test("the token command names the home only under an override (plan 2026-10-29-14-38 S4)", () => {
+    expect(tokenEntry({}, "/r/.cache", "/bin/bun", ["/r/apps/proxy/src/main/cli.ts"])).toEqual(["/bin/bun", "/r/apps/proxy/src/main/cli.ts"]);
+    expect(tokenEntry({ ACCOUNTS_PROXY_HOME: "/t/h" }, "/t/h", "/bin/bun", [])).toEqual(["env", "ACCOUNTS_PROXY_HOME=/t/h", "/bin/bun"]);
   });
 });
 
@@ -385,12 +391,10 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
 
 describe("accounts file location (plan 2026-10-26-23-32 A2)", () => {
   const repo = join(import.meta.dir, "..", "..", "..", "..");
-  test("ACCOUNTS_PROXY_ACCOUNTS_FILE when absolute; else .cache/accounts.json of the repository above the script", () => {
-    expect(accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "/x/accounts.json" }, "/any/cli.ts")).toBe("/x/accounts.json");
-    expect(() => accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "rel/accounts.json" }, "/any/cli.ts")).toThrow(new AccountsFileVariableError("rel/accounts.json"));
-    expect(accountsFileOf({}, join(repo, "apps", "proxy", "src", "main", "cli.ts"))).toBe(join(repo, ".cache", "accounts.json"));
-    expect(accountsFileOf({}, join(repo, "dist", "accounts-proxy.js"))).toBe(join(repo, ".cache", "accounts.json"));
-    expect(accountsFileOf({}, "/nowhere/near/a/repository.js")).toBe("/.cache/accounts.json");
+  test("ACCOUNTS_PROXY_ACCOUNTS_FILE when absolute; else accounts.json of the data directory", () => {
+    expect(accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "/x/accounts.json" }, "/h")).toBe("/x/accounts.json");
+    expect(() => accountsFileOf({ ACCOUNTS_PROXY_ACCOUNTS_FILE: "rel/accounts.json" }, "/h")).toThrow(new AccountsFileVariableError("rel/accounts.json"));
+    expect(accountsFileOf({}, join(repo, ".cache"))).toBe(join(repo, ".cache", "accounts.json"));
   });
 });
 

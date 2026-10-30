@@ -3,6 +3,7 @@
 // logins at the hidden prompt, native cells per model format (the bare model id, the key in each endpoint's header,
 // the answer unchanged), translated cells refused, and the captured OpenCode gateway refusal passed through.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
@@ -10,7 +11,7 @@ import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, startDaemon, type Daemon, type Home, readPool, writePool, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { captured, openRouterExample, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());
@@ -290,46 +291,19 @@ describe("opencode and opencode-go after the Console migration (amendment A, rul
   });
 });
 
-describe("API keys imported from OpenCode (K5, rule Z22) and typed keys (K3)", () => {
-  const authFile = (content: string) => {
-    mkdirSync(join(home!.dir, "xdg-data", "opencode"), { recursive: true });
-    writeFileSync(join(home!.dir, "xdg-data", "opencode", "auth.json"), content);
-  };
-
-  test("--from-opencode reads only API keys from OpenCode's auth.json (never writes it); --key prompts for one; checked by the vendor", async () => {
+describe("typed API keys (K3); the OpenCode import (K5) is gone (plan 2026-10-29-14-38 S3)", () => {
+  test("--key prompts for a key, checked by the vendor; --from-opencode is an unknown option", async () => {
     home = await makeHome("providers:\n  openrouter: {enabled: true}\n  opencode: {enabled: true}\n  claude: {enabled: true, acknowledgeTermsRisk: true}\n");
-    const path = join(home.dir, "xdg-data", "opencode", "auth.json");
-    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 1, stderr: `error: cannot read OpenCode's credential file ${path}: ENOENT\n` });
-    // Without XDG_DATA_HOME, OpenCode's data directory is under the home directory (here the test's own).
-    const underHome = await run(["login", "openrouter", "--from-opencode"], undefined, { XDG_DATA_HOME: "", HOME: home.dir });
-    expect(underHome.stderr).toBe(`error: cannot read OpenCode's credential file ${join(home.dir, ".local", "share", "opencode", "auth.json")}: ENOENT\n`);
-    authFile("[1]");
-    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 1, stderr: `error: OpenCode stores no API key for openrouter in ${path}\n` });
-    authFile("{");
-    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 1, stderr: `error: OpenCode's credential file ${path} is not JSON\n` });
-    const text = JSON.stringify({ openrouter: { type: "oauth", refresh: "r", access: "a", expires: 1 }, opencode: { type: "api", key: "oc_sk_imported" } });
-    authFile(text);
-    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 1, stderr: "error: OpenCode stores a sign-in for openrouter, not an API key; only API keys are imported (sign in with `accounts-proxy login openrouter`)\n" });
-    authFile(JSON.stringify({ opencode: { type: "api", key: "oc_sk_imported" } }));
-    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 1, stderr: `error: OpenCode stores no API key for openrouter in ${path}\n` });
-    authFile(text.replace('{"type":"oauth","refresh":"r","access":"a","expires":1}', '{"type":"api","key":"sk-or-v1-imported"}'));
-    const imported = await run(["login", "openrouter", "--from-opencode"]);
-    expect([imported.code, imported.stdout]).toEqual([0, expect.stringMatching(/^signed in to openrouter as .+ \(active account\)\n$/)]);
-    expect(upstreams.find("/api/v1/key").at(-1)!.headers["authorization"]).toBe("Bearer sk-or-v1-imported");
-    expect(await loggedEventually(home, "INFO openrouter: API key imported from opencode")).toContain("INFO openrouter: API key imported from opencode");
+    expect(await run(["login", "openrouter", "--from-opencode"])).toMatchObject({ code: 2, stderr: expect.stringContaining("unknown login option --from-opencode") });
     const typed = await run(["login", "openrouter", "--key"], "sk-or-v1-typed\n");
     expect([typed.code, typed.stdout.startsWith("OpenRouter API key (https://openrouter.ai/keys): \nsigned in to openrouter as ")]).toEqual([0, true]);
-    expect(pool("openrouter").accounts.map((a) => a.data.apiKey).sort()).toEqual(["sk-or-v1-imported", "sk-or-v1-typed"]);
-    const opencode = await run(["login", "opencode", "--from-opencode"]);
-    expect(opencode.code).toBe(0);
-    expect(pool("opencode").accounts[0]!.data.apiKey).toBe("oc_sk_imported");
-    expect(readFileSync(join(home.dir, "xdg-data", "opencode", "auth.json"), "utf8")).toBe(text.replace('{"type":"oauth","refresh":"r","access":"a","expires":1}', '{"type":"api","key":"sk-or-v1-imported"}'));
+    expect(upstreams.find("/api/v1/key").at(-1)!.headers["authorization"]).toBe("Bearer sk-or-v1-typed");
+    expect(pool("openrouter").accounts.map((a) => a.data.apiKey)).toEqual(["sk-or-v1-typed"]);
     expect(await run(["login", "claude", "--key"])).toMatchObject({ code: 1, stderr: "error: claude has no API-key login\n" });
     expect(await run(["login", "openrouter", "--key", "--manual"])).toMatchObject({ code: 1, stderr: "error: openrouter signs in with an API key; --manual and --new do not apply\n" });
-    expect(await run(["login", "openrouter", "--key", "--from-opencode"])).toMatchObject({ code: 2, stderr: expect.stringContaining("--key and --from-opencode exclude each other") });
     upstreams.script("/api/v1/key", documented("/key", "get", "401"));
     expect(await run(["login", "openrouter", "--key"], "sk-or-v1-bad\n")).toMatchObject({ code: 1, stderr: expect.stringContaining("error: openrouter: the key was refused: HTTP 401") });
-  }, 180_000); // twelve instrumented CLI processes, ~31 s alone; measured past 60 s under the 4x-parallel e2e run on a loaded host
+  }, 120_000);
 });
 
 describe("gateway edges", () => {

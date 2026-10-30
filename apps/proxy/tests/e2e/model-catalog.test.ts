@@ -3,6 +3,7 @@
 // committed extract of models.opencode.ai, the routes `/proxy/v1/models`, `/opencode/config.json` and
 // `/.well-known/opencode`, the commands `models --json` and `opencode-config`, and the reference catalog's fallbacks.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
@@ -11,7 +12,7 @@ import { ENTRY, makeHome, runProxy, startDaemon, type Daemon, type Home, account
 import { GRANTED_SCOPES } from "@accounts-proxy/test-support/e2e/openai-signing.ts";
 import { captured, jsonResponse, ReplayUpstreams, spec } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 /** The committed reference's openai models with one of opencode's 16 ChatGPT ids, in the reference's order (P4). */
 const OPENAI_LISTED = ["gpt-6.1-sol", "gpt-6-astra", "gpt-5.6-luna", "gpt-5.5", "gpt-6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-6-sol"].map((id) => `openai/${id}`);
 const upstreams = new ReplayUpstreams();
@@ -409,4 +410,3 @@ function scriptShapes(): void {
   delete reference["opencode-go"]!.npm;
   upstreams.script("/api.json", () => json(reference));
 }
-

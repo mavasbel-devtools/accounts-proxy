@@ -4,7 +4,6 @@
 // other value is a fatal configuration error, so a production configuration can never be redirected.
 import * as nodeFs from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { enabledProviders, modelListMaxAgeMs, parseProxyConfig, type ProxyConfig } from "@accounts-proxy/core/domain/config.ts";
@@ -109,7 +108,6 @@ import { LoggingHttpHandler } from "@accounts-proxy/proxy/adapters/inbound/http/
 import { ClientExchangeService } from "@accounts-proxy/proxy/application/client-exchange-service.ts";
 import type { ExchangeScopePort, ExchangeSinkPort } from "@accounts-proxy/core/ports/outbound/exchange-log.ts";
 import { TerminalManualCode } from "@accounts-proxy/proxy/adapters/outbound/terminal-manual-code.ts";
-import { OpencodeAuthFile, opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
 import { TerminalSecretPrompt } from "@accounts-proxy/proxy/adapters/outbound/terminal-secret-prompt.ts";
 import { YamlConfigFile } from "@accounts-proxy/proxy/adapters/outbound/yaml-config-file.ts";
 import { AccessService } from "@accounts-proxy/proxy/application/access-service.ts";
@@ -277,17 +275,32 @@ export type ContainerOptions = {
   readonly seams: UpstreamSeams;
   /** The daemon's bind address: LOOPBACK_HOST (UNASSIGNED_TEST_HOST only through the hermetic hook). */
   readonly listenHost: string;
-  /** OpenCode's data directory, read only by `login <provider> --from-opencode` (amendment A, K5). */
-  readonly opencodeData: string;
-  /** How this program is started (the runtime and the entry script): the base of the token command (rule O5). */
+  /**
+   * How this program is started (the runtime and the entry script, behind `env ACCOUNTS_PROXY_HOME=<home>` when the data
+   * directory is not the default one; plan 2026-10-29-14-38 S4): the base of the token command (rule O5).
+   */
   readonly entry: readonly string[];
 };
 
 export type LockConfig = { readonly options: FileLockOptions; readonly fs: LockFs };
 export const PRODUCTION_LOCK: LockConfig = { options: DEFAULT_LOCK_OPTIONS, fs: nodeFs };
 
-export function defaultHome(env: Readonly<Record<string, string | undefined>>): string {
-  return env["ACCOUNTS_PROXY_HOME"] ?? join(homedir(), ".local", "share", "accounts-proxy");
+/**
+ * The data directory (plan 2026-10-29-14-38 S1): ACCOUNTS_PROXY_HOME, else `.cache/` of the repository the program runs
+ * from — the nearest directory above `script` whose package.json is named `accounts-proxy` (the source entry and the
+ * built bundle alike). Nothing outside the repository is read by default.
+ */
+/** The command that runs this program again (S4): it names the home only when an override is in effect. */
+export function tokenEntry(env: Readonly<Record<string, string | undefined>>, home: string, executable: string, script: readonly string[]): string[] {
+  return [...(env["ACCOUNTS_PROXY_HOME"] === undefined ? [] : ["env", `ACCOUNTS_PROXY_HOME=${home}`]), executable, ...script];
+}
+
+export function defaultHome(env: Readonly<Record<string, string | undefined>>, script: string): string {
+  const given = env["ACCOUNTS_PROXY_HOME"];
+  if (given !== undefined) return given;
+  let dir = dirname(resolve(script));
+  while (!isRepositoryRoot(dir) && dirname(dir) !== dir) dir = dirname(dir);
+  return join(dir, ".cache");
 }
 
 export const ACCOUNTS_FILE_VARIABLE = "ACCOUNTS_PROXY_ACCOUNTS_FILE";
@@ -305,19 +318,14 @@ function isRepositoryRoot(dir: string): boolean {
 }
 
 /**
- * The accounts file (plan 2026-10-26-23-32 A2): ACCOUNTS_PROXY_ACCOUNTS_FILE (an absolute path), else `.cache/accounts.json`
- * in the repository the program runs from — the nearest directory above `script` whose package.json is named
- * `accounts-proxy` (the source entry and the built bundle alike).
+ * The accounts file (plan 2026-10-26-23-32 A2, plan 2026-10-29-14-38 S1): ACCOUNTS_PROXY_ACCOUNTS_FILE (an absolute
+ * path), else `accounts.json` in the data directory.
  */
-export function accountsFileOf(env: Readonly<Record<string, string | undefined>>, script: string): string {
+export function accountsFileOf(env: Readonly<Record<string, string | undefined>>, home: string): string {
   const given = env[ACCOUNTS_FILE_VARIABLE];
-  if (given !== undefined) {
-    if (!isAbsolute(given)) throw new AccountsFileVariableError(given);
-    return given;
-  }
-  let dir = dirname(resolve(script));
-  while (!isRepositoryRoot(dir) && dirname(dir) !== dir) dir = dirname(dir);
-  return join(dir, ".cache", "accounts.json");
+  if (given === undefined) return join(home, "accounts.json");
+  if (!isAbsolute(given)) throw new AccountsFileVariableError(given);
+  return given;
 }
 
 /** The accounts file and the filesystem calls it is written with (plan 2026-10-26-23-32 A1–A3b). */
@@ -604,8 +612,8 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const opencode = new OpencodeConfigCodec();
   const origin: OpencodeOrigin = {
     origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
-    // Absolute, with the data directory, so opencode can spawn it from any directory (rule O5).
-    tokenCommand: ["env", `ACCOUNTS_PROXY_HOME=${home}`, ...entry, "token"],
+    // Absolute, so opencode can spawn it from any directory (rule O5).
+    tokenCommand: [...entry, "token"],
   };
   const health = new HealthService(graph.enabled);
   const errors = new LoggingErrorReporter(graph.logger);
@@ -639,7 +647,6 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
     clients,
     devices,
     keyClients,
-    keySources: [new OpencodeAuthFile(options.opencodeData)],
     servers: log !== undefined ? new LoggingCallbackServerFactory(new LoopbackCallbackServerFactory(), log.sink, graph.clock, graph.random) : new LoopbackCallbackServerFactory(),
     browser: log !== undefined ? new LoggingBrowserLauncher(options.browser, log.sink, graph.random) : options.browser,
     manual: new TerminalManualCode(options.stdin, options.stdout),
@@ -705,20 +712,20 @@ export async function main(argv: readonly string[]): Promise<number> {
   const err = (text: string) => void process.stderr.write(text);
   let seams: UpstreamSeams;
   let hooks: TestHooks;
+  const home = defaultHome(process.env, process.argv[1]!);
   let accountsFile: string;
   try {
     seams = seamsFrom(process.env);
     hooks = hooksFrom(process.env, seams);
-    accountsFile = accountsFileOf(process.env, process.argv[1]!);
+    accountsFile = accountsFileOf(process.env, home);
   } catch (error) {
     err(`error: ${errorMessage(error)}\n`);
     return 1;
   }
   return runCli(argv, {
-    home: defaultHome(process.env),
+    home,
     accounts: { path: accountsFile, fs: hooks.accountsEdited !== undefined ? editedAccountsFs(nodeFs, accountsFile, hooks.accountsEdited) : nodeFs },
-    opencodeData: opencodeDataDir(process.env),
-    entry: [process.execPath, ...process.argv.slice(1, 2)],
+    entry: tokenEntry(process.env, home, process.execPath, process.argv.slice(1, 2)),
     out: (text) => process.stdout.write(text),
     err,
     stdin: process.stdin,

@@ -2,6 +2,7 @@
 // `xdg-open`), driven by the official SDKs (@anthropic-ai/sdk 0.133.0, @google/genai 2.28.0, openai 7.32.0) and by raw
 // HTTP for the byte framing; every upstream exchange is answered by the replay server from committed captures.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import Anthropic from "@anthropic-ai/sdk";
 import { ApiError, GoogleGenAI, Type, type Content } from "@google/genai";
 import OpenAI from "openai";
@@ -9,7 +10,7 @@ import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { makeHome, runProxy, startDaemon, usageOf, type Daemon, type Home } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 
 const upstreams = new ReplayUpstreams();
 let home: Home;

@@ -9,7 +9,7 @@ const CLIENT: HelpEntry = { name: "<client>", text: `one of ${RECON_CLIENTS.join
 const FAILED: HelpEntry = { name: "1", text: "the command failed: `error: <message>` on stderr" };
 const USAGE: HelpEntry = { name: "2", text: "usage error: the message and the command's usage on stderr" };
 const ISOLATION: HelpEntry = { name: String(ISOLATION_EXIT), text: "isolation failed: the in-sandbox probe found a leak, or a real client directory changed" };
-const RECON_HOME: HelpEntry = { name: "ACCOUNTS_PROXY_HOME", text: "the proxy's data directory; the recon root is its recon/ (default ~/.local/share/accounts-proxy/recon)" };
+const RECON_HOME: HelpEntry = { name: "ACCOUNTS_PROXY_HOME", text: "the proxy's data directory; the recon root is its recon/ (default: .cache/recon of the repository)" };
 const RECON_ROOT: HelpEntry = { name: "ACCOUNTS_PROXY_RECON_ROOT", text: "the recon root itself, overriding ACCOUNTS_PROXY_HOME (default: unset)" };
 
 function client(word: string | undefined, command: string): ReconClientId {

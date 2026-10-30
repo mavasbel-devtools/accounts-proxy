@@ -12,9 +12,9 @@ import { requireLive, sleep, timestamp, writeDoc, openLive } from "@accounts-pro
 
 requireLive();
 const live = await openLive();
-const home = defaultHome(process.env);
-const port = parseProxyConfig(await new YamlConfigFile(join(home, "proxy.yaml")).read()).port;
 const entry = join(repositoryRoot, "apps", "proxy", "src", "main", "cli.ts");
+const home = defaultHome(process.env, entry);
+const port = parseProxyConfig(await new YamlConfigFile(join(home, "proxy.yaml")).read()).port;
 const token = (await new Response(Bun.spawn([process.execPath, entry, "token"], { stdout: "pipe" }).stdout).text()).trim();
 live.redactor.add("proxy_token", token);
 

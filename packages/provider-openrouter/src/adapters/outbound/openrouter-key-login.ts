@@ -1,4 +1,4 @@
-// `login openrouter --key` / `--from-opencode` (plan P4.6 amendment A, K3/K5): an existing OpenRouter key, checked
+// `login openrouter --key` (plan P4.6 amendment A, K3): an existing OpenRouter key, checked
 // against `GET /key` (R8); the key's own label names the account.
 import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
 import { readAll } from "@accounts-proxy/core/domain/wire.ts";

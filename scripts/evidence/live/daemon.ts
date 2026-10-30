@@ -4,7 +4,6 @@
 // stop() asks the daemon to shut down through its normal exit path and returns its exit code and output.
 import { join } from "node:path";
 import { SystemBrowserLauncher } from "@accounts-proxy/proxy/adapters/outbound/browser-launcher.ts";
-import { opencodeDataDir } from "@accounts-proxy/proxy/adapters/outbound/opencode-auth-file.ts";
 import { ShutdownSignal } from "@accounts-proxy/proxy/adapters/inbound/server.ts";
 import { LOOPBACK_HOST, PRODUCTION_LOCK, runCli, type ContainerOptions } from "@accounts-proxy/proxy/composition/container.ts";
 import { sleep, type Live } from "@accounts-proxy/scripts/evidence/live/harness.ts";
@@ -24,7 +23,6 @@ export function daemonOptions(live: Live, out: (text: string) => void, shutdown:
   return {
     home: live.home,
     accounts: live.accounts,
-    opencodeData: opencodeDataDir(process.env),
     entry: [process.execPath, join(import.meta.dir, "..", "..", "..", "apps", "proxy", "src", "main", "cli.ts")],
     out,
     err: out,

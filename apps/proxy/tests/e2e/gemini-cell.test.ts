@@ -2,11 +2,12 @@
 // the daemon's HTTP route (P4 plan §2.3, decisions Q2–Q4, amendment B1), and the request the upstream really received
 // is asserted from the replay server's record. Scripted upstream answers cover the stream shapes the cell must handle.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { startSignedInDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { brokenStream, envelopeStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 
 const upstreams = new ReplayUpstreams();
 let env: SignedInDaemon;

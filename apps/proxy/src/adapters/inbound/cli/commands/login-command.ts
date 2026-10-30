@@ -1,5 +1,4 @@
 // `login <provider>`: signs in (browser, device code or API key) and makes the account the active one.
-import type { KeyImportSource } from "@accounts-proxy/core/domain/api-key.ts";
 import type { LoginPort } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { CliCommand, type CommandHelp, UsageError, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, providerArgument, PROVIDER_ARGUMENT, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -8,17 +7,16 @@ export const DEFAULT_LOGIN_TIMEOUT_S = 300;
 
 export const LOGIN_HELP: CommandHelp = {
   name: "login",
-  synopsis: ["login <provider> [--manual] [--new] [--key] [--from-opencode] [--timeout-seconds N]"],
+  synopsis: ["login <provider> [--manual] [--new] [--key] [--timeout-seconds N]"],
   summary: "sign in to a provider and make the account the active one",
   description: [
-    "The sign-in method depends on the provider: a browser sign-in with a loopback listener on 127.0.0.1 (claude, antigravity, openai, openrouter; the URL is printed too, in case the browser does not open), the OpenCode Console device login (opencode, opencode-go share one account: the code is printed and the approval page opened), or an API key typed at a hidden prompt (cheaper-inference). The account is stored only in the data directory, owner-only (0600).",
+    "The sign-in method depends on the provider: a browser sign-in with a loopback listener on 127.0.0.1 (claude, antigravity, openai, openrouter; the URL is printed too, in case the browser does not open), the OpenCode Console device login (opencode, opencode-go share one account: the code is printed and the approval page opened), or an API key typed at a hidden prompt (cheaper-inference). The account is stored only in the accounts file (`<data directory>/accounts.json`), owner-only (0600).",
   ],
   arguments: [PROVIDER_ARGUMENT],
   options: [
     { name: "--manual", text: "paste the code from the provider's page instead of the loopback listener (claude, openrouter; default: off)" },
     { name: "--new", text: "register a new ChatGPT account instead of re-authorizing the active one (openai; default: off)" },
     { name: "--key", text: "enter an API key at a hidden prompt instead of signing in (gateways; default: off)" },
-    { name: "--from-opencode", text: "import, once, the API key OpenCode stores in its auth.json; never a sign-in token (gateways; default: off)" },
     { name: "--timeout-seconds N", text: `how long to wait for the sign-in, a positive integer (default: ${DEFAULT_LOGIN_TIMEOUT_S})` },
   ],
   exits: [
@@ -26,14 +24,13 @@ export const LOGIN_HELP: CommandHelp = {
     FAILED_EXIT,
     USAGE_EXIT,
   ],
-  environment: [HOME_VARIABLE, { name: "XDG_DATA_HOME", text: "where --from-opencode reads opencode/auth.json (default ~/.local/share)" }],
+  environment: [HOME_VARIABLE],
   examples: [
     { name: "bun run proxy login claude", text: "sign in to Claude in the browser" },
     { name: "bun run proxy login claude --manual --timeout-seconds 600", text: "paste the code from the page instead, waiting up to 10 minutes" },
     { name: "bun run proxy login openai --new", text: "register another ChatGPT account; it becomes the active one" },
     { name: "bun run proxy login opencode", text: "the OpenCode Console device login (also used by opencode-go)" },
     { name: "bun run proxy login openrouter --key", text: "store an OpenRouter API key typed at a hidden prompt" },
-    { name: "bun run proxy login opencode-go --from-opencode", text: "import the API key OpenCode already stores" },
   ],
 };
 
@@ -50,26 +47,22 @@ export class LoginCommand extends CliCommand {
     let manual = false;
     let fresh = false;
     let key = false;
-    let importFrom: KeyImportSource | undefined;
     let timeoutS = DEFAULT_LOGIN_TIMEOUT_S;
     while (args.length > 0) {
       const flag = args.shift();
       if (flag === "--manual") manual = true;
       else if (flag === "--new") fresh = true;
       else if (flag === "--key") key = true;
-      else if (flag === "--from-opencode") importFrom = "opencode";
       else if (flag === "--timeout-seconds") {
         const value = Number(args.shift());
         if (!Number.isInteger(value) || value < 1) throw new UsageError("--timeout-seconds needs a positive integer");
         timeoutS = value;
       } else throw new UsageError(`unknown login option ${flag}`);
     }
-    if (key && importFrom !== undefined) throw new UsageError("--key and --from-opencode exclude each other");
     const account = await this.login.login(id, {
       manual,
       fresh,
       key,
-      importFrom,
       timeoutMs: timeoutS * 1000,
       onAuthorizeUrl: (url) => out(`${manual ? "Open" : "Opening your browser. If it does not open, visit"}:\n${url}\n`),
       onUserCode: (code) => out(`Confirm this code on the page: ${code}\n`),

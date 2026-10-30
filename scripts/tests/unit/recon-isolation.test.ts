@@ -182,6 +182,22 @@ describe("profiles", () => {
     expect(existsSync(profile.dir)).toBe(false);
     expect(reconRoot()).toBe(root!);
   });
+
+  test("recon root (plan 2026-10-29-14-38 S2): ACCOUNTS_PROXY_RECON_ROOT, else ACCOUNTS_PROXY_HOME/recon, else the repository's .cache/recon", () => {
+    const saved = { root: process.env.ACCOUNTS_PROXY_RECON_ROOT, home: process.env.ACCOUNTS_PROXY_HOME };
+    try {
+      process.env.ACCOUNTS_PROXY_RECON_ROOT = " ";
+      process.env.ACCOUNTS_PROXY_HOME = "/x/data";
+      expect(reconRoot()).toBe("/x/data/recon");
+      delete process.env.ACCOUNTS_PROXY_RECON_ROOT;
+      delete process.env.ACCOUNTS_PROXY_HOME;
+      expect(reconRoot()).toBe(join(import.meta.dir, "..", "..", "..", ".cache", "recon"));
+    } finally {
+      process.env.ACCOUNTS_PROXY_RECON_ROOT = saved.root!;
+      if (saved.home === undefined) delete process.env.ACCOUNTS_PROXY_HOME;
+      else process.env.ACCOUNTS_PROXY_HOME = saved.home;
+    }
+  });
 });
 
 describe("change attribution", () => {

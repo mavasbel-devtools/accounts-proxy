@@ -169,3 +169,28 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - Open: M8 (c), the offline-start check; data layout: only accounts, locks and logs are in `.cache/`, the rest
   (`proxy.yaml`, `token.json`, `state/`, `backups/`, `recon/`) stays in `~/.local/share/accounts-proxy/`.
 
+## 2026-10-29 17:50 MDT — self-contained-cache S8 applied
+
+- The daemon was confirmed stopped before the move. `proxy.yaml`, the established token, full `state/`, `recon/` and
+  `backups/` were moved from `~/.local/share/accounts-proxy/` to the repository `.cache/` by same-filesystem rename.
+  The move tool checked path, size, mode and SHA-256 before and after every active item.
+- A different token and partial `state/model-reference.json` had already appeared under `.cache/` after a direct CLI
+  invocation with no cache config. They are preserved under `.cache/backups/`; the established October 11 token and the
+  complete live state are active. The configured seven providers are all enabled; subscription providers acknowledge
+  their terms risk.
+- Backup account data stays preserved: two backup ids are not in `accounts.json`. The former home was otherwise empty,
+  so its empty `locks/` and `logs/` and the parent were removed. S9 is now in progress: refresh, isolation, daemon,
+  gate, secret audit, commit and push.
+
+## 2026-10-29 19:12 CST — self-contained-cache S9 verified
+
+- Every enabled provider refreshed live: Claude 12 models, Antigravity 21, OpenAI 8, OpenRouter 456, OpenCode 130,
+  OpenCode Go 37 and Cheaper Inference 340. The daemon is listening on `127.0.0.1:4141` from the default repository
+  cache home.
+- The recon isolation acceptance probe reported `clean` and `unchanged` for OpenCode, Antigravity, Claude and Codex.
+  The complete `bun run verify` gate passed: typecheck, 100% unit/component/architecture coverage, build, 100% e2e and
+  merged coverage, every recon parity check and docs lint.
+- During verification, the docs linter was corrected to ignore the mutable `.cache/` tree and its new regression test
+  passed. The e2e modules now use the single 120-second gate timeout and run with two workers, after the prior 60-second
+  module-local overrides killed child processes under host load. Commit, secret audit and push remain unperformed: this
+  working tree contains existing changes outside the migration, and no publication authorization was given.

@@ -7,7 +7,7 @@
  * port, a sandboxed `auth login` dies with EADDRINUSE before it can print a login URL.
  *
  * Allocating a per-profile port and writing it into the profile's own service file removes the collision without
- * touching the operator's configuration: the profile lives outside the repository and outside the real home.
+ * touching the operator's configuration: the profile lives in the repository's git-ignored .cache/, outside the real home.
  */
 
 import { chmodSync, closeSync, existsSync, openSync, readFileSync, writeFileSync } from "node:fs";

@@ -126,7 +126,8 @@ export class OpencodeConfigCodec extends OpencodeConfigPort {
         if (entry !== undefined) models[model.model] = entry;
       }
       providers[id] = {
-        name: `Accounts Proxy · ${PROVIDER_NAMES[catalog.provider]}`,
+        // The short prefix keeps the name readable in opencode's model menu (plan 2026-10-29-14-38 S5).
+        name: `AP · ${PROVIDER_NAMES[catalog.provider]}`,
         settings: { apiKey: `{env:${TOKEN_VARIABLE}}` },
         // OpenAI plan usage refuses `max_output_tokens`, which opencode always sends (live validation F5).
         ...(catalog.provider === "openai" ? { headers: { [LOSSY_HEADER]: "1" } } : {}),

@@ -3,14 +3,15 @@
 // openers, refused or odd logins, disabled providers, aliases and addresses, missing or odd stored files, and the
 // process environment (default data directory, partial seams, hermetic hook validation).
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { join } from "node:path";
 import { makeTemporary, removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { accountsFile, BOTH_PROVIDERS, logFiles, makeHome, runProxy, startDaemon, usageOf, type Daemon, type Home, proxyLogOf, loggedEventually } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { ReplayUpstreams, stalledStream } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
-setDefaultTimeout(60_000);
+setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
 const upstreams = new ReplayUpstreams();
 beforeAll(() => void upstreams.start());
 afterAll(() => upstreams.stop());
@@ -317,17 +318,20 @@ describe("configuration and stored files", () => {
 });
 
 describe("process environment", () => {
-  test("without ACCOUNTS_PROXY_HOME the data directory is under HOME; partial seams leave the other hosts as they are", async () => {
+  test("without ACCOUNTS_PROXY_HOME the data directory is the repository's .cache/ (read, never written by help); partial seams leave the other hosts as they are", async () => {
     home = await makeHome(CLAUDE_ONLY);
     scratch = makeTemporary("proxy-home");
-    const defaults = await runProxy(home, ["models", "claude"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch });
-    expect([defaults.code, defaults.stderr]).toEqual([1, "error: claude is disabled; enable it with acknowledgeTermsRisk: true in proxy.yaml\n"]);
-    mkdirSync(join(scratch, ".local", "share", "accounts-proxy"), { recursive: true });
-    writeFileSync(join(scratch, ".local", "share", "accounts-proxy", "proxy.yaml"), BOTH_PROVIDERS);
-    expect((await runProxy(home, ["account", "list", "claude"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch })).code).toBe(0);
+    // Plan 2026-10-29-14-38 S1: no variable → <repo>/.cache, found from the entry script. `help` only reads proxy.yaml
+    // there; nothing in the folder is created, changed or removed.
+    const cache = join(import.meta.dir, "..", "..", "..", "..", ".cache");
+    const listing = () => (existsSync(cache) ? readdirSync(cache, { recursive: true }).map(String).sort() : []);
+    const untouched = listing();
+    const defaults = await runProxy(home, ["help"], { ACCOUNTS_PROXY_HOME: "", ACCOUNTS_PROXY_ACCOUNTS_FILE: "" });
+    expect([defaults.code, defaults.stderr]).toEqual([0, ""]);
+    expect(listing()).toEqual(untouched);
     // The openai provider on its production hosts (no seam set; listing accounts calls no host).
-    writeFileSync(join(scratch, ".local", "share", "accounts-proxy", "proxy.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
-    expect(await runProxy(home, ["account", "list", "openai"], { ACCOUNTS_PROXY_HOME: "", HOME: scratch })).toMatchObject({ code: 0, stdout: "no openai accounts; run: bun run proxy login openai\n" });
+    writeFileSync(join(scratch, "proxy.yaml"), "providers:\n  openai: {enabled: true, acknowledgeTermsRisk: true}\n");
+    expect(await runProxy(home, ["account", "list", "openai"], { ACCOUNTS_PROXY_HOME: scratch })).toMatchObject({ code: 0, stdout: "no openai accounts; run: bun run proxy login openai\n" });
     for (const seam of ["ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API", "ACCOUNTS_PROXY_TEST_UPSTREAM_ANTIGRAVITY_API"]) {
       const partial = await runProxy(home, ["help"], { [seam]: upstreams.origin });
       expect([partial.code, partial.stderr]).toEqual([0, ""]);
