@@ -85,7 +85,10 @@ export function descriptorDetails(m: ModelDescriptor): ModelDetails {
   if (any("audio/")) input.push("audio");
   if (m.supportsVideo || any("video/")) input.push("video");
   if (types.includes("application/pdf")) input.push("pdf");
-  return { input, reasoning: m.supportsThinking };
+  const isImageModel = m.wireId.endsWith("-image");
+  const isTab = m.wireId.startsWith("tab_") || m.wireId.startsWith("chat_");
+  const toolCall = !isImageModel && !isTab;
+  return { input, reasoning: m.supportsThinking, toolCall };
 }
 
 export function toModelDescriptors(raw: Readonly<Record<string, unknown>>): ModelDescriptor[] {

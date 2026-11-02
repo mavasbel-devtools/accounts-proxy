@@ -27,11 +27,11 @@ export type ProxyConfig = {
   readonly modelListMaxAgeMinutes: number;
   readonly logs: LogSettings;
 };
-export type LogSettings = { readonly usage: boolean; readonly retentionDays: number; readonly maxFileMegabytes: number };
+export type LogSettings = { readonly usage: boolean; readonly retentionDays: number; readonly maxFileMegabytes: number; readonly maxTotalMegabytes: number };
 
 export const DEFAULT_PORT = 4141;
 export const DEFAULT_MODEL_LIST_MAX_AGE_MINUTES = 1440;
-export const DEFAULT_LOGS: LogSettings = { usage: true, retentionDays: 15, maxFileMegabytes: 100 };
+export const DEFAULT_LOGS: LogSettings = { usage: true, retentionDays: 15, maxFileMegabytes: 100, maxTotalMegabytes: 500 };
 const OFF: ProviderSettings = { enabled: false, acknowledgeTermsRisk: false };
 const ALL_OFF: Readonly<Record<ProviderId, ProviderSettings>> = Object.fromEntries(PROVIDER_IDS.map((id) => [id, OFF])) as Record<ProviderId, ProviderSettings>;
 export const DEFAULT_CONFIG: ProxyConfig = { port: DEFAULT_PORT, providers: ALL_OFF, aliases: {}, modelListMaxAgeMinutes: DEFAULT_MODEL_LIST_MAX_AGE_MINUTES, logs: DEFAULT_LOGS };
@@ -100,11 +100,12 @@ function positive(value: unknown, where: string, unit: string, fallback: number)
 
 function parseLogs(raw: unknown): LogSettings {
   if (!isJsonObject(raw)) throw new ConfigError("logs must be a mapping");
-  only(raw, ["usage", "retentionDays", "maxFileMegabytes"], "logs");
+  only(raw, ["usage", "retentionDays", "maxFileMegabytes", "maxTotalMegabytes"], "logs");
   return {
     usage: bool(raw.usage, "logs.usage", DEFAULT_LOGS.usage),
     retentionDays: positive(raw.retentionDays, "logs.retentionDays", "days", DEFAULT_LOGS.retentionDays),
     maxFileMegabytes: positive(raw.maxFileMegabytes, "logs.maxFileMegabytes", "megabytes", DEFAULT_LOGS.maxFileMegabytes),
+    maxTotalMegabytes: positive(raw.maxTotalMegabytes, "logs.maxTotalMegabytes", "megabytes", DEFAULT_LOGS.maxTotalMegabytes),
   };
 }
 

@@ -1,4 +1,4 @@
-// The daemon's console output (plan 2026-10-27 C1, L5 of plan 2026-10-27-23-29): silent until started, then every log
+// The daemon's console output (plan 2026-10-27 C1, plan 2026-10-27-23-29 L5, plan 2026-11-02-05-30): silent until started, then every log
 // line on its own line; the inner logger still gets everything. Usage records never reach the console.
 import { describe, expect, test } from "bun:test";
 import { DaemonConsolePort } from "@accounts-proxy/core/ports/inbound/daemon.ts";

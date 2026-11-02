@@ -4,7 +4,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { EXCHANGE_LOG_SCHEMA, redactEntry, Redactor, type ExchangeEntry } from "@accounts-proxy/core/domain/exchange-log.ts";
 import { ExchangeScopePort, ExchangeSinkPort } from "@accounts-proxy/core/ports/outbound/exchange-log.ts";
-import type { ClockPort, HashPort, LogStreamPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import type { ClockPort, ConsoleMirrorPort, HashPort, LogStreamPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 
 /** The redaction fingerprint: the first 12 hex digits of the value's SHA-256 (X4). */
 export function fingerprintOf(hash: HashPort): (value: string) => string {
@@ -24,6 +24,7 @@ export class StreamExchangeSink extends ExchangeSinkPort {
     private readonly clock: ClockPort,
     hash: HashPort,
     private readonly pid: number,
+    private readonly mirror?: ConsoleMirrorPort,
   ) {
     super();
     this.redactor = new Redactor(fingerprintOf(hash));
@@ -31,7 +32,17 @@ export class StreamExchangeSink extends ExchangeSinkPort {
 
   write(entry: ExchangeEntry): void {
     try {
-      this.stream.line(exchangeLine(redactEntry(entry, this.redactor), this.clock.now(), this.pid));
+      const line = exchangeLine(redactEntry(entry, this.redactor), this.clock.now(), this.pid);
+      try {
+        this.stream.line(line);
+      } catch {
+        // the usage log is best-effort by contract (X6)
+      }
+      try {
+        this.mirror?.line(line);
+      } catch {
+        // console mirroring is best-effort
+      }
     } catch {
       // the usage log is best-effort by contract (X6)
     }

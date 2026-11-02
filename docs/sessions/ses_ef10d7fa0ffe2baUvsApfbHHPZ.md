@@ -199,3 +199,12 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
 - Complete secret and identity audit ran against all staged changes with zero personal identifiers and zero credentials found.
 - Committed as `2a49cec` (`proxy: all data lives in <repo>/.cache, drop K5 --from-opencode, provider prefix AP (plan 2026-10-29-14-38 S1–S9)`) and pushed to `origin/main`.
 - Working tree clean on `main`; verified no worktree remains to merge or delete. Daemon confirmed active on `127.0.0.1:4141`.
+- 2026-11-01 / 2026-11-02: Executed Antigravity tool calling capabilities and model resolution fix (plan [docs/plans/2026-11-02-01-37-antigravity-tool-capabilities-plan.md](../plans/2026-11-02-01-37-antigravity-tool-capabilities-plan.md)).
+  - Declared `toolCall: true` for generative Gemini descriptors in `packages/provider-antigravity/src/domain/catalog.ts`.
+  - Normalized model tier suffixes (`-extra-low`, `-low`, `-medium`, `-high`, `-tiered`) in `packages/core/src/domain/model-details.ts` so `gemini-3.8-flash-medium` inherits `toolCall: true` from reference `google/gemini-3.8-flash`.
+  - Configured configurable log total size cap (`maxTotalMegabytes: 500`) across `packages/core/src/domain/config.ts` and `apps/proxy/src/adapters/outbound/log-files.ts`.
+  - Audited all 21 Antigravity models: 18 generative models have `capabilities.tools: true`; only the 3 non-generative / specialized models (`gemini-3.1-flash-image`, `tab_flash_lite_preview`, `tab_jump_flash_lite_preview`) are false.
+  - Executed Clean Console enforcement (plan [docs/plans/2026-11-02-05-30-console-logging-and-openai-plan.md](../plans/2026-11-02-05-30-console-logging-and-openai-plan.md)): removed `mirror` from `StreamExchangeSink` in `apps/proxy/src/composition/container.ts` so full HTTP request and response JSON records are logged exclusively to `.cache/logs/*-usage.*.jsonl` rather than dumping to stdout in the terminal.
+  - Conducted forensic root-cause analysis on OpenAI stopping vs Gemini (research [docs/research/2026-11-02-05-05-openai-router-investigation.md](../research/2026-11-02-05-05-openai-router-investigation.md)): verified OpenAI does not have the catalog tools defect (tools: true), identified high reasoning latency (up to 30.4s TTFT) and client aborts as causes of stops.
+  - Verified 100% unit+component+arch coverage (995/995 pass, 49,984 expectations, 100% stmts/branch/funcs/lines), clean TypeScript typecheck, bundle build, and docs lint.
+

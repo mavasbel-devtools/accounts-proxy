@@ -335,8 +335,8 @@ describe("daemon wiring (serve, token, status) over the upstream seams", () => {
       expect(await serving).toBe(0);
       expect(out.slice(-2)).toEqual(["SIGTERM: stopping (in-flight responses get 10 s)\n", "stopped\n"]);
       expect(err).toEqual([]);
-      // The usage log (plan 2026-10-26 X1-X4, plan 2026-10-27-23-29 L2): every kind, client and upstream linked, no
-      // credential value; the console got the log lines only (L5).
+      // The usage log (plan 2026-10-26 X1-X4, plan 2026-10-27-23-29 L2, plan 2026-11-02 Clean Console):
+      // Clean Console policy ensures raw multi-KB JSON exchange records are never dumped to stdout.
       expect(out.some((line) => line.includes('"schema":"accounts-proxy-exchange/1"'))).toBe(false);
       const day = logFilesOf("usage");
       if (!logged) {

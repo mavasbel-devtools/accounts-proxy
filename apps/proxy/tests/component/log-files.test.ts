@@ -113,7 +113,7 @@ describe("LockedLogRetention", () => {
     ];
     for (const name of names) writeFileSync(join(logs, name), "x\n");
     const lock = new RecordingLock();
-    await new LockedLogRetention(logs, lock, new FixedClock(T), 2, nodeFs).sweep();
+    await new LockedLogRetention(logs, lock, new FixedClock(T), 2, 500, nodeFs).sweep();
     expect(lock.acquired).toEqual(["logs"]);
     expect(readdirSync(logs).sort()).toEqual(["2026-10-25-5-usage.jsonl", "2026-10-26-5-usage.1.jsonl", "exchanges-2026-10-25.jsonl", "exchanges-notes.jsonl", "notes.txt", "proxy-2026-10-26.log", "proxy.log"]);
   });
@@ -124,7 +124,7 @@ describe("LockedLogRetention", () => {
     let release: () => void = () => undefined;
     lock.onAcquire = () => new Promise<void>((resolve) => (release = resolve));
     const clock = new FixedClock(T);
-    const retention = new LockedLogRetention(logs, lock, clock, 15, nodeFs);
+    const retention = new LockedLogRetention(logs, lock, clock, 15, 500, nodeFs);
     const first = retention.sweep();
     const joined = retention.sweep();
     expect(joined).toBe(first);
@@ -146,14 +146,14 @@ describe("LockedLogRetention", () => {
         return Promise.reject(new Error("lock timeout"));
       }
     })();
-    await new LockedLogRetention(join(root, "logs"), failingLock, new FixedClock(T), 1, nodeFs).sweep();
+    await new LockedLogRetention(join(root, "logs"), failingLock, new FixedClock(T), 1, 500, nodeFs).sweep();
     writeFileSync(join(root, "file"), "x");
-    await new LockedLogRetention(join(root, "file"), new RecordingLock(), new FixedClock(T), 1, nodeFs).sweep();
+    await new LockedLogRetention(join(root, "file"), new RecordingLock(), new FixedClock(T), 1, 500, nodeFs).sweep();
     const logs = join(root, "logs");
     mkdirSync(logs);
     writeFileSync(join(logs, "2026-10-01-1-usage.jsonl"), "x\n");
     const noUnlink: RetentionFs = { ...nodeFs, unlink: (() => Promise.reject(new Error("EPERM"))) as RetentionFs["unlink"] };
-    await new LockedLogRetention(logs, new RecordingLock(), new FixedClock(T), 1, noUnlink).sweep();
+    await new LockedLogRetention(logs, new RecordingLock(), new FixedClock(T), 1, 500, noUnlink).sweep();
     expect(readdirSync(logs)).toEqual(["2026-10-01-1-usage.jsonl"]);
   });
 
@@ -163,9 +163,33 @@ describe("LockedLogRetention", () => {
     mkdirSync(logs);
     writeFileSync(join(logs, "2026-10-01-1-usage.jsonl"), "x\n");
     const lockOf = () => new FileLock(root, new SystemClock(), new SystemTimer(), { ...DEFAULT_LOCK_OPTIONS, pollMs: 2 }, nodeFs);
-    const sweeps = [lockOf(), lockOf()].map((lock) => new LockedLogRetention(logs, lock, new FixedClock(T), 1, nodeFs).sweep());
+    const sweeps = [lockOf(), lockOf()].map((lock) => new LockedLogRetention(logs, lock, new FixedClock(T), 1, 500, nodeFs).sweep());
     await Promise.all(sweeps);
     expect(readdirSync(logs)).toEqual([]);
     expect(readdirSync(join(root, "locks"))).toEqual([]);
+  });
+
+  test("prunes oldest files when total size exceeds maxTotalMegabytes", async () => {
+    const root = temp();
+    const logs = join(root, "logs");
+    mkdirSync(logs);
+    // Create 3 files of 1 MB each. Total = 3 MB.
+    const oneMb = "a".repeat(1024 * 1024);
+    writeFileSync(join(logs, "2026-10-25-1-usage.jsonl"), oneMb);
+    writeFileSync(join(logs, "2026-10-26-1-usage.1.jsonl"), oneMb);
+    writeFileSync(join(logs, "2026-10-26-1-usage.2.jsonl"), oneMb);
+    // With maxTotalMegabytes = 2, the oldest file (2026-10-25) should be deleted first.
+    const lock = new RecordingLock();
+    await new LockedLogRetention(logs, lock, new FixedClock(T), 15, 2, nodeFs).sweep();
+    expect(readdirSync(logs).sort()).toEqual(["2026-10-26-1-usage.1.jsonl", "2026-10-26-1-usage.2.jsonl"]);
+
+    // Secondary test with identical day and mtime to exercise name fallback sort branch
+    const mockFs: RetentionFs = {
+      ...nodeFs,
+      readdir: ((() => Promise.resolve(["2026-10-26-1-usage.1.jsonl", "2026-10-26-1-usage.2.jsonl"])) as unknown) as RetentionFs["readdir"],
+      stat: (() => Promise.resolve({ size: 2 * 1024 * 1024, mtimeMs: 1000 } as any)) as RetentionFs["stat"],
+      unlink: (() => Promise.resolve()) as RetentionFs["unlink"],
+    };
+    await new LockedLogRetention(logs, new RecordingLock(), new FixedClock(T), 15, 1, mockFs).sweep();
   });
 });

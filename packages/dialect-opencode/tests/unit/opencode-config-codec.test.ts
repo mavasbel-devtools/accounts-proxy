@@ -40,7 +40,7 @@ describe("OpencodeConfigCodec.config", () => {
           model("opencode", "named-but-elsewhere", { formats: ["gemini"], aiSdkPackage: "@ai-sdk/anthropic" }),
           model("opencode", "unknown-format", { aiSdkPackage: "@ai-sdk/unknown" }),
         ]),
-        catalog("antigravity", [model("antigravity", "gemini-x", { formats: ["gemini"], reasoningOptions: [{ type: "effort", values: ["low"] }] })]),
+        catalog("antigravity", [model("antigravity", "gemini-x", { formats: ["gemini"], toolCall: true, reasoningOptions: [{ type: "effort", values: ["low"] }] })]),
         catalog("openai", [model("openai", "gpt-x", { formats: ["openai-responses"], reasoningOptions: [{ type: "effort", values: ["low"] }] })]),
         catalog("cheaper-inference", [], { source: "unavailable", error: { code: "provider_auth_required", message: "x" } }),
       ],
@@ -82,6 +82,7 @@ describe("OpencodeConfigCodec.config", () => {
     expect([opencode["named-but-elsewhere"]!["package"], opencode["named-but-elsewhere"]!["settings"]]).toEqual(["@opencode/ai/providers/google", { baseURL: "http://127.0.0.1:4141/gemini/v1beta" }]);
     // Plugin law 1: the Antigravity thinking budget is the catalog's, so no variant.
     expect(providers["ap-antigravity"]!.models["gemini-x"]!["variants"]).toEqual([]);
+    expect(providers["ap-antigravity"]!.models["gemini-x"]!["capabilities"]).toEqual({ tools: true });
     expect(providers["ap-openai"]!.headers).toEqual({ "x-proxy-lossy": "1" });
     expect(providers["ap-openai"]!.models["gpt-x"]!["compatibility"]).toEqual({ supportsEffortUpdates: false });
     expect(opencode["chat"]!["compatibility"]).toBeUndefined();

@@ -128,11 +128,14 @@ describe("upstream", () => {
 });
 
 describe("descriptorDetails (plan 2026-10-16 C3)", () => {
-  test("media from the flags and the MIME types; reasoning from supportsThinking", () => {
+  test("media from the flags and the MIME types; reasoning from supportsThinking; toolCall true for chat models", () => {
     const d: ModelDescriptor = { wireId: "m", displayName: "M", maxTokens: 1, maxOutputTokens: 1, supportsImages: false, supportsThinking: false, supportsVideo: false, recommended: false, enumPlaceholder: "" };
-    expect(descriptorDetails(d)).toEqual({ input: ["text"], reasoning: false });
-    expect(descriptorDetails({ ...d, supportsThinking: true, mimeTypes: ["image/png", "audio/mp3", "video/mp4", "application/pdf", "text/csv"] })).toEqual({ input: ["text", "image", "audio", "video", "pdf"], reasoning: true });
+    expect(descriptorDetails(d)).toEqual({ input: ["text"], reasoning: false, toolCall: true });
+    expect(descriptorDetails({ ...d, supportsThinking: true, mimeTypes: ["image/png", "audio/mp3", "video/mp4", "application/pdf", "text/csv"] })).toEqual({ input: ["text", "image", "audio", "video", "pdf"], reasoning: true, toolCall: true });
     expect(descriptorDetails({ ...d, supportsImages: true, supportsVideo: true }).input).toEqual(["text", "image", "video"]);
+    expect(descriptorDetails({ ...d, wireId: "gemini-3.1-flash-image" }).toolCall).toBe(false);
+    expect(descriptorDetails({ ...d, wireId: "tab_jump_flash_lite" }).toolCall).toBe(false);
+    expect(descriptorDetails({ ...d, wireId: "chat_20706" }).toolCall).toBe(false);
     expect(toModelDescriptors({ models: { a: { supportedMimeTypes: { "image/png": true, "audio/wav": false } }, b: { supportedMimeTypes: { "x/y": false } } } }).map((m) => m.mimeTypes)).toEqual([["image/png"], undefined]);
   });
 });

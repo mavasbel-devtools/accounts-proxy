@@ -109,7 +109,7 @@ export class WinstonLogStream extends LogStreamPort {
   }
 }
 
-export type RetentionFs = Pick<typeof nodeFs, "mkdir" | "readdir" | "unlink">;
+export type RetentionFs = Pick<typeof nodeFs, "mkdir" | "readdir" | "unlink" | "stat">;
 
 export class LockedLogRetention extends LogRetentionPort {
   private running: Promise<void> | undefined;
@@ -120,6 +120,8 @@ export class LockedLogRetention extends LogRetentionPort {
     private readonly clock: ClockPort,
     /** Days of files kept, today included (proxy.yaml `logs.retentionDays`). */
     private readonly retentionDays: number,
+    /** Cap on total megabytes of log files kept (proxy.yaml `logs.maxTotalMegabytes`). */
+    private readonly maxTotalMegabytes: number,
     private readonly fs: RetentionFs,
   ) {
     super();
@@ -139,9 +141,35 @@ export class LockedLogRetention extends LogRetentionPort {
   private async removeOld(): Promise<void> {
     await this.fs.mkdir(this.directory, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
     const oldestKept = dayOf(this.clock.now() - (this.retentionDays - 1) * DAY_MS);
+    const entries: { name: string; day: string; size: number; mtimeMs: number }[] = [];
     for (const name of await this.fs.readdir(this.directory)) {
       const day = dayIn(name);
-      if (day !== undefined && day < oldestKept) await this.fs.unlink(join(this.directory, name)).catch(ignore);
+      if (day !== undefined) {
+        if (day < oldestKept) {
+          await this.fs.unlink(join(this.directory, name)).catch(ignore);
+        } else {
+          try {
+            const stats = await this.fs.stat(join(this.directory, name));
+            entries.push({ name, day, size: stats.size, mtimeMs: stats.mtimeMs });
+          } catch {
+            // file vanished or unreadable
+          }
+        }
+      }
+    }
+    const maxBytes = this.maxTotalMegabytes * BYTES_PER_MEGABYTE;
+    let totalBytes = entries.reduce((acc, e) => acc + e.size, 0);
+    if (totalBytes > maxBytes) {
+      entries.sort((a, b) => a.day.localeCompare(b.day) || a.mtimeMs - b.mtimeMs || a.name.localeCompare(b.name));
+      for (const entry of entries) {
+        if (totalBytes <= maxBytes) break;
+        try {
+          await this.fs.unlink(join(this.directory, entry.name));
+          totalBytes -= entry.size;
+        } catch {
+          // ignore unlink error
+        }
+      }
     }
   }
 }

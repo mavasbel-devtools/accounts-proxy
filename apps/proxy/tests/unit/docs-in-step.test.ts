@@ -201,6 +201,7 @@ describe("the documentation is in step with the code", () => {
     expect(api).toContain(`| \`logs.usage\` | \`true\` or \`false\`; default \`${DEFAULT_LOGS.usage}\``);
     expect(api).toContain(`| \`logs.retentionDays\` | positive integer; default ${DEFAULT_LOGS.retentionDays}`);
     expect(api).toContain(`| \`logs.maxFileMegabytes\` | positive integer; default ${DEFAULT_LOGS.maxFileMegabytes}`);
+    expect(api).toContain(`| \`logs.maxTotalMegabytes\` | positive integer; default ${DEFAULT_LOGS.maxTotalMegabytes}`);
     expect(api).not.toContain("exchangeLog.");
   });
 

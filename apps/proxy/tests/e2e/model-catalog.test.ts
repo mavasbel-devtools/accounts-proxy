@@ -4,7 +4,7 @@
 // `/.well-known/opencode`, the commands `models --json` and `opencode-config`, and the reference catalog's fallbacks.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
-import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
 import { validate } from "@accounts-proxy/test-support/json-schema.ts";
@@ -364,6 +364,35 @@ describe("model-list age and refresh (plan 2026-10-26 R1–R2)", () => {
     const records = usageOf(home);
     expect(records.some((r) => r["kind"] === "upstream-request" && String(r["url"]).endsWith(OPENROUTER))).toBe(true);
     expect(records.every((r) => r["schema"] === "accounts-proxy-exchange/1")).toBe(true);
+  });
+
+  test("logs.maxTotalMegabytes (plan 2026-11-01-17-27): past the cap the oldest kept files go first (day, then age, then name) until the rest fits; a file that cannot be removed is passed over", async () => {
+    home = await makeHome(`logs: {maxTotalMegabytes: 1}\n${ALL}`);
+    const logs = logsDir(home);
+    mkdirSync(logs, { recursive: true });
+    const dayAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+    const [today, yesterday, twoDaysAgo] = [dayAgo(0), dayAgo(1), dayAgo(2)];
+    const big = "x".repeat(600 * 1024);
+    // A directory with a log file's name: it cannot be unlinked, so the sweep passes over it.
+    mkdirSync(join(logs, `${twoDaysAgo}-9-usage.jsonl`));
+    writeFileSync(join(logs, `${yesterday}-1-usage.jsonl`), big);
+    writeFileSync(join(logs, `${today}-2-usage.jsonl`), big);
+    writeFileSync(join(logs, `${today}-3-usage.jsonl`), big);
+    writeFileSync(join(logs, `${today}-4-proxy.log`), "a\n");
+    writeFileSync(join(logs, `${today}-5-proxy.log`), "b\n");
+    const seconds = Math.floor(Date.now() / 1000);
+    utimesSync(join(logs, `${today}-2-usage.jsonl`), seconds - 30, seconds - 30);
+    utimesSync(join(logs, `${today}-3-usage.jsonl`), seconds - 20, seconds - 20);
+    utimesSync(join(logs, `${today}-4-proxy.log`), seconds - 10, seconds - 10);
+    utimesSync(join(logs, `${today}-5-proxy.log`), seconds - 10, seconds - 10);
+    expect((await run(["models", "--refresh"])).code).toBe(0);
+    const kept = readdirSync(logs);
+    expect(kept).toContain(`${twoDaysAgo}-9-usage.jsonl`);
+    expect(kept).not.toContain(`${yesterday}-1-usage.jsonl`);
+    expect(kept).not.toContain(`${today}-2-usage.jsonl`);
+    // The newest planted files (equal day and age, ordered by name) and the command's own files outlast the older ones.
+    expect(kept).toEqual(expect.arrayContaining([`${today}-4-proxy.log`, `${today}-5-proxy.log`]));
+    expect(kept.some((name) => name.startsWith(`${today}-`) && !/^\d{4}-\d{2}-\d{2}-[2-5]-/.test(name))).toBe(true);
   });
 });
 

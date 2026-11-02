@@ -425,7 +425,7 @@ export async function buildGraph(options: GraphOptions): Promise<ProviderGraph> 
   const mirror = new TerminalMirror(options.out);
   const lock = new FileLock(dirname(options.accounts.path), clock, timer, options.lock.options, options.lock.fs);
   const logsDirectory = logsDirectoryOf(options.accounts.path);
-  const retention = new LockedLogRetention(logsDirectory, lock, clock, config.logs.retentionDays, nodeFs);
+  const retention = new LockedLogRetention(logsDirectory, lock, clock, config.logs.retentionDays, config.logs.maxTotalMegabytes, nodeFs);
   // The last sweep a new file started; the process waits for it before it exits (L3, L6).
   let swept: Promise<void> = Promise.resolve();
   const streamOf = (kind: LogKind) =>

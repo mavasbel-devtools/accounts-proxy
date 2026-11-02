@@ -18,7 +18,7 @@ export const SERVE_HELP: CommandHelp = {
   summary: "run the daemon in the foreground (Ctrl-C stops it)",
   description: [
     `Listens on 127.0.0.1 at the port of proxy.yaml (default 4141) and serves every enabled provider. Every route except /health and /.well-known/opencode needs the proxy token (\`token\`). Ctrl-C (SIGINT) or SIGTERM stops it; in-flight responses get ${SHUTDOWN_GRACE_MS} ms (${SHUTDOWN_GRACE_MS / 1000} s) to finish. A port in use is fatal.`,
-    "Once it listens it prints, on stdout, every line it writes to <data>/logs/proxy.log and every exchange-log record (one JSON line each, credentials replaced as in the file; none while proxy.yaml has `exchangeLog.enabled: false`). The files are written as well.",
+    "Once it listens it prints, on stdout, every line it writes to <data>/logs/proxy.log (the usage exchange records go only to <data>/logs/*-usage.*.jsonl). The files are written as well.",
   ],
   exits: [{ name: "0", text: "stopped by SIGINT or SIGTERM" }, { name: "1", text: "the configuration is invalid or the port could not be bound: `error: <message>` on stderr" }, USAGE_EXIT],
   environment: [HOME_VARIABLE],

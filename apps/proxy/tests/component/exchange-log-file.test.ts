@@ -1,7 +1,7 @@
 // The usage log's sink, scope and request-body decoder on the real runtime (plan 2026-10-26 X4–X6, plan 2026-10-27-23-29 L2).
 import { describe, expect, test } from "bun:test";
 import { recordBody } from "@accounts-proxy/core/domain/exchange-log.ts";
-import { LogStreamPort } from "@accounts-proxy/core/ports/outbound/system.ts";
+import { ConsoleMirrorPort, LogStreamPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { AsyncExchangeScope, StreamExchangeSink } from "@accounts-proxy/proxy/adapters/outbound/exchange-log-file.ts";
 import { NodeHash } from "@accounts-proxy/proxy/adapters/outbound/system.ts";
 import { ZstdContentDecoder, ZstdContentEncoder } from "@accounts-proxy/proxy/adapters/outbound/zstd-content-encoder.ts";
@@ -59,6 +59,32 @@ describe("StreamExchangeSink", () => {
       }
     })();
     expect(() => new StreamExchangeSink(throwing, new FixedClock(T), new NodeHash(), 1).write({ kind: "browser-open", id: "b-1" })).not.toThrow();
+  });
+
+  test("fans out identical already-redacted line to mirror when provided, and mirror throwing does not disrupt stream", () => {
+    const stream = new Lines();
+    const mirrorLines: string[] = [];
+    const mirror = new (class extends ConsoleMirrorPort {
+      start(): void {}
+      line(text: string): void {
+        mirrorLines.push(text);
+      }
+    })();
+    const sink = new StreamExchangeSink(stream, new FixedClock(T), new NodeHash(), 4242, mirror);
+    sink.write({ kind: "browser-open", id: "b-1", url: "https://auth/", outcome: "complete" });
+    expect(stream.lines).toHaveLength(1);
+    expect(mirrorLines).toHaveLength(1);
+    expect(mirrorLines[0]).toBe(stream.lines[0]);
+
+    const throwingMirror = new (class extends ConsoleMirrorPort {
+      start(): void {}
+      line(): void {
+        throw new Error("EPIPE");
+      }
+    })();
+    const sinkWithThrowingMirror = new StreamExchangeSink(stream, new FixedClock(T), new NodeHash(), 4242, throwingMirror);
+    expect(() => sinkWithThrowingMirror.write({ kind: "browser-open", id: "b-2" })).not.toThrow();
+    expect(stream.lines).toHaveLength(2);
   });
 });
 

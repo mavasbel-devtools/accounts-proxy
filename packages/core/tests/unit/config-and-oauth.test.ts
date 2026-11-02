@@ -28,11 +28,11 @@ describe("parseProxyConfig", () => {
     expect(() => parseProxyConfig({ providers: { openai: { enabled: true } } })).toThrow("enabled without acknowledgeTermsRisk: true");
   });
 
-  test("logs: usage on, 15 days, 100 MB by default; each key read (plan 2026-10-27-23-29 L4)", () => {
-    expect(DEFAULT_CONFIG.logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100 });
-    expect(parseProxyConfig({}).logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100 });
-    expect(parseProxyConfig({ logs: { usage: false } }).logs).toEqual({ usage: false, retentionDays: 15, maxFileMegabytes: 100 });
-    expect(parseProxyConfig({ logs: { retentionDays: 1, maxFileMegabytes: 7 } }).logs).toEqual({ usage: true, retentionDays: 1, maxFileMegabytes: 7 });
+  test("logs: usage on, 15 days, 100 MB, 500 MB total by default; each key read (plan 2026-10-27-23-29 L4, plan 2026-11-01-17-27)", () => {
+    expect(DEFAULT_CONFIG.logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100, maxTotalMegabytes: 500 });
+    expect(parseProxyConfig({}).logs).toEqual({ usage: true, retentionDays: 15, maxFileMegabytes: 100, maxTotalMegabytes: 500 });
+    expect(parseProxyConfig({ logs: { usage: false } }).logs).toEqual({ usage: false, retentionDays: 15, maxFileMegabytes: 100, maxTotalMegabytes: 500 });
+    expect(parseProxyConfig({ logs: { retentionDays: 1, maxFileMegabytes: 7, maxTotalMegabytes: 200 } }).logs).toEqual({ usage: true, retentionDays: 1, maxFileMegabytes: 7, maxTotalMegabytes: 200 });
   });
 
   test("modelListMaxAgeMinutes: default 1440 (24 h), any positive integer (plan 2026-10-26 R1)", () => {
@@ -65,6 +65,9 @@ describe("parseProxyConfig", () => {
     [{ logs: { retentionDays: 0 } }, "logs.retentionDays must be a positive integer (days)"],
     [{ logs: { retentionDays: "7" } }, "logs.retentionDays must be a positive integer (days)"],
     [{ logs: { maxFileMegabytes: 1.5 } }, "logs.maxFileMegabytes must be a positive integer (megabytes)"],
+    [{ logs: { maxTotalMegabytes: 0 } }, "logs.maxTotalMegabytes must be a positive integer (megabytes)"],
+    [{ logs: { maxTotalMegabytes: -1 } }, "logs.maxTotalMegabytes must be a positive integer (megabytes)"],
+    [{ logs: { maxTotalMegabytes: "500" } }, "logs.maxTotalMegabytes must be a positive integer (megabytes)"],
     [{ logs: { usage: "yes" } }, "logs.usage must be true or false"],
     [{ modelListMaxAgeMinutes: 0 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],
     [{ modelListMaxAgeMinutes: 1.5 }, "modelListMaxAgeMinutes must be a positive integer (minutes)"],

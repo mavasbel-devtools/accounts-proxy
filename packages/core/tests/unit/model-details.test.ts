@@ -73,6 +73,29 @@ describe("describeCatalog (M1–M3, M5)", () => {
     const down: ModelCatalog = { provider: "antigravity", formats: [], source: "unavailable", models: [], error: { code: "provider_auth_required", message: "no account" } };
     expect(describeCatalog(down, undefined, undefined)).toEqual({ provider: "antigravity", source: "unavailable", error: { code: "provider_auth_required", message: "no account" }, models: [] });
   });
+
+  test("normalizes tier suffixes (-medium, -low, -high, -tiered, -extra-low) when resolving reference catalog", () => {
+    const googleRef = new Map([
+      ["gemini-3.8-flash", { name: "Gemini 3.8 Flash", toolCall: true, contextWindow: 1_000_000 }],
+    ]);
+    const refCatalog = new Map([["google", googleRef]]);
+    const catalog: ModelCatalog = {
+      provider: "antigravity",
+      formats: ["gemini"],
+      source: "live",
+      models: [
+        { address: { provider: "antigravity", model: "gemini-3.8-flash-medium" }, displayName: "Gemini 3.8 Flash (Medium)" },
+        { address: { provider: "antigravity", model: "gemini-3.8-flash-extra-low" }, displayName: "Gemini 3.8 Flash (Low)" },
+        { address: { provider: "antigravity", model: "unknown-medium" }, displayName: "Unknown" },
+      ],
+    };
+    const described = describeCatalog(catalog, refCatalog, "live");
+    expect(described.models[0]?.toolCall).toBe(true);
+    expect(described.models[0]?.contextWindow).toBe(1_000_000);
+    expect(described.models[0]?.sources.toolCall).toBe("models.opencode.ai:google/gemini-3.8-flash");
+    expect(described.models[1]?.sources.contextWindow).toBe("models.opencode.ai:google/gemini-3.8-flash");
+    expect(described.models[2]?.sources.toolCall).toBeUndefined();
+  });
 });
 
 describe("parseReference (models.dev format)", () => {

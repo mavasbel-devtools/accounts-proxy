@@ -1,4 +1,4 @@
-// The daemon's console output (plan 2026-10-27 C1, amended by plan 2026-10-27-23-29 L5): `serve` prints every log line
+// The daemon's console output (plan 2026-10-27 C1, plan 2026-10-27-23-29 L5, plan 2026-11-02 Clean Console): `serve` prints every log line
 // (as the proxy log has it), each on its own line of stdout; the usage records go only to the usage files. Commands
 // other than `serve` never start the mirror, so their output stays what scripts read.
 import { ConsoleMirrorPort, LoggerPort, type ClockPort } from "@accounts-proxy/core/ports/outbound/system.ts";

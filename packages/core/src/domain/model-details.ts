@@ -116,6 +116,18 @@ const DETAIL_KEYS: readonly (keyof ModelDetails)[] = [
   "cost",
 ];
 
+export function resolveReferenceEntry(entries: ReadonlyMap<string, ReferenceModel> | undefined, modelId: string): { readonly model: ReferenceModel; readonly referenceModelId: string } | undefined {
+  if (entries === undefined) return undefined;
+  const direct = entries.get(modelId);
+  if (direct !== undefined) return { model: direct, referenceModelId: modelId };
+  const normalized = modelId.replace(/-(extra-low|low|medium|high|tiered)$/, "");
+  if (normalized !== modelId) {
+    const fallback = entries.get(normalized);
+    if (fallback !== undefined) return { model: fallback, referenceModelId: normalized };
+  }
+  return undefined;
+}
+
 /** Rules M1–M3, M5: one provider catalog described field by field. */
 export function describeCatalog(catalog: ModelCatalog, reference: ReferenceCatalog | undefined, referenceSource: ModelsSource | undefined): DetailedCatalog {
   const referenceProvider = REFERENCE_PROVIDER[catalog.provider];
@@ -125,13 +137,16 @@ export function describeCatalog(catalog: ModelCatalog, reference: ReferenceCatal
     source: catalog.source,
     ...(catalog.error !== undefined ? { error: catalog.error } : {}),
     ...(referenceProvider !== undefined && referenceSource !== undefined ? { referenceSource } : {}),
-    models: catalog.models.map((m) => describeModel(catalog, m, referenceProvider, entries?.get(m.address.model))),
+    models: catalog.models.map((m) => {
+      const match = resolveReferenceEntry(entries, m.address.model);
+      return describeModel(catalog, m, referenceProvider, match?.model, match?.referenceModelId);
+    }),
   };
 }
 
-function describeModel(catalog: ModelCatalog, model: ModelInfo, referenceProvider: string | undefined, reference: ReferenceModel | undefined): DetailedModel {
+function describeModel(catalog: ModelCatalog, model: ModelInfo, referenceProvider: string | undefined, reference: ReferenceModel | undefined, referenceModelId?: string): DetailedModel {
   const own = `provider:${catalog.provider}`;
-  const ref = `models.opencode.ai:${referenceProvider}/${model.address.model}`;
+  const ref = `models.opencode.ai:${referenceProvider}/${referenceModelId ?? model.address.model}`;
   const sources: Partial<Record<DetailField, string>> = {};
   const out: Record<string, unknown> = {};
   const pick = (field: DetailField, mine: unknown, theirs: unknown): void => {

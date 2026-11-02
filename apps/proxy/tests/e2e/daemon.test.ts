@@ -252,8 +252,8 @@ describe("daemon: shutdown", () => {
     const stopped = await daemon.stop();
     expect(stopped.code).toBe(0);
     expect(stopped.stdout).toContain("SIGTERM: stopping (in-flight responses get 10 s)\nstopped\n");
-    // plan 2026-10-27-23-29 L5, L6: the console has the log lines only; the usage records are in the daemon's own usage
-    // file, complete once it has exited, credentials replaced.
+    // plan 2026-10-27-23-29 L5, L6, plan 2026-11-02 Clean Console: the console has the log lines only;
+    // the usage records are in the daemon's own usage file, complete once it has exited, credentials replaced.
     expect(stopped.stdout.split("\n").filter((line) => line.startsWith("{"))).toEqual([]);
     const records = usageOf(home);
     const daemonPid = records.find((r) => r["kind"] === "client-request")!["pid"];
