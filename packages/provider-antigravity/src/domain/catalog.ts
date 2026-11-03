@@ -1,7 +1,7 @@
 // Port of opencode-antigravity-auth @ 5c6f7c2 domain/services/ModelCatalogService.ts (blob 722ede31) and the pure
-// parts of application/use-cases/ResolveModelsUseCase.ts (descriptorToEntry limit rule, wireDefaults).
+// parts of application/use-cases/ResolveModelsUseCase.ts (descriptorToEntry limit rule, wireDefaults). The limits follow
+// @ ba0ae60, which retired the 80k advertised-window clamp (plan 2026-11-02-21-29).
 import type { Modality, ModelDetails } from "@accounts-proxy/core/domain/model-details.ts";
-import { IDE_WORKING_SET_CONTEXT_CAP } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
 
 export type ModelDescriptor = {
   readonly wireId: string;
@@ -55,11 +55,6 @@ export function excludedModelIds(raw: Readonly<Record<string, unknown>>): Exclud
     }
   }
   return out;
-}
-
-/** The context window ADVERTISED to clients: catalog window clamped to the IDE working set (policy, not a model fact). */
-export function advertisedContextWindow(m: Pick<ModelDescriptor, "maxTokens">): number {
-  return Math.min(m.maxTokens, IDE_WORKING_SET_CONTEXT_CAP);
 }
 
 /** Catalog-exact thinking law (user decision 2026-09-26): the advertised `thinkingBudget` verbatim, else none. */
@@ -124,7 +119,10 @@ export function toModelDescriptors(raw: Readonly<Record<string, unknown>>): Mode
   });
 }
 
-/** Source descriptorToEntry: a limit exists only when BOTH maxTokens and maxOutputTokens are positive (limit law 4). */
+/**
+ * Source descriptorToEntry @ ba0ae60 (ResolveModelsUseCase.ts:65-70): the catalog's windows verbatim, and a limit exists
+ * only when BOTH maxTokens and maxOutputTokens are positive (limit law 4).
+ */
 export function advertisedLimits(m: ModelDescriptor): { readonly context: number; readonly output: number } | undefined {
-  return m.maxTokens > 0 && m.maxOutputTokens > 0 ? { context: advertisedContextWindow(m), output: m.maxOutputTokens } : undefined;
+  return m.maxTokens > 0 && m.maxOutputTokens > 0 ? { context: m.maxTokens, output: m.maxOutputTokens } : undefined;
 }

@@ -2,7 +2,12 @@
 
 **Source:** `opencode-antigravity-auth` @ `5c6f7c2697fdc187bfc1d5f0208b8f5563620875`. Its `src/` working tree was clean at extraction (2026-10-07).
 
-**Parity reference:** `tests/reference/plugin-5c6f7c2/` was exported with `scripts/evidence/vendor-reference.ts` and is **byte-identical** to the source: each file's `git hash-object --no-filters` equals its source blob (listed in `MANIFEST.json`). The plugin's own `@antigravity/` alias is resolved by the reference's `tsconfig.json` (`"@antigravity/*": ["./*"]`).
+**Parity reference:** `tests/reference/plugin-ba0ae60/` (`ba0ae60db52b5318e52f04a662a2cccaf65bd114`, 2026-10-16) was exported with `scripts/evidence/vendor-reference.ts` and is **byte-identical** to the source: each file's `git hash-object --no-filters` equals its source blob (listed in `MANIFEST.json`). The plugin's own `@antigravity/` alias is resolved by the reference's `tsconfig.json` (`"@antigravity/*": ["./*"]`).
+
+**Limits follow `ba0ae60`** (plan `docs/plans/2026-11-02-21-29-antigravity-real-context-window-plan.md`): the plugin
+retired its 80k advertised-window clamp (`IDE_WORKING_SET_CONTEXT_CAP`) in that commit, and the proxy did the same. A
+model's `limit.context` and `limit.output` are the catalog's `maxTokens` and `maxOutputTokens`. The parity reference
+moved from `5c6f7c2` to `ba0ae60` with it; the 10 vendored files are the same set.
 
 **Fixtures:** `tests/fixtures/plugin-5c6f7c2/` was exported byte-exact with `scripts/evidence/export-files.ts` from `test/fixtures/capture/`. Blobs:
 - `745cb4e6`: quota summary
@@ -13,7 +18,7 @@
 
 | Proxy file | Source |
 |---|---|
-| `src/domain/constants.ts` | `infrastructure/config/PluginConfig.ts`, `AntigravityApiClientAdapter.ts` (IDE metadata), `LoopbackCallbackServerAdapter.ts` (success redirect), `ModelCatalogService.ts` (80k cap), `StreamChatUseCase.ts` (geo backoff), `SignatureStoreAdapter.ts` (2000 cap) |
+| `src/domain/constants.ts` | `infrastructure/config/PluginConfig.ts`, `AntigravityApiClientAdapter.ts` (IDE metadata), `LoopbackCallbackServerAdapter.ts` (success redirect), `StreamChatUseCase.ts` (geo backoff), `SignatureStoreAdapter.ts` (2000 cap) |
 | `src/domain/account.ts` | `domain/entities/Account.ts`, `RefreshSessionUseCase.ensureFresh` (rotation keeps the refresh token), `ProjectResolver.pickActiveProject` |
 | `src/domain/project.ts` | `domain/services/ProjectResolver.ts`, `AntigravityApiClientAdapter.onboardUser` (project extraction) |
 | `src/domain/catalog.ts` | `domain/services/ModelCatalogService.ts`, `ResolveModelsUseCase` (`descriptorToEntry` limit rule, `wireDefaults`) |

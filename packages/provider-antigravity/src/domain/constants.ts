@@ -30,8 +30,6 @@ export const IDE_METADATA = { ideType: ANTIGRAVITY_PROFILE.ideType, ideVersion: 
 export const EXPIRY_BUFFER_MS = 120_000;
 /** Source GoogleOAuthClientAdapter: expires_in default when the token response omits it. */
 export const DEFAULT_EXPIRES_IN_S = 3600;
-/** Source ModelCatalogService.IDE_WORKING_SET_CONTEXT_CAP (advertised-window law, measured 2026-10-04). */
-export const IDE_WORKING_SET_CONTEXT_CAP = 80_000;
 /** Source StreamChatUseCase LOCATION_RETRY_BACKOFF_MS (transient geo-gate law 14). */
 export const LOCATION_RETRY_BACKOFF_MS: readonly number[] = [2000, 8000];
 /** Source SignatureStoreAdapter: ~2000-entry oldest-eviction cap. */

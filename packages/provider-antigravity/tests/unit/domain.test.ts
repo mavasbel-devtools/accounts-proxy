@@ -43,8 +43,8 @@ describe("account", () => {
 
 describe("catalog helpers", () => {
   const d: ModelDescriptor = { wireId: "w", displayName: "W", maxTokens: 1_048_576, maxOutputTokens: 65_536, supportsImages: false, supportsThinking: true, supportsVideo: false, thinkingBudget: 1000, recommended: false, enumPlaceholder: "MODEL_W" };
-  test("limits only when both are positive; context clamped to 80k", () => {
-    expect(advertisedLimits(d)).toEqual({ context: 80_000, output: 65_536 });
+  test("limits only when both are positive; the catalog windows verbatim (plan 2026-11-02-21-29)", () => {
+    expect(advertisedLimits(d)).toEqual({ context: 1_048_576, output: 65_536 });
     expect(advertisedLimits({ ...d, maxOutputTokens: 0 })).toBeUndefined();
     expect(advertisedLimits({ ...d, maxTokens: 0 })).toBeUndefined();
     expect(advertisedLimits({ ...d, maxTokens: 16_384 })).toEqual({ context: 16_384, output: 65_536 });

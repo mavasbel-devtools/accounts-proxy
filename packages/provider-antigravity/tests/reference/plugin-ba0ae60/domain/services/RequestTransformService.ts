@@ -81,7 +81,7 @@ export function toWireTools(tools: readonly ToolSpec[]): Array<{ functionDeclara
 function hasContent(m: ChatMessage): boolean {
   if (m.role === 'tool') return true
   if ((m.toolCalls?.length ?? 0) > 0) return true
-  if ((m.images?.length ?? 0) > 0) return true
+  if ((m.media?.length ?? 0) > 0) return true
   return m.text.trim().length > 0
 }
 
@@ -238,7 +238,7 @@ export class RequestTransformService {
     }
     const role = m.role === 'assistant' ? 'model' : 'user'
     const parts: GenerateContentPart[] = []
-    for (const img of m.images ?? []) parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } })
+    for (const item of m.media ?? []) parts.push({ inlineData: { mimeType: item.mimeType, data: item.base64 } })
     if (m.text.trim().length > 0) parts.push({ text: m.text })
     for (const call of m.toolCalls ?? []) {
       let args: Record<string, unknown> | undefined

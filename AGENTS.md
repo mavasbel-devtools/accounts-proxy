@@ -127,8 +127,10 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
   Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
   opencode v2's `providers` schema, one `ap-<provider>` each, variants from opencode's own rules (none for
-  Antigravity). `claude` and `openai` models carry opencode `compatibility` overrides that switch off what those cells
-  refuse (thinking-prefix controls, per-message effort updates; rule O6, live C6).
+  Antigravity; an Antigravity model's limits are its catalog's `maxTokens` / `maxOutputTokens`, never clamped,
+  [plan 2026-11-02-21-29](docs/plans/2026-11-02-21-29-antigravity-real-context-window-plan.md)). `claude` and
+  `openai` models carry opencode `compatibility` overrides that switch off what those cells refuse (thinking-prefix
+  controls, per-message effort updates; rule O6, live C6).
   [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md). A fetched model list and the reference
   catalog are reused for `proxy.yaml` `modelListMaxAgeMinutes` (default 1440); `POST /proxy/v1/models/refresh` and
   `models --refresh` read them now, the latter through the running daemon when one listens

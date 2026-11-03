@@ -111,7 +111,7 @@ describe("composition root", () => {
     expect(await runCli(["quota", "antigravity"], opts)).toBe(0);
     expect(out.slice(-1)[0]!.startsWith("Antigravity usage:")).toBe(true);
     expect(out).toContain("* me@x\n");
-    expect(out).toContain("antigravity/gemini-3.6-flash-low  Gemini 3.6 Flash (Low)  context 80000 / output 65536\n");
+    expect(out).toContain("antigravity/gemini-3.6-flash-low  Gemini 3.6 Flash (Low)  context 1048576 / output 65536\n");
     expect(transport.requests.some((r) => r.url.endsWith("v1internal:fetchAvailableModels"))).toBe(true);
     expect(logText("proxy")).toContain("INFO antigravity: signed in account me@x");
   });

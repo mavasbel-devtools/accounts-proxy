@@ -1,12 +1,13 @@
 {
-  "commit": "5c6f7c2697fdc187bfc1d5f0208b8f5563620875",
+  "commit": "ba0ae60db52b5318e52f04a662a2cccaf65bd114",
   "alias": "@antigravity/",
+  "prefix": "src/",
   "byteIdentical": true,
   "files": [
     {
       "file": "domain/services/RequestTransformService.ts",
-      "blob": "1db1f243a6e4f5f8125ef633b0656dcc17c52937",
-      "bytes": 14472
+      "blob": "d2836a1a3715f0d873f682cae56cdc38258f3c21",
+      "bytes": 14473
     },
     {
       "file": "domain/services/TrajectoryStateService.ts",
@@ -15,8 +16,8 @@
     },
     {
       "file": "domain/services/ModelCatalogService.ts",
-      "blob": "722ede311dbd1377f248d050bd8770158fd2b90e",
-      "bytes": 6612
+      "blob": "f3f58a9d7fa4fb9586c36dfab29fc7ff122004d3",
+      "bytes": 6461
     },
     {
       "file": "domain/services/ProjectResolver.ts",
@@ -29,29 +30,29 @@
       "bytes": 3026
     },
     {
-      "file": "domain/ports/inbound/index.ts",
-      "blob": "64ad005a2d6559c93b7dfae639a214811c0935d9",
-      "bytes": 3435
-    },
-    {
-      "file": "domain/ports/outbound/index.ts",
-      "blob": "a9a069783574ed43b36b229220320ff9197b3747",
-      "bytes": 4459
-    },
-    {
       "file": "domain/entities/Account.ts",
       "blob": "05bca0c3ff0b3895c24dbbe3a75db382ab0b4b15",
       "bytes": 573
     },
     {
       "file": "domain/entities/ModelDescriptor.ts",
-      "blob": "4b0a81580a329ddbf1bad6244c3e792731e903ea",
-      "bytes": 723
+      "blob": "6fb25d23a656cf843f952fb223dd44051d458761",
+      "bytes": 1045
     },
     {
       "file": "domain/entities/QuotaSnapshot.ts",
       "blob": "0af3fc60b136d732fd3661b5f1ce40d7ce5acf1f",
       "bytes": 514
+    },
+    {
+      "file": "domain/ports/inbound/index.ts",
+      "blob": "d6163219a06b13fd1749687a2e57acf5b75b057d",
+      "bytes": 3521
+    },
+    {
+      "file": "domain/ports/outbound/index.ts",
+      "blob": "a9a069783574ed43b36b229220320ff9197b3747",
+      "bytes": 4459
     }
   ]
 }

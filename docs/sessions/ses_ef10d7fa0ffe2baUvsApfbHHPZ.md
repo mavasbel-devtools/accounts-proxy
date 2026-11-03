@@ -208,3 +208,23 @@ Canonical session record. An earlier copy lived at `AIML/tools/docs/sessions/ses
   - Conducted forensic root-cause analysis on OpenAI stopping vs Gemini (research [docs/research/2026-11-02-05-05-openai-router-investigation.md](../research/2026-11-02-05-05-openai-router-investigation.md)): verified OpenAI does not have the catalog tools defect (tools: true), identified high reasoning latency (up to 30.4s TTFT) and client aborts as causes of stops.
   - Verified 100% unit+component+arch coverage (995/995 pass, 49,984 expectations, 100% stmts/branch/funcs/lines), clean TypeScript typecheck, bundle build, and docs lint.
 
+
+## 2026-11-02 22:10 CST — Antigravity real context window (plan 2026-11-02-21-29)
+
+Plan: `/home/mavasbel/Dev/repos/devtools/accounts-proxy/docs/plans/2026-11-02-21-29-antigravity-real-context-window-plan.md`.
+Issue: `/home/mavasbel/Dev/repos/devtools/accounts-proxy/docs/issues/2026-11-02-21-29-antigravity-80k-window-refusals.md`.
+This corrects the earlier `toolCall` attribution: the ~60 s stops were Magic Context refusing the turn, because of the
+80k window the proxy advertised.
+
+- [x] S1 `IDE_WORKING_SET_CONTEXT_CAP` and `advertisedContextWindow` removed; `advertisedLimits` returns the catalog's
+  `maxTokens` / `maxOutputTokens`. `git grep` finds no clamp in `packages/*/src` or `apps/*/src`.
+- [x] S2 parity reference re-vendored at `ba0ae60db52b5318e52f04a662a2cccaf65bd114` into
+  `packages/provider-antigravity/tests/reference/plugin-ba0ae60/` (10 files, 0 blob mismatches); `plugin-5c6f7c2/`
+  removed; `parity.test.ts` compares the plugin's `supportedMimeTypes` with the proxy's `mimeTypes` on both catalogs.
+- [x] S3 unit, component and e2e expectations moved from 80000 to the catalog values; a new e2e assertion on
+  `opencode-config` checks `gemini-3.8-flash-medium` 1048576/65536, `claude-opus-5-5-high` 1000000/128000 and
+  `gpt-oss-120b-medium` 131072/32768.
+- [x] S4 model reference regenerated (29 Antigravity rows); AGENTS.md, rules M-table and PROVENANCE.md updated.
+- [x] S5 `bun run verify` GATE: PASS: 995 unit+component and 269 e2e tests pass, 100% on all tiers, docs lint clean.
+  The first run had one component timeout (`container.test.ts` daemon wiring, 5000 ms) while `llama-server` used
+  343% CPU (load average 12.9); in isolation it passed 3/3 in 2.4–3.0 s, and the second full run passed with no change.

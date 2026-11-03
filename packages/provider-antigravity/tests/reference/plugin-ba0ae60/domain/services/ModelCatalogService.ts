@@ -1,4 +1,4 @@
-import type { ModelDescriptor } from '@antigravity/domain/entities/ModelDescriptor.ts'
+import type { InputModality, ModelDescriptor } from '@antigravity/domain/entities/ModelDescriptor.ts'
 
 type RawModel = {
   displayName?: string
@@ -7,6 +7,7 @@ type RawModel = {
   supportsImages?: boolean
   supportsThinking?: boolean
   supportsVideo?: boolean
+  supportedMimeTypes?: unknown
   thinkingBudget?: number
   minThinkingBudget?: number
   recommended?: boolean
@@ -47,38 +48,38 @@ export function excludedModelIds(raw: Record<string, unknown>): ExcludedModel[] 
   return out
 }
 
-/**
- * The working-set ceiling the real Antigravity IDE enforces on its own
- * conversations: its catalog ships `CASCADE_USE_EXPERIMENT_CHECKPOINTER` with
- * `max_token_limit: 80000` (trigger `token_threshold: 50000`, summariser
- * `checkpoint_model: MODEL_PLACEHOLDER_M50` = gemini-3.1-flash-lite), so a cheap
- * model compresses the history and the expensive model never sees more than
- * ~80k. Measured consequence across 151 captured IDE responses: every request
- * carries 21,564-29,215 prompt tokens, whatever the model.
- */
-export const IDE_WORKING_SET_CONTEXT_CAP = 80_000
+const MODALITY_ORDER: readonly InputModality[] = ['text', 'image', 'audio', 'video', 'pdf']
 
 /**
- * The context window we ADVERTISE to the host — the catalog window clamped to
- * the IDE's working-set ceiling. This is a policy about what we advertise, not
- * a claim about the model: `ModelDescriptor.maxTokens` stays truthful.
- *
- * Why clamp (measured 2026-10-04): quota is billed per PROMPT token
- * (2.70e-8 - 3.75e-8 of a 5h bucket per token, so ~27-35M tokens per 5h
- * window), and opencode compacts relative to the window it is told. Advertising
- * the catalog value verbatim (1,048,576 gemini / 1,000,000 claude) meant
- * conversations grew until they rode that ceiling: 8,305 real requests averaged
- * 218,633 prompt tokens, p90 452k, max 924,209 (= 88% of 1,048,576) - 8-9x the
- * IDE's per-request cost, which is why a shared 5h allowance vanished in ~60-150
- * requests.
- *
- * The clamp is also below EVERY model's real window (the smallest is gpt-oss at
- * 131,072), so a conversation grown on a 1M-window model can still be switched
- * into gpt-oss instead of hard-400ing with
- * "The input (N tokens) is longer than the model's context length (131072 tokens)".
+ * Every input kind the catalog says the model accepts: text always; image when
+ * `supportsImages`; audio when any `audio/*` MIME type is listed; video when
+ * `supportsVideo`; pdf when `application/pdf` is listed. Pure catalog truth —
+ * what a given host can actually deliver is that host adapter's intersection
+ * (see `deliverableInputModalities`).
  */
-export function advertisedContextWindow(m: Pick<ModelDescriptor, 'maxTokens'>): number {
-  return Math.min(m.maxTokens, IDE_WORKING_SET_CONTEXT_CAP)
+export function catalogInputModalities(m: Pick<ModelDescriptor, 'supportsImages' | 'supportsVideo' | 'supportedMimeTypes'>): InputModality[] {
+  const kinds = new Set<InputModality>(['text'])
+  if (m.supportsImages) kinds.add('image')
+  if (m.supportedMimeTypes.some((t) => t.startsWith('audio/'))) kinds.add('audio')
+  if (m.supportsVideo) kinds.add('video')
+  if (m.supportedMimeTypes.includes('application/pdf')) kinds.add('pdf')
+  return MODALITY_ORDER.filter((k) => kinds.has(k))
+}
+
+/** The catalog's input kinds restricted to what a host's request route can carry, in a stable order. */
+export function deliverableInputModalities(
+  m: Pick<ModelDescriptor, 'supportsImages' | 'supportsVideo' | 'supportedMimeTypes'>,
+  hostDelivers: ReadonlySet<InputModality>,
+): InputModality[] {
+  return catalogInputModalities(m).filter((k) => hostDelivers.has(k))
+}
+
+function trueKeys(raw: unknown): string[] {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return []
+  return Object.entries(raw as Record<string, unknown>)
+    .filter(([, v]) => v === true)
+    .map(([k]) => k)
+    .sort()
 }
 
 /**
@@ -130,6 +131,7 @@ export function toModelDescriptors(raw: Record<string, unknown>): ModelDescripto
       supportsImages: m.supportsImages === true,
       supportsThinking: m.supportsThinking === true,
       supportsVideo: m.supportsVideo === true,
+      supportedMimeTypes: trueKeys(m.supportedMimeTypes),
       ...(m.thinkingBudget !== undefined ? { thinkingBudget: m.thinkingBudget } : {}),
       ...(m.minThinkingBudget !== undefined ? { minThinkingBudget: m.minThinkingBudget } : {}),
       recommended: m.recommended === true,

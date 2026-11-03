@@ -1,15 +1,16 @@
 // P3 parity gate for provider-antigravity: the ported pure domain must produce exactly what
-// opencode-antigravity-auth @ 5c6f7c2 produces (tests/reference/plugin-5c6f7c2, MANIFEST.json lists source blobs).
+// opencode-antigravity-auth @ ba0ae60 produces (tests/reference/plugin-ba0ae60, MANIFEST.json lists source blobs).
+// ba0ae60 replaced 5c6f7c2 when the plugin's 80k advertised-window clamp was retired (plan 2026-11-02-21-29).
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advertisedContextWindow, excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { excludedModelIds, thinkingDefaultFor, toModelDescriptors } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
 import { sanitizeSchema } from "@accounts-proxy/provider-antigravity/domain/gemini-schema.ts";
 import { extractProjectIds } from "@accounts-proxy/provider-antigravity/domain/project.ts";
 import { formatUsage, parseGroupModels, toQuotaSnapshot } from "@accounts-proxy/provider-antigravity/domain/quota.ts";
 import { mintSessionId, TrajectoryState } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 
-const ref = join(import.meta.dir, "..", "reference", "plugin-5c6f7c2", "domain");
+const ref = join(import.meta.dir, "..", "reference", "plugin-ba0ae60", "domain");
 const load = async <T>(path: string): Promise<T> => (await import(join(ref, path))) as T;
 // Reference modules are loaded untyped on purpose: their source is excluded from this repository's typecheck.
 type Any = any;
@@ -33,19 +34,18 @@ const counter = () => {
 };
 
 describe("catalog parity", () => {
-  test("descriptors, exclusions, thinking defaults, advertised windows over the captured catalog", () => {
-    const ours = toModelDescriptors(models);
-    expect(ours).toEqual(R.catalog.toModelDescriptors(models));
-    // The proxy adds `mimeTypes` (plan 2026-10-16 C3); every plugin field stays identical on the live catalog too.
-    const plugin = R.catalog.toModelDescriptors(live);
-    const routed = toModelDescriptors(live);
-    expect(routed.map(({ mimeTypes: _, ...d }) => d)).toEqual(plugin);
-    expect(routed.find((d) => d.wireId === "gemini-3.6-flash-medium")?.mimeTypes).toContain("application/pdf");
-    expect(excludedModelIds(models)).toEqual(R.catalog.excludedModelIds(models));
-    for (const d of ours) {
-      expect(thinkingDefaultFor(d)).toBe(R.catalog.thinkingDefaultFor(d));
-      expect(advertisedContextWindow(d)).toBe(R.catalog.advertisedContextWindow(d));
+  test("descriptors, exclusions and thinking defaults over the captured catalogs", () => {
+    // The proxy keeps the catalog's true MIME types as `mimeTypes` in catalog order, omitted when none (plan 2026-10-16
+    // C3); the plugin keeps them as `supportedMimeTypes`, sorted, empty when none. Every other field is identical.
+    for (const raw of [models, live]) {
+      const ours = toModelDescriptors(raw);
+      const plugin = R.catalog.toModelDescriptors(raw) as { supportedMimeTypes: string[] }[];
+      expect(ours.map(({ mimeTypes: _, ...d }) => d) as object[]).toEqual(plugin.map(({ supportedMimeTypes: _, ...d }) => d));
+      expect(ours.map((d) => [...(d.mimeTypes ?? [])].sort())).toEqual(plugin.map((d) => d.supportedMimeTypes));
+      for (const d of ours) expect(thinkingDefaultFor(d)).toBe(R.catalog.thinkingDefaultFor(d));
     }
+    expect(toModelDescriptors(live).find((d) => d.wireId === "gemini-3.6-flash-medium")?.mimeTypes).toContain("application/pdf");
+    expect(excludedModelIds(models)).toEqual(R.catalog.excludedModelIds(models));
   });
   test.each([
     [{}],
@@ -54,7 +54,8 @@ describe("catalog parity", () => {
     [{ models: {}, deprecatedModelIds: { d: null, e: { newModelId: 7 } } }],
     [{ models: { t: {}, k: {} }, tabModelIds: ["t", 5] }],
   ])("edge catalog %p", (raw) => {
-    expect(toModelDescriptors(raw)).toEqual(R.catalog.toModelDescriptors(raw));
+    const plugin = R.catalog.toModelDescriptors(raw) as { supportedMimeTypes: string[] }[];
+    expect(toModelDescriptors(raw) as object[]).toEqual(plugin.map(({ supportedMimeTypes: _, ...d }) => d));
     expect(excludedModelIds(raw)).toEqual(R.catalog.excludedModelIds(raw));
   });
 });

@@ -210,6 +210,16 @@ describe("detailed model list and opencode configuration", () => {
     ]).toEqual([["high", "max"], [], [], ["none", "thinking"], [], [], ["none", "high"], [], ["none", "thinking"], ["high", "max"]]);
     expect(config.providers["ap-opencode"]!.models["edge-xai"]).toBeUndefined();
     expect(Object.values(config.providers["ap-antigravity"]!.models).every((m) => m.variants.length === 0)).toBe(true);
+    // The catalog's windows verbatim, never the retired 80k clamp (plan 2026-11-02-21-29; capture e5).
+    const limit = (id: string) => {
+      const stated = (config.providers["ap-antigravity"]!.models[id] as unknown as { limit: { context: number; output: number } }).limit;
+      return { context: stated.context, output: stated.output };
+    };
+    expect([limit("gemini-3.8-flash-medium"), limit("claude-opus-5-5-high"), limit("gpt-oss-120b-medium")]).toEqual([
+      { context: 1_048_576, output: 65_536 },
+      { context: 1_000_000, output: 128_000 },
+      { context: 131_072, output: 32_768 },
+    ]);
 
     // A document without the provider (O5: the provider's list is the reference's): the built-in list answers.
     for (const stored of ["model-reference.json", "opencode/model-catalog.json"]) unlinkSync(join(home.dir, "state", stored));

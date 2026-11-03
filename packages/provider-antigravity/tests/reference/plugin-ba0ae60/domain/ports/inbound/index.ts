@@ -52,8 +52,13 @@ export interface ChatMessage {
   readonly toolCallId?: string
   /** tool-only: invoked tool name (Antigravity functionResponse requires it). */
   readonly toolName?: string
-  /** user-only: inline images for supportsImages models. */
-  readonly images?: readonly { readonly mimeType: string; readonly base64: string }[]
+  /** user-only: inline attachments (images, PDF, audio, video), sent as Gemini `inlineData` parts. */
+  readonly media?: readonly InlineMedia[]
+}
+
+export interface InlineMedia {
+  readonly mimeType: string
+  readonly base64: string
 }
 
 export interface ChatRequest {

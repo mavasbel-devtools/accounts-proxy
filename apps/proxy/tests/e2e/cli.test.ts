@@ -127,7 +127,7 @@ describe("accounts-proxy CLI (e2e)", () => {
     expect(models.stdout).toContain("# claude: ");
     expect(models.stdout).toContain("(live catalog)");
     expect(models.stdout).toContain("claude/claude-opus-5  Claude Opus 5  context 1000000 / output 128000\n");
-    expect(models.stdout).toContain("antigravity/gemini-3.6-flash-low  Gemini 3.6 Flash (Low)  context 80000 / output 65536\n");
+    expect(models.stdout).toContain("antigravity/gemini-3.6-flash-low  Gemini 3.6 Flash (Low)  context 1048576 / output 65536\n");
     const cached = await run(["models", "claude"]);
     expect(cached.stdout.split("\n")[0]).toMatch(/^# claude: \d+ models \(stored copy of the live catalog\)$/);
 
