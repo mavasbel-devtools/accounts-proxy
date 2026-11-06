@@ -1,6 +1,6 @@
 // The usage log as spend (plan 2026-11-06-15-21, stage 3): one `client-response` record per completed exchange, the
 // upstream's own charge in `usage.raw.cost`, and the model and provider in the first streamed chunk.
-import { createReadStream, existsSync, readdirSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync, statSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
 import type { SpendEntry, SpendWindow } from "@accounts-proxy/core/domain/spend-summary.ts";
@@ -12,6 +12,8 @@ const dateOf = (name: string): string | undefined => {
   const match = LOG_FILE.exec(name);
   return match !== null && match[3] === USAGE_LOG.name ? match[1] : undefined;
 };
+
+const DAY_MS = 86_400_000;
 
 type ClientResponse = {
   readonly kind?: string;
@@ -51,47 +53,64 @@ const entryOf = (record: ClientResponse): SpendEntry | undefined => {
   };
 };
 
+/** One file's parsed records, kept until its size or mtime changes, so `--watch` does not re-read the whole log. */
+type CachedFile = { readonly size: number; readonly mtimeMs: number; readonly entries: readonly SpendEntry[]; readonly malformed: number };
+
 export class SpendLogReader extends SpendLogPort {
+  private readonly files = new Map<string, CachedFile>();
+
   constructor(private readonly directory: string) {
     super();
   }
 
   async read(window: SpendWindow): Promise<SpendLogRead> {
     if (!existsSync(this.directory)) return { entries: [], malformed: 0, covered: undefined };
+    const names = readdirSync(this.directory).sort();
+    const dates = names.map(dateOf).filter((date): date is string => date !== undefined);
     const entries: SpendEntry[] = [];
-    const dates = new Set<string>();
     let malformed = 0;
-    for (const name of readdirSync(this.directory).sort()) {
+    for (const name of names) {
       const date = dateOf(name);
       if (date === undefined) continue;
-      dates.add(date);
       const fileFrom = Date.parse(`${date}T00:00:00`);
-      const fileUntil = fileFrom + 86_400_000;
-      const inWindow = fileFrom < window.until && fileUntil > window.from;
-      const lines = createInterface({ input: createReadStream(join(this.directory, name)), crlfDelay: Number.POSITIVE_INFINITY });
-      for await (const line of lines) {
-        if (line.trim() === "") continue;
-        let record: ClientResponse;
-        try {
-          record = JSON.parse(line) as ClientResponse;
-        } catch {
-          if (inWindow) malformed += 1;
-          continue;
-        }
-        if (record.kind !== "client-response") continue;
-        const entry = entryOf(record);
-        if (entry === undefined) {
-          if (record.status === 200 && inWindow) malformed += 1;
-          continue;
-        }
-        if (entry.at >= window.from && entry.at < window.until) entries.push(entry);
-      }
+      if (fileFrom + DAY_MS <= window.from || fileFrom >= window.until) continue;
+      const parsed = await this.file(join(this.directory, name));
+      malformed += parsed.malformed;
+      for (const entry of parsed.entries) if (entry.at >= window.from && entry.at < window.until) entries.push(entry);
     }
-    const ordered = [...dates].sort();
+    const ordered = [...new Set(dates)].sort();
     const covered =
-      ordered.length === 0
-        ? undefined
-        : { from: Date.parse(`${ordered[0]}T00:00:00`), until: Date.parse(`${ordered[ordered.length - 1]}T00:00:00`) + 86_400_000 };
+      ordered.length === 0 ? undefined : { from: Date.parse(`${ordered[0]}T00:00:00`), until: Date.parse(`${ordered[ordered.length - 1]}T00:00:00`) + DAY_MS };
     return { entries, malformed, covered };
+  }
+
+  /** The file's records, re-read only when its size or modification time changed since the last read. */
+  private async file(path: string): Promise<CachedFile> {
+    const stat = statSync(path);
+    const cached = this.files.get(path);
+    if (cached !== undefined && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) return cached;
+    const entries: SpendEntry[] = [];
+    let malformed = 0;
+    const lines = createInterface({ input: createReadStream(path), crlfDelay: Number.POSITIVE_INFINITY });
+    for await (const line of lines) {
+      if (line.trim() === "") continue;
+      let record: ClientResponse;
+      try {
+        record = JSON.parse(line) as ClientResponse;
+      } catch {
+        malformed += 1;
+        continue;
+      }
+      if (record.kind !== "client-response") continue;
+      const entry = entryOf(record);
+      if (entry === undefined) {
+        if (record.status === 200) malformed += 1;
+        continue;
+      }
+      entries.push(entry);
+    }
+    const fresh: CachedFile = { size: stat.size, mtimeMs: stat.mtimeMs, entries, malformed };
+    this.files.set(path, fresh);
+    return fresh;
   }
 }

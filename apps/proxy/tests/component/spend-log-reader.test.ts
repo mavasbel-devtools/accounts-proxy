@@ -25,6 +25,13 @@ describe("SpendLogReader", () => {
     expect(read.covered).toEqual({ from: Date.parse("2026-11-05T00:00:00"), until: Date.parse("2026-11-07T00:00:00") });
   });
 
+  test("a sub-day window keeps only the entries inside it and still counts the file's malformed lines", async () => {
+    const read = await new SpendLogReader(fixtures).read({ from: Date.parse("2026-11-06T12:00:00"), until: Date.parse("2026-11-06T13:00:00") });
+    expect(read.entries).toHaveLength(1);
+    expect(read.entries[0]?.cost).toBeCloseTo(0.25, 10);
+    expect(read.malformed).toBe(2);
+  });
+
   test("a directory that does not exist reads as empty, not as an error", async () => {
     expect(await new SpendLogReader(join(fixtures, "absent")).read(day("2026-11-06"))).toEqual({ entries: [], malformed: 0, covered: undefined });
   });
@@ -46,6 +53,13 @@ describe("SpendLogReader", () => {
     expect(read.entries[0]?.model).toBe("unknown");
     expect(read.entries[0]?.provider).toBe("DeepInfra");
     expect(read.malformed).toBe(1);
+  });
+
+  test("a second read of an unchanged file answers the same from the cache", async () => {
+    const reader = new SpendLogReader(fixtures);
+    const first = await reader.read(day("2026-11-06"));
+    const second = await reader.read(day("2026-11-06"));
+    expect(second).toEqual(first);
   });
 
   test("a logs directory with only a proxy log has no covered span", async () => {
