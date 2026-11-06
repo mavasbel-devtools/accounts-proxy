@@ -6,6 +6,7 @@ import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/po
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonConsolePort, DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
+import { SpendReportPort, type SpendQuery, type SpendReport } from "@accounts-proxy/core/ports/inbound/spend.ts";
 import { HealthPort, DescribeModelsPort, RequestModelRefreshPort, WarmModelsPort, type RefreshOutcome } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/command-line-driver.ts";
 import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -109,6 +110,18 @@ class Status extends DaemonStatusPort {
     return this.next;
   }
 }
+class Spend extends SpendReportPort {
+  async report(_query: SpendQuery): Promise<SpendReport> {
+    const from = 1_791_331_200_000;
+    return {
+      window: { from, until: from + 86_400_000 },
+      coverage: "complete",
+      covered: { from, until: from + 86_400_000 },
+      malformed: 0,
+      summary: { totals: { cost: 0, promptTokens: 0, outputTokens: 0, cachedTokens: 0, perMillionOutput: 0, cacheShare: 0, exchanges: 0 }, groups: [] },
+    };
+  }
+}
 class FakeServer extends Server {
   events: string[] = [];
   async start(): Promise<Listening> {
@@ -140,7 +153,7 @@ class FakeSignal extends ShutdownSignal {
 function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
-  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status() };
+  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status(), spend: new Spend(), costSeams: { now: () => 1_791_331_200_000, sleep: async () => undefined, reconcile: async () => ({ skipped: "not-found" as const }), notify: () => undefined } };
   const daemon = { server: new FakeServer(), shutdown: new FakeSignal(), console: new FakeConsole(), models: new FakeWarm() };
   const driver = new CommandLineDriver(proxyCommands(ports, daemon), PROGRAM, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
@@ -189,7 +202,7 @@ describe("the proxy's commands", () => {
 
   test("every command's help has a description, its exit codes and at least two examples run as printed", () => {
     const all = [PROXY_HELP, ...PROXY_HELP.subcommands!, ...PROXY_HELP.subcommands!.flatMap((sub) => sub.subcommands ?? [])];
-    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "help", "list", "use", "remove"]);
+    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "cost", "help", "list", "use", "remove"]);
     for (const help of all) {
       expect(help.description.length).toBeGreaterThan(0);
       expect(help.exits.map((exit) => exit.name)).toContain("2");

@@ -81,6 +81,9 @@ import { type CliCommand, CommandRoot, type Writer } from "@accounts-proxy/proxy
 import { AccountCommand, AccountListCommand, AccountRemoveCommand, AccountUseCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
 import { ModelsCommand, OpencodeConfigCommand, QuotaCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
 import { type CliDaemon, ServeCommand, StatusCommand, TokenCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
+import { CostCommand, type CostSeams, type ReconcileOutcome } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/cost-command.ts";
+import { SpendReportService } from "@accounts-proxy/proxy/application/spend-report-service.ts";
+import { SpendLogReader } from "@accounts-proxy/proxy/adapters/outbound/spend-log-reader.ts";
 import { LoginCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
 import { type CliPorts, HELP_HELP, PROXY_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/proxy-commands.ts";
 import { HelpCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/help-command.ts";
@@ -661,6 +664,7 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
   const { handler, errors, refresh, ports } = buildRoutes(graph, options.home, options.entry);
   const daemonUrl = `http://${LOOPBACK_HOST}:${graph.config.port}`;
   const server = new NodeHttpServer(handler, { host: options.listenHost, port: graph.config.port, maxBodyBytes: MAX_BODY_BYTES }, errors);
+  const spend = new SpendReportService(new SpendLogReader(logsDirectoryOf(options.accounts.path)), () => graph.clock.now());
   const commands = proxyCommands(
     {
       login,
@@ -669,11 +673,50 @@ export async function buildCli(options: ContainerOptions): Promise<{ readonly co
       ...ports,
       refresh: new RequestModelRefreshService(graph.transport, ports.access, daemonUrl, refresh),
       status: new DaemonStatusService(graph.transport, daemonUrl),
+      spend,
+      costSeams: costSeamsOf(graph.clock.now),
     },
     { server, shutdown: options.shutdown, console: new DaemonConsoleService(graph.console), models: new WarmModelsService(graph.modelLists) },
   );
   const driver = new CommandLineDriver(commands, PROGRAM, options.out, options.err);
   return { config: graph.config, driver, closeLogs: graph.closeLogs };
+}
+
+/** The command's seams over the real process: the clock, a real sleep, `notify-send` and the `opencode` binary. */
+export function costSeamsOf(now: () => number): CostSeams {
+  return {
+    now,
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    reconcile: reconcileWithOpencode,
+    notify: (title, body) => {
+      try {
+        void Bun.spawn(["notify-send", title, body], { stdout: "ignore", stderr: "ignore" }).exited.catch(() => undefined);
+      } catch {
+        // a host without a notification daemon still gets the status line on stdout
+      }
+    },
+  };
+}
+
+/** `opencode stats`' own estimate, capped at 20 s; never fatal for the cost report. */
+const RECONCILE_TIMEOUT_MS = 20_000;
+
+async function reconcileWithOpencode(days: number): Promise<ReconcileOutcome> {
+  try {
+    const child = Bun.spawn(["opencode", "stats", "--days", `${days}`, "--cost", "--json"], { stdout: "pipe", stderr: "ignore" });
+    const timer = setTimeout(() => child.kill(), RECONCILE_TIMEOUT_MS);
+    try {
+      const text = await new Response(child.stdout).text();
+      const code = await child.exited;
+      if (code !== 0) return { skipped: "unreadable" };
+      const parsed = JSON.parse(text) as { cost?: number };
+      return typeof parsed.cost === "number" ? { estimate: parsed.cost, days } : { skipped: "unreadable" };
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (error) {
+    return (error as { code?: string }).code === "ENOENT" ? { skipped: "not-found" } : { skipped: "unreadable" };
+  }
 }
 
 /** The proxy's command tree: every command over the inbound ports it drives. */
@@ -687,6 +730,7 @@ export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
     new ServeCommand(daemon, ports.access, ports.health),
     new TokenCommand(ports.access),
     new StatusCommand(ports.status),
+    new CostCommand(ports.spend, ports.costSeams),
     new HelpCommand(PROXY_HELP, PROGRAM, HELP_HELP),
   ]);
 }

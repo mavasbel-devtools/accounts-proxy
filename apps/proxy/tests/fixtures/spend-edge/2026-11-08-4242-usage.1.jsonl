@@ -1,0 +1,4 @@
+
+{"kind": "client-request", "at": "2026-11-08T09:00:00.000Z", "method": "POST", "path": "/openai/v1/chat/completions"}
+{"kind": "client-response", "at": "2026-11-08T10:00:00.000Z", "status": 200, "body": {"text": "data: {\"provider\":\"DeepInfra\"}\n\n"}, "usage": {"raw": {"cost": 0.2}, "tokens": {}}}
+{"kind": "client-response", "status": 200, "body": {"text": "data: {}\n\n"}, "usage": {"raw": {"cost": 0.3}, "tokens": {}}}

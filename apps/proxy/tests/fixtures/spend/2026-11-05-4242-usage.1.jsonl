@@ -1,0 +1,1 @@
+{"schema": "accounts-proxy-exchange/1", "at": "2026-11-05T23:00:00.000Z", "kind": "client-response", "status": 200, "body": {"text": "data: {\"model\": \"deepseek/deepseek-v4.1-flash-1017\", \"provider\": \"DeepInfra\", \"choices\": []}\n\n"}, "usage": {"raw": {"cost": 1.0}, "tokens": {"input": 5000, "output": 500, "cacheRead": 4000}}}
