@@ -12,3 +12,4 @@ docs/temp/*
 # recon
 __pycache__/
 *.pyc
+worktrees/
