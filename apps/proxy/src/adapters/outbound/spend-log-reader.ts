@@ -72,7 +72,8 @@ export class SpendLogReader extends SpendLogPort {
     for (const name of names) {
       const date = dateOf(name);
       if (date === undefined) continue;
-      const fileFrom = Date.parse(`${date}T00:00:00`);
+      // The logs are named by UTC day (`log-files.ts` `dayOf`), so a file's day starts at UTC midnight.
+      const fileFrom = Date.parse(`${date}T00:00:00Z`);
       if (fileFrom + DAY_MS <= window.from || fileFrom >= window.until) continue;
       const parsed = await this.file(join(this.directory, name));
       malformed += parsed.malformed;
@@ -80,7 +81,9 @@ export class SpendLogReader extends SpendLogPort {
     }
     const ordered = [...new Set(dates)].sort();
     const covered =
-      ordered.length === 0 ? undefined : { from: Date.parse(`${ordered[0]}T00:00:00`), until: Date.parse(`${ordered[ordered.length - 1]}T00:00:00`) + DAY_MS };
+      ordered.length === 0
+        ? undefined
+        : { from: Date.parse(`${ordered[0]}T00:00:00Z`), until: Date.parse(`${ordered[ordered.length - 1]}T00:00:00Z`) + DAY_MS };
     return { entries, malformed, covered };
   }
 

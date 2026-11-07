@@ -690,7 +690,8 @@ export function costSeamsOf(now: () => number): CostSeams {
     reconcile: reconcileWithOpencode,
     notify: (title, body) => {
       try {
-        void Bun.spawn(["notify-send", title, body], { stdout: "ignore", stderr: "ignore" }).exited.catch(() => undefined);
+        // `exited` always resolves with a code and a failed spawn throws here (measured on Bun 1.4.2), so nothing waits.
+        void Bun.spawn(["notify-send", title, body], { stdout: "ignore", stderr: "ignore" }).exited;
       } catch {
         // a host without a notification daemon still gets the status line on stdout
       }
@@ -703,17 +704,18 @@ const RECONCILE_TIMEOUT_MS = 20_000;
 
 async function reconcileWithOpencode(days: number): Promise<ReconcileOutcome> {
   try {
-    const child = Bun.spawn(["opencode", "stats", "--days", `${days}`, "--cost", "--json"], { stdout: "pipe", stderr: "ignore" });
-    const timer = setTimeout(() => child.kill(), RECONCILE_TIMEOUT_MS);
-    try {
-      const text = await new Response(child.stdout).text();
-      const code = await child.exited;
-      if (code !== 0) return { skipped: "unreadable" };
-      const parsed = JSON.parse(text) as { cost?: number };
-      return typeof parsed.cost === "number" ? { estimate: parsed.cost, days } : { skipped: "unreadable" };
-    } finally {
-      clearTimeout(timer);
-    }
+    const child = Bun.spawn(["opencode", "stats", "--days", `${days}`, "--cost", "--json"], {
+      stdout: "pipe",
+      stderr: "ignore",
+      // The cap is the spawn's own signal: Bun kills the process at the deadline (measured: exit 143), so `exited` below
+      // answers `unreadable` instead of the report waiting on a hung client.
+      signal: AbortSignal.timeout(RECONCILE_TIMEOUT_MS),
+    });
+    const text = await new Response(child.stdout).text();
+    const code = await child.exited;
+    if (code !== 0) return { skipped: "unreadable" };
+    const parsed = JSON.parse(text) as { cost?: number };
+    return typeof parsed.cost === "number" ? { estimate: parsed.cost, days } : { skipped: "unreadable" };
   } catch (error) {
     return (error as { code?: string }).code === "ENOENT" ? { skipped: "not-found" } : { skipped: "unreadable" };
   }

@@ -14,7 +14,7 @@ export const COST_HELP: CommandHelp = {
   description: [
     "Totals the usage log's exchange records — the upstream's own charge, not a catalogue estimate — as dollars, dollars per million output tokens and cache share, with one row per provider by default.",
     "`--day` selects a local calendar day; `--since`/`--until` take ISO dates and default to today. `--by` groups by provider, model or day. When retention has removed files the window needs, the report says `partial` and prints the range it could read.",
-    "`--watch` repeats the report every N seconds and exits 4 the first time a budget is crossed; `--reconcile` prints OpenCode's own estimate beside the actual charge.",
+    "`--watch` repeats the report every N seconds and exits 4 the first time a budget is crossed; its month figure says `partial` when retention has left the month short. `--reconcile` prints OpenCode's own estimate beside the actual charge.",
   ],
   options: [
     { name: "--day <date>", text: "one local calendar day, YYYY-MM-DD (default: today)" },
@@ -160,7 +160,8 @@ export class CostCommand extends CliCommand {
       const month = await this.spend.report({ by: "provider", since: monthStart(this.seams.now()), until: this.seams.now() });
       const at = new Date(this.seams.now());
       const clock = `${`${at.getHours()}`.padStart(2, "0")}:${`${at.getMinutes()}`.padStart(2, "0")}`;
-      const line = `${clock} ${money(report.summary.totals.cost)} today · ${money(month.summary.totals.cost)} month · cache ${(report.summary.totals.cacheShare * 100).toFixed(1)}%${report.coverage === "partial" ? " (partial)" : ""}`;
+      // The month's figure is the one retention can shorten (the risk the plan names), so its report is the one that says so.
+      const line = `${clock} ${money(report.summary.totals.cost)} today · ${money(month.summary.totals.cost)} month${month.coverage === "partial" ? " (partial)" : ""} · cache ${(report.summary.totals.cacheShare * 100).toFixed(1)}%`;
       out(`${line}\n`);
       const breached = this.breach(report.summary.totals.cost, month.summary.totals.cost, budgets);
       if (breached !== undefined) {
