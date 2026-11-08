@@ -1,0 +1,5 @@
+{"schema": "accounts-proxy-exchange/1", "at": "2026-11-06T10:00:00.000Z", "kind": "client-response", "status": 200, "body": {"text": "data: {\"model\": \"deepseek/deepseek-v4.1-flash-1017\", \"provider\": \"DeepInfra\", \"choices\": []}\n\n"}, "usage": {"raw": {"cost": 0.5}, "tokens": {"input": 1000, "output": 200, "cacheRead": 800}}}
+{not json
+{"schema": "accounts-proxy-exchange/1", "at": "2026-11-06T10:05:00.000Z", "kind": "client-response", "status": 429, "body": {"text": "data: {\"model\": \"deepseek/deepseek-v4.1-flash-1017\", \"provider\": \"DeepInfra\", \"choices\": []}\n\n"}, "usage": {"raw": {"cost": 0.0}, "tokens": {"input": 10, "output": 10, "cacheRead": 0}}}
+{"kind": "client-response", "at": "2026-11-06T10:06:00.000Z", "status": 200, "body": {"text": ""}}
+{"schema": "accounts-proxy-exchange/1", "at": "2026-11-06T12:00:00.000Z", "kind": "client-response", "status": 200, "body": {"text": "data: {\"model\": \"deepseek/deepseek-v4.1-flash-1017\", \"choices\": []}\n\n"}, "usage": {"raw": {"cost": 0.25}, "tokens": {"input": 2000, "output": 300, "cacheRead": 1500}}}

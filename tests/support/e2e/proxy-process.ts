@@ -179,6 +179,40 @@ export async function runProxy(home: Home, argv: readonly string[], env: Record<
   return { code, stdout, stderr };
 }
 
+export type Running = {
+  /** Everything on stdout so far. */
+  readonly output: () => string;
+  /** Everything on stderr so far. */
+  readonly errors: () => string;
+  /** Resolves with the normal exit: a process stopped with SIGTERM writes its coverage only on that path. */
+  readonly done: () => Promise<Result>;
+};
+
+/**
+ * One CLI command left running, for a command that only ends when the world changes (`cost --watch`). The caller
+ * writes into the home while it runs; the child must still reach a normal exit for its coverage to be recorded.
+ */
+export function spawnProxyRunning(home: Home, argv: readonly string[], env: Record<string, string> = {}): Running {
+  const child = spawnProxy(home, argv, env);
+  child.stdin.end();
+  let stdout = "";
+  let stderr = "";
+  const reading = (async () => {
+    for await (const chunk of child.stdout) stdout += new TextDecoder().decode(chunk);
+  })();
+  const erroring = new Response(child.stderr).text().then((text) => {
+    stderr = text;
+  });
+  return {
+    output: () => stdout,
+    errors: () => stderr,
+    done: async () => {
+      const [code] = await Promise.all([child.exited, reading, erroring]);
+      return { code, stdout, stderr };
+    },
+  };
+}
+
 const START_TIMEOUT_MS = 30_000;
 
 export type Daemon = { readonly url: string; readonly output: () => string; stop(): Promise<Result> };

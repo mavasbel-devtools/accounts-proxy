@@ -1,0 +1,2 @@
+{"kind": "client-response", "at": "2026-11-07T10:00:00.000Z", "status": 200, "usage": {"raw": {"cost": 0.1}, "tokens": {}}}
+{"kind": "client-response", "at": "2026-11-07T11:00:00.000Z", "status": 400}

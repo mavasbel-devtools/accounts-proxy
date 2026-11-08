@@ -113,6 +113,23 @@ describe("capture addon", () => {
   );
 });
 
+// Measured 2026-11-07 on Bun 1.4.2: a per-request `proxy` is ignored for a loopback target whenever
+// NO_PROXY lists it, and this host sets NO_PROXY=127.0.0.1,localhost,::1 — the fetches went direct
+// and mitmdump recorded nothing. The recon sandbox declares loopback unproxied on purpose
+// (scripts/recon/sandbox/bwrap.ts:108); this test is not a sandboxed client, so it pins its own
+// proxy environment instead of inheriting one.
+function proxyEnvironment<T>(body: () => Promise<T>): Promise<T> {
+  const saved = { upper: process.env.NO_PROXY, lower: process.env.no_proxy };
+  process.env.NO_PROXY = "";
+  process.env.no_proxy = "";
+  return body().finally(() => {
+    if (saved.upper === undefined) delete process.env.NO_PROXY;
+    else process.env.NO_PROXY = saved.upper;
+    if (saved.lower === undefined) delete process.env.no_proxy;
+    else process.env.no_proxy = saved.lower;
+  });
+}
+
 describe("capture through mitmdump", () => {
   test(
     "records an SSE exchange with chunk timing, a JSON exchange, and no surviving secret",
@@ -147,7 +164,7 @@ describe("capture through mitmdump", () => {
       const target = { id: "selfcheck", cell: "claude" };
       const { child, port } = await startMitm(runDir, target, "selfcheck/run", "9.9.9");
       const proxy = `http://127.0.0.1:${port}`;
-      try {
+      const fetched = proxyEnvironment(async () => {
         const streamed = await fetch(`http://127.0.0.1:${origin.port}/v1/messages`, {
           method: "POST",
           headers: {
@@ -167,6 +184,9 @@ describe("capture through mitmdump", () => {
         });
         expect(plain.status).toBe(200);
         expect(await plain.json()).toEqual({ ok: true, received: 0 });
+      });
+      try {
+        await fetched;
       } finally {
         await stopMitm(child);
         origin.stop(true);
