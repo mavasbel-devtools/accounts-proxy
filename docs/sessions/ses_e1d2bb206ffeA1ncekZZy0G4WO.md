@@ -1,7 +1,46 @@
 # Session ses_e1d2bb206ffeA1ncekZZy0G4WO
 
-Role: `plan` agent (planning only; no execution).
-Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/docs/plans/2026-11-15-23-52-pi-compatibility-plan.md` (draft).
+Role: `plan` agent (planning only; no execution) through 2026-11-16 approval; `build` from 2026-11-16.
+Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compatibility/docs/plans/2026-11-15-23-52-pi-compatibility-plan.md` (approved 2026-11-16, SHA-256 `9a15f83ddfd8eae9ddafb7bc4818965cd66b416b79dca2971df49dfafdbbabc2`).
+
+## Build
+
+- [x] 0.1 worktree `feat-pi-compatibility` at `0fd623a884de8576ab95bfae9f937eadbb4f17b2` (subagent ses_e1cfe1000ffeeENEiHBrIOByC6)
+- [x] 0.2 planning documents moved into the worktree, commit `07c67e0`, plan SHA re-verified, lint-docs PASS (subagent ses_e1cfdae42ffea1TlC0dBNa900Z)
+- [x] 0.3 environment: `bun install --frozen-lockfile` exit 0, 220 packages, Bun 1.4.4 / pi 1.5.2, lockfile untouched (subagent ses_e1cfd14e2ffeNWtIH1z9Pu40zM); `status --porcelain` showed only this record's own in-flight edit
+- [x] 0.4 exemption: `.cache` `drwx------`, `accounts.json`/`token.json` `-rw-------`, no `{worktree}/.cache`; nothing copied — stage 8 runs the worktree daemon with `ACCOUNTS_PROXY_HOME={repo}/.cache` while the user's daemon is stopped. `proxy.yaml` SHA-256 `c1ede66f4d2902ad354077611ba50ae84fe016cb3031b0942f6a0952c610a1f1`; `accounts.json` top-level keys `["providers","schema"]`
+- [x] 0.5 live catalog snapshot: `{logs}/catalog.json`, 994 models total, `grep -c -E 'sk-|Bearer|refresh'` → 0 (metadata only, no credential)
+- [x] 0.6 baseline gate: `bun run verify` → `{logs}/baseline-verify.log`, `exit=1`, `GATE: FAIL`. Passing in baseline: typecheck, build, docs lint (77 files). Failing in baseline: unit+component+arch (9 tests: capture addon, mitmdump capture, change attribution x2, NodeHttpServer busy-port, ProcProcessControl, workflow catalogue x3), e2e (login-based tests: `no browser callback within 30 s`, plus 120 s timeouts), merged coverage (missing inputs), recon parity x9 (needs Linux/browser). No granularity step exists yet (stage 7 creates it).
+- [x] 0.7 stage 0 gate (below)
+
+## Baseline gate (step 0.6, unchanged tree at `0fd623a` + docs commit `07c67e0`)
+
+Command: `bun run verify > {logs}/baseline-verify.log 2>&1` (re-run with 3 h budget after the first attempt hit the 30 min cap mid-e2e). Output: `{logs}/baseline-verify.log` (3133 lines + `exit=1`).
+
+`GATE: FAIL` with this step table (verbatim from the log's `=== verify summary ===`):
+
+```
+PASS       typecheck
+FAIL       unit+component+arch with 100% coverage
+PASS       build
+FAIL       e2e with 100% coverage
+FAIL       merged coverage 100%
+FAIL       recon parity (Claude Code 2.1.304)
+FAIL       recon parity (Antigravity 1.107.0)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-50-16-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-55-40-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-51-02-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-55-59-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-51-14-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-23-03-51-20-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-24-07-22-40-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-24-07-22-48-workflow)
+FAIL       recon parity (OpenCode 2.1.1, 2026-10-24-07-22-57-workflow)
+PASS       docs lint
+GATE: FAIL
+```
+
+Unit tier (9 pre-existing failures, macOS/environmental: no `/proc`, no mitmdump, no browser/display): capture addon, mitmdump capture, change attribution x2, NodeHttpServer busy-port, ProcProcessControl, workflow catalogue x3. E2E (150 fail lines, 75 unique x2 parallel): login-based tests fail with `no browser callback within 30 s`, plus 120 s timeouts (openai sign-in host-id, Responses E2-E3, claude-edges tool turns, refresh-lock, accounts-file A3a/A3b, claude/antigravity sessions). Merged coverage fails on missing inputs. Docs lint PASS (77 files). No granularity step exists yet (stage 7 creates it). Final-gate comparison rule: every step passing here must still pass; every failure here must be the same failure, never a new one.
 
 ## Request
 
