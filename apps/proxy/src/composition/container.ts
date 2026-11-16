@@ -117,7 +117,7 @@ import { AccessService } from "@accounts-proxy/proxy/application/access-service.
 import { AccountAdminService, UsageService } from "@accounts-proxy/proxy/application/account-services.ts";
 import { DaemonStatusService } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
 import { LoggingErrorReporter } from "@accounts-proxy/proxy/application/error-reporter.ts";
-import type { OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
 import type { RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { ModelReferencePort } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
@@ -613,7 +613,7 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const describe = new DescribeModelsService(models, graph.reference);
   const refresh = new RefreshModelsService(providers, graph.reference, describe);
   const opencode = new OpencodeConfigCodec();
-  const origin: OpencodeOrigin = {
+  const origin: ClientOrigin = {
     origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
     // Absolute, so opencode can spawn it from any directory (rule O5).
     tokenCommand: [...entry, "token"],

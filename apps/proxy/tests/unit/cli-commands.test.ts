@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts";
 import { describeCatalog, type DetailedCatalog } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ModelCatalog, ProviderId } from "@accounts-proxy/core/domain/models.ts";
-import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
+import { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonConsolePort, DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
@@ -79,7 +80,7 @@ class Refresh extends RequestModelRefreshPort {
   }
 }
 class OpencodeConfig extends OpencodeConfigPort {
-  config(catalogs: readonly DetailedCatalog[], at: OpencodeOrigin) {
+  config(catalogs: readonly DetailedCatalog[], at: ClientOrigin) {
     return { providers: catalogs.length, origin: at.origin };
   }
   manifest() {

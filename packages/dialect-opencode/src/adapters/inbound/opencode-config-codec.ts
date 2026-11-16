@@ -3,10 +3,12 @@
 // core/src/wellknown.ts). One opencode provider `ap-<provider>` per proxy provider; each model names the proxy route
 // of the format it is sent in, its limits, media, price and the variants opencode's own rules derive from its reasoning
 // controls. Fields no source states are left out: opencode then applies its defaults.
+import { chooseFormat, PROVIDER_DISPLAY_NAMES } from "@accounts-proxy/core/domain/client-connection.ts";
 import type { JsonObject, JsonValue } from "@accounts-proxy/core/domain/json.ts";
 import type { DetailedCatalog, DetailedModel, ModelCost } from "@accounts-proxy/core/domain/model-details.ts";
 import type { ProviderId, WireFormat } from "@accounts-proxy/core/domain/models.ts";
-import { OpencodeConfigPort, type OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
+import { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
 import { ANTHROPIC_PACKAGE, GOOGLE_PACKAGE, OPENAI_COMPATIBLE_PACKAGE, OPENAI_PACKAGE, OPENROUTER_PACKAGE, resolveVariants, type OpencodePackage } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-variants.ts";
 
 export const CONFIG_SCHEMA_URL = "https://opencode.ai/config.json";
@@ -17,16 +19,6 @@ export const CONFIG_PATH = "/opencode/config.json";
 const DEFAULT_OUTPUT_LIMIT = 32_000;
 const LOSSY_HEADER = "x-proxy-lossy";
 
-export const PROVIDER_NAMES: Readonly<Record<ProviderId, string>> = {
-  claude: "Claude",
-  antigravity: "Antigravity",
-  openai: "OpenAI",
-  openrouter: "OpenRouter",
-  opencode: "OpenCode Zen",
-  "opencode-go": "OpenCode Go",
-  "cheaper-inference": "Cheaper Inference",
-};
-
 /** Rule O2: the package and proxy route of each format. */
 const FORMAT_PACKAGE: Readonly<Record<WireFormat, { readonly package: OpencodePackage; readonly path: string }>> = {
   "anthropic-messages": { package: ANTHROPIC_PACKAGE, path: "/anthropic/v1" },
@@ -36,22 +28,21 @@ const FORMAT_PACKAGE: Readonly<Record<WireFormat, { readonly package: OpencodePa
 };
 
 /** aisdk-native.ts `PACKAGES` for the AI SDK packages whose opencode package speaks a proxy format. */
-const AISDK_PACKAGE: Readonly<Record<string, { readonly package: OpencodePackage; readonly format: WireFormat }>> = {
-  "@ai-sdk/anthropic": { package: ANTHROPIC_PACKAGE, format: "anthropic-messages" },
-  "@ai-sdk/openai": { package: OPENAI_PACKAGE, format: "openai-responses" },
-  "@ai-sdk/openai-compatible": { package: OPENAI_COMPATIBLE_PACKAGE, format: "openai-chat" },
-  "@ai-sdk/google": { package: GOOGLE_PACKAGE, format: "gemini" },
-  "@openrouter/ai-sdk-provider": { package: OPENROUTER_PACKAGE, format: "openai-chat" },
+const AISDK_OPENCODE_PACKAGE: Readonly<Record<string, OpencodePackage>> = {
+  "@ai-sdk/anthropic": ANTHROPIC_PACKAGE,
+  "@ai-sdk/openai": OPENAI_PACKAGE,
+  "@ai-sdk/openai-compatible": OPENAI_COMPATIBLE_PACKAGE,
+  "@ai-sdk/google": GOOGLE_PACKAGE,
+  "@openrouter/ai-sdk-provider": OPENROUTER_PACKAGE,
 };
 
 export const opencodeProviderId = (provider: ProviderId): string => `ap-${provider}`;
 
 /** Rule O2: the reference's package when the proxy accepts its format for the model, else the model's first format. */
 function connection(model: DetailedModel): { readonly package: OpencodePackage; readonly format: WireFormat } | undefined {
-  const named = model.aiSdkPackage === undefined ? undefined : AISDK_PACKAGE[model.aiSdkPackage];
-  if (named !== undefined && model.formats.includes(named.format)) return named;
-  const format = model.formats[0];
-  return format === undefined ? undefined : { package: FORMAT_PACKAGE[format].package, format };
+  const chosen = chooseFormat(model);
+  if (chosen === undefined) return undefined;
+  return { format: chosen.format, package: chosen.aiSdkPackage !== undefined ? AISDK_OPENCODE_PACKAGE[chosen.aiSdkPackage]! : FORMAT_PACKAGE[chosen.format].package };
 }
 
 /**
@@ -114,7 +105,7 @@ function modelConfig(model: DetailedModel, providerId: string, origin: string): 
 }
 
 export class OpencodeConfigCodec extends OpencodeConfigPort {
-  config(catalogs: readonly DetailedCatalog[], at: OpencodeOrigin): JsonObject {
+  config(catalogs: readonly DetailedCatalog[], at: ClientOrigin): JsonObject {
     const providers: JsonObject = {};
     for (const catalog of catalogs) {
       // A provider that could not list its models has nothing to configure.
@@ -127,7 +118,7 @@ export class OpencodeConfigCodec extends OpencodeConfigPort {
       }
       providers[id] = {
         // The short prefix keeps the name readable in opencode's model menu (plan 2026-10-29-14-38 S5).
-        name: `AP · ${PROVIDER_NAMES[catalog.provider]}`,
+        name: `AP · ${PROVIDER_DISPLAY_NAMES[catalog.provider]}`,
         settings: { apiKey: `{env:${TOKEN_VARIABLE}}` },
         // OpenAI plan usage refuses `max_output_tokens`, which opencode always sends (live validation F5).
         ...(catalog.provider === "openai" ? { headers: { [LOSSY_HEADER]: "1" } } : {}),
@@ -137,7 +128,7 @@ export class OpencodeConfigCodec extends OpencodeConfigPort {
     return { $schema: CONFIG_SCHEMA_URL, providers };
   }
 
-  manifest(at: OpencodeOrigin): JsonObject {
+  manifest(at: ClientOrigin): JsonObject {
     return {
       auth: { command: [...at.tokenCommand], env: TOKEN_VARIABLE },
       remote_config: { url: `${at.origin}${CONFIG_PATH}`, headers: { authorization: `Bearer {env:${TOKEN_VARIABLE}}` } },

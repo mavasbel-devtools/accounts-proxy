@@ -13,6 +13,22 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 - [x] 0.6 baseline gate: `bun run verify` → `{logs}/baseline-verify.log`, `exit=1`, `GATE: FAIL`. Passing in baseline: typecheck, build, docs lint (77 files). Failing in baseline: unit+component+arch (9 tests: capture addon, mitmdump capture, change attribution x2, NodeHttpServer busy-port, ProcProcessControl, workflow catalogue x3), e2e (login-based tests: `no browser callback within 30 s`, plus 120 s timeouts), merged coverage (missing inputs), recon parity x9 (needs Linux/browser). No granularity step exists yet (stage 7 creates it).
 - [x] 0.7 stage 0 gate (below)
 
+## Standing rules authorized by the user 2026-11-16
+
+- **R1 (gate form correction).** Gates 1.2.2/1.2.3 run with cwd `tests/support` (identical check, alias resolves). Plan text untouched.
+- **R2 (baseline comparison).** Every tier gate from stage 2 on (`bun run test`, `bun run coverage`, and equivalents) passes when its failures are exactly the 9 documented baseline unit failures (capture addon, mitmdump capture, change attribution x2, NodeHttpServer busy-port, ProcProcessControl, workflow catalogue x3 — macOS/environmental, no /proc, no mitmdump, no browser/display); any new failure blocks and reopens the owning step. Plan text untouched; the plan agent consolidates the wording.
+
+## Stage 2 (shared client rules in packages/core)
+
+- [x] 2.1 shared format choice (subagent ses_e1aef77f9ffeYVrO8L37KeYtDF): `client-connection.ts` + unit tests created; new-test gate PASS (7/7), `test:arch` PASS; `coverage --workspace packages/core` FAIL recorded as PRE-EXISTING (proven by move-aside A/B: identical 14 FAIL lines on the pristine stage-1 tree; `client-connection.ts` itself 100%: 6/6 lines, 7/7 statements, 1/1 functions, 8/8 branches). Decision: keep the files, continue the chain; the plan agent consolidates gate 2.1.2's wording.
+- [ ] 2.2 ClientOrigin rename (same subagent, resumed)
+- [ ] 2.3 dialect-opencode on shared code
+- [ ] 2.4 pi inbound port
+- [x] 2.2 ClientOrigin rename: `client-origin.ts` created, all 6 listed users updated, no extra users; `grep OpencodeOrigin` empty; typecheck exit 0; `bun run test` 1053 pass / 9 fail = exactly the R2 set. Typecheck also exposed a real 2.1 error (`exactOptionalPropertyTypes` on `aiSdkPackage`); fixed in place per 2.2's problems row; 2.1 tests still 7/7.
+- [x] 2.3 dialect-opencode on shared code: golden `cmp` exit 0 over the real 994-model catalog (byte-identical); test diff touches exactly lines 7 and 96 (3 insertions from the mandated import split); `bun test packages/dialect-opencode` 5 pass + 1 pre-existing vendored-reference failure (`@opencode/core/model` missing in `tests/reference`, proven identical on pristine tree by A/B); scoped coverage PASS (100%, complete).
+- [x] 2.4 pi inbound port `PiConfigPort` created; typecheck exit 0; arch 8/8.
+- [x] 2.5 stage gate: typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
+
 ## Stage 1 (pi's schema and the schema checker)
 
 - [x] 1.1 pin schema (subagent ses_e1caa2d7affezys7KI5oox0snk): `pi-models-schema.json` pinned, SHA `3e4cb196…ad8bdc`, identical to installed pi 1.5.2 copy, manifest entry status 200; diff only `fetch-specs.ts` + `manifest.json` + new schema file.

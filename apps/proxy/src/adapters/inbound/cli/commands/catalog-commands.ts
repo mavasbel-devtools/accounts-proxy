@@ -1,7 +1,8 @@
 // `quota <provider>`, `models [<provider>] [--json] [--refresh]` and `opencode-config`: what the providers offer and report.
 import type { CatalogSource } from "@accounts-proxy/core/domain/models.ts";
 import type { UsagePort } from "@accounts-proxy/core/ports/inbound/accounts.ts";
-import type { OpencodeConfigPort, OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
+import type { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
 import type { DescribeModelsPort, RequestModelRefreshPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CliCommand, type CommandHelp, UsageError, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, noArguments, providerArgument, PROVIDER_ARGUMENT, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -129,7 +130,7 @@ export class OpencodeConfigCommand extends CliCommand {
   constructor(
     private readonly models: DescribeModelsPort,
     private readonly opencode: OpencodeConfigPort,
-    private readonly origin: OpencodeOrigin,
+    private readonly origin: ClientOrigin,
   ) {
     super();
   }

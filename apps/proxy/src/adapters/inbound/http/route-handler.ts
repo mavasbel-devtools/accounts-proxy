@@ -22,7 +22,8 @@ import { parseJsonBody } from "@accounts-proxy/core/domain/services/json-body.ts
 import { bodyOf, type RawRequest } from "@accounts-proxy/core/domain/wire.ts";
 import type { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import type { DialectCodecPort, EncodedResponse } from "@accounts-proxy/core/ports/inbound/dialect.ts";
-import type { OpencodeConfigPort, OpencodeOrigin } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
+import type { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
 import { MODEL_REFRESH_PATH, type DescribeModelsPort, type HealthPort, type PassthroughPort, type RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { ErrorReporterPort } from "@accounts-proxy/core/ports/inbound/diagnostics.ts";
 import { HttpHandler, type InboundRequest, type OutboundResponse } from "@accounts-proxy/proxy/adapters/inbound/http/http-handler.ts";
@@ -37,7 +38,7 @@ export type RoutePorts = {
   readonly describe: DescribeModelsPort;
   readonly refresh: RefreshModelsPort;
   readonly opencode: OpencodeConfigPort;
-  readonly origin: OpencodeOrigin;
+  readonly origin: ClientOrigin;
 };
 
 export const WELL_KNOWN_PATH = "/.well-known/opencode";
