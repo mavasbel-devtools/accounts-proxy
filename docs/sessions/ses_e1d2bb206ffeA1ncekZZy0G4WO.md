@@ -41,7 +41,45 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 - [x] 3.2 thinking rules: `pi-thinking.ts` + 13 unit tests, gate 1 13/13, scoped per-file 100% (one test-expectation self-correction: `off` is provider-based, implementation unchanged).
 - [x] 3.3 codec: `pi-config-codec.ts` + 12 unit tests; `bun test packages/dialect-pi` 25/25 (27/27 after 3.4); scoped coverage PASS (100%); arch + typecheck green (arch needed 3.4's component dir; one `toContain` cast fix).
 - [x] 3.4 component over reference catalog: 650 models checked, schema/api/maps/cost assertions + negatives; scoped coverage PASS.
-- [x] 3.5 stage gate: typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
+- [x] 3.5 stage gate: typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). Committed as `fd921a0 Stage 3: dialect-pi (plan 2026-11-15-23-52)` (13 files).
+
+## Stage 4 (routes, command and wiring in apps/proxy)
+
+- [ ] 4.1 route handler (single subagent chain 4.1→4.8 launched as ses_e1ad2a3f6ffelIkby2lsZNrOKH)
+- [ ] 4.2 pi-config command
+- [ ] 4.3 composition root
+- [ ] 4.4 OpenAPI/API reference/docs-in-step
+- [ ] 4.5 component suite
+- [ ] 4.6 e2e configuration through the real process
+- [x] 4.1 route handler: `bun test daemon.test.ts` 37/37 (96/96 combined with 4.2); manifest open/POST-404, config keys ["ap-antigravity","ap-claude"]/401/POST-404.
+- [x] 4.2 pi-config command: `bun test cli-commands.test.ts` 96/96 combined (after 4.3).
+- [x] 4.3 composition root: typecheck exit 0; `bun run test` exactly the 9 R2 failures (passes under R2); `proxy help pi-config` exit 0 with synopsis.
+- [x] 4.4 docs: docs-in-step 7/7; lint-docs 77 files; jq both operationIds true.
+- [x] 4.5 component: 6/6 with in-file DescribeModelsPort fake (no pre-existing catalog fake).
+- [x] 4.6 e2e pi-config: 6/6, replay-only, minimal bodies. Spend constraint honored: replay/fake upstreams only, no live tier, no real credentials, user daemon untouched.
+- [x] 4.7 BLOCKED then AUTHORIZED DEVIATION (user 2026-11-16): `startSignedInDaemon` fails in `beforeAll` with `no browser callback within 30 s` — root cause verified: `browser-launcher.ts:15` spawns real `open` on darwin while `makeHome` fakes only `xdg-open` (`proxy-process.ts:146-147`); leaked home had no `browser.log`, `login-callback … CallbackTimeoutError`. Same signature as the baseline login failures, deterministic twice. User authorized the contained test-only deviation: pi-routing setup writes an `open` fake (same one-line form as the `xdg-open` fake) into its own home bin dir, then the same login/token/serve calls; no product change, replay-only, inert on Linux CI, no other test touched. (A harness-level `makeHome` fix was considered and rejected: it would perturb all baseline login tests mid-plan; left for the plan agent as follow-up.)
+- [x] 4.7 retry WITH the deviation: subagent applied the `open` fake + writePool for openai/cheaper-inference; two test-code self-corrections (raw-string systemInstruction rejected by proxy validation → object form; assert body.model not body.request.model); then 8/8 exit 0 (33 expects). Main session re-ran the single file firsthand: 8 pass, 0 fail in 2.95 s (logins complete in seconds — the fake works, no browser). Test is adequate.
+- [x] Browser-spam incident (user report, during 4.8): the resume brief ordered the full `test:e2e` after 4.7; the tier's OLD login-based tests (no fake) each spawned real `open` → many browser tabs. Main session killed the run (login PIDs 7421/7425, workers 3071/3072, wrappers 3066–3070) and told the subagent to halt (it complied; its full report is in the conversation). Cause is mine (brief ordered the unguarded tier), not the subagent's. Untouched: PID 96176 `bun …/cli.ts serve` (started Sun 15 Nov 19:45, cwd = main repo — predates all plan work; left alone, flagged to user).
+- [x] 4.8 protection (recorded run-environment measure, not a test change): `$LOGS/no-browser-bin/open` (`#!/bin/sh\nexit 0`, 755) prepended to PATH for the tier run only. Old login tests fail byte-identically (real `open` also yields no callback → same 30 s `CallbackTimeoutError`; the launcher is fire-and-forget so exit codes match; neither writes `browser.log`). pi-routing unaffected (its home.bin fake sorts first). Partial `e2e-stage4.log` preserved as `e2e-stage4-partial-killed.log`; fresh full-tier run launched as bash-1334246d7a341c7a (3 h budget).
+- [x] 4.8 e2e coverage of the new route code. Full tier (guarded): 117 pass / 75 fail, `exit=1`; unique failing names (70) ⊆ baseline (79) → gate 2 GREEN (comm -23 empty; evidence `e2e-stage4-fails-uniq.txt`). Gate 1: repo prints no per-file e2e line (run-tests.ts returns before report on any failure — same in baseline), so executed as scoped report over the 6 new/changed files with the repo's own loadMaps/filter/applyDeferrals/report code: `e2e[pi]` 348/353 lines (98.58%), stmts 413/424, funcs 76/77, branches 287/302. Problems-row loop (1 iteration): added openrouter+opencode+opencode-go key pools to pi-routing's home (default replay lists, no scripted seam); suite still 8/8. Remaining atoms and their green unit/component cover (all outside the 9 baseline failures): codec 50/51/52 → unit 232-233/241-242; codec 71/102/82/83 → unit 177-181/147-151; route-handler 101/155 → daemon.test.ts 381-401; container 314-315/331/776/789 → container.test.ts 396/420-435. Unreachable e2e-alone without invented data (forbidden): openrouter-only arms (no committed model takes them — stage-3 unit tests invented `msgs-only`/`resp-only`/`gemini-only` to reach them), format-less guard (no committed catalog model lacks formats). Merged gate cannot run on this Mac (missing unit coverage-final.json — baseline-identical: unit tier exits 1 on the 9 env failures before writing it). USER DECISION 2026-11-16: accept 4.8.1 as blocked-on-this-Mac with this evidence (Linux CI closes it); proceed.
+- [x] 4.8a residue marker + before-listing: `{logs}/marker` created; `{logs}/before-listing.txt` (682 lines) holds $TMPDIR, /tmp, ~/.opencode/plan, ~/.pi, repo .cache names, status --porcelain --ignored, worktree list, branch --all, stash list. 48 leaked `accounts-proxy-*` dirs under $TMPDIR at marker time (50 at last count; 2 removed by passing suites' own afterAll cleanup — tracked at 9.6a).
+- [x] 4.9 stage 4 gate (main session): typecheck exit 0 (after fixing 2 latent errors the 4.3 typecheck could not see — the 4.5/4.7 test files were created after it: `Access` fake lacked abstract `token()` → added `async token() { return "T"; }`; `model.id.split("/")[1]` is `string|undefined` → `!`, matching the file's existing `at(-1)!` style); arch 8/8; coverage exit 1 with exactly the 9 R2 failures (1093 pass — passes under R2); full guarded tier from 4.8 stands (only compile-only test edits since, each re-run green: component pi-config 6/6, pi-routing 8/8); lint-docs PASS (77). Committed as `b07f24b Stage 4: routes, command and wiring (plan 2026-11-15-23-52)` (14 files) + plan/session-record. STAGE 4 GREEN.
+
+## 2026-11-16 — Plan mode lifted, amendment 1 landed in the plan
+
+- Amendment file `/Users/mavasbel/.opencode/plan/2026-11-16-11-42-pi-compatibility-plan-amendment-1.md`
+  (SHA-256 `8464e00cea49d58a3b3de879738f2d4908da6f91e03a0a41dc963f6dc6e016a1`, approved by the user) copied into the
+  plan as `## Amendment 1` after the header; plan lint PASS (77 files); new plan SHA-256
+  `b73feda62e16e5ead48aa10695029353659131eac049734ac94f086de1156b2f`.
+- Step 4.8 tier run (bash-1334246d7a341c7a, started 11:29) survived the opencode restart; its PATH has
+  `no-browser-bin` before `/usr/bin` (verified on pid 7727); progress 23 pass / 16 fail, all failures browser
+  callbacks. Continuing: wait for 4.8, then gate, 4.8a marker, 4.9, commit.
+
+## Standing-rule update (2026-11-16)
+
+- AGENTS.md gained rule 3.10 (residue: snapshot marker before first step, scan + prove deletions after) and 4.9 (brief scratch dirs + created-file lists). The plan predates both: no snapshot marker exists (cannot be retroacted) — residue will be proved best-effort at the end from `git status --porcelain --ignored`, `git worktree list`, branch/stash listings and the logs-dir inventory. Future briefs (stages 5–8) carry their own scratch dirs and file lists.
+- [ ] 4.8 e2e coverage of the new route code
+- [ ] 4.9 stage 4 gate typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
 
 ## Stage 1 (pi's schema and the schema checker)
 

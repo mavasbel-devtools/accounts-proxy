@@ -23,6 +23,110 @@
   P1–P7) and `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md` (every name used below).
 - Bun: `{bun}` = `/Users/mavasbel/.bun/bin/bun` (1.4.4); `{pi}` = `/opt/homebrew/bin/pi` (1.5.2).
 
+## Amendment 1 (approved 2026-11-16; amendment file SHA-256
+  `8464e00cea49d58a3b3de879738f2d4908da6f91e03a0a41dc963f6dc6e016a1`; base plan verified unchanged at
+  `9a15f83ddfd8eae9ddafb7bc4818965cd66b416b79dca2971df49dfafdbbabc2`)
+
+Status on 2026-11-16 11:34 (after the opencode restart): stages 0–3 green and committed
+(`63c30fe`, `4cd4567`, `e4cee89`, `fd921a0`); steps 4.1–4.6 green, not committed; step 4.7 green with the A1
+deviation (8 pass / 0 fail, re-run by the main session); step 4.8 (the full e2e run) in progress behind the A2
+guard; steps 4.9 onward not started. The user's daemon (pid 96176) runs untouched. 50 temporary directories
+leak under `$TMPDIR` (all born after the plan's first commit); they are A4's known residue.
+
+### A1 — Step 4.7: the darwin `open` fake (already applied, user-approved 2026-11-16)
+
+**Known**: on darwin `browserCommand` spawns `open`
+(`apps/proxy/src/adapters/outbound/browser-launcher.ts:15`); `makeHome` fakes only `xdg-open`
+(`tests/support/e2e/proxy-process.ts:146-147`). So `startSignedInDaemon` can never sign in on this Mac.
+**Change**: step 4.7 content replaces "`startSignedInDaemon`" with: "`makeHome`, then an `open` fake in
+`home.bin` in the exact form of the `xdg-open` fake, then the logins, `token` and `startDaemon` that
+`startSignedInDaemon` (proxy-process.ts:258-267) runs". Gate unchanged: 8 tests, exit `0`.
+**Not changed**: the harness. A fix in `makeHome` is out of scope and listed in A6 as follow-up.
+
+### A2 — Every full e2e run on this Mac runs behind the browser guard
+
+**Known**: each old login test spawns the real `open`, so one full e2e run opened many browser tabs (user report
+2026-11-16). **Change**: steps 4.8, 4.9, 5.8, 5.9 and 9.1 prefix their command with
+`PATH="{logs}/no-browser-bin:$PATH"`, where `{logs}/no-browser-bin/open` is `#!/bin/sh` + `exit 0`, mode `755`.
+New gate in each: before the run, `PATH="{logs}/no-browser-bin:$PATH" command -v open` prints
+`{logs}/no-browser-bin/open`. **Why the baseline comparison still holds**: the launcher is fire-and-forget; with
+or without the guard the old login tests fail with the same `CallbackTimeoutError` after 30 s.
+**Rule for every brief**: no subagent runs `test:e2e`, `verify` or a login-based test without this prefix.
+
+### A3 — Stage 8 at minimal spend (user decision "Minimal", 2026-11-16; cheapest model everywhere, user directive 2026-11-16)
+
+New **step 8.0 — read the cost controls** (subagent `explore`, action `read`, target pi 1.5.2 at
+`/opt/homebrew/Cellar/pi-coding-agent/1.5.2/libexec/lib/node_modules/@earendil-works/pi-coding-agent`). It must
+learn: (1) whether a test-local `models.json` `modelOverrides` entry with `maxTokens` caps the output tokens pi
+requests on each of the four apis, and the smallest `maxTokens` a thinking turn accepts on `anthropic-messages`
+(budget thinking is capped at `maxTokens - 1024`); (2) the exact flag set that shrinks every live turn. Known
+from `pi --help` (2026-11-16): `--system-prompt <text>`, `--tools <list>`, `--no-context-files`, `--no-skills`,
+`--no-prompt-templates`, `--no-mcp`, `--no-extensions` (explicit `-e` still loads), `--thinking <level>`.
+**Gates**: each answer has its file and line. **Consumed by** 8.1.
+
+**Step 8.1 changes**: every pi run uses `--system-prompt "Answer in one word."`, `--tools read`,
+`--no-context-files`, `--no-skills`, `--no-prompt-templates`, `--no-mcp`, `--no-extensions`, plus the output cap
+8.0 found. Per cell, ONE paid turn: the tool turn (b), which also proves the plain path (a), so (a) is removed.
+Output cap 32 tokens, or the smallest value 8.0 found to work. Thinking turn (c) runs once per pi api (4 turns),
+on the cheapest reasoning model of that api, at the LOWEST level its map allows (not `:high`). Negatives (d) and
+(e) stay; they cost nothing (rejected before any upstream call). `pi-binary.test.ts` uc-pi-5 positive stays as one
+turn; uc-pi-4 and uc-pi-2/uc-pi-6 make no model call.
+
+**Model choice: the cheapest model possible, in every cell and every turn.** Replaces the plan's "Cells and
+models" rule: rank the cell's models in `{logs}/catalog.json` by `cost.input + cost.output` ascending (a free
+model, cost 0, ranks first), ties by `cost.cache_read`, then by id; pick the first one with `toolCall: true`. This
+applies to the subscription cells too (claude, antigravity, openai): their quota is spent per token as well, so
+the cheapest list price wins over the plan's named models (`claude-haiku-5-5`, `gemini-3-flash`, `gpt-5.6-luna`
+stay only if they rank first). Thinking turn: the cheapest model of that api with `reasoning: true`, by the same
+ranking, at the lowest level. The first cell run in 8.3 is the cheapest cell of the whole table. The derivation
+script prints the full ranking per cell (top 3 with prices) into `returns`. **Problem**: the cheapest model
+answers 429 or 5xx (free models are often rate-limited) or cannot call the tool → take the next model in the
+ranking, once per failure, recorded with the error; never a more expensive tier than the next in line, never drop
+the cell.
+
+**Step 8.3 changes**: the tier runs in two halves. First one cell (the cheapest cell of the table), then the main
+session reads its spend from the proxy's cost log (`bun run proxy cost`). Ceiling = that spend × 22 (17 tool turns
++ 4 thinking turns + 1 binary turn). The main session asks the user before the rest of the tier runs if the
+projected total is above the ceiling or above 1 USD. **Result**: 22 paid turns instead of 51.
+
+### A4 — Residue (new `AGENTS.md` 3.10 and 4.9)
+
+**Known**: the plan predates rule 3.10, so no marker and no before-listing exist; they cannot be made
+retroactively. New **step 4.8a** (main session, before 4.9): create `{logs}/marker` and record the before-listing
+of rule 3.10 (`$TMPDIR`, `/tmp`, `~/.opencode/plan/`, `~/.pi`, `{repo}/.cache` names only, and for the repository
+`git status --porcelain --ignored`, `git worktree list`, `git branch --all`, `git stash list`). **Known residue
+already** (by birth time after `07c67e0`, 00:19:12): the 50 directories `$TMPDIR/accounts-proxy-*`. The residue
+step deletes each one by its absolute path once no test runs, and proves each with `test ! -e`. **Retained**:
+the branch until integration; `{repo}/.cache` (the user's live data); `~/.pi/agent/settings.json` change of step
+9.5 (deliverable of the request). **Scratch to delete**: `{logs}` (deleted last, `test ! -e`);
+`/Users/mavasbel/.opencode/plan/2026-11-16-11-42-pi-compatibility-plan-amendment-1.md` (after it is copied into the
+plan). New **step 9.6a — residue**, before the final record: the scan of rule 3.10 against the marker, plus the 50
+directories above; gate: every new path is a deliverable or retained, every deletion has its `test ! -e` output.
+**Briefs from now on** (rule 4.9): each brief gets `{logs}/briefs/<step>/` and returns every path it created,
+changed or deleted.
+
+### A5 — Recorded deviations already accepted
+
+Step 3.1 gate 1: the `bun.lock` rewrite by Bun 1.4.4 is accepted (format only, 12 entries verified). Unscoped
+`test` and `coverage` gates: rule R2 (exactly the 9 baseline failures) stands.
+
+### A6 — Out of scope, reported as follow-ups
+
+`makeHome` should fake `open` on darwin (today every login-based e2e test fails on this Mac). Bun pin 1.4.2 vs
+host 1.4.4.
+
+### Edits this amendment makes to the steps below (the `build` agent applies each one when it reaches the step)
+
+- Step 4.7: its `content` reads "`makeHome`, then an `open` fake in `home.bin` in the exact form of the
+  `xdg-open` fake, then the logins, `token` and `startDaemon` that `startSignedInDaemon`
+  (proxy-process.ts:258-267) runs" (applied in `pi-routing.test.ts`).
+- Steps 4.8, 4.9, 5.8, 5.9, 9.1: each `content` starts with
+  `PATH="{logs}/no-browser-bin:$PATH"` (guard file already created at `{logs}/no-browser-bin/open`, 755) and
+  each gains the `command -v open` gate named in A2.
+- Stage 8: new step 8.0 before 8.1; steps 8.1 and 8.3 as rewritten in A3.
+- Step 4.8a and step 9.6a are added as named in A4.
+- Steps 8.2, 8.4, 8.5 are unchanged.
+
 ## Objective
 
 **Why.** pi takes custom models from `~/.pi/agent/models.json` or from an extension, one `api` and one `baseUrl` per
