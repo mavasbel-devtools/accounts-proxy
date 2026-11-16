@@ -18,6 +18,16 @@
         "typescript": "5.9.3",
       },
     },
+    "apps/pi-extension": {
+      "name": "@accounts-proxy/pi-extension",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@accounts-proxy/core": "workspace:*",
+        "@accounts-proxy/dialect-pi": "workspace:*",
+        "@accounts-proxy/scripts": "workspace:*",
+        "@accounts-proxy/test-support": "workspace:*",
+      },
+    },
     "apps/proxy": {
       "name": "@accounts-proxy/proxy",
       "version": "0.1.0",
@@ -208,6 +218,8 @@
     "@accounts-proxy/dialect-opencode": ["@accounts-proxy/dialect-opencode@workspace:packages/dialect-opencode"],
 
     "@accounts-proxy/dialect-pi": ["@accounts-proxy/dialect-pi@workspace:packages/dialect-pi"],
+
+    "@accounts-proxy/pi-extension": ["@accounts-proxy/pi-extension@workspace:apps/pi-extension"],
 
     "@accounts-proxy/provider-antigravity": ["@accounts-proxy/provider-antigravity@workspace:packages/provider-antigravity"],
 

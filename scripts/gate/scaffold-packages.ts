@@ -40,6 +40,12 @@ const packages: { dir: string; name: string; description: string; dependencies: 
       "@accounts-proxy/dialect-opencode",
     ],
   },
+  {
+    dir: "apps/pi-extension",
+    name: "@accounts-proxy/pi-extension",
+    description: "pi extension: registers the proxy's providers from /.well-known/pi at pi startup.",
+    dependencies: [],
+  },
 ];
 
 for (const pkg of packages) {
