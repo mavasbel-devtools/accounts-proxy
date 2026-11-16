@@ -75,6 +75,24 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
   `no-browser-bin` before `/usr/bin` (verified on pid 7727); progress 23 pass / 16 fail, all failures browser
   callbacks. Continuing: wait for 4.8, then gate, 4.8a marker, 4.9, commit.
 
+## 2026-11-16 — Step 5.1 gate 1: intent-met (main session, same class as the accepted 3.1 precedent)
+
+- Subagent stopped per E1: gate `git diff -- bun.lock | grep '^[+-][^+-]' | grep -v pi-extension` prints 4 interior lines of the new stanza (`version`, `devDependencies`, ...), which cannot contain the string `pi-extension` — the gate as literally written is unsatisfiable for any multi-line stanza (same property as 3.1's).
+- Main session verified firsthand: `git diff -- bun.lock` = 9 insertions, 0 deletions, 2 hunks, both keyed by pi-extension (workspace stanza + workspace-link). Zero unrelated lines — strictly cleaner than the accepted 3.1 rewrite. No plan change needed; chain resumes at 5.2.
+
+## 2026-11-16 — Steps 5.2–5.8 done (subagent chain), 5.9 pending
+
+- 5.2 ports (structural JSON — no core import: the extension ships dependency-free into pi's process), 5.3 service (17 unit), 5.4 adapters (30 unit), 5.5 composition+entry+runtime law (arch 10/10), 5.6 component (4 tests; devDeps added beyond plan: dialect-pi + scripts + core, required by the arch alias law; composition `??` covered via real buildExtension with unset URL), 5.7 e2e (15/15, replay-only, fresh homes, real token command, Bun.serve stubs).
+- 5.8 full guarded tier: exit 1, 124 pass / 76 fail. Gate 1: 66/67 lines over apps/pi-extension/src/**; remaining line 46 (`messageOf` String(error) side) unreachable e2e-alone (every in-try thrower throws Error), covered by unit test; 1 of 2 loop iterations used. Gate 2: 70/71 unique failures ⊆ baseline; the one extra (`CLI help flags after arguments`, 120 s timeout in the parallel run) passes isolated in 14.7 s, and the diff touches no CLI path → flake. No E2E_DEFERRED added.
+- Deviation noted: 5.6 devDeps (scripts, core) beyond the plan's single line — justified by arch law, installs pass; stays.
+- 5.9 stage gate (main session, guarded chain): typecheck exit 0 ✅, arch 8/8 ✅ (chain reached `coverage`), coverage 1128 pass / 10 fail = 9 R2 + 1 NEW (`docs-in-step > environment: every ACCOUNTS_PROXY_* name in the sources is in the API reference` — stage 5's new `ACCOUNTS_PROXY_URL` is not yet in the API reference). That failure is stage-6-owned work (stage 6 exists to update exactly these references; its 6.3/6.5/6.7 gates run docs-in-step). Per the loop rule the owning step is 6.x, which runs next — no reorder. 5.9 e2e evidence = the 5.8 tier (no code/test file changed since; the 120 s CLI flake passes isolated). 5.8.1 accepted by the user (blocked-on-Mac, unit-covered, CI closes). Stray `sleep 30` descendant of the gate task killed. Proceeding to stage 6; stages 5+6 commit after 6.7 revalidates docs-in-step (rule 10, one commit per stage).
+
+## 2026-11-16 — Stage 6 green, stages 5+6 committed
+
+- 6.1 rules reference `docs/reference/2026-11-16-13-12-pi-config-rules.md` (P1–P7 × 7, provenance + request shapes with pi 1.5.2 paths/lines; product §4 → link); 6.2 `## pi` client-setup section (all four grep strings present); 6.3 README (3 grep lines, docs-in-step 16/16, matrix untouched); 6.4 AGENTS.md (both greps); 6.5 drawio (docs-in-step 16/16, xmllint 0, pages unchanged); 6.6 cross-check (`pi --version` 1.5.2, temp-home `pi-config | jq -e .providers` exit 0, `help pi-config` exit 0, lint PASS; {repo}/.cache untouched).
+- 6.7 (main session): lint PASS (78) + docs-in-step/arch 26/26 ✅. The 5.9 coverage 10th failure is closed (docs-in-step 16/16 both in 6.3/6.5 and now 6.7).
+- Commits: `8c0e9be Stage 5: pi-extension (plan ...)` (code+tests+lock+arch), `0fdd87e Stage 6: documentation in step (plan ...)` (7 docs files); `status --porcelain` empty.
+
 ## Standing-rule update (2026-11-16)
 
 - AGENTS.md gained rule 3.10 (residue: snapshot marker before first step, scan + prove deletions after) and 4.9 (brief scratch dirs + created-file lists). The plan predates both: no snapshot marker exists (cannot be retroacted) — residue will be proved best-effort at the end from `git status --porcelain --ignored`, `git worktree list`, branch/stash listings and the logs-dir inventory. Future briefs (stages 5–8) carry their own scratch dirs and file lists.

@@ -28,6 +28,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
     `adapters/outbound`; `provider-gateway` is the shared base the gateway vendors build on.
   - `packages/dialect-*`: `adapters/inbound` codecs.
   - `apps/proxy`: application, `adapters/{inbound,outbound}`, `composition`, `main`.
+  - `apps/pi-extension`: `ports/outbound`, `application`, `adapters/outbound`, `composition`, `main` (a pi extension).
 - **Layers** are recognised by path: `src/domain`, `src/ports/{inbound,outbound}`, `src/application`,
   `src/adapters/{inbound,outbound}`, `src/composition`, `src/main`. A file anywhere else under `src/` fails the gate.
 - **Allowed internal imports:**
@@ -120,9 +121,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude and Antigravity retry once after
   renewing on an upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
-  Every route except `/health` and `/.well-known/opencode` requires the proxy token (`<data>/token.json`, 0600),
-  compared in constant time. The well-known manifest carries no secret: the command that prints the token and the
-  configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
+  Every route except `/health`, `/.well-known/opencode` and `/.well-known/pi` requires the proxy token
+  (`<data>/token.json`, 0600), compared in constant time. The well-known manifests carry no secret (both): the
+  command that prints the token and the configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
 - **Model details.** A model's detailed record takes each field from its provider's own list first, then from the
   reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
   Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
@@ -130,7 +131,10 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   Antigravity; an Antigravity model's limits are its catalog's `maxTokens` / `maxOutputTokens`, never clamped,
   [plan 2026-11-02-21-29](docs/plans/2026-11-02-21-29-antigravity-real-context-window-plan.md)). `claude` and
   `openai` models carry opencode `compatibility` overrides that switch off what those cells refuse (thinking-prefix
-  controls, per-message effort updates; rule O6, live C6).
+  controls, per-message effort updates; rule O6, live C6). The pi configuration (`GET /pi/models.json`,
+  `pi-config`) uses pi's `models.json` schema, one `ap-<provider>` each, every model with its own `api` and
+  `baseUrl` ([rules P1–P7](docs/reference/2026-11-16-13-12-pi-config-rules.md)); `apps/pi-extension` registers
+  them inside pi and runs in pi's Node.js process (no Bun API; `tests/arch/pi-extension-runtime.test.ts`).
   [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md). A fetched model list and the reference
   catalog are reused for `proxy.yaml` `modelListMaxAgeMinutes` (default 1440); `POST /proxy/v1/models/refresh` and
   `models --refresh` read them now, the latter through the running daemon when one listens
