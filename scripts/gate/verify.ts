@@ -47,6 +47,7 @@ const steps: Step[] = [
     command: [bun, "scripts/recon/cli.ts", "parity", `tests/fixtures/captures/recon-parity/opencode-2.1.1/${run}`, ...seqs],
   })),
   { name: "docs lint", command: [bun, "scripts/gate/lint-docs.ts"] },
+  { name: "granularity report", command: [bun, "scripts/gate/granularity-report.ts"] },
 ];
 
 const results: { name: string; outcome: "PASS" | "FAIL" | "INCOMPLETE" }[] = [];

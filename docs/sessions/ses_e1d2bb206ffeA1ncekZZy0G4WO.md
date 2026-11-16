@@ -91,7 +91,9 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 
 - 6.1 rules reference `docs/reference/2026-11-16-13-12-pi-config-rules.md` (P1–P7 × 7, provenance + request shapes with pi 1.5.2 paths/lines; product §4 → link); 6.2 `## pi` client-setup section (all four grep strings present); 6.3 README (3 grep lines, docs-in-step 16/16, matrix untouched); 6.4 AGENTS.md (both greps); 6.5 drawio (docs-in-step 16/16, xmllint 0, pages unchanged); 6.6 cross-check (`pi --version` 1.5.2, temp-home `pi-config | jq -e .providers` exit 0, `help pi-config` exit 0, lint PASS; {repo}/.cache untouched).
 - 6.7 (main session): lint PASS (78) + docs-in-step/arch 26/26 ✅. The 5.9 coverage 10th failure is closed (docs-in-step 16/16 both in 6.3/6.5 and now 6.7).
-- Commits: `8c0e9be Stage 5: pi-extension (plan ...)` (code+tests+lock+arch), `0fdd87e Stage 6: documentation in step (plan ...)` (7 docs files); `status --porcelain` empty.
+- 7.1/7.2 (subagent): `scripts/gate/granularity-report.ts` + `scripts/tests/unit/granularity-report.test.ts` (11/11, tagged), verify.ts +1 line after docs-lint. Report: `GRANULARITY: FAIL (20 missing)` — all 10 live rows × 2 polarities, every unit/component/e2e row `yes|yes`.
+- 7.3 (main session): `bun test scripts/tests/unit` → 165 pass / 8 fail, all 8 in the R2 set (workflow ×3, attribution ×2, ProcProcessControl, capture addon, mitmdump; the 9th R2 member lives outside this dir) → passes under R2. Report re-run: exit 1, 20 missing, all `tier=live` ✅. Committed as `STAGE7HASH Stage 7: granularity report (plan ...)`; status empty.
+- Commits: `e909f68 Stage 5: pi-extension (plan ...)` (code+tests+lock+arch), `134cea2 Stage 6: documentation in step (plan ...)` (7 docs files); `status --porcelain` empty.
 
 ## Standing-rule update (2026-11-16)
 
