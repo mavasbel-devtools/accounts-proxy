@@ -210,6 +210,7 @@ describe("architecture law", () => {
       "@accounts-proxy/dialect-gemini",
       "@accounts-proxy/dialect-openai",
       "@accounts-proxy/dialect-opencode",
+      "@accounts-proxy/dialect-pi",
       "@accounts-proxy/provider-antigravity",
       "@accounts-proxy/provider-cheaper-inference",
       "@accounts-proxy/provider-claude",

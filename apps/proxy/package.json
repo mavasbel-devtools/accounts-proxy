@@ -17,6 +17,7 @@
     "@accounts-proxy/dialect-gemini": "workspace:*",
     "@accounts-proxy/dialect-openai": "workspace:*",
     "@accounts-proxy/dialect-opencode": "workspace:*",
+    "@accounts-proxy/dialect-pi": "workspace:*",
     "@accounts-proxy/provider-antigravity": "workspace:*",
     "@accounts-proxy/provider-cheaper-inference": "workspace:*",
     "@accounts-proxy/provider-claude": "workspace:*",

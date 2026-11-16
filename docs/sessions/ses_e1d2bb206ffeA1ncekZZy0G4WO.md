@@ -27,7 +27,21 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 - [x] 2.2 ClientOrigin rename: `client-origin.ts` created, all 6 listed users updated, no extra users; `grep OpencodeOrigin` empty; typecheck exit 0; `bun run test` 1053 pass / 9 fail = exactly the R2 set. Typecheck also exposed a real 2.1 error (`exactOptionalPropertyTypes` on `aiSdkPackage`); fixed in place per 2.2's problems row; 2.1 tests still 7/7.
 - [x] 2.3 dialect-opencode on shared code: golden `cmp` exit 0 over the real 994-model catalog (byte-identical); test diff touches exactly lines 7 and 96 (3 insertions from the mandated import split); `bun test packages/dialect-opencode` 5 pass + 1 pre-existing vendored-reference failure (`@opencode/core/model` missing in `tests/reference`, proven identical on pristine tree by A/B); scoped coverage PASS (100%, complete).
 - [x] 2.4 pi inbound port `PiConfigPort` created; typecheck exit 0; arch 8/8.
-- [x] 2.5 stage gate: typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
+- [x] 2.5 stage gate: typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). Committed as `e4cee89 Stage 2: shared client rules (plan 2026-11-15-23-52)` (13 files).
+
+## Stage 3 (packages/dialect-pi)
+
+- [x] 3.1 scaffold: workspace files + arch list + proxy dep created; `bun install` exit 0 (253 installs), frozen re-check exit 0, dialect-pi symlink present. bun.lock also carries Bun 1.4.4's path-normalization of 12 duplicate 1.4.2 nested entries — main session verified every removed version+hash still resolves in the new lock. User accepted the rewrite as a recorded host-Bun consequence 2026-11-16 (plan problems row option a).
+- [ ] 3.2 thinking rules (same subagent resumed)
+- [ ] 3.3 codec
+- [ ] 3.4 component suite over reference catalog
+- [ ] 3.2 thinking rules
+- [ ] 3.3 codec
+- [ ] 3.4 component suite over reference catalog
+- [x] 3.2 thinking rules: `pi-thinking.ts` + 13 unit tests, gate 1 13/13, scoped per-file 100% (one test-expectation self-correction: `off` is provider-based, implementation unchanged).
+- [x] 3.3 codec: `pi-config-codec.ts` + 12 unit tests; `bun test packages/dialect-pi` 25/25 (27/27 after 3.4); scoped coverage PASS (100%); arch + typecheck green (arch needed 3.4's component dir; one `toContain` cast fix).
+- [x] 3.4 component over reference catalog: 650 models checked, schema/api/maps/cost assertions + negatives; scoped coverage PASS.
+- [x] 3.5 stage gate: typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
 
 ## Stage 1 (pi's schema and the schema checker)
 

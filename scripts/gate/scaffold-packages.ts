@@ -20,6 +20,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
   { dir: "packages/dialect-openai", name: "@accounts-proxy/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   { dir: "packages/dialect-gemini", name: "@accounts-proxy/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   { dir: "packages/dialect-opencode", name: "@accounts-proxy/dialect-opencode", description: "opencode v2 provider configuration and well-known manifest (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/dialect-pi", name: "@accounts-proxy/dialect-pi", description: "pi models.json configuration and well-known manifest (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   {
     dir: "apps/proxy",
     name: "@accounts-proxy/proxy",
