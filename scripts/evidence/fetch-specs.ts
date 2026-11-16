@@ -73,6 +73,8 @@ const sources: Source[] = [
   // Plan 2026-10-16 (detailed model catalog, opencode configuration): opencode v2's model catalog and config schema.
   { file: "models-opencode-reference.json", url: "https://models.opencode.ai/api.json", extract: modelsOpencodeReference },
   { file: "opencode-config-schema.json", url: "https://opencode.ai/config.json" },
+  // Plan 2026-11-15-23-52 (pi compatibility): pi 1.5.2's models.json schema (rule P7).
+  { file: "pi-models-schema.json", url: "https://pi.dev/schemas/models.schema.json" },
   // Plan P4.6 amendment A: the 2026-10-12 OpenCode Console (new inference addresses, device login, service-account keys).
   { file: "opencode-zen-models.json", url: "https://opencode.ai/inference/v1/models" },
   { file: "opencode-go-models.json", url: "https://opencode.ai/inference/go/v1/models" },

@@ -13,6 +13,14 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 - [x] 0.6 baseline gate: `bun run verify` → `{logs}/baseline-verify.log`, `exit=1`, `GATE: FAIL`. Passing in baseline: typecheck, build, docs lint (77 files). Failing in baseline: unit+component+arch (9 tests: capture addon, mitmdump capture, change attribution x2, NodeHttpServer busy-port, ProcProcessControl, workflow catalogue x3), e2e (login-based tests: `no browser callback within 30 s`, plus 120 s timeouts), merged coverage (missing inputs), recon parity x9 (needs Linux/browser). No granularity step exists yet (stage 7 creates it).
 - [x] 0.7 stage 0 gate (below)
 
+## Stage 1 (pi's schema and the schema checker)
+
+- [x] 1.1 pin schema (subagent ses_e1caa2d7affezys7KI5oox0snk): `pi-models-schema.json` pinned, SHA `3e4cb196…ad8bdc`, identical to installed pi 1.5.2 copy, manifest entry status 200; diff only `fetch-specs.ts` + `manifest.json` + new schema file.
+- [x] 1.2 checker keywords (subagent ses_e1caa14d2ffeVFJbDZCUsu74lg, verified by main session): 8 keywords with 2020-12 semantics, 16 new tests, `bun test tests/support` green; opencode codec tests still pass (3/3).
+- [x] 1.2.2/1.2.3 as written fail environmentally (`bun -e` from root cannot resolve `@accounts-proxy/test-support`; no root link by design, same in main checkout). User authorized the minimal correction 2026-11-16: run the identical check with cwd `tests/support` → `[]` (exit 0) and `["$.providers.x.models[0]: missing id"]` (exit 0). Plan text untouched; the plan agent consolidates the wording.
+- [x] 1.2.4: `bun run coverage` → exit 1 with exactly the baseline 9 failures, no gate line — unchanged from baseline behavior.
+- [x] 1.3 stage gate: `typecheck` exit 0; `bun test tests/support tests/arch` exit 0 (38 pass, 0 fail); `lint-docs` PASS (77 files); 1.1.1 + corrected 1.2.2 re-run green.
+
 ## Baseline gate (step 0.6, unchanged tree at `0fd623a` + docs commit `07c67e0`)
 
 Command: `bun run verify > {logs}/baseline-verify.log 2>&1` (re-run with 3 h budget after the first attempt hit the 30 min cap mid-e2e). Output: `{logs}/baseline-verify.log` (3133 lines + `exit=1`).
