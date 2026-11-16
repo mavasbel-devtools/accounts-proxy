@@ -1,8 +1,9 @@
-// `quota <provider>`, `models [<provider>] [--json] [--refresh]` and `opencode-config`: what the providers offer and report.
+// `quota <provider>`, `models [<provider>] [--json] [--refresh]`, `opencode-config` and `pi-config`: what the providers offer and report.
 import type { CatalogSource } from "@accounts-proxy/core/domain/models.ts";
 import type { UsagePort } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
 import type { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { PiConfigPort } from "@accounts-proxy/core/ports/inbound/pi.ts";
 import type { DescribeModelsPort, RequestModelRefreshPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { CliCommand, type CommandHelp, UsageError, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, noArguments, providerArgument, PROVIDER_ARGUMENT, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
@@ -58,6 +59,21 @@ export const OPENCODE_CONFIG_HELP: CommandHelp = {
   examples: [
     { name: "bun run proxy opencode-config", text: "print the configuration" },
     { name: "bun run proxy opencode-config > /tmp/opencode/ap-config.json", text: "save it to a file" },
+  ],
+};
+
+export const PI_CONFIG_HELP: CommandHelp = {
+  name: "pi-config",
+  synopsis: ["pi-config"],
+  summary: "the pi models.json document of every model (JSON)",
+  description: [
+    "The document GET /pi/models.json serves: one `ap-<provider>` provider per enabled provider in pi's `models.json` schema, with the models, their limits and variants.",
+  ],
+  exits: [{ name: "0", text: "the configuration was printed" }, FAILED_EXIT, USAGE_EXIT],
+  environment: [HOME_VARIABLE],
+  examples: [
+    { name: "bun run proxy pi-config", text: "print the configuration" },
+    { name: "bun run proxy pi-config > /tmp/pi/models.json", text: "save it to a file" },
   ],
 };
 
@@ -138,5 +154,22 @@ export class OpencodeConfigCommand extends CliCommand {
   async run(args: readonly string[], out: Writer): Promise<void> {
     noArguments(args, "opencode-config");
     out(`${JSON.stringify(this.opencode.config(await this.models.describeModels(), this.origin), null, 2)}\n`);
+  }
+}
+
+export class PiConfigCommand extends CliCommand {
+  readonly help = PI_CONFIG_HELP;
+
+  constructor(
+    private readonly models: DescribeModelsPort,
+    private readonly pi: PiConfigPort,
+    private readonly origin: ClientOrigin,
+  ) {
+    super();
+  }
+
+  async run(args: readonly string[], out: Writer): Promise<void> {
+    noArguments(args, "pi-config");
+    out(`${JSON.stringify(this.pi.config(await this.models.describeModels(), this.origin), null, 2)}\n`);
   }
 }

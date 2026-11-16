@@ -79,7 +79,7 @@ import { CommandLineDriver } from "@accounts-proxy/proxy/adapters/inbound/cli/co
 import { PROGRAM } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
 import { type CliCommand, CommandRoot, type Writer } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { AccountCommand, AccountListCommand, AccountRemoveCommand, AccountUseCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
-import { ModelsCommand, OpencodeConfigCommand, QuotaCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
+import { ModelsCommand, OpencodeConfigCommand, PiConfigCommand, QuotaCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
 import { type CliDaemon, ServeCommand, StatusCommand, TokenCommand } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
 import { CostCommand, type CostSeams, type ReconcileOutcome } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/cost-command.ts";
 import { SpendReportService } from "@accounts-proxy/proxy/application/spend-report-service.ts";
@@ -121,6 +121,7 @@ import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-ori
 import type { RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { ModelReferencePort } from "@accounts-proxy/core/ports/outbound/model-reference.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
+import { PiConfigCodec } from "@accounts-proxy/dialect-pi/adapters/inbound/pi-config-codec.ts";
 import { BUILTIN_REFERENCE } from "@accounts-proxy/proxy/adapters/outbound/builtin-model-reference.ts";
 import { MODEL_REFERENCE_URL, ModelReferenceCatalog, ModelReferenceList } from "@accounts-proxy/proxy/adapters/outbound/model-reference-catalog.ts";
 import type { ModelListCachePort } from "@accounts-proxy/core/ports/outbound/model-list-cache.ts";
@@ -599,7 +600,7 @@ function buildGateways(deps: GatewayDeps): GatewayGraph[] {
 export type Routes = {
   readonly handler: HttpHandler;
   readonly errors: ErrorReporterPort;
-  readonly ports: Pick<CliPorts, "models" | "opencode" | "origin" | "access" | "health">;
+  readonly ports: Pick<CliPorts, "models" | "opencode" | "pi" | "origin" | "access" | "health">;
   /** The daemon's refresh of the model lists, also run by `models --refresh` when no daemon listens. */
   readonly refresh: RefreshModelsPort;
 };
@@ -613,6 +614,7 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const describe = new DescribeModelsService(models, graph.reference);
   const refresh = new RefreshModelsService(providers, graph.reference, describe);
   const opencode = new OpencodeConfigCodec();
+  const pi = new PiConfigCodec();
   const origin: ClientOrigin = {
     origin: `http://${LOOPBACK_HOST}:${graph.config.port}`,
     // Absolute, so opencode can spawn it from any directory (rule O5).
@@ -622,12 +624,12 @@ export function buildRoutes(graph: ProviderGraph, home: string, entry: readonly 
   const errors = new LoggingErrorReporter(graph.logger);
   const routes = new RouteHandler(
     [new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()],
-    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, refresh, opencode, origin },
+    { access, passthrough: new PassthroughService(providers, graph.config.aliases), health, describe, refresh, opencode, pi, origin },
     errors,
   );
   const log = graph.exchangeLog;
   const handler = log !== undefined ? new LoggingHttpHandler(routes, new ClientExchangeService(log.sink, log.scope, graph.clock, graph.random)) : routes;
-  return { handler, errors, refresh, ports: { models: describe, opencode, origin, access, health } };
+  return { handler, errors, refresh, ports: { models: describe, opencode, pi, origin, access, health } };
 }
 
 export async function buildCli(options: ContainerOptions): Promise<{ readonly config: ProxyConfig; readonly driver: Driver; readonly closeLogs: () => Promise<void> }> {
@@ -729,6 +731,7 @@ export function proxyCommands(ports: CliPorts, daemon: CliDaemon): CliCommand {
     new QuotaCommand(ports.usage),
     new ModelsCommand(ports.models, ports.refresh),
     new OpencodeConfigCommand(ports.models, ports.opencode, ports.origin),
+    new PiConfigCommand(ports.models, ports.pi, ports.origin),
     new ServeCommand(daemon, ports.access, ports.health),
     new TokenCommand(ports.access),
     new StatusCommand(ports.status),

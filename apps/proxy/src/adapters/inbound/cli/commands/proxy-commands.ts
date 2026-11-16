@@ -6,12 +6,13 @@ import type { AccountAdminPort, LoginPort, UsagePort } from "@accounts-proxy/cor
 import type { DaemonStatusPort } from "@accounts-proxy/core/ports/inbound/daemon.ts";
 import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
 import type { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import type { PiConfigPort } from "@accounts-proxy/core/ports/inbound/pi.ts";
 import type { DescribeModelsPort, HealthPort, RequestModelRefreshPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import type { SpendReportPort } from "@accounts-proxy/core/ports/inbound/spend.ts";
 import type { CommandHelp } from "@accounts-proxy/proxy/adapters/inbound/cli/command.ts";
 import { ACCOUNT_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/account-command.ts";
 import { FAILED_EXIT, HOME_VARIABLE, USAGE_EXIT } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/arguments.ts";
-import { MODELS_HELP, OPENCODE_CONFIG_HELP, QUOTA_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
+import { MODELS_HELP, OPENCODE_CONFIG_HELP, PI_CONFIG_HELP, QUOTA_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/catalog-commands.ts";
 import { COST_HELP, type CostSeams } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/cost-command.ts";
 import { SERVE_HELP, STATUS_HELP, TOKEN_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/daemon-commands.ts";
 import { LOGIN_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/login-command.ts";
@@ -24,6 +25,7 @@ export type CliPorts = {
   readonly models: DescribeModelsPort;
   readonly refresh: RequestModelRefreshPort;
   readonly opencode: OpencodeConfigPort;
+  readonly pi: PiConfigPort;
   readonly origin: ClientOrigin;
   readonly access: AccessPort;
   readonly health: HealthPort;
@@ -56,5 +58,5 @@ export const PROXY_HELP: CommandHelp = {
     { name: "bun run proxy token", text: "the key clients send" },
     { name: "bun run proxy help login", text: "the options, exit codes and examples of one command" },
   ],
-  subcommands: [LOGIN_HELP, ACCOUNT_HELP, QUOTA_HELP, MODELS_HELP, OPENCODE_CONFIG_HELP, SERVE_HELP, TOKEN_HELP, STATUS_HELP, COST_HELP, HELP_HELP],
+  subcommands: [LOGIN_HELP, ACCOUNT_HELP, QUOTA_HELP, MODELS_HELP, OPENCODE_CONFIG_HELP, PI_CONFIG_HELP, SERVE_HELP, TOKEN_HELP, STATUS_HELP, COST_HELP, HELP_HELP],
 };

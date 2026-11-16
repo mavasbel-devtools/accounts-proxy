@@ -4,6 +4,7 @@ import { describeCatalog, type DetailedCatalog } from "@accounts-proxy/core/doma
 import type { ModelCatalog, ProviderId } from "@accounts-proxy/core/domain/models.ts";
 import type { ClientOrigin } from "@accounts-proxy/core/ports/inbound/client-origin.ts";
 import { OpencodeConfigPort } from "@accounts-proxy/core/ports/inbound/opencode.ts";
+import { PiConfigPort } from "@accounts-proxy/core/ports/inbound/pi.ts";
 import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { AccountAdminPort, LoginPort, UsagePort, type AccountSummary, type LoginOptions } from "@accounts-proxy/core/ports/inbound/accounts.ts";
 import { DaemonConsolePort, DaemonStatusPort, type DaemonStatus } from "@accounts-proxy/core/ports/inbound/daemon.ts";
@@ -87,6 +88,14 @@ class OpencodeConfig extends OpencodeConfigPort {
     return {};
   }
 }
+class PiConfig extends PiConfigPort {
+  config(catalogs: readonly DetailedCatalog[], at: ClientOrigin) {
+    return { providers: catalogs.length, origin: at.origin };
+  }
+  manifest() {
+    return {};
+  }
+}
 class Access extends AccessPort {
   calls = 0;
   async token() {
@@ -154,7 +163,7 @@ class FakeSignal extends ShutdownSignal {
 function cli(accounts: AccountSummary[] = []) {
   const out: string[] = [];
   const err: string[] = [];
-  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status(), spend: new Spend(), costSeams: { now: () => 1_791_331_200_000, sleep: async () => undefined, reconcile: async () => ({ skipped: "not-found" as const }), notify: () => undefined } };
+  const ports = { login: new Login(), accounts: new Accounts(accounts), usage: new Usage(), models: new Models(), refresh: new Refresh(), opencode: new OpencodeConfig(), pi: new PiConfig(), origin: { origin: "http://127.0.0.1:4141", tokenCommand: ["ir", "token"] }, access: new Access(), health: new Health(), status: new Status(), spend: new Spend(), costSeams: { now: () => 1_791_331_200_000, sleep: async () => undefined, reconcile: async () => ({ skipped: "not-found" as const }), notify: () => undefined } };
   const daemon = { server: new FakeServer(), shutdown: new FakeSignal(), console: new FakeConsole(), models: new FakeWarm() };
   const driver = new CommandLineDriver(proxyCommands(ports, daemon), PROGRAM, (t) => out.push(t), (t) => err.push(t));
   return { driver, ports, daemon, out, err, run: (...argv: string[]) => driver.run(argv) };
@@ -185,6 +194,7 @@ describe("the proxy's commands", () => {
     [["help", "quota"], "quota"],
     [["models", "-h"], "models"],
     [["opencode-config", "--help"], "opencode-config"],
+    [["pi-config", "--help"], "pi-config"],
     [["serve", "--help"], "serve"],
     [["token", "--help"], "token"],
     [["status", "--help"], "status"],
@@ -203,7 +213,7 @@ describe("the proxy's commands", () => {
 
   test("every command's help has a description, its exit codes and at least two examples run as printed", () => {
     const all = [PROXY_HELP, ...PROXY_HELP.subcommands!, ...PROXY_HELP.subcommands!.flatMap((sub) => sub.subcommands ?? [])];
-    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "serve", "token", "status", "cost", "help", "list", "use", "remove"]);
+    expect(all.map((help) => help.name)).toEqual(["", "login", "account", "quota", "models", "opencode-config", "pi-config", "serve", "token", "status", "cost", "help", "list", "use", "remove"]);
     for (const help of all) {
       expect(help.description.length).toBeGreaterThan(0);
       expect(help.exits.map((exit) => exit.name)).toContain("2");
@@ -262,6 +272,7 @@ describe("the proxy's commands", () => {
     [["models", "--refresh", "--refresh"], "models takes at most one provider, --json and --refresh", "models"],
     [["models", "nope"], "unknown provider nope", "models"],
     [["opencode-config", "x"], "opencode-config takes no arguments", "opencode-config"],
+    [["pi-config", "x"], "pi-config takes no arguments", "pi-config"],
     [["serve", "x"], "serve takes no arguments", "serve"],
     [["token", "x"], "token takes no arguments", "token"],
     [["status", "x"], "status takes no arguments", "status"],
@@ -334,6 +345,8 @@ describe("the proxy's commands", () => {
     expect(listed.catalogs[0].models[0]).toEqual({ id: "antigravity/g", provider: "antigravity", model: "g", name: "G", formats: ["gemini"], contextWindow: 80000, maxOutputTokens: 65536, sources: { name: "provider:antigravity", contextWindow: "provider:antigravity", maxOutputTokens: "provider:antigravity" } });
     expect(await c.run("opencode-config")).toBe(0);
     expect(JSON.parse(c.out[1]!)).toEqual({ providers: 4, origin: "http://127.0.0.1:4141" });
+    expect(await c.run("pi-config")).toBe(0);
+    expect(JSON.parse(c.out[2]!)).toEqual({ providers: 4, origin: "http://127.0.0.1:4141" });
   });
 
   test("models --refresh: the daemon's or this process's refresh, as text or JSON; no description is read", async () => {

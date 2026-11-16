@@ -92,6 +92,52 @@
         }
       }
     },
+    "/.well-known/pi": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "piManifest",
+        "summary": "The manifest a pi client reads: the command that prints the proxy token and the configuration URL (plan 2026-11-15-23-52, rules P1-P7). It carries no secret.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PiManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pi/models.json": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "operationId": "piConfig",
+        "summary": "The pi models.json document of every model of every enabled provider: one provider `ap-<provider>` each (plan 2026-11-15-23-52, rules P1-P7).",
+        "responses": {
+          "200": {
+            "description": "A pi models.json document; it validates against pi's published schema (docs/reference/specs/pi-models-schema.json, https://pi.dev/schemas/models.schema.json).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PiConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/PlainError"
+          }
+        }
+      }
+    },
     "/opencode/config.json": {
       "get": {
         "tags": [
@@ -1033,6 +1079,68 @@
                 "models"
               ]
             }
+          }
+        }
+      },
+      "PiManifest": {
+        "type": "object",
+        "required": [
+          "auth",
+          "config"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "auth": {
+            "type": "object",
+            "required": [
+              "command",
+              "env"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "`env ACCOUNTS_PROXY_HOME=<data> <bun> <entry> token`: prints the proxy token."
+              },
+              "env": {
+                "type": "string",
+                "enum": [
+                  "ACCOUNTS_PROXY_TOKEN"
+                ]
+              }
+            }
+          },
+          "config": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "`http://127.0.0.1:<port>/pi/models.json`"
+              }
+            }
+          }
+        }
+      },
+      "PiConfig": {
+        "type": "object",
+        "required": [
+          "$schema",
+          "providers"
+        ],
+        "description": "A pi models.json document; it validates against pi's published schema (docs/reference/specs/pi-models-schema.json, https://pi.dev/schemas/models.schema.json).",
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "providers": {
+            "type": "object"
           }
         }
       },
