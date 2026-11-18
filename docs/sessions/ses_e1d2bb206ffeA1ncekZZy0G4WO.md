@@ -314,3 +314,25 @@ Pid 75452 (started 2026-11-16) still held `127.0.0.1:4142`; `lsof -p 75452 -a -d
 
 Gates: 1. `lsof -nP -iTCP:4142 -sTCP:LISTEN` → no output. 2. `kill -0 75452` → `no such process` (exit 1).
 3. `lsof -nP -iTCP:4141 -sTCP:LISTEN` → `bun 35662 … 127.0.0.1:4141 (LISTEN)`, the user's daemon untouched.
+
+## Stage 8A.1-8A.6 — green (2026-11-18 11:00, main session re-ran every gate)
+
+| Step | Gate and output, re-run here |
+|---|---|
+| 8A.1 | `docs/reference/2026-11-18-10-34-antigravity-tool-id-probe.md` created; `grep -c 'google-shared.js:125'` → `1`; docs lint `PASS (80 markdown files)` |
+| 8A.2 | `AGENTS.md` gains one wire-law row; `grep -c 'ap_call_<n>'` → `1`; lint `0` |
+| 8A.3 | `^#### uc-pi-7` → `1`; `uc-pi-7 — none` → `1`; `idCalls` in the architecture → `1`; lint `0` |
+| 8A.4 | `packages/provider-antigravity/src/domain/native-gemini.ts:195` `function idCalls`, `:370` `contents = idCalls(contents, model.wireId);`; `bun run typecheck` → exit `0`; `bun test packages/provider-antigravity` → `136 pass / 0 fail / 500 expect()` |
+| 8A.5 | `bun test …/tests/unit` → `73 pass / 0 fail`; scoped coverage `100% (860/860 statements, 723/723 branches, 176/176 functions, 669/669 lines)`; report row `uc-pi-7 | unit | none | yes | yes` |
+| 8A.6 | `bun test …/tests/component` → `63 pass / 0 fail`; report row `uc-pi-7 | component | none | yes | yes` |
+
+The main session re-ran `bun run typecheck` (exit `0`), `bun test packages/provider-antigravity` (136 pass) and read the
+e2e diff: the positive scenario expects `ap_call_1` on the call and its response; the negative one expects no id on a
+Gemini target.
+
+**8A.7 gate 1 red, root cause known.** `apps/proxy/tests/e2e/gemini-cell.test.ts:16` logs in through
+`startSignedInDaemon`, which fakes only `xdg-open`; on darwin the launcher spawns `open`
+(`apps/proxy/src/adapters/outbound/browser-launcher.ts:15`) and A2's guard makes it exit `0`, so no callback arrives
+(`no browser callback within 30 s`, 0 pass / 2 fail). A1 already fixed this class in
+`apps/proxy/tests/e2e/pi-routing.test.ts:40-45` by writing an `open` fake into `home.bin`. Amendment 6 applies that same
+block in this file; nothing else changes.

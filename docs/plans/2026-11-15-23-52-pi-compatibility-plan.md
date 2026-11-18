@@ -981,6 +981,67 @@ per-cell table with the law's row green.
 process on the user's host). `8A.1` -> `8A.7` — subagent `general`, one subagent in order, write set
 `docs/reference/`, `AGENTS.md`, `docs/design/`, `packages/provider-antigravity/**`, `apps/proxy/tests/e2e/gemini-cell.test.ts`.
 
+## Amendment 6 (approved 2026-11-18; amendment file SHA-256
+  `e54a6453e2ae5d7782a5e8e4705154f778f50bbee63602d2df6b0095b75f2989`; base plan verified unchanged at
+  `9cd376583fa252554e7650aa17da2ec987138248b62c5b67dfc47d2053e49565`)
+
+Status on 2026-11-18 11:05: stage 8A steps 8A.1-8A.6 green (evidence in section 1 below, re-run by the main
+session); 8A.7 gate 1 was red for the darwin login defect A1 already solved, and section 2 is the clause that
+closes it. Stage 8A is the last uncommitted stage.
+
+### 1. What stage 8A has already proven (main session re-ran every gate below)
+
+| Step | Gate | Output, re-run by the main session |
+|---|---|---|
+| 8A.1 | reference note | `docs/reference/2026-11-18-10-34-antigravity-tool-id-probe.md`, `grep -c 'google-shared.js:125'` → `1`; docs lint `PASS (80 files)` |
+| 8A.2 | `AGENTS.md` row | `grep -c 'ap_call_<n>'` → `1`; lint `0` |
+| 8A.3 | design nodes | `^#### uc-pi-7` → `1`; `uc-pi-7 — none` → `1`; `idCalls` in the architecture → `1`; lint `0` |
+| 8A.4 | `idCalls` | `native-gemini.ts:195` (`function idCalls`), `:370` (`contents = idCalls(contents, model.wireId);`); `bun run typecheck` → exit `0`; `bun test pack…/prov…-antigrav…` → `136 pass / 0 fail / 500 expect()` |
+| 8A.5 | unit | `73 pass / 0 fail`; scoped coverage `100% (860/860 statements, 723/723 branches, 176/176 functions, 669/669 lines)`; report row `uc-pi-7 | unit | none | yes | yes` |
+| 8A.6 | component | `63 pass / 0 fail`; report row `uc-pi-7 | component | none | yes | yes` |
+
+The e2e scenarios exist and read correctly (`git diff` reviewed: the positive case uses the file's own `claude-sonnet-5-5-low`
+id and expects `ap_call_1` on both parts; the negative case uses a signed Gemini call and expects no id).
+
+### 2. Why 8A.7 gate 1 was red, and the one change that closes it
+
+**Known.** `apps/proxy/tests/e2e/gemini-cell.test.ts:16` calls `startSignedInDaemon(seams)`, which builds the home with
+`makeHome` and logs in twice. `makeHome` fakes only `xdg-open` (`tests/support/e2e/proxy-process.ts:144-153`), while
+`apps/proxy/src/adapters/outbound/browser-launcher.ts:15` spawns `open` on darwin. With A2's global guard on `PATH`, that
+`open` exits `0`, so no browser ever opens and the daemon never receives a callback → `no browser callback within 30 s`
+before any test runs.
+
+**Precedent, already approved and green.** A1 fixed exactly this in `apps/proxy/tests/e2e/pi-routing.test.ts:40-45`:
+`makeHome(...)`, then `writeFileSync(join(home.bin, "open"), '#!/bin/sh\nexec "<node>" "<repo>/tests/support/e2e/fake-browser.ts" "$1"\n')`,
+then `chmodSync(…, 0o755)`, then the logins and `startDaemon`. That file runs 8 pass / 0 fail. The daemon child's `PATH`
+has `home.bin` first, so its fake wins over A2's guard.
+
+**The change.** `8A.7` applies that same block, inline, in `gemini-cell.test.ts`, and drops the
+`startSignedInDaemon(seams)` call. No new file, no harness change (the harness fix stays A6's follow-up), write set
+unchanged: `apps/proxy/tests/e2e/gemini-cell.test.ts`.
+
+**Fallback, if the login still fails.** Stop and E1 with the daemon's log tail; do not widen the write set.
+
+### 3. The design `;` that 8A.3 had to fix, recorded
+
+8A.3 appended `uc-pi-7 — none (…)` after the `uc-pi-5 → …` sentence, which ended in `.`; the granularity report splits
+the paragraph on `;`, so uc-pi-5's list collapsed to `["none"]` and 26 rows turned “unknown dependency”
+(`GRANULARITY: FAIL (26 missing)`). The fix — end uc-pi-5's clause with `;` — is correct, is in the tree, and the
+report is `PASS (148 scenarios)`. A6 records it so the plan matches the tree; nothing else about 8A.3 changes.
+
+### 4. What changes in the plan
+
+| Step | Change |
+|---|---|
+| 8A.7 | content gains: "replace the `startSignedInDaemon(…)` call with A1's block at `pi-routing.test.ts:40-45` (home, `open` fake, `chmod 755`), then the two logins and `startDaemon`, as that file does"; gates become 1. `grep -c 'home.bin, "open"' <target>` → `1`; 2. `PATH={logs}/no-browser-bin:$PATH bun test <target>` → exit `0`; 3. granularity report → `PASS` with the uc-pi-7 e2e row `yes/yes`; 4. `bun run verify` → no new failure against `{record}` § Baseline gate; 5. commit per rule 10 |
+| 8A.3 | no change; A6 only records the `;` that was already applied |
+| 9.1 | gate 1 adds: `bun test apps/proxy/tests/e2e/gemini-cell.test.ts` (guarded) → exit `0` |
+
+### 5. Out of scope, unchanged
+
+A6's follow-up (`makeHome` faking `open` on darwin for every e2e file) stays out of this plan; it is recorded here so the
+next e2e author does not rediscover it.
+
 ## Delegation map
 
 | Step | Runs in | Why it can run there | Write set | Returns |
