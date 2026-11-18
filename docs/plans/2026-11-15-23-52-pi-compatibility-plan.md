@@ -127,6 +127,355 @@ host 1.4.4.
 - Step 4.8a and step 9.6a are added as named in A4.
 - Steps 8.2, 8.4, 8.5 are unchanged.
 
+## Amendment 2 (approved 2026-11-16; amendment file SHA-256
+  `19cebbbc78a41c1f3c97f82951fc96a3db7812fcc0de42be9b19f073a3047927`; base plan verified unchanged at
+  `b73feda62e16e5ead48aa10695029353659131eac049734ac94f086de1156b2f`)
+
+- Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compatibility/docs/plans/2026-11-15-23-52-pi-compatibility-plan.md`
+- Base plan SHA-256 (with amendment 1 copied in, verified 2026-11-16 14:15):
+  `b73feda62e16e5ead48aa10695029353659131eac049734ac94f086de1156b2f`
+- Applies on top of amendment 1. Where the two differ, this amendment wins.
+- Written by the `plan` agent on 2026-11-16 at 14:15. When it is approved, the `build` agent copies it into the plan
+  under `## Amendment 2`, right after amendment 1, and records the new plan SHA-256 in `{record}`.
+
+## Status when this was written
+
+- Stages 0–7 are green and committed. The last stage commit is `b091aef`, and the record commit is `e184f85`.
+- Step 8.1's eight live files exist but are not committed:
+  `{worktree}/apps/pi-extension/tests/live/{pi-binary,pi-claude,pi-antigravity,pi-openai,pi-openrouter,pi-opencode,pi-opencode-go,pi-cheaper-inference}.test.ts`
+  (57 tests, all skipped without the flag; `GRANULARITY: PASS (146 scenarios)`).
+- Step 8.2 has been blocked since 2026-11-16. The user's daemon (pid 96176, `127.0.0.1:4141`) serves the user's own
+  opencode session, so it cannot be stopped.
+- The user's direction (2026-11-16): never stop the current daemon. Start a disposable daemon from the worktree on
+  another port instead.
+
+## Known (each fact with its evidence)
+
+| # | Fact | Evidence |
+|---|---|---|
+| K1 | More than one process may use one accounts file; the design covers this. A renewal runs under a cross-process lock that re-reads the pool first, so a renewal another process already did is reused, not repeated. A renewed credential is written by a locked read-change-write. | `packages/core/src/ports/outbound/session.ts:5-10,61-110`; `packages/core/src/domain/accounts.ts:25-30` (the token-call deadline stays under the 60 s lock staleness "or two processes could spend the same refresh token"); `apps/proxy/src/adapters/outbound/file-lock.ts:1-4,45-70` (an `O_CREAT|O_EXCL` lock file) |
+| K2 | The accounts file is read on every use and written only by a locked, atomic read-change-write. Every process takes the lock files under `locks/`. | `docs/reference/2026-10-17-19-26-proxy-api.md:188-189` |
+| K3 | The project documents a second daemon as a supported pattern: `ACCOUNTS_PROXY_HOME=/tmp/opencode/ap-test bun run proxy serve` ("run a separate daemon with its own data directory"). | `apps/proxy/src/adapters/inbound/cli/commands/daemon-commands.ts:27` |
+| K4 | The port comes only from `<home>/proxy.yaml` `port`. A busy port stops the daemon; it never picks another port. | `proxy-api.md:15-16,167` |
+| K5 | `locks/` and `logs/` sit next to the accounts file. `proxy.yaml`, `token.json` and `state/` sit in `ACCOUNTS_PROXY_HOME`. | `apps/proxy/src/composition/container.ts:266-268,340,417-420`; `apps/proxy/src/adapters/outbound/file-stores.ts:214,237` |
+| K6 | When `ACCOUNTS_PROXY_HOME` is set, the manifest's token command starts with `env ACCOUNTS_PROXY_HOME=<home>`. So pi gets the disposable daemon's token, never the user's. | `container.ts:283-286,298-300` |
+| K7 | Every live file reads `ACCOUNTS_PROXY_URL` (default `http://127.0.0.1:4141`). | for example `apps/pi-extension/tests/live/pi-claude.test.ts:18`, `pi-binary.test.ts:19` |
+| K8 | `test:live` runs every workspace's `tests/live`. The only other live file is `apps/proxy/tests/live/cost-reconcile.test.ts`, which runs `opencode stats` locally and makes no model call. | `scripts/gate/run-tests.ts:5,106-112`; glob `**/tests/live/**/*.ts` → 9 files |
+| K9 | The user's `proxy.yaml` has exactly one top-level `port:` line and no `usage:` key, so the usage log is on (default `true`). Its SHA-256 is `c1ede66f4d2902ad354077611ba50ae84fe016cb3031b0942f6a0952c610a1f1`, the same as at step 0.4. | `grep -c '^port:'` → `1`; `grep -E '^\s*usage:'` → nothing; `shasum` 2026-11-16 14:15; `proxy-api.md:172` |
+| K10 | Usage files are named `logs/<day>-<pid>-usage[.N].jsonl` and `logs/<day>-<pid>-proxy[.N].log`. | `proxy-api.md:193-194`; the listing shows `.cache/logs/2026-11-16-96176-usage.47.jsonl` |
+| K11 | Ports 4142, 4143 and 4144 had no listener at 14:15. | `lsof -nP -iTCP:<p> -sTCP:LISTEN \| wc -l` → `0` for each |
+| K12 | **The build did not follow amendment 1.** Step 8.0 never ran. The 8.1 files implement the base step 8.1, not A3: they keep the plain turns (a), run a thinking turn in every cell instead of once per pi api, cap output at `MAX_TOKENS` (64) instead of 32, and keep the named subscription models instead of ranking by price. | for example `pi-claude.test.ts:98,110,127`; `pi-opencode.test.ts:45-49`; `pi-binary.test.ts:193` |
+| K13 | After the merge, `{repo}`'s `node_modules` has no link for the new workspaces (`dialect-pi`, `pi-extension`). The original plan has no install step in `{repo}`, so a restart of the user's daemon after the merge would fail to resolve `@accounts-proxy/dialect-pi`. | Steps 3.1 and 5.1 linked them only in `{worktree}`; step 9.4 runs no `bun install` (plan lines 1546-1564) |
+
+## Inferred (and from what)
+
+- **I1.** A second daemon on the same accounts file is the same situation as any CLI command that runs beside the
+  daemon (`login`, `models --refresh`, `quota`). K1 and K2 make the renewal safe both ways: the user's daemon re-reads
+  a token that the disposable daemon renewed, and the reverse.
+- **I2.** The disposable daemon runs the log-retention sweep over the shared `logs/` with the same values as the user's
+  daemon, because `proxy.yaml` is copied. So the sweep deletes only what the user's next sweep would delete anyway.
+- **I3.** A separate `token.json` isolates the two daemons. A test request sent to `:4141` by mistake gets 401 and
+  spends nothing.
+
+## Not known (and what would verify it)
+
+- **N1.** Whether an upstream treats a second process with the same device and session ids as unusual. Copying
+  `state/` keeps the ids identical, so the upstream sees the same install. No live evidence exists either way.
+- **N2.** Whether `opencode` and `opencode-go` charge anything for the free models: no `quota` command reports their
+  usage. The ranking picks cost-0 models, and the usage log's `usage.raw.cost` is the only measure.
+
+## Decisions
+
+- **D1 — The disposable daemon.**
+  - It runs from `{worktree}` on `{live_port}`, the first free port of 4142–4149, chosen and recorded in step 8.2.
+  - Its data directory is `{live_home}` = `{logs}/live-home`, mode `700`. It holds:
+    - `proxy.yaml`: the user's file with the `port:` line replaced, mode `600`, never printed;
+    - `state/`: copied from `{repo}/.cache/state` with `cp -Rp`, so the device and session ids stay identical (N1);
+    - `token.json`: created by `serve` itself, never copied.
+  - `ACCOUNTS_PROXY_ACCOUNTS_FILE=/Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/accounts.json` shares the
+    accounts file and, with it, `locks/` (K5). **The accounts file is never copied:** a renewal on a copy would rotate
+    the refresh token and invalidate the token in the user's file.
+- **D2 — Never touch the user's daemon.** No step stops, signals, restarts or sends a request to pid 96176 or to
+  `:4141`. A gate in each of steps 8.2–8.5 and 9.5 proves that pid 96176 still listens on `127.0.0.1:4141`.
+- **D3 — The only residue in `{repo}/.cache`** is the disposable daemon's own log files, `logs/*-<livepid>-*`.
+  - The lock files are removed on release (`file-lock.ts:65-69`).
+  - The log files are copied to `{logs}/live-logs/`, then deleted one by one by absolute path, and each deletion is
+    proved with `test ! -e`.
+  - Nothing in `.cache` is retained.
+- **D4 — Spend is measured on the disposable pid alone.**
+  - The `cost` command reads `logs/` next to the accounts file (K5). It therefore runs over a copy:
+    `ACCOUNTS_PROXY_HOME={logs}/cost-home`, whose `logs/` holds only copies of `*-<livepid>-usage*.jsonl`.
+  - The key-based gateways are measured at the source: `quota openrouter` and `quota cheaper-inference` run before
+    and after the live run.
+- **D5 — Step 9.5 needs no restart.**
+  - The user's pi is proved against a second disposable daemon started from the merged `{repo}`.
+  - `:4141` serves the new routes after the user's own next restart. That check is a pending follow-up, not a
+    blocker.
+  - Until that restart, the user's pi prints the extension's one warning and starts normally. This is the uc-pi-4
+    negative path, proved in steps 5.7 and 8.3.
+- **D6 — Close the K12 deviation before any paid turn.** Step 8.0 runs, and step 8.1 is reopened to bring the files to
+  A3. Paid turns:
+
+  | Paid turns | What they are |
+  |---|---|
+  | 12 | one tool turn in each of the 12 cells that have a `toolCall: true` model |
+  | 2 | a plain turn in each `cheaper-inference` cell, which has no `toolCall` model |
+  | 4 | one thinking turn per pi api |
+  | 1 | the binary turn |
+  | **19** | **total** |
+
+  A3 assumed 22 paid turns, but three cells are absent from the catalog (step 8.1 returns). The A3 ceiling factor
+  therefore becomes 19.
+
+## New and rewritten steps
+
+`{live_port}`, `{live_home}`, `{livepid}` and `{livepid2}` are recorded in `{record}` by the step that creates them and
+used unchanged afterwards. `{user_daemon_gate}` is the command
+`lsof -nP -iTCP:4141 -sTCP:LISTEN -Fp | grep -x p96176` and its expected output, `p96176`.
+
+### Step 8.0 — Read the cost controls (A3, not yet run)
+
+- **runs in**: subagent `explore`
+- **action**: `read`
+- **target**: pi 1.5.2 at `/opt/homebrew/Cellar/pi-coding-agent/1.5.2/libexec/lib/node_modules/@earendil-works/pi-coding-agent`
+- **content**: as written in A3, items (1) and (2), plus (3): does `models.json` `modelOverrides` apply to models that
+  an extension registered (the composition order)? The brief's scratch directory is `{logs}/briefs/8.0/`.
+- **depends on**: stage 7
+- **gates**: 1. each answer has its file and line, and the main session re-reads each cited line.
+- **problems**: the cap does not reach extension models → step 8.1r caps through the extension's document instead,
+  and asks E1 first.
+- **escalation**: E1
+- **failure**: step 8.1r does not start.
+- **returns**: the three answers with their files and lines.
+
+### Step 8.1r — Bring the live files to A3
+
+- **runs in**: subagent `general`
+- **action**: `edit`
+- **target**: `{worktree}/apps/pi-extension/tests/live/` (the 8 files)
+- **content**: the A3 rules applied to the files:
+  - One tool turn (b) in each cell that has a `toolCall: true` model, and no (a) turn there.
+  - The (a) turn only in the two `cheaper-inference` cells, on the first model of the A3 ranking.
+  - One thinking turn (c) per pi api: on the cheapest `reasoning: true` model of that api across the whole table, at
+    its lowest mapped level, placed in that model's provider file.
+  - Cheapest model everywhere by the A3 ranking, the subscription cells included, derived by a script over
+    `{logs}/catalog.json` with the real codec. The script prints the top 3 of each cell with their prices.
+  - Output cap 32 tokens, or the smallest value step 8.0 found to work.
+  - Negatives (d) and (e) unchanged; uc-pi-4 and uc-pi-6 unchanged; the binary turn uses the cheapest claude model.
+  - No file reads `{repo}/.cache`, and no file presets `ACCOUNTS_PROXY_TOKEN` except the wrong-token negatives.
+
+  The brief's scratch directory is `{logs}/briefs/8.1r/`.
+- **depends on**: 8.0
+- **gates**:
+  1. `{bun} run typecheck` → exit `0`
+  2. `{bun} test apps/pi-extension/tests/live` without `ACCOUNTS_PROXY_LIVE` → exit `0`, every test skipped
+  3. `{bun} scripts/gate/granularity-report.ts` → `GRANULARITY: PASS`
+  4. the returns table lists exactly 19 paid-turn tests by name, and the main session counts them in the files
+  5. `grep -rn '\.cache' {target}` → no output
+- **problems**:
+  - a dependency loses its live positive → keep one tool turn there. Granularity wins over spend, and the extra turn
+    is recorded.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- apps/pi-extension/tests/live`. The files are untracked, so the
+  rollback restores them from `{logs}/briefs/8.1r/before/`, a copy taken first.
+- **returns**: the diff, the ranking per cell, the 19-turn table and the gate outputs.
+
+### Step 8.2r — Start the disposable daemon (replaces 8.2)
+
+- **runs in**: main session — the user's accounts file is shared (`AGENTS.md` 4.7)
+- **action**: `run`
+- **target**: `{live_home}` and a `serve` process on `{live_port}`
+- **content**, in order:
+  1. Run `{user_daemon_gate}`. Record the names of `{repo}/.cache/logs` and `{repo}/.cache/locks` to
+     `{logs}/cache-before.txt`.
+  2. Choose `{live_port}`: the first `p` in 4142–4149 for which `lsof -nP -iTCP:$p -sTCP:LISTEN` prints nothing.
+  3. Build the data directory:
+     `mkdir -m 700 {live_home}`;
+     `grep -v '^port:' {repo}/.cache/proxy.yaml > {live_home}/proxy.yaml`;
+     `printf 'port: %s\n' {live_port} >> {live_home}/proxy.yaml`;
+     `chmod 600 {live_home}/proxy.yaml`;
+     `cp -Rp {repo}/.cache/state {live_home}/state`.
+  4. Start the daemon as a background shell task:
+     `cd {worktree} && ACCOUNTS_PROXY_HOME={live_home} ACCOUNTS_PROXY_ACCOUNTS_FILE=/Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/accounts.json {bun} run proxy serve > {logs}/live-daemon.log 2>&1`.
+     Record `{livepid}` = the pid that `lsof -tiTCP:{live_port} -sTCP:LISTEN` prints.
+  5. Record the key-gateway quotas before the run, with the same two variables:
+     `{bun} run proxy quota openrouter` and `{bun} run proxy quota cheaper-inference`, to `{logs}/quota-before.txt`.
+     The quota commands are other processes, so their own log files `*-<quotapid>-*` join the D3 residue list; each
+     pid is recorded.
+- **depends on**: 8.1r
+- **gates**:
+  1. `{user_daemon_gate}` → `p96176`, before and after
+  2. `diff <(grep -v '^port:' {repo}/.cache/proxy.yaml) <(grep -v '^port:' {live_home}/proxy.yaml)` → no output, and
+     `grep -x "port: {live_port}" {live_home}/proxy.yaml` → one line (these compare structure; no content is printed)
+  3. `curl -s http://127.0.0.1:{live_port}/health` → `"status":"ok"` with the same 7 providers as `:4141`
+  4. `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:{live_port}/.well-known/pi` → `200`
+  5. Token isolation:
+     - run the manifest's `auth.command` and pipe its output to `shasum -a 256`; the hash equals
+       `jq -r .token {live_home}/token.json | shasum -a 256`;
+     - `cmp -s {live_home}/token.json {repo}/.cache/token.json` exits `1`, so the two tokens differ;
+     - no token is ever printed.
+  6. `stat -f '%Sp' {live_home} {live_home}/proxy.yaml` → `drwx------`, `-rw-------`
+- **problems**:
+
+  | Symptom | Cause | Handling |
+  |---|---|---|
+  | All of 4142–4149 are busy | other local services | stop and ask the user for a port; never pick one outside the range |
+  | `serve` exits with a config error | the user's `proxy.yaml` has a key in a form the `grep` changed | stop the daemon; E1 with the error line only, never the file |
+  | `/health` lists fewer providers | a provider failed to start | stop; E1 with the `live-daemon.log` lines that name it |
+
+- **escalation**: E1 to the user
+- **failure**: `kill -INT {livepid}`, then step 8.5r runs.
+- **returns**: n/a
+
+### Step 8.3 — Run the live tier (content and gates changed)
+
+- The A3 two halves stay, with the A3 ceiling factor 19 (D6).
+- **Environment of every run:** `cd {worktree} && env -u ACCOUNTS_PROXY_TOKEN ACCOUNTS_PROXY_URL=http://127.0.0.1:{live_port} ACCOUNTS_PROXY_LIVE=1`.
+- **First half:** `{bun} test <file of the cheapest cell> -t '<its tool-turn name>'`.
+- **Spend check:**
+  - copy `{repo}/.cache/logs/*-{livepid}-usage*.jsonl` to `{logs}/cost-home/logs/`;
+  - run `ACCOUNTS_PROXY_HOME={logs}/cost-home {bun} run proxy cost --json`;
+  - its exchange count equals the turns that ran;
+  - the ceiling equals that spend × 19;
+  - ask the user before continuing if the projection is above the ceiling or above 1 USD.
+- **Second half:** `{bun} run test:live > {logs}/live.log 2>&1; echo "exit=$?"`, with the same variables.
+- **After:**
+  - repeat the quotas to `{logs}/quota-after.txt`;
+  - repeat the `cost` run over the full copy;
+  - paste the before/after quota deltas and the total cost into `{record}` § Live.
+- **New gate:** `{user_daemon_gate}` → `p96176` after each half.
+- The original gates 1–3 and the original problems table stand.
+
+### Step 8.4r — Prove the user's data untouched (replaces 8.4)
+
+- **runs in**: main session
+- **action**: `review`
+- **target**: `{repo}/.cache` (names, modes and checksums only)
+- **content**: as in 8.4, plus:
+  - `{logs}/cache-before.txt` compared with the names now present: new names may only be `logs/*-{livepid}-*` and
+    the quota pids' files;
+  - `locks/` holds the same names as before;
+  - `token.json` checksum and `proxy.yaml` checksum equal step 0.4 (`proxy.yaml`
+    `c1ede66f4d2902ad354077611ba50ae84fe016cb3031b0942f6a0952c610a1f1`);
+  - `jq 'keys'` of the accounts file → `["providers","schema"]`.
+- **depends on**: 8.3
+- **gates**:
+  1. every comparison equal
+  2. `{user_daemon_gate}` → `p96176`
+- **problems**: a difference → report both outputs to the user; never repair it by hand.
+- **escalation**: the user
+- **failure**: reported, not repaired.
+- **returns**: n/a
+
+### Step 8.5r — Stop the disposable daemon and remove its residue (replaces 8.5)
+
+- **runs in**: main session — deletions inside the user's live data directory (`AGENTS.md` 4.7)
+- **action**: `delete`
+- **target**: `{livepid}`, `{live_home}`, `{repo}/.cache/logs/*-{livepid}-*` and the quota pids' files
+- **content**, in order:
+  1. `kill -INT {livepid}`; after 10 s without exit, `kill -TERM`, recorded.
+  2. Copy each residue log to `{logs}/live-logs/`.
+  3. List the residue by name: `ls {repo}/.cache/logs | grep -E -- '-({livepid}|<quotapid>…)-'`, and only names born
+     after `{logs}/marker`, compared with `-newer`.
+  4. Delete each listed name by its absolute path; never by a pattern.
+  5. `rm -rf {live_home}`.
+- **depends on**: 8.4r (and it runs even when 8.3 failed)
+- **gates**:
+  1. `kill -0 {livepid}` → fails
+  2. `lsof -nP -iTCP:{live_port}` → nothing
+  3. `test ! -e <path>` → `0`, once for each deleted log file and for `{live_home}`, all pasted
+  4. `{user_daemon_gate}` → `p96176`; `curl -s http://127.0.0.1:4141/health` → ok
+- **problems**: a listed log file predates the marker → it is not ours. Report it with its birth and change times and
+  never delete it (`AGENTS.md` 3.10).
+- **escalation**: the user
+- **failure**: the residue is reported by path.
+- **returns**: n/a
+
+### Step 8.6 — Stage 8 gate (changed)
+
+- New gate 4: the live table names `{live_port}` and `{livepid}`, the 19 paid turns and the spend figures.
+- The other gates stand.
+
+### Step 9.4a — Link the new workspaces in `{repo}` (new; closes K13)
+
+- **runs in**: main session — `{repo}` is the user's live checkout, and their daemon runs from it
+- **action**: `run`
+- **target**: `{repo}`
+- **content**: after the merge, `cd {repo} && {bun} install --frozen-lockfile`. The lockfile is frozen and already
+  holds the merged entries, so no installed version changes; only the workspace links are added. The running daemon
+  has its modules loaded already and keeps them (D2: it is never restarted by this plan).
+- **depends on**: 9.4 (the merge path; with a pull request this step waits for the merge, recorded as pending)
+- **gates**:
+  1. exit `0`
+  2. `git -C {repo} status --short` → the two pre-existing entries only
+  3. `test -L {repo}/apps/proxy/node_modules/@accounts-proxy/dialect-pi` → `0`
+  4. `{user_daemon_gate}` → `p96176`; `curl -s http://127.0.0.1:4141/health` → ok
+- **problems**: the install wants to change the lockfile → stop; E1 (never `--no-frozen-lockfile`).
+- **escalation**: the user
+- **failure**: `git -C {repo} checkout -- bun.lock`; the links are left for the user's next restart and reported.
+- **returns**: n/a
+
+### Step 9.5r — Configure the user's pi without a restart (replaces 9.5)
+
+- **runs in**: main session — the user's own pi configuration
+- **action**: `run`
+- **target**: `/Users/mavasbel/.pi/agent/settings.json`
+- **content**, in order:
+  1. Copy `settings.json` to `{logs}/settings.json.before`. Record the names under `/Users/mavasbel/.pi` to
+     `{logs}/pi-before.txt`.
+  2. Run `pi install /Users/mavasbel/Dev/repos/devtools/accounts-proxy/apps/pi-extension`.
+  3. Start the second disposable daemon exactly as step 8.2r does, but from `{repo}` (the merged code) instead of
+     `{worktree}`. Record its pid as `{livepid2}`.
+  4. Prove the user's pi, with its real agent directory, against that daemon:
+     `ACCOUNTS_PROXY_URL=http://127.0.0.1:{live_port} pi --no-session --list-models ap-`, then one `-p` turn on the
+     cheapest claude model from step 8.1r: "Reply with exactly: OK".
+  5. Stop and clean up as step 8.5r does, for `{livepid2}`.
+- **depends on**: 9.4a
+- **gates**:
+  1. `grep -c 'apps/pi-extension' /Users/mavasbel/.pi/agent/settings.json` → `1` or more
+  2. the list shows every available `ap-` provider
+  3. the turn prints `OK`
+  4. `test ! -e /Users/mavasbel/.pi/agent/models.json` → `0`
+  5. every new name under `~/.pi` other than `settings.json` is reported (not deleted unless provably created by
+     this step, after the marker)
+  6. the 8.5r gates for `{livepid2}`
+  7. `{user_daemon_gate}` → `p96176` throughout
+- **Pending follow-up**, recorded in `{record}` and in the final report: after the user's own next restart of their
+  daemon, `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4141/.well-known/pi` → `200`, and `pi --list-models
+  ap-` with no `ACCOUNTS_PROXY_URL` lists the providers. Until then, pi starts with the extension's single warning.
+- **escalation**: the user
+- **failure**: `cp {logs}/settings.json.before /Users/mavasbel/.pi/agent/settings.json`; gate `cmp -s` → `0`.
+- **returns**: n/a
+
+## Edits this amendment makes to the plan
+
+1. Step 8.2 problems row "never run two daemons on one accounts file" → replaced by D1, with evidence K1–K3. Two
+   daemons share one accounts file safely. Two daemons never share one data directory or one port.
+2. Steps 8.2, 8.4, 8.5 and 9.5 → replaced by 8.2r, 8.4r, 8.5r and 9.5r. Step 8.0 runs as written above. Step 8.1 is
+   reopened as 8.1r. Steps 8.3 and 8.6 change as written above. Step 9.4a is new.
+3. The stage 8 "What" → "the user's daemon untouched (D2)" replaces "the user's daemon restored".
+4. A4 residue lists:
+   - add `{live_home}`, `{logs}/cost-home`, `{logs}/live-logs`, `{logs}/cache-before.txt`, `{logs}/pi-before.txt`,
+     `{logs}/quota-*.txt` (all inside `{logs}`, deleted at 9.6);
+   - add the `{repo}/.cache/logs/*-<pid>-*` files of `{livepid}`, `{livepid2}` and the quota pids (deleted at
+     8.5r/9.5r);
+   - add this amendment file, deleted after it is copied into the plan.
+5. A6 follow-ups: add "`:4141` serves `/.well-known/pi` after the user's next restart (step 9.5r)".
+6. User actions in the plan → none until step 9.4 (the merge or pull-request choice). The step 8.2 handoff and the
+   step 9.5 restart are gone.
+
+## Loop record (plan agent)
+
+- **Pass 1** found four items:
+  - K12 (the A3 deviation) → D6 and steps 8.0 and 8.1r;
+  - K13 (a restart after the merge would fail) → step 9.4a;
+  - spend on the key gateways invisible to `cost` → the D4 quotas;
+  - the quota commands' own log files → added to D3.
+- **Pass 2** found one item: the step 9.5 restart contradicted D2 → step 9.5r with the second disposable daemon and
+  the follow-up.
+- **Passes 3 and 4** were clean. Every placeholder is defined in this document. No step depends on a later one. Every
+  deletion names an absolute path or a recorded pid and has its `test ! -e` gate.
+
 ## Objective
 
 **Why.** pi takes custom models from `~/.pi/agent/models.json` or from an extension, one `api` and one `baseUrl` per
@@ -194,6 +543,443 @@ pi's modules (planning record § Evidence gathered). What is inferred and still 
 live tier (stage 8): pi's loading of `apps/pi-extension` through jiti 2.7.0 with workspace-alias imports (resolution
 was run, loading by the real binary was not), and whether `pi update --models` calls an extension's `refreshModels`
 (step 8.3, gate 3; its `problems` table holds the handling).
+
+## Amendment 5 (approved 2026-11-18; amendment file SHA-256
+  `44f6b64434ec29d1f1c8e0fce920ff2e927e0ef6691a0685e6734f811e13b062`; base plan verified unchanged at
+  `cd01c12f435bb078a2fbda356a2afac89ed4c7d34744583232b3744e4453e8fc`)
+
+Status on 2026-11-18 09:56: stages 0-7 green and committed (last stage commit `b091aef`); step 8.1r recorded
+BLOCKED with 24 pass / 15 fail in `e184f84`; the worktree held 2 modified docs and 2 untracked paths. Stage 8A is
+new work; `8.0r` and `8.0s` run before it; the order is stated in section 7.
+
+### 1. State reconciliation — what the plan's text no longer matches
+
+| # | The plan says | Real state on 2026-11-18 | Evidence | What A5 does |
+|---|---|---|---|---|
+| S1 | `{logs}` = `/private/var/folders/_m/jyv5nmsn4y305mjjcm_4fq240000gn/T/opencode/2026-11-15-23-52-pi-compatibility`, created at 0.5, deleted at 9.6 | it does not exist | `ls -d "$TMPDIR"/opencode/2026-11-15*` → nothing; `find /var/folders/_m -maxdepth 5 -name '*pi-compatibility*'` → nothing | 8.0r recreates it at the same path and rebuilds the guard, the marker and the before-listing |
+| S2 | the 4.8a residue marker and before-listing exist in `{logs}` | lost with the directory | S1 | 8.0r records the loss with the S1 commands and takes a fresh marker + before-listing; the 4.8 residue is carried in `{record}` § 4.8a as already written |
+| S3 | step 8.2/8.5 name the user's daemon as pid 96176 | the user's daemon is pid 35662 | `lsof -nP -iTCP:4141 -sTCP:LISTEN` (2026-11-18) | every gate that names a pid discovers it at run time (`lsof -tTCP:4141 -sTCP:LISTEN`), never hard-codes 96176 |
+| S4 | the disposable daemon was stopped at 8.5r | a disposable daemon from 2026-11-16 is still alive: pid 75452, listening on :4142, cwd `{worktree}` | `lsof -nP -iTCP:4142 -sTCP:LISTEN`; `lsof -p 75452 -a -d cwd -Fn` | new step 8.0s stops it and proves the port and the pid are free |
+| S5 | step 8.0 and steps 8.2, 8.4, 8.5, 9.5 run as written | superseded by 8.0r, 8.2r, 8.4r, 8.5r, 9.5r (A2, A5) | plan § A2 | unchanged; A5 only adds 8.0r and 8.0s before them |
+| S6 | `bun install --frozen-lockfile` is needed in `{repo}` after the merge (A2 gap 2) | still pending; `{repo}` has no `node_modules` for the new workspaces | A2 text | 9.4r runs it as a gate |
+
+No path, placeholder, branch, base commit or stage number changes. `{base}` stays `0fd623a884de8576ab95bfae9f937eadbb4f17b2`.
+
+---
+
+### 2. The antigravity tool-call id gap — root cause proven
+
+### 2.1 Known
+
+1. The failing cell is `antigravity x google-generative-ai` (pi's Gemini API client) against
+   `antigravity/claude-opus-5-5-high` and `antigravity/claude-opus-5-5-low`. The upstream answers HTTP 400
+   `{"error":{"code":400,"message":"{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.1.content.0.tool_use.id: Field required\"},\"request_id\":\"req_vrtx_...\"}","status":"INVALID_ARGUMENT"}`
+   on every tool turn, at caps 128 and 256, on both models (`{record}` § Step 8.3 E1 findings, item 4;
+   `docs/issues/2026-11-16-20-47-antigravity-tool-use-id-gap.md`).
+2. pi 1.5.2 omits the id itself, by design, for a provider-prefixed model id:
+   `pi-ai/dist/api/google-shared.js:125` `requiresToolCallId(modelId)` returns `true` only for `claude-*`,
+   `gpt-oss-*` and Gemini 3+; `:235` writes `...(requiresToolCallId(model.id) ? { id: block.id } : {})` into
+   `functionCall`, and `:270` does the same for `functionResponse`. pi passes `model.id` = the pi model id
+   (`antigravity/claude-opus-5-5-high`), which starts with none of those prefixes.
+   Probe (2026-11-18): `requiresToolCallId("antigravity/claude-opus-5-5-high")` → `false`;
+   `requiresToolCallId("claude-opus-5-5-high")` → `true`.
+3. The real antigravity client (1.107.0) does send ids, and they are opaque strings of the shape `call_<32 hex>`:
+   `tests/fixtures/captures/p0-live/e3/t4-f3a-tool-choice-auto.json` carries
+   `functionCall: {"name": "get_time", "args": {...}, "id": "call_7f6c7a16ca5f4035a8d18358"}`, and the cell's
+   `signCalls` reads that optional id today (`native-gemini.ts:170-172`). The shape is opaque to the upstream, so the
+   law does not copy it (K14).
+4. No `tool_use` construction exists anywhere under `packages/provider-antigravity/src/`, and
+   `signCalls` returns unchanged for a non-Gemini target (`native-gemini.ts:163`).
+
+### 2.2 Inferred, from 2.1
+
+Claude-on-Vertex maps a Gemini `functionCall` part onto Anthropic `tool_use` and requires its `id`; it maps
+`functionResponse` onto `tool_result` and requires the matching `tool_use_id`. The request that failed carried
+`messages.1` = the second turn (the tool loop), which is exactly where a call and its response travel. So the
+conversion must synthesize an id per call and re-use it on the matching response.
+
+### 2.3 Not known, and how it is closed
+
+- Whether the upstream also requires `functionResponse.id` to equal the call's. Closed by 8A.7: the live tool turn
+  either goes green (both ids needed and correct) or stays 400 (then E1 with the new body).
+- Whether an id-less call on a *Gemini* target must also get one. Not needed: Gemini tool turns pass today
+  (`{record}` section Live: the Gemini tool turns are green);
+  the law is therefore restricted to non-Gemini targets (regress zero).
+
+### 2.4 Why the fix belongs to this plan
+
+The user's directive is to finish the pi integration for agy, claude and codex/openai, and the agy tool turn is the
+one deterministic failure a code change can close (the other ten are account state: openai re-login, opencode-go
+subscription, quota). Filing it as a separate plan would leave stage 8 unable to go green, and the granularity
+report red. So it is a new stage of this plan, with its own design node, scenarios and tiers.
+
+---
+
+### 3. Change C1 — `idCalls` in `{worktree}/packages/provider-antigravity/src/domain/native-gemini.ts`
+
+Insert after `signCalls` (which ends at the `}` before `checkSystem`, line ~193), and call it in
+`prepareGeminiRequest` directly after the existing `contents = signCalls(...)` line:
+
+```ts
+contents = signCalls(contents, model.wireId, options.signatures, dropped);
+contents = idCalls(contents, model.wireId); // new
+```
+
+The function, in the file's own style (private, early return, `map` over contents):
+
+```ts
+/** Non-Gemini targets (Claude, gpt-oss) need a tool-call id: give every id-less call one, and its response the same id. */
+function idCalls(contents: GeminiContent[], modelWireId: string): GeminiContent[] {
+  if (isGeminiFamily(modelWireId)) return contents;
+  const used = new Set<string>();
+  for (const c of contents) for (const part of c.parts) {
+    const call = part["functionCall"] as Record<string, unknown> | undefined;
+    const response = part["functionResponse"] as Record<string, unknown> | undefined;
+    const id = (call?.["id"] ?? response?.["id"]);
+    if (typeof id === "string") used.add(id);
+  }
+  let n = 0;
+  const next = (): string => {
+    do { n += 1; } while (used.has(`ap_call_${n}`));
+    const id = `ap_call_${n}`;
+    used.add(id);
+    return id;
+  };
+  const pending: { name: string; id: string }[] = [];
+  return contents.map((c) => ({
+    role: c.role,
+    parts: c.parts.map((part) => {
+      const call = part["functionCall"] as Record<string, unknown> | undefined;
+      if (call !== undefined) {
+        const id = typeof call["id"] === "string" ? (call["id"] as string) : next();
+        pending.push({ name: call["name"] as string, id });
+        return typeof call["id"] === "string" ? part : { ...part, functionCall: { ...call, id } };
+      }
+      const response = part["functionResponse"] as Record<string, unknown> | undefined;
+      if (response === undefined || typeof response["id"] === "string") return part;
+      const at = pending.findIndex((p) => p.name === response["name"]);
+      const id = at === -1 ? next() : pending.splice(at, 1)[0]!.id;
+      return { ...part, functionResponse: { ...response, id } };
+    }),
+  }));
+}
+```
+
+Rules this code carries (each one test in 8A.5):
+
+- **R1** a Gemini target returns unchanged (`isGeminiFamily`), so Gemini cells regress zero.
+- **R2** an id the request already carries is never rewritten, on a call or on a response.
+- **R3** a synthesized id is `ap_call_<n>`, `n` from 1, deterministic per request, and skips every id the request
+  already carries (no collision).
+- **R4** a response without an id takes the id of the earliest unpaired call with the same `name` (FIFO), so two
+  parallel calls of one tool pair correctly.
+- **R5** a response with no preceding call gets a fresh id and is forwarded, never dropped (strict translation: the
+  proxy does not silently discard a tool result).
+- **R6** no `dropped` entry is added: the header keeps meaning "the proxy removed something".
+
+No new file, port, adapter, config value or dependency: the law sits inside one existing domain function of one
+existing cell (KISS, `AGENTS.md` 6.9 — no seam is crossed, and a use case does not require a second implementation).
+
+---
+
+### 4. Change C2 — `AGENTS.md` §3, one new law row (verbatim)
+
+Append after the last Antigravity row of the wire-law table:
+
+```
+| Antigravity Gemini cell: on a non-Gemini target every `functionCall` without an `id` gets `ap_call_<n>` (request-scoped, deterministic, never colliding with an id the request carries) and its `functionResponse` the same id, because Claude-on-Vertex requires `tool_use.id` and pi 1.5.2 omits ids for provider-prefixed model ids | pi 1.5.2 `pi-ai/dist/api/google-shared.js:125,235,270`; 400 `messages.1.content.0.tool_use.id: Field required` ([probe](docs/reference/{ts}-antigravity-tool-id-probe.md)) |
+```
+
+---
+
+### 5. Change C3 — product design, new use case
+
+In `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`, under the feature that carries
+uc-pi-5, append:
+
+```md
+#### uc-pi-7 — A tool loop whose client omits tool-call ids
+
+**Purpose.** A client that speaks Gemini-native `functionCall`/`functionResponse` without ids (pi 1.5.2 with a
+provider-prefixed model id) completes a tool loop on a Claude-on-Vertex model through the antigravity cell.
+
+**Contract.** Input: `contents` holding one id-less `functionCall` and one id-less `functionResponse` with the same
+`name`. Output: the same contents, every call carrying `ap_call_<n>` and the matching response the same id; a Gemini
+target, or an id the client sent, unchanged. Failure modes: none added (no new 400, no new dropped entry).
+
+**Acceptance criteria.** unit positive: call and response paired; unit negative: a response with no call gets a fresh
+id and is forwarded; component positive: the cell prepares the loop; component negative: an existing id is preserved;
+e2e positive: the replayed upstream receives the paired ids; e2e negative: a Gemini target receives no synthesized id.
+```
+
+And in the design's `Dependencies per use case` paragraph, add:
+
+```md
+uc-pi-7 — none (proven end-to-end by uc-pi-5's antigravity tool turn, which is the scenario that exposed the law).
+```
+
+---
+
+### 6. Change C4 — architecture design
+
+In `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md`, in the `provider-antigravity` node,
+add one row to its table: `native-gemini.ts · idCalls (private) — synthesizes and pairs tool-call ids on a non-Gemini
+target (uc-pi-7) · tests: packages/provider-antigravity/tests/{unit,component}, apps/proxy/tests/e2e/gemini-cell.test.ts`.
+
+---
+
+### 7. New Stage 8A — the antigravity tool-call id law
+
+**Why.** The one deterministic live failure a code change closes (§ 2.4); without it stage 8 cannot go green.
+
+**What.** `{worktree}/docs/reference/{ts}-antigravity-tool-id-probe.md`; the `AGENTS.md` row; the design nodes; the
+`idCalls` function; its unit, component and e2e scenarios; a green `apps/proxy/tests/e2e/gemini-cell.test.ts` and a
+green `packages/provider-antigravity` tier.
+
+**Enter gate.** Steps 8.0r and 8.0s green, and 8.1r's disposition recorded per A4 (24 pass / 15 fail, every failure categorised).
+**Order after A5.** `8.0r` -> `8.0s` -> `8A.1` -> `8A.2` -> `8A.3` -> `8A.4` -> `8A.5` -> `8A.6` -> `8A.7` ->
+`8.2r` -> `8.3r` -> `8.4r` -> `8.5r` -> `8.6r` -> stage 9. The document below states 8A first because it is the new
+work; the order is the one on this line, and 8.0r/8.0s are in section 8.
+
+
+#### Step 8A.1 — Reference: the probe
+
+- **runs in**: subagent `general`
+- **action**: `create`
+- **target**: `{worktree}/docs/reference/{ts}-antigravity-tool-id-probe.md` (`{ts}` = `date +%Y-%m-%d-%H-%M` at the step,
+  recorded in `{record}`)
+- **content**: title `# Antigravity tool-call ids: the 400 and the law`; sections: the failing request and its 400 body
+  (from § 2.1.1, with the request id); pi's source lines `google-shared.js:125,235,270` quoted with the probe output
+  of § 2.1.2; the real IDE capture path and the `functionCall.id` it carries; the inferred mapping (§ 2.2); what
+  remains unknown (§ 2.3); the law as written in C2. Every claim carries its path and line.
+- **depends on**: 8.0r
+- **gates**: 1. `grep -c 'google-shared.js:125' {target}` → ≥ 1; 2. `grep -c 'tool_use.id: Field required' {target}` → ≥ 1;
+  3. `{bun} scripts/gate/lint-docs.ts` → exit `0`.
+- **problems**: lint rejects the name → use the timestamp `date` printed, never an edited one.
+- **escalation**: E1
+- **failure**: rollback `rm {target}`.
+- **returns**: diff, `{ts}`.
+
+#### Step 8A.2 — Law row
+
+- **runs in**: subagent `general` (same, after 8A.1)
+- **action**: `edit`
+- **target**: `{worktree}/AGENTS.md`
+- **content**: the row of § 4, with `{ts}` from 8A.1.
+- **depends on**: 8A.1
+- **gates**: 1. `grep -c 'ap_call_<n>' {target}` → `1`; 2. `grep -c '{ts}-antigravity-tool-id-probe' {target}` → `1`;
+  3. lint → exit `0`.
+- **problems**: none foreseen.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- AGENTS.md`.
+- **returns**: diff.
+
+#### Step 8A.3 — Design nodes
+
+- **runs in**: subagent `general` (same, after 8A.2)
+- **action**: `edit`
+- **target**: `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md` and
+  `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md`
+- **content**: § 5 verbatim into the product design (use case plus the dependencies line); § 6 into the architecture.
+- **depends on**: 8A.2
+- **gates**: 1. `grep -c '^#### uc-pi-7' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1`; 2. `grep -c 'uc-pi-7 — none' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1`;
+  3. `grep -c 'idCalls' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md`` → `1`; 4. lint → exit `0`.
+- **problems**: the granularity report reads the design's headings → keep the exact heading shapes of § 5.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- docs/design`.
+- **returns**: diff.
+
+#### Step 8A.4 — The function and its call site
+
+- **runs in**: subagent `general` (same, after 8A.3)
+- **action**: `edit`
+- **target**: `{worktree}/packages/provider-antigravity/src/domain/native-gemini.ts`
+- **content**: the function and the call site of § 3, with the file's own header comment gaining one line
+  `//   - a tool call on a non-Gemini target carries an id (AGENTS.md §3 antigravity tool-id law).`
+- **depends on**: 8A.3
+- **gates**: 1. `{bun} run typecheck` → exit `0`; 2. `grep -n 'idCalls(contents, model.wireId)' {target}` → one line
+  after `signCalls`; 3. `{bun} test packages/provider-antigravity` → exit `0`, or every failure is one `{record}` section Baseline gate
+  already lists (compare the two, name each match).
+- **problems**: `exactOptionalPropertyTypes` on the spreads → build the new part object explicitly (as the existing
+  code does for `functionResponse`), never widen the type.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- packages/provided-antigravity/src/domain/native-gemini.ts`.
+- **returns**: diff, gate outputs.
+
+#### Step 8A.5 — Unit scenarios
+
+- **runs in**: subagent `general` (same, after 8A.4)
+- **action**: `edit`
+- **target**: `{worktree}/packages/provider-antigravity/tests/unit/native-gemini.test.ts`
+- **content**: a `describe("tool-call ids")` with one test per rule R1-R6, each tagged `[feature=pi-inference use-case=uc-pi-7 tier=unit polarity=positive]` (R2, R3, R4) or `... polarity=negative` (R1 Gemini target unchanged, R5 orphan response, R6 no dropped entry). The two `ModelDescriptor`s are built from ids the file's existing cases already use, read with `grep -o 'claude-[a-z0-9.-]*' <target> | sort -u` and `grep -o 'gemini-[a-z0-9.-]*' <target> | sort -u`; never an id typed from memory. Drive `prepareGeminiRequest` directly.
+- **depends on**: 8A.4
+- **gates**: 1. `{bun} test packages/provided-antigravity/tests/unit` → exit `0`; 2. `{bun} test --coverage
+  packages/provided-antigravity` on the file → `100.00%` lines and branches for `native-gemini.ts`; 3. the granularity
+  the granularity report's `uc-pi-7 | unit | none` row shows `positive` >= 3 and `negative` >= 3.
+- **problems**: coverage below 100 % → add the missing branch case, never a waiver.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- packages/provided-antigravity/tests/unit/native-gemini.test.ts`.
+- **returns**: diff, gate outputs, the coverage line.
+
+#### Step 8A.6 — Component scenarios
+
+- **runs in**: subagent `general` (same, after 8A.5)
+- **action**: `edit`
+- **target**: `{worktree}/packages/provider-antigravity/tests/component/adapters.test.ts`
+- **content**: two scenarios through the cell's adapter with fakes (no network): positive — an id-less loop on a Claude
+  model reaches the adapter's request with `ap_call_1` on both parts; negative — an id the client sent (`toolu_9`)
+  survives untouched on both parts. Tags `tier=component polarity=…`.
+- **depends on**: 8A.5
+- **gates**: 1. `{bun} test packages/provided-antigravity/tests/component` → exit `0`; 2. the report's `uc-pi-7 | component | none` row shows `positive` >= 1 and `negative` >= 1.
+- **problems**: the adapter may need a signed-in fake → use the file's existing fakes, never a network call.
+- **escalation**: E1
+- **failure**: rollback `git -C {worktree} checkout -- packages/provided-antigravity/tests/component/adapters.test.ts`.
+- **returns**: diff, gate outputs.
+
+#### Step 8A.7 — e2e scenarios and the stage gate
+
+- **runs in**: subagent `general` (same, after 8A.6)
+- **action**: `edit`
+- **target**: `{worktree}/apps/proxy/tests/e2e/gemini-cell.test.ts`
+- **content**: two cases in the file's own `call()` harness with `ReplayUpstreams`. Positive: the antigravity Claude id recorded in `{record}` section Live catalog, with an id-less `functionCall` and its `functionResponse` -> the recorded upstream request carries `ap_call_1` on both parts. If the file's scripted `fetchAvailableModels` answer lacks that id, extend that answer with it from the record (evidence, never an invented id). Negative: a Gemini-family id the file already uses, same body -> the recorded request carries no `id` at all. Tags `tier=e2e polarity=...`. Then the stage gate.
+- **depends on**: 8A.6
+- **gates**: 1. `{bun} test apps/proxy/tests/e2e/gemini-cell.test.ts` (behind the A2 browser guard) → exit `0`;
+  2. `{bun} scripts/gate/granularity-report.ts` → `GRANULARITY: PASS` with every uc-pi-7 row present;
+  3. `{bun} run verify` → no step or test fails that passed in `{record}` § Baseline gate;
+  4. commit per rule 10.
+- **problems**: the e2e file's scripted catalog lacks the Claude id → extend the scripted answer, recorded; the
+  request never reaches a provider.
+- **escalation**: E1
+- **failure**: stage 8 does not resume; the owning step is reopened.
+- **returns**: diff, gate outputs, the recorded upstream request excerpt.
+
+---
+
+### 8. Stage 8, revised
+
+#### Step 8.0r — Recreate the scratch root, the guard and the snapshot
+
+- **runs in**: main session — it writes only to the scratch root, and it is the residue bookkeeping of 3.10
+- **action**: `run`
+- **target**: `{logs}`
+- **content**: `mkdir -p -m 700 {logs}/briefs {logs}/no-browser-bin`; write `{logs}/no-browser-bin/open` (`#!/bin/sh` +
+  `exit 0`, mode 755, as A2); write `{logs}/marker` (`date +%Y-%m-%dT%H:%M:%S`); then the before-listing of 3.10 into
+  `{logs}/before.txt`: `ls -la "$TMPDIR"`, `ls -la /tmp`, `ls -la ~/.opencode/plan`, `ls -la ~/.pai/agent`, and for
+  `{repo}` `git status --porcelain --ignored`, `git worktree list`, `git branch --all`, `git stash list`. Paste the S1
+  commands and their empty output into `{record}` § 4.8a as the proof that the original marker and listing are
+  unrecoverable.
+- **depends on**: none (the worktree is at `e184f85`, with 8.1r's disposition recorded)
+  3. `ls -la {logs}/before.txt` → non-empty; 4. `ls -d {logs}/marker` → the file.
+- **problems**: `~/.pai/agent` absent → list its parent instead and record it.
+- **escalation**: E1
+- **failure**: stage 8 does not resume.
+- **returns**: n/a
+
+#### Step 8.0s — Stop the stray disposable daemon
+
+- **runs in**: main session — a live process on the user's host
+- **action**: `run`
+- **target**: pid 75452 on `127.0.0.1:4142`
+- **content**: `lsof -nP -iTCP:4142 -sTCP:LISTEN` to confirm the pid and its cwd (`lsof -p 75452 -a -d cwd -Fn` → `{worktree}`),
+  then `kill -INT 75452`; wait up to 10 s, then `kill -TERM 75452` if needed; record which signal ended it.
+- **depends on**: 8.0r
+- **gates**: 1. `lsof -nP -iTCP:4142 -sTCP:LISTEN` → no output; 2. `kill -0 75452` → exit non-zero; 3. the user's daemon
+  on :4141 is untouched (`lsof -tTCP:4141 -sTCP:LISTEN` → 35662, and `/healt` ok).
+- **problems**: the pid is gone already → record "already ended" and keep the port gate.
+- **escalation**: the user
+- **failure**: 8.2r does not start (its port scan would skip 4142).
+- **returns**: n/a
+
+#### Step 8.1r — unchanged, one note
+
+The file table, the caps and the tags stand as A3/A4 wrote them. The antigravity tool turn stays at cap 128 (the 400
+came with the call already produced, so the cap is not the cause) and needs no edit: step 8A.7's law turns it green.
+
+### Steps 8.2r … 8.6r — unchanged, with pid discovery
+
+Every gate that names the user's daemon reads its pid at run time (`lsof -tTCP:4141 -sTCP:LISTEN`) instead of 96176.
+8.2r's problems table gains one row: *the stray daemon still holds :4142* → 8.0s was not green; reopen it.
+
+**8.3r expectation table** (replacing "all green"):
+
+| Cell | Expected after A5 | Handling if not |
+|---|---|---|
+| antigravity claude tool | **green** (the law) | 8A.7 reopens with the new 400 body |
+| antigravity plain / thinking / negatives | green (already) | re-run once |
+| claude, antigravity-Gemini, openrouter (3 apis), opencode (4 apis), chea per-inference, pi-binary | green (already, or transient) | re-run once, then the cell rule |
+| opengate-go x6 | blocked: 403 subscription required | recorded, per user decision 2026-11-16 |
+| openai x2 | blocked: 401 `invalid_grant` → the user re-logins (see § 10) | recorded; after the re-login, re-run the file |
+| opencode crouton / minimax / beam / gemini-tool | blocked: 410 deprecated, 400 unavailable, 429 quota, quota flake | re-run once; then recorded |
+
+#### Step 8.6r — stage gate
+
+Unchanged, plus: `{bun} scripts/gate/granularity-report.ts` → `GRANULARITY: PASS` and `{record}` § Live carries the
+per-cell table with the law's row green.
+
+---
+
+### 9. Stage 9, revised
+
+- **9.1** unchanged (final gate, never delegated).
+- **9.2** unchanged, with one added check: `git -C {worktree} diff --stat {base}..HEAD` lists
+  `docs/reference/{ts}-antigravity-tool-id-probe.md`, `native-gemini.ts`, the two design docs and the three test files
+  of 8A.
+- **9.4r** (replaces 9.4): after the merge or the pull request, `cd {repo} && {bun} install --frozen-lockfile` → exit `0`,
+  and `git -C {repo} status --porcelain` shows only the two pre-existing entries (A2 gap 2 closed).
+- **9.5r** unchanged (the disposable daemon on 4142–4149 proves the user's pi before their own daemon is restarted).
+- **9.6r** (replaces 9.6): `rm -rf {logs}` (the recreated directory, its marker and its listing), `test ! -e {logs}`,
+  `git -C {repo} worktree list` → no worktree of this plan, `git -C {repo} status --short` → the two pre-existing
+  entries. The 4.8 residue (48 leaked temp dirs, listed in `{record}` § 4.8a) is deleted by absolute path in this step
+  as well, each proven by `test ! -e`.
+
+---
+
+### 10. What the user must do
+
+1. **openai re-login** (closes 2 of the 15 red cells): `bun run proxy login openai` in `{repo}` against their own
+   daemon, in their own browser. The agent never handels the credential.
+2. **opencode-go**: needs an active OpenCode Go subscription; without it the 6 cells stay recorded blocked (user
+   decision 2026-11-16).
+3. **The merge choice** at 9.4r (local `main` recommended: it is already 7 commits ahead of `origin/main` and unpushed).
+4. **A daemon restart** at 9.5r, once, so `{repo}` serves the merged code.
+
+---
+
+### 11. Out of scope, unchanged
+
+- pi recon parity recording on Linux (no bubblewrap on this Mac).
+- `makeHome`'s `open` fake (A1's follow-up).
+- Opencode-go, openai and opencode account state.
+- The user's `{repo}` daemon is never stopped (A2 stands).
+
+---
+
+### 12. Decisions, with the recommendation
+
+- **K13** The antigravity id law is a stage of this plan, not a separate plan. → *recommended* yes (§ 2.4).
+- **K14** The synthesized id format is `ap_call_<n>`, deterministic and collision-checked. → *recommended* (§ 3 R3).
+- **K15** The law applies to every non-Gemini target (`claude-*`, `gpt-oss-*`, future ids), not only `claude-*`. →
+  *recommended* (it is the upstream's contract, not a model list).
+- **K16** uc-pi-7 declares `dependency = none`; the end-to-end proof stays uc-pi-5's antigravity tool turn, so no
+  extra live spend. → *recommended*.
+- **K17** The live tier's 10 deterministic failures stay recorded blocked; only the openai re-login and the
+  antigravity law are pursued. → *recommended* (matches the user's directive).
+
+---
+
+### 13. Gates once A5 lands
+
+1. `{bun} run typecheck` → exit `0`.
+2. `{bun} run test` → the 9 R2 baseline failures and nothing else.
+3. `{bun} test apps/proxy/tests/e2e/gemini-cell.test.ts` (guarded) → exit `0`.
+4. `{bun} scripts/gate/granularity-report.ts` → `GRANULARITY: PASS` (uc-pi-7 rows present).
+5. `{bun} scripts/gate/lint-docs.ts` → exit `0`.
+6. Stage 8.3r re-run → the antigravity tool cell green.
+7. `{bun} run verify` (final, 9.1) → no new failure against `{record}` § Baseline gate.
+
+**Delegation map additions.** `8.0r`, `8.0s` — main session (scratch bookkeeping, and a live
+process on the user's host). `8A.1` -> `8A.7` — subagent `general`, one subagent in order, write set
+`docs/reference/`, `AGENTS.md`, `docs/design/`, `packages/provider-antigravity/**`, `apps/proxy/tests/e2e/gemini-cell.test.ts`.
 
 ## Delegation map
 

@@ -99,6 +99,31 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 - 8.5: nothing to restore — the user's daemon never stopped (still pid 96176 on :4141). PLAN STATE: stages 0–7 green and committed (`b091aef` last); stage 8 blocked at 8.2; stage 9 cannot start. Resume path: user stops their daemon at a convenient moment (between sessions), then 8.2–8.6 run as written.
 - Commits: `e909f68 Stage 5: pi-extension (plan ...)` (code+tests+lock+arch), `134cea2 Stage 6: documentation in step (plan ...)` (7 docs files); `status --porcelain` empty.
 
+## 2026-11-16 — Amendment 2 landed, step 8.0 launched
+
+- Proven before any change: plan SHA `b73feda6…` ✅ (approved base), tree `e184f85` ✅ (own record commit; only `?? apps/pi-extension/tests/live/` untracked, expected), amendment file SHA `19cebb…` ✅.
+- Amendment 2 copied into the plan as `## Amendment 2` (before `## Objective`); lint PASS (78); new plan SHA `cd01c12f…` (recorded).
+- 8.0 ✅ (explore subagent; gate 8.0.1 re-read firsthand — every cited line verbatim): modelOverrides.maxTokens caps all four apis (composer.js:75; simple-options.js:36; anthropic-messages.js:1110; openai-completions.js:578-585; openai-responses.js:16-17,268-269 floor 16; google-generative-ai.js:287-288); overrides apply AFTER extension replacement (composer.js:354-356,365-367; docs keyed by extension-model id); flag set confirmed incl. `--no-extensions` (explicit -e still works) and `--thinking minimal` as the lowest level (args.js:133-143,160-164). CORRECTION to A3 recorded for 8.1r: cap 32 is INVALID for the anthropic-messages thinking turn — floor is 2048 at minimal (simple-options.js:59-65,75-77; anthropic-messages.js:961,1195); derived, proved on the wire in 8.3. Other apis keep 32 (responses floors to 16). Scratch: only `briefs/8.0/returns.md`.
+- 8.1r ✅ (general subagent; all gates re-verified firsthand): 12 tool turns (subscription cells now cheapest-by-A3: claude-fable-5, antigravity claude-opus-5-5-high, openai gpt-5.5 — all cost-null → first by id; gateways unchanged), 2 cheaper plain, 4 thinking (opencode/minimax anthropic --thinking minimal cap 2048; opencode/gemini-3.5-flash-lite minimal cap 32; opencode-go/crouton responses minimal cap 32; opencode-go/beam :low cap 32), 1 binary (fable-5). Counted in files: 12+2+4+1=19 ✅ (38 runtime tests = 19 paid + uc-pi-4/uc-pi-6 no-call positives + 17 negatives). typecheck 0 ✅, 38 skip/0 fail ✅, GRANULARITY: PASS (138) ✅, `.cache` grep 0 ✅. Rollback copies in `briefs/8.1r/before/`. 3 cells absent with jq evidence, nothing invented.
+- 8.2r ✅ (main session): user gate `p96176` before and after ✅; `{live_port}`=4142 (first free) ✅; proxy.yaml identical except port line ✅, modes 700/600 ✅; state copied with `cp -Rp` ✅; daemon pid `{livepid}`=53168, `/health` ok with the same 7 providers as :4141 ✅; `/.well-known/pi` 200, manifest points at :4142 with `ACCOUNTS_PROXY_HOME=live-home` token command ✅; token command output hash = token.json hash ✅, tokens differ (cmp 1) ✅, nothing printed ✅. Quotas before: openrouter usage 78.662086387 (daily 3.469629572), cheaper balance $13.735072; no new residue files from the quota commands. `{logs}/cache-before.txt` recorded.
+- 8.3 first half FAILED (E1 — no problems row matches): openrouter tool turn (ernie-5.5-flash-preview:free, cap 32) → pi exit 1, `Response was truncated: the model reached its output token limit` (manual repro, same flags; 2 tier attempts + 1 manual at 32 all truncate). DIAGNOSIS: the 32-token cap fits the tool-call JSON but leaves no room for the answer — every tool turn will truncate at 32 regardless of model, so the problems-row-1 model swap cannot help. PROOF OF FIX: same turn at cap 64 → `PINEAPPLE`, exit 0 (1 diagnostic turn, recorded). Diagnostic `/tmp/pi-live-*` dirs removed (`ls` → nothing). Daemons verified after: :4141 p96176 ✅, :4142 pid 53168 ✅. AWAITING E1: raising the tool-turn cap 32→64 changes 8.1r content → plan change → user decision via question tool (rule 12: scope/cost).
+- E1 RESOLVED (user 2026-11-16): raise to 64 for the 12 tool turns, re-run gates, continue. Applied: `TOOL_TOKENS=64` + defaulted `cap` param in 6 files (claude, antigravity, openai, openrouter, opencode, opencode-go); thinking/plain/binary/negatives keep their caps. Gates re-run: typecheck 0 ✅, 38 skip ✅, GRANULARITY PASS (138) ✅, `.cache` grep 0 ✅.
+- 8.3 first half FAILED AGAIN (new mode, E1 — no problems row): exit code now 0 (tool turn works at 64) but the model answered `Pineapple`, and the assertion is case-sensitive `toContain("PINEAPPLE")`. Root cause: assertion brittleness across models, not a product failure — the turn demonstrably read the file and replied with its word. Same risk in all 12 tool-turn assertions. AWAITING E1 #2: case-insensitive match in the 12 tool-turn assertions (test-only, zero spend, intent-preserving) vs alternatives.
+- E1 #2 RESOLVED (user 2026-11-16): case-insensitive, resume. Applied `result.out.toUpperCase()` at the 6 source sites (12 runtime assertions). Gates: typecheck 0 ✅, 38 skip ✅, GRANULARITY PASS (138) ✅. First half re-run: 1 pass ✅ (user gate p96176 ✅).
+- 8.3 spend check: cost-home copy of `*-53168-usage*.jsonl` → `cost --json` = $0.00 total (Baidu group only; 15541 prompt / 1150 out / 10240 cached; 31 cost-bearing exchanges; malformed 801 — see anomaly A2). Ceiling = $0 × 19 = $0 → strictly above-ceiling for any paid turn → user ask due before the second half regardless.
+- 8.3 second half RAN (user-approved): 16 pass / 23 fail of 39 (38 pi + 1 proxy cost-reconcile). Failure inventory with proven causes (each reproduced by hand against :4142):
+  (a) claude tool (fable-5): policy refusal once (`violative cyber content`), truncation at 64 once — model verbose/twitchy on the read-file pattern (plain turn on same model PASSES).
+  (b) antigravity tool (opus-5-5-high): truncation at 64 — needs a bigger cap.
+  (c) openai tool (gpt-5.5): 401 provider_auth_required — the USER's ChatGPT grant died (`invalid_grant`, needs `accounts-proxy login openai`). Their own daemon is affected too.
+  (d) opencode minimax-m2.1/-m2.5: 400 `Model is unavailable`; crouton: 410 deprecated; beam: 429 FreeUsageLimit exhausted. Free tier dead three ways.
+  (e) opencode-go (beam, haiku-5-5): 403 subscription required; crouton: 410; muse-spark-1.2: `isn't included in OpenCode Go`. Provider unusable without a Go subscription → 6 turns blocked.
+  (f) cheaper-responses plain (gpt-5-pro): 400 `does not support streaming` — pi always streams; need a streaming model.
+  (g) all 7 (e) unknown-model negatives: pi 1.5.2 prints `Model ... not found`, never `unknown model` — test regex wrong (proven by hand).
+  (h) uc-pi-4 dead-proxy: pi behaves (exit 0, warning names accounts-proxy) but the warning line itself contains `ap-` (`no ap- providers registered`), tripping the no-ap-line assertion — test filter wrong (proven by hand).
+  Green: openrouter tool, cheaper-completions plain, binary print + wrong-token, uc-pi-4 list, uc-pi-6 ×2, all (d) wrong-token (7).
+- ANOMALY A1 (manifest polling, stopped): 401× GET /.well-known/pi + 399× GET /pi/models.json, undici UA, burst 23:16:24–23:23:49Z, then silence (counts static 20 s apart; no pi processes remain). ~80 MB of exchange logs. Source undetermined: the extension has no loop (no setInterval/retry/while in its src); pi calls extension refreshModels once per process (provider-composer.js:404-420). No recurrence since 23:23. Effect: log volume only, zero spend (no cost-bearing records).
+- ANOMALY A2 (sweep deletions in the user's .cache): the disposable daemon runs the same retention sweep (500 MB cap); .cache/logs now holds 8 files (was dozens): the user's old usage logs and the small `2026-11-16-53168-usage.jsonl` are gone; `2026-11-16-53168-usage.1.jsonl` (80 MB, the A1 volume) remains alongside the user's 96176-usage.81–85. Per I2 the user's daemon would delete the same files on its next sweep (same values) — but the deletions happened on my watch and are reported as a data difference for 8.4r. Lock files: none left behind (FileLock removes on release). No accounts/state/token/proxy.yaml change.
+
 ## Standing-rule update (2026-11-16)
 
 - AGENTS.md gained rule 3.10 (residue: snapshot marker before first step, scan + prove deletions after) and 4.9 (brief scratch dirs + created-file lists). The plan predates both: no snapshot marker exists (cannot be retroacted) — residue will be proved best-effort at the end from `git status --porcelain --ignored`, `git worktree list`, branch/stash listings and the logs-dir inventory. Future briefs (stages 5–8) carry their own scratch dirs and file lists.
@@ -200,3 +225,92 @@ Unit tier (9 pre-existing failures, macOS/environmental: no `/proc`, no mitmdump
   `b21c84e38178aba9e84ee86bd3699d387302b345d8b4a5b46d7106b38cf695d9`); handed off to `build`, nothing executed by
   this session
 - this record
+
+## Step 8.3 E1 findings (2026-11-16, main session, disposable daemon 127.0.0.1:4142)
+
+Run 2: 16 pass / 23 fail. Root causes proven by A/B probes (same command, one variable changed):
+
+1. **Safety refusal on tmp path (test-only fix, 6 files).** All tool turns failed under `bun test`
+   with pi reporting `violative cyber content... blocked under Anthropic's Usage Policy`, while the
+   identical command passed from the shell. Isolated to the directory name: a turn whose prompt path
+   contains `accounts-proxy-pi-live-*` (from `makeTemporary`) refuses 4/4; `pi-live-*`, `pi-read-*`
+   and `proxy-test-*` pass. Fix: the read target now lives in a neutrally-named sibling temp dir
+   (`mkdtempSync(join(tmpdir(), "pi-read-"))`, tracked in `agentDirs` for cleanup) in
+   pi-claude, pi-antigravity, pi-openai, pi-openrouter, pi-opencode, pi-opencode-go (cheaper has no
+   tool turn). Proven: pi-claude.test.ts 3/3 green after the fix.
+2. **(e) unknown-model negatives never reached the proxy (test-only fix, 7 files).** Without
+   `ACCOUNTS_PROXY_TOKEN`, pi fails locally with `No API key found for ap-<provider>` (exit 1,
+   no `/nosuch/`), so the assertion could never pass. Fix: `staticDocument()` now returns
+   `{ doc, token }`; (d) destructures `{ doc }`, (e) destructures `{ doc, token }` and passes
+   `ACCOUNTS_PROXY_TOKEN: token`; regex `/not found/i` (no provider emits it; the proxy 404s with
+   `model: nosuch`) replaced by `/nosuch/`. Proven: 5/7 (e) green in run 3.
+3. **Opencode (e) names nothing (test-only fix, user-approved 2026-11-16).** Opencode answers 400
+   `Upstream request failed: Model is unavailable.` for `opencode/nosuch`. Test renamed to
+   `opencode: an unknown model is rejected as unavailable`, regex `/unavailable/i`. Tags unchanged.
+   Proven green in the opencode-file run.
+4. **Antigravity tool turn blocked-on-proxy (filed for plan-agent, user chose plan-agent fix).**
+   Deterministic upstream 400 `tool_use.id: Field required` (req_vrtx_*): cap 64 truncates, caps
+   128/256 fail identically on opus-5-5-high AND opus-5-5-low. pi's Gemini client sends id-less
+   `functionCall`; the Claude-on-Vertex upstream demands `tool_use.id`. Suspected translator gap:
+   `provider-antigravity/.../native-gemini.ts:170-172` reads optional `call["id"]`; no `tool_use`
+   construction exists under `packages/provider-antigravity/src/`. Filed as
+   `docs/issues/2026-11-16-20-47-antigravity-tool-use-id-gap.md`.
+5. **Account-blocked cells (user-approved: record + re-run).** opencode-go x6: 403 `An active
+   OpenCode Go subscription is required` (msgs/responses/completions/gemini tools) and 410
+   `ModelDeprecated crouton-alpha-free` (thinking); openai x2 (tool + (e)): 401 `needs a new login
+   (invalid_grant)`; opencode crouton tool: 410 deprecated; opencode minimax tool+thinking: 400
+   `Model is unavailable`; beam tool: 429 `FreeUsageLimitError`; opencode gemini tool: exit-0-empty
+   under load, PINEAPPLE standalone (quota flake).
+
+Run 3 (after fixes 1-2): 24 pass / 15 fail (39 tests, 110 expects). Opencode file after fix 3:
+3 pass / 5 fail ((e) + thinking-gemini green). User decisions 2026-11-16: record the 11
+blocked + re-run for transients; accept the opencode (e) rename; plan-agent fix for the
+translator gap. Standing constraints honored: replay-only e2e, no live-daemon spend beyond
+approved subscription/quota turns, browser guard on full-tier runs.
+
+Run 4 (2026-11-16, after all approved fixes): 24 pass / 15 fail (39 tests, 9 files). Fail set:
+antigravity tool (translator 400, filed); opencode-go x6 (403 subscription / 410 deprecated);
+openai x2 (401 re-login); opencode minimax tool + thinking (400 unavailable), crouton tool (410
+deprecated), beam tool (429 quota), gemini tool (exit-0-empty under load, PINEAPPLE standalone),
+minimax thinking (400 unavailable); cheaper-responses plain (exit-0-empty this run, OK in runs 2-3).
+Opencode (e) rename verified green; all (d)/(e) negatives green except openai (e) (401 before proxy).
+Disposition: the 10 deterministic cells are recorded blocked with per-cell evidence above
+(antigravity tool 1, opencode-go 6, openai 2, opencode crouton 1); the 5 transient/quota cells
+(beam 429, minimax unavailable x2, opencode-gemini empty, cheaper-responses empty)
+ stay red until provider quota resets — a later `bun run test:live` re-run is the gate, no code
+change needed. Step 8.1r reported as BLOCKED (loop cannot go clean on this Mac tonight); no
+further re-runs scheduled without new account state.
+
+## Amendment 5 approved — 2026-11-18 09:56 (main session)
+
+- Amendment file: `/Users/mavasbel/.opencode/plan/2026-11-18-09-56-pi-compatibility-plan-amendment-5.md`,
+  SHA-256 `44f6b64434ec29d1f1c8e0fce920ff2e927e0ef6691a0685e6734f811e13b062`, approved by the user in this session.
+- Folded into the plan as `## Amendment 5 (approved 2026-11-18; …)` immediately before `## Delegation map`.
+- Plan SHA-256 after folding: `9cd376583fa252554e7650aa17da2ec987138248b62c5b67dfc47d2053e49565`;
+  `shasum -a 256 -c docs/plans/2026-11-15-23-52-pi-compatibility-plan.md.sha256` → `…plan.md: OK`.
+- What A5 adds: stage 8A (`idCalls` in the antigravity cell, use case uc-pi-7), steps 8.0r and 8.0s, a revised 8.3r
+  expectation table, 9.4r (`bun install --frozen-lockfile` in `{repo}`) and 9.6r (residue deleted by name).
+- Root cause 8A closes: pi 1.5.2 omits tool-call ids for a provider-prefixed model id
+  (`pi-ai/dist/api/google-shared.js:125,235,270`), and Claude-on-Vertex answers 400
+  `messages.1.content.0.tool_use.id: Field required`.
+
+## Step 8.0r — scratch root, guard, marker, before-listing (green, 2026-11-18 10:29)
+
+The 2026-11-15 scratch root was gone (`ls -d "$TMPDIR"/opencode/2026-11-15*` → nothing;
+`find /var/folders/_m -maxdepth 5 -name '*pi-compatibility*'` → nothing), so the 4.8a marker and before-listing are
+unrecoverable; the 4.8a residue list in this record stands as the only copy.
+
+Recreated at the same path, mode 700: `briefs/`, `planning/`, `no-browser-bin/open` (`#!/bin/sh` + `exit 0`, 755),
+`marker` = `2026-11-18T10:29:53`, `before.txt` (374 lines).
+
+Gates: 1. `ls -d {logs}` → the path. 2. `PATH="{logs}/no-browser-bin:$PATH" command -v open` → the fake.
+3. `wc -l < {logs}/before.txt` → `374`. 4. `cat {logs}/marker` → `2026-11-18T10:29:53`.
+
+## Step 8.0s — stray disposable daemon stopped (green, 2026-11-18 10:31)
+
+Pid 75452 (started 2026-11-16) still held `127.0.0.1:4142`; `lsof -p 75452 -a -d cwd -Fn` → cwd
+`/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compatibility`, so it was this plan's daemon.
+`kill -INT 75452`, waited, it exited on SIGINT.
+
+Gates: 1. `lsof -nP -iTCP:4142 -sTCP:LISTEN` → no output. 2. `kill -0 75452` → `no such process` (exit 1).
+3. `lsof -nP -iTCP:4141 -sTCP:LISTEN` → `bun 35662 … 127.0.0.1:4141 (LISTEN)`, the user's daemon untouched.
