@@ -477,3 +477,44 @@ The difference is not a repair I may make by hand, so it is reported as found, s
 - **Unknown.** Whether your restart alone would have removed them, and whether any copy survives elsewhere.
 
 I did not delete them and cannot restore them. Their names are preserved in `{logs}/cache-before.txt`.
+
+## § Final gate — steps 9.1 and 9.2
+
+### 9.1 — `bun run verify` on the final tree (`d869f88`), behind the no-op `open` guard
+
+| Step | Final | Baseline (`0fd623a`, and `verify-8a3`) | Verdict |
+|---|---|---|---|
+| typecheck | **PASS** | PASS | unchanged |
+| unit + component + arch, 100 % coverage | FAIL — `1150 pass / 7 fail`, `1157 tests` | FAIL — `1149 pass / 8 fail` | **one fewer failure; the 7 are the baseline set exactly** |
+| build | **PASS** | PASS | unchanged |
+| e2e with 100 % coverage | FAIL — `210 pass / 73 fail`, `283 tests` | FAIL — `210 pass / 73 fail` | identical |
+| merged coverage 100 % | FAIL | FAIL | unchanged |
+| recon parity × 11 cells | FAIL × 11 | FAIL × 11 | identical cells |
+| docs lint | **PASS** (80 files) | PASS | unchanged |
+| granularity report | **PASS** (148 scenarios) | — | new step, green |
+| `GATE:` | `GATE: FAIL` | `GATE: FAIL` | **no new failing step and no new failing test** |
+
+The mechanical comparison, not a reading:
+
+```
+grep -E '^\(fail\)' <log> | sed -E 's/ \[[0-9.]+ms\]$//' | sort -u   # both logs
+diff fails-before.txt fails-final.txt
+40d39
+< (fail) granularity report > the plan's design parses to three features, six use cases and the live matrix …
+```
+
+That single line is the stale test of stage 8A, and it is the only difference: **every baseline failure survives unchanged, and
+one failure was fixed.** No regression exists.
+
+**Gate 2 is reported, not waived.** `unit` and `e2e` do not print `100 %` on this Mac; they fail exactly as the baseline
+does (R2: the login tests need a real browser callback, and the merged-coverage step inherits it). The new code's own
+coverage is 100 % where the tiers can run, proven in stages 3–8A. The gate closes as **pre-existing on darwin, to be
+closed by Linux CI**, never as met.
+
+### 9.2 — the plan loop closed
+
+| Gate | Result |
+|---|---|
+| 1. every path in the diff belongs to the architecture design | `83 files changed, 9787 insertions(+), 103 deletions(-)`; the directories are `apps/pi-extension` (25), `apps/proxy` (14), `packages/dialect-pi` (8), `docs/reference` (7), `packages/core` (5), `scripts/gate` (3), `packages/provider-antigravity` (3), `tests/support` (2), `tests/arch` (2), `packages/dialect-opencode` (2), `docs/{plans,design}` , `scripts/{tests,evidence}`, `README.md`, `docs/{sessions,issues,architecture.drawio}`, `bun.lock`, `AGENTS.md` — each a node of the design or a file stage 6 names |
+| 2. the two neighbouring plans untouched | `git diff --stat 0fd623a..HEAD -- <cheapest-similar-model plan> <ses_ef10d7fa…>` → **empty** |
+| 3. every step `[x]` with its gate output | stages 0–8 are `[x]` with their evidence in this record; 9.1 and 9.2 close here; 9.3–9.6 remain |
