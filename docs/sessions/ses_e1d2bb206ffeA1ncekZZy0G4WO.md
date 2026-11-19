@@ -336,3 +336,63 @@ Gemini target.
 (`no browser callback within 30 s`, 0 pass / 2 fail). A1 already fixed this class in
 `apps/proxy/tests/e2e/pi-routing.test.ts:40-45` by writing an `open` fake into `home.bin`. Amendment 6 applies that same
 block in this file; nothing else changes.
+
+## Step 8A.7 — green (2026-11-18 16:10, main session)
+
+**Deviation, recorded.** `8A.7` ran in the main session, not in a subagent: the delegation channel failed twice with
+`upstream openrouter.ai could not be reached: TypeError: getaddrinfo ENOTFOUND openrouter.ai` (network was up;
+`curl https://openrouter.ai/api/v1/models` → `200`). The step was small and fully specified, so the main session
+executed it and verified every gate firsthand.
+
+The file carries the approved block (`apps/proxy/tests/e2e/gemini-cell.test.ts:17-31`): `makeHome`, `home.bin/open` fake
+of the `fake-browser.ts` form, `chmod 755`, two logins, `token`, `startDaemon`; the two `uc-pi-7` scenarios follow.
+
+| Gate | Command | Output |
+|---|---|---|
+| 1 | `grep -c 'home.bin, "open"' apps/proxy/tests/e2e/gemini-cell.test.ts` | `1` |
+| 2 | `PATH={logs}/no-browser-bin:$PATH bun test --timeout 120000 apps/proxy/tests/e2e/gemini-cell.test.ts` | `78 pass / 0 fail / 211 expect()` in `3.55 s` (was `0 pass / 2 fail` before A6) |
+| 3 | `bun scripts/gate/granularity-report.ts` | `GRANULARITY: PASS (148 scenarios)`, row `pi-inference | uc-pi-7 | e2e | none | yes | yes` |
+| 4 | `bun run verify` | run 1 died with its parent shell at 16:27 mid-e2e (80 failures, all the pre-existing login class); relaunched in the harness's background mode as `{logs}/verify-8a2.log`; verdict recorded below when it lands |
+| 5 | commit | pending gate 4 |
+
+`bun run typecheck` → exit `0` (re-run after the edit).
+
+## Step 8.2r — disposable daemon on 4142 (green, 2026-11-18 16:20)
+
+`{live_port}` = `4142` (first free in 4142–4149); `{live_home}` = `{logs}/live-home`; `{livepid}` = `76706`.
+
+| Gate | Command | Output |
+|---|---|---|
+| 1 | `lsof -nP -t -iTCP:4141 -sTCP:LISTEN` | `35662` before and after (the user's daemon, never stopped) |
+| 2 | `diff <(grep -v '^port:' {repo}/.cache/proxy.yaml) <(grep -v '^port:' {live_home}/proxy.yaml)` → `0` lines; `grep -cx "port: 4142" {live_home}/proxy.yaml` → `1` |
+| 3 | `curl -s http://127.0.0.1:4142/health` | `{"status":"ok","providers":["claude","antigravity","openai","openrouter","opencode","opencode-go","cheaper-inference"]}` |
+| 4 | `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4142/.well-known/pi` | `200` |
+| 5 | manifest `auth.command` output hashed vs `jq -r .token {live_home}/token.json` hashed | both `aa455835e10ee25e16ecffa98fc7dbaa4e221787cff0c05b709df04a2b9c21ac`; `cmp -s {live_home}/token.json {repo}/.cache/token.json` → exit `1` (tokens differ, neither printed) |
+| 6 | `stat -f '%Sp %N' {live_home} {live_home}/proxy.yaml` | `drwx------`, `-rw-------` |
+
+`{logs}/cache-before.txt` holds the `.cache/logs` and `.cache/locks` name shapes taken before the daemon started.
+
+### Stage 8A — the antigravity tool-id law (A5) — closed
+
+Steps 8A.1–8A.7 green, plus two defects that gate 4 found and I fixed.
+
+| Step | Gate evidence |
+|---|---|
+| 8A.1 | `bun test packages/provider-antigravity/tests/unit/native-gemini.test.ts` → 73 pass / 0 fail |
+| 8A.2 | `idCalls` at `native-gemini.ts:195`; call site `contents = idCalls(contents, model.wireId);` |
+| 8A.3 | `grep -c '^#### uc-pi-7'` → 1; `grep -c 'uc-pi-7 → none'` → 1; `grep -c 'idCalls'` on the architecture design → 1; docs lint PASS |
+| 8A.4 | typecheck exit 0; unit 73/0; component 63/0; scoped coverage 100 % |
+| 8A.5 | `bun scripts/gate/granularity-report.ts` → `GRANULARITY: PASS (148 scenarios)` |
+| 8A.6 | docs lint → `PASS (80 markdown files)` |
+| 8A.7 | `bun test apps/proxy/tests/e2e/gemini-cell.test.ts` → 78 pass / 0 fail (3.55 s), after amendment 6's `makeHome` `open` fake |
+| Gate 4 | `bun run verify` → verdict table identical to the baseline at `0fd623a`, plus the new `PASS granularity report`; unit tier 1149 pass / 8 fail |
+
+**Defect 1 — stale use-case count (mine).** A5 added `uc-pi-7`, but `scripts/tests/unit/granularity-report.test.ts` still asserted six use cases, giving one new unit failure. Fixed in three hunks: name `six` → `seven`; the expected array gains `"uc-pi-7"`; a new assertion `design.dependencies.get("uc-pi-7")` → `["none"]`. Evidence: 11 pass / 0 fail / 25 `expect()` calls.
+
+**Defect 2 — the A5 dependency declaration was never parsed (mine).** A5 wrote `uc-pi-7 — none (…)` with an em dash (U+2014). `scripts/gate/granularity-report.ts:37` accepts only `→` or `->`, and `:39` skips a chunk with no arrow, so `dependencies` held no `uc-pi-7` key at all; the report's `?? ["none"]` fallback at `:126` supplied the value. The report was green by defaulting, not by parsing. Fixed by writing the parser's own arrow: `uc-pi-7 → none (…)` at `docs/design/2026-11-15-23-52-pi-compatibility-product.md:30`. Proof: `parseDesign` now yields `uc-pi-7 deps = ["none"]` and `keys = uc-pi-1,…,uc-pi-7`; the report is unchanged at PASS (148 scenarios).
+
+**Plan corrected to match.** `docs/plans/2026-11-15-23-52-pi-compatibility-plan.md:22` `uc-pi-1 … uc-pi-6` → `… uc-pi-7`; step 8A.3's gate 2 `'uc-pi-7 — none'` → `'uc-pi-7 → none'`, with the parser reason written inline. Plan `.sha256` recomputed: `978d30410b4b705031644b6da8bb35f1bc6f027e0f8b325f2d195ee0bb760cf9`, and `shasum -a 256 -c` prints `OK`.
+
+**Blast radius proved, not assumed.** `grep -rln 'pi-compatibility-product' --include=*.ts` lists only `scripts/gate/granularity-report.ts`, its unit test, and two header comments (`pi-config-codec.ts:2`, `pi-thinking.ts:1`). No other test reads the design document, so the fix cannot change another tier's outcome.
+
+**Not re-run:** `bun run verify` after the fix (about 40 minutes; it is stage 9's final gate).

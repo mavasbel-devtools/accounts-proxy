@@ -19,7 +19,7 @@
 - Baseline gate `{baseline}`: `bun run verify` on the unchanged worktree (step 0.6), output in `{record}` § Baseline gate.
 - Scratch directory `{logs}`: `/private/var/folders/_m/jyv5nmsn4y305mjjcm_4fq240000gn/T/opencode/2026-11-15-23-52-pi-compatibility`
   (outside the repository; created at step 0.5 with `mkdir -p` and mode `700`; deleted at step 9.6).
-- Design: `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md` (use cases uc-pi-1 … uc-pi-6, rules
+- Design: `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md` (use cases uc-pi-1 … uc-pi-7, rules
   P1–P7) and `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md` (every name used below).
 - Bun: `{bun}` = `/Users/mavasbel/.bun/bin/bun` (1.4.4); `{pi}` = `/opt/homebrew/bin/pi` (1.5.2).
 
@@ -782,7 +782,7 @@ work; the order is the one on this line, and 8.0r/8.0s are in section 8.
   `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md`
 - **content**: § 5 verbatim into the product design (use case plus the dependencies line); § 6 into the architecture.
 - **depends on**: 8A.2
-- **gates**: 1. `grep -c '^#### uc-pi-7' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1`; 2. `grep -c 'uc-pi-7 — none' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1`;
+- **gates**: 1. `grep -c '^#### uc-pi-7' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1`; 2. `grep -c 'uc-pi-7 → none' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-product.md`` → `1` (the `→` arrow, not an em dash: `scripts/gate/granularity-report.ts:37` parses only `→` or `->`, so an em dash would leave the declaration unparsed and defaulted by `:126`);
   3. `grep -c 'idCalls' `{worktree}/docs/design/2026-11-15-23-52-pi-compatibility-architecture.md`` → `1`; 4. lint → exit `0`.
 - **problems**: the granularity report reads the design's headings → keep the exact heading shapes of § 5.
 - **escalation**: E1

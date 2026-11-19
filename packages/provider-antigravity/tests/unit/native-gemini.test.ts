@@ -354,6 +354,70 @@ describe("prepareGeminiRequest: wire laws 6, 7, 8 and 12 (always applied, always
   });
 });
 
+describe("prepareGeminiRequest: tool-call ids (uc-pi-7, AGENTS.md §3 antigravity tool-id law)", () => {
+  const call = (id: string | undefined, name = "get_time", extra: Record<string, unknown> = {}) => ({ functionCall: { ...(id !== undefined ? { id } : {}), name, args: {} }, ...extra });
+  const response = (id: string | undefined, name = "get_time") => ({ functionResponse: { ...(id !== undefined ? { id } : {}), name, response: { output: "13:00" } } });
+  const ids = (parts: readonly Record<string, unknown>[], key: "functionCall" | "functionResponse") =>
+    parts.map((part) => (part[key] as { id?: string } | undefined)?.id);
+
+  test("R1: a Gemini target gets no synthesized id and no rewritten part [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=negative]", () => {
+    const body = { contents: [user("q"), { role: "model", parts: [call(undefined, "get_time", { thoughtSignature: "S1" })] }, { role: "user", parts: [response(undefined)] }] };
+    const p = prepareGeminiRequest(body, GEMINI, strict);
+    expect(p.contents[1]!.parts).toEqual([call(undefined, "get_time", { thoughtSignature: "S1" })]);
+    expect(p.contents[2]!.parts).toEqual([response(undefined)]);
+    expect(p.dropped).toEqual([]);
+  });
+
+  test("R2: an id the client sent is never rewritten, on a call or on a response [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=positive]", () => {
+    const body = { contents: [user("q"), { role: "model", parts: [call("toolu_9")] }, { role: "user", parts: [response("toolu_9")] }] };
+    const p = prepareGeminiRequest(body, CLAUDE, strict);
+    expect(p.contents[1]!.parts).toEqual([call("toolu_9")]);
+    expect(p.contents[2]!.parts).toEqual([response("toolu_9")]);
+  });
+
+  test("R3: a synthesized id is ap_call_<n> from 1, deterministic per request, and skips every id the request carries [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=positive]", () => {
+    const body = {
+      contents: [
+        user("q"),
+        { role: "model", parts: [call("ap_call_1", "a"), call(undefined, "b"), call(undefined, "c")] },
+        { role: "user", parts: [response("ap_call_1", "a"), response(undefined, "b"), response(undefined, "c")] },
+      ],
+    };
+    const p = prepareGeminiRequest(body, CLAUDE, strict);
+    expect(ids(p.contents[1]!.parts, "functionCall")).toEqual(["ap_call_1", "ap_call_2", "ap_call_3"]);
+    expect(ids(p.contents[2]!.parts, "functionResponse")).toEqual(["ap_call_1", "ap_call_2", "ap_call_3"]);
+    expect(prepareGeminiRequest(body, CLAUDE, strict).contents).toEqual(p.contents);
+  });
+
+  test("R4: a response without an id takes the earliest unpaired call of its name, so parallel calls of one tool pair FIFO [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=positive]", () => {
+    const body = {
+      contents: [
+        user("q"),
+        { role: "model", parts: [call(undefined, "a"), call(undefined, "get_time"), call(undefined, "b"), call(undefined, "get_time")] },
+        { role: "user", parts: [response(undefined, "get_time"), response(undefined, "get_time")] },
+      ],
+    };
+    const p = prepareGeminiRequest(body, CLAUDE, strict);
+    expect(ids(p.contents[1]!.parts, "functionCall")).toEqual(["ap_call_1", "ap_call_2", "ap_call_3", "ap_call_4"]);
+    expect(ids(p.contents[2]!.parts, "functionResponse")).toEqual(["ap_call_2", "ap_call_4"]);
+  });
+
+  test("R5: a response with no preceding call gets a fresh id and is forwarded, never dropped [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=negative]", () => {
+    const body = { contents: [user("q"), { role: "user", parts: [response(undefined, "orphan")] }] };
+    const p = prepareGeminiRequest(body, CLAUDE, strict);
+    expect(p.contents.map((c) => c.role)).toEqual(["user", "model"]);
+    expect(p.contents[1]!.parts).toEqual([response("ap_call_1", "orphan")]);
+    expect(p.dropped).toEqual([]);
+  });
+
+  test("R6: synthesizing an id adds no dropped entry [feature=pi-inference use-case=uc-pi-7 tier=unit polarity=negative]", () => {
+    const body = { contents: [user("q"), { role: "model", parts: [call(undefined)] }, { role: "user", parts: [response(undefined)] }] };
+    const p = prepareGeminiRequest(body, CLAUDE, strict);
+    expect(p.dropped).toEqual([]);
+    expect(p.contents[1]!.parts).toEqual([call("ap_call_1")]);
+  });
+});
+
 describe("turnView", () => {
   test("roles, visible text, tool calls with and without ids", () => {
     expect(

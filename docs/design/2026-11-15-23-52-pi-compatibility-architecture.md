@@ -105,3 +105,11 @@ negatives) and `tests/live/pi-<provider>.test.ts` for each of the seven provider
 | `scripts/gate/granularity-report.ts` | reads the use-case ids of the product designs listed in `GRANULARITY_DESIGNS` (initially this feature only) and the `[feature=… use-case=… tier=… polarity=…]` tags in test names; fails on any missing component, live, e2e or negative scenario |
 | `scripts/gate/verify.ts` | adds `granularity report` after the docs lint |
 | `tests/arch/architecture.test.ts` | workspace list adds `@accounts-proxy/dialect-pi`, `@accounts-proxy/pi-extension` |
+
+## 7. `packages/provider-antigravity` (serves uc-pi-7)
+
+| File | Name | Responsibility |
+|---|---|---|
+| `src/domain/native-gemini.ts` | `idCalls` (private) | synthesizes and pairs tool-call ids on a non-Gemini target (uc-pi-7) |
+
+Tests: `packages/provider-antigravity/tests/{unit,component}`, `apps/proxy/tests/e2e/gemini-cell.test.ts`.

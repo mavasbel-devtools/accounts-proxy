@@ -26,7 +26,8 @@ Every use case has a positive and a negative scenario in every tier that covers 
 
 Dependencies per use case (read by `scripts/gate/granularity-report.ts`): uc-pi-1, uc-pi-2, uc-pi-3 → none;
 uc-pi-4, uc-pi-6 → `pi`; uc-pi-5 → `pi`, `claude`, `antigravity`, `openai`, `openrouter`, `opencode`, `opencode-go`,
-`cheaper-inference`.
+`cheaper-inference`;
+uc-pi-7 → none (proven end-to-end by uc-pi-5's antigravity tool turn, which is the scenario that exposed the law).
 
 ### Feature `pi-config` — the pi configuration document (`packages/dialect-pi`, `apps/proxy`)
 
@@ -85,6 +86,19 @@ uc-pi-4, uc-pi-6 → `pi`; uc-pi-5 → `pi`, `claude`, `antigravity`, `openai`, 
   no extension): on every provider, `ACCOUNTS_PROXY_TOKEN` set to a wrong value → pi exits non-zero reporting the
   proxy's 401; one extra model `nosuch` added to that provider's list → pi exits non-zero reporting the proxy's 404
   `unknown model`.
+
+#### uc-pi-7 — A tool loop whose client omits tool-call ids
+
+**Purpose.** A client that speaks Gemini-native `functionCall`/`functionResponse` without ids (pi 1.5.2 with a
+provider-prefixed model id) completes a tool loop on a Claude-on-Vertex model through the antigravity cell.
+
+**Contract.** Input: `contents` holding one id-less `functionCall` and one id-less `functionResponse` with the same
+`name`. Output: the same contents, every call carrying `ap_call_<n>` and the matching response the same id; a Gemini
+target, or an id the client sent, unchanged. Failure modes: none added (no new 400, no new dropped entry).
+
+**Acceptance criteria.** unit positive: call and response paired; unit negative: a response with no call gets a fresh
+id and is forwarded; component positive: the cell prepares the loop; component negative: an existing id is preserved;
+e2e positive: the replayed upstream receives the paired ids; e2e negative: a Gemini target receives no synthesized id.
 
 ## 3. Out of scope
 

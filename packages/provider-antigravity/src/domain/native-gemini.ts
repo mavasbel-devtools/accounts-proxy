@@ -22,6 +22,7 @@
 //   - law 6 (Gemini models): a functionCall without thoughtSignature is signed from the proxy's cache, else it is
 //     dropped with its functionResponse; law 8: content-free contents dropped; law 12: trailing model turns (other
 //     than function responses) stripped after the law-6 drop. These always apply and are reported (decision Q3).
+//   - a tool call on a non-Gemini target carries an id (AGENTS.md §3 antigravity tool-id law).
 import { InvalidRequestError, UnsupportedFeatureError } from "@accounts-proxy/core/domain/errors.ts";
 import type { ModelDescriptor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
 import { thinkingDefaultFor } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
@@ -190,6 +191,42 @@ function signCalls(contents: GeminiContent[], modelWireId: string, signatures: R
   }));
 }
 
+/** Non-Gemini targets (Claude, gpt-oss) need a tool-call id: give every id-less call one, and its response the same id. */
+function idCalls(contents: GeminiContent[], modelWireId: string): GeminiContent[] {
+  if (isGeminiFamily(modelWireId)) return contents;
+  const used = new Set<string>();
+  for (const c of contents) for (const part of c.parts) {
+    const call = part["functionCall"] as Record<string, unknown> | undefined;
+    const response = part["functionResponse"] as Record<string, unknown> | undefined;
+    const id = (call?.["id"] ?? response?.["id"]);
+    if (typeof id === "string") used.add(id);
+  }
+  let n = 0;
+  const next = (): string => {
+    do { n += 1; } while (used.has(`ap_call_${n}`));
+    const id = `ap_call_${n}`;
+    used.add(id);
+    return id;
+  };
+  const pending: { name: string; id: string }[] = [];
+  return contents.map((c) => ({
+    role: c.role,
+    parts: c.parts.map((part) => {
+      const call = part["functionCall"] as Record<string, unknown> | undefined;
+      if (call !== undefined) {
+        const id = typeof call["id"] === "string" ? (call["id"] as string) : next();
+        pending.push({ name: call["name"] as string, id });
+        return typeof call["id"] === "string" ? part : { ...part, functionCall: { ...call, id } };
+      }
+      const response = part["functionResponse"] as Record<string, unknown> | undefined;
+      if (response === undefined || typeof response["id"] === "string") return part;
+      const at = pending.findIndex((p) => p.name === response["name"]);
+      const id = at === -1 ? next() : pending.splice(at, 1)[0]!.id;
+      return { ...part, functionResponse: { ...response, id } };
+    }),
+  }));
+}
+
 function checkSystem(raw: unknown, findings: Findings): PreparedGemini["systemInstruction"] {
   if (raw === undefined) return undefined;
   if (!isObject(raw) || !Array.isArray(raw["parts"])) throw new InvalidRequestError("systemInstruction must be a content with a parts array");
@@ -330,6 +367,7 @@ export function prepareGeminiRequest(body: unknown, model: ModelDescriptor, opti
 
   const dropped = [...findings.dropped];
   contents = signCalls(contents, model.wireId, options.signatures, dropped);
+  contents = idCalls(contents, model.wireId);
   const kept: GeminiContent[] = [];
   for (const c of contents) {
     if (c.parts.some(contentful)) kept.push(c);

@@ -184,11 +184,11 @@ describe("granularity report", () => {
     expect(analysis.problems.some((p) => p.startsWith("unknown dependency"))).toBe(true);
   });
 
-  test("the plan's design parses to three features, six use cases and the live matrix [feature=pi-config use-case=uc-pi-1 tier=unit polarity=positive]", () => {
+  test("the plan's design parses to three features, seven use cases and the live matrix [feature=pi-config use-case=uc-pi-1 tier=unit polarity=positive]", () => {
     expect(GRANULARITY_DESIGNS).toEqual(["docs/design/2026-11-15-23-52-pi-compatibility-product.md"]);
     const design = parseDesign(readFileSync(join(repositoryRoot, GRANULARITY_DESIGNS[0]!), "utf8"));
     expect(design.features.map((f) => f.id)).toEqual(["pi-config", "pi-extension", "pi-inference"]);
-    expect(design.features.flatMap((f) => f.useCases)).toEqual(["uc-pi-1", "uc-pi-2", "uc-pi-3", "uc-pi-4", "uc-pi-6", "uc-pi-5"]);
+    expect(design.features.flatMap((f) => f.useCases)).toEqual(["uc-pi-1", "uc-pi-2", "uc-pi-3", "uc-pi-4", "uc-pi-6", "uc-pi-5", "uc-pi-7"]);
     expect(design.dependencies.get("uc-pi-1")).toEqual(["none"]);
     expect(design.dependencies.get("uc-pi-4")).toEqual(["pi"]);
     expect(design.dependencies.get("uc-pi-5")).toEqual([
@@ -201,5 +201,6 @@ describe("granularity report", () => {
       "opencode-go",
       "cheaper-inference",
     ]);
+    expect(design.dependencies.get("uc-pi-7")).toEqual(["none"]);
   });
 });
