@@ -518,3 +518,80 @@ closed by Linux CI**, never as met.
 | 1. every path in the diff belongs to the architecture design | `83 files changed, 9787 insertions(+), 103 deletions(-)`; the directories are `apps/pi-extension` (25), `apps/proxy` (14), `packages/dialect-pi` (8), `docs/reference` (7), `packages/core` (5), `scripts/gate` (3), `packages/provider-antigravity` (3), `tests/support` (2), `tests/arch` (2), `packages/dialect-opencode` (2), `docs/{plans,design}` , `scripts/{tests,evidence}`, `README.md`, `docs/{sessions,issues,architecture.drawio}`, `bun.lock`, `AGENTS.md` — each a node of the design or a file stage 6 names |
 | 2. the two neighbouring plans untouched | `git diff --stat 0fd623a..HEAD -- <cheapest-similar-model plan> <ses_ef10d7fa…>` → **empty** |
 | 3. every step `[x]` with its gate output | stages 0–8 are `[x]` with their evidence in this record; 9.1 and 9.2 close here; 9.3–9.6 remain |
+
+## § Integration, the user's pi, and the residue — steps 9.4 to 9.6
+
+### 9.4 — merged into local `main` (your choice, recorded)
+
+```
+git -C {repo} merge --no-ff feat-pi-compatibility -m "Merge feat-pi-compatibility (plan 2026-11-15-23-52)"
+c9dfd61 Merge feat-pi-compatibility (plan 2026-11-15-23-52)
+git -C {repo} status --short
+ M docs/sessions/ses_ef10d7fa0ffe2baUvsApfbHHPZ.md
+?? docs/plans/2026-11-11-03-17-cheapest-similar-model-routing-plan.md
+```
+
+The merge commit is `c9dfd61`; the status names the two entries that were already dirty before this plan started and
+nothing else. `16` commits were merged (`git rev-list --count main..feat-pi-compatibility` → `16`). Nothing was pushed:
+`origin/main` is untouched and the publication stays yours.
+
+### 9.4a — the workspace links in your checkout
+
+```
+cd {repo} && bun install --frozen-lockfile
+bun install v1.4.4 (38afee6c8)
+Checked 254 installs across 238 packages (no changes) [44.00ms]     exit=0
+test -L {repo}/apps/proxy/node_modules/@accounts-proxy/dialect-pi  → SYMLINK_OK
+curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4141/health → 200
+```
+
+No installed version changed; the frozen install only proves the lockfile and the manifests agree and adds the link.
+
+### 9.5r — your own pi, without restarting anything of yours
+
+| Gate | Result |
+|---|---|
+| 1. the extension is registered | `grep -c 'apps/pi-extension' ~/.pi/agent/settings.json` → `1`; the file now reads `"packages":["../../Dev/repos/devtools/accounts-proxy/apps/pi-extension"]` |
+| 2. every provider is listed | `ACCOUNTS_PROXY_URL=http://127.0.0.1:4142 pi --no-session --list-models ap-` → `ap-antigravity ap-cheaper-inference ap-claude ap-openai ap-opencode ap-opencode-go ap-openrouter`, `7` distinct, exit `0`, no `-e` flag — the installed extension did it |
+| 3. the claude turn prints `OK` | **blocked, account state**: `429 {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your account's rate limit…"}}`. The same window that reddened the live tier. An additional turn on a working cell proves the path: `--model ap-openrouter/openrouter/liquid/lfm-3-1.7b:free` → **`OK`**, exit `0` |
+| 4. no `models.json` is written | `test ! -e ~/.pi/agent/models.json` → absent |
+| 5. no new names under `~/.pi` | `pi-before.txt` held `6` files; the listing after the install differs by **nothing** (`diff` empty) |
+| 6. the disposable daemon's own gates | pid `18592` on `:4142`; `/health` `{"status":"ok"}` with all 7 providers; `/.well-known/pi` → `200`; `cmp -s live-home2/token.json {repo}/.cache/token.json` → exit `1`, the tokens differ; `drwx------` on the home and `-rw-------` on its `proxy.yaml` |
+| 7. your daemon throughout | `:4141` health `200` before, during and after; pid `4258` never signalled |
+
+`settings.json` was copied to `settings.json.before` first (`shasum -a 256` → `71b312057f2e56175f1eb5911bacd857fd1d64267eb2cbbd50b3ec70f0c8943e`, equal to the original), so
+`cp settings.json.before ~/.pi/agent/settings.json` restores it exactly.
+
+**Pending follow-up, recorded here and in the final report.** Your daemon still runs the pre-merge code, so `:4141` does
+not yet serve `/.well-known/pi`. After your own next restart:
+`curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4141/.well-known/pi` → `200`, and `pi --list-models ap-` with no
+`ACCOUNTS_PROXY_URL` lists the seven providers. Until then pi starts with the extension's single warning.
+
+### 9.6 — the residue, every item proven gone
+
+```
+git worktree remove {repo}/worktrees/feat-pi-compatibility && git worktree prune && git branch -d feat-pi-compatibility
+Deleted branch feat-pi-compatibility (was 97c7217).
+git worktree list → {repo} c9dfd61 [main] and worktrees/fix-antigravity-cli-wire 0fd623a [fix-antigravity-cli-wire] (yours, untouched)
+
+GONE /Users/mavasbel/.opencode/plan/2026-11-16-11-42-pi-compatibility-plan-amendment-1.md
+GONE /Users/mavasbel/.opencode/plan/2026-11-16-14-15-pi-compatibility-plan-amendment-2.md
+GONE /Users/mavasbel/.opencode/plan/2026-11-18-09-56-pi-compatibility-plan-amendment-5.md
+GONE /Users/mavasbel/.opencode/plan/2026-11-18-11-05-pi-compatibility-plan-amendment-6.md
+GONE {logs}                       (the whole scratch root, 552K)
+GONE {repo}/.cache/logs/2026-11-19-18592-proxy.log
+GONE {repo}/.cache/logs/2026-11-19-18592-usage.1.jsonl
+GONE {repo}/.cache/logs/2026-11-19-18592-usage.2.jsonl
+GONE {repo}/.cache/logs/2026-11-19-18592-usage.jsonl
+GONE {logs}/live-home2
+```
+
+`{repo}/.cache/logs` now holds only `2026-11-19-4258-proxy.log`, `2026-11-19-4258-usage.13.jsonl`,
+`2026-11-19-4258-usage.14.jsonl` and `2026-11-19-4258-usage.15.jsonl`, measuring `263M`. No process of this plan listens
+on any port: `lsof -nP -iTCP:4142` prints nothing and `kill -0 18592` fails.
+
+### What this plan leaves behind, by design
+
+`packages/dialect-pi`, `apps/pi-extension`, the proxy's `/pi/models.json`, `/.well-known/pi` and `pi-config` command, the
+granularity gate, `tests/arch/pi-extension-runtime.test.ts`, the pinned pi schema, the design and plan documents, and the
+seven `P1`–`P7` laws in `AGENTS.md` — all merged at `c9dfd61` and installed in your checkout.
