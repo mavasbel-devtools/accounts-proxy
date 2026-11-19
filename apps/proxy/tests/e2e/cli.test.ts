@@ -60,7 +60,7 @@ describe("accounts-proxy CLI (e2e)", () => {
     expect(refused.stderr).toContain("ACCOUNTS_PROXY_TEST_UPSTREAM_CLAUDE_API must be an http://127.0.0.1:<port> origin");
   });
 
-  test.each(["login", "account", "account list", "account use", "quota", "models", "opencode-config", "serve", "token", "status", "help"])(
+  test.each(["login", "account", "account list", "account use", "quota", "models", "opencode-config", "pi-config", "serve", "token", "status", "help"])(
     "`help %s`, `--help` and `-h` print the same help, without running the command",
     async (command: string) => {
       const words = command.split(" ");

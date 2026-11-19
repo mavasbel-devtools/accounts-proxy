@@ -1,0 +1,17 @@
+{
+  "name": "@accounts-proxy/dialect-pi",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "pi models.json configuration and well-known manifest (inbound adapters).",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@accounts-proxy/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@accounts-proxy/test-support": "workspace:*"
+  }
+}

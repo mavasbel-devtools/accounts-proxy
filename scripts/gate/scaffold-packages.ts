@@ -20,6 +20,7 @@ const packages: { dir: string; name: string; description: string; dependencies: 
   { dir: "packages/dialect-openai", name: "@accounts-proxy/dialect-openai", description: "OpenAI Chat Completions dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   { dir: "packages/dialect-gemini", name: "@accounts-proxy/dialect-gemini", description: "Gemini generateContent dialect codec (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   { dir: "packages/dialect-opencode", name: "@accounts-proxy/dialect-opencode", description: "opencode v2 provider configuration and well-known manifest (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
+  { dir: "packages/dialect-pi", name: "@accounts-proxy/dialect-pi", description: "pi models.json configuration and well-known manifest (inbound adapters).", dependencies: ["@accounts-proxy/core"] },
   {
     dir: "apps/proxy",
     name: "@accounts-proxy/proxy",
@@ -38,6 +39,12 @@ const packages: { dir: string; name: string; description: string; dependencies: 
       "@accounts-proxy/dialect-gemini",
       "@accounts-proxy/dialect-opencode",
     ],
+  },
+  {
+    dir: "apps/pi-extension",
+    name: "@accounts-proxy/pi-extension",
+    description: "pi extension: registers the proxy's providers from /.well-known/pi at pi startup.",
+    dependencies: [],
   },
 ];
 

@@ -1,0 +1,22 @@
+{
+  "name": "@accounts-proxy/pi-extension",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "pi extension: registers the proxy's providers from /.well-known/pi at pi startup.",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "pi": {
+    "extensions": [
+      "./src/main/extension.ts"
+    ]
+  },
+  "devDependencies": {
+    "@accounts-proxy/core": "workspace:*",
+    "@accounts-proxy/dialect-pi": "workspace:*",
+    "@accounts-proxy/scripts": "workspace:*",
+    "@accounts-proxy/test-support": "workspace:*"
+  }
+}

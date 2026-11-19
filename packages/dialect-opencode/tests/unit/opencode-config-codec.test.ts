@@ -4,7 +4,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DetailedCatalog, DetailedModel } from "@accounts-proxy/core/domain/model-details.ts";
-import { OpencodeConfigCodec, opencodeProviderId, PROVIDER_NAMES } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
+import { PROVIDER_DISPLAY_NAMES } from "@accounts-proxy/core/domain/client-connection.ts";
+import { OpencodeConfigCodec, opencodeProviderId } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
 import { validate } from "@accounts-proxy/test-support/json-schema.ts";
 
 const schema = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "docs", "reference", "specs", "opencode-config-schema.json"), "utf8")) as Record<string, unknown>;
@@ -93,7 +94,7 @@ describe("OpencodeConfigCodec.config", () => {
   test("the schema check catches a wrong document; names and ids", () => {
     expect(validate(schema, { providers: { x: { models: { m: { limit: { context: "1" }, nope: 1 } } } } })).toEqual(["$.providers.x.models.m.limit.context: expected integer, got string", "$.providers.x.models.m.nope: not allowed"]);
     expect(opencodeProviderId("opencode-go")).toBe("ap-opencode-go");
-    expect(Object.keys(PROVIDER_NAMES)).toHaveLength(7);
+    expect(Object.keys(PROVIDER_DISPLAY_NAMES)).toHaveLength(7);
   });
 });
 

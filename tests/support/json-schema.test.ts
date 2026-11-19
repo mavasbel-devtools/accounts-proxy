@@ -38,7 +38,80 @@ describe("json-schema checker", () => {
   });
 
   test("an unknown keyword or a non-string type is refused, never ignored", () => {
-    expect(() => validate({ type: "string", minLength: 1 }, "")).toThrow("$: unsupported schema keyword minLength");
+    expect(() => validate({ type: "string", prefixItems: [] }, "")).toThrow("$: unsupported schema keyword prefixItems");
     expect(() => validate({ type: ["string", "null"] }, null)).toThrow('$: unsupported type ["string","null"]');
+  });
+
+  test("$comment is an ignored annotation", () => {
+    expect(validate({ $comment: "anything goes here", type: "integer" }, 1)).toEqual([]);
+  });
+
+  test("$comment does not excuse an invalid value", () => {
+    expect(validate({ $comment: "anything goes here", type: "integer" }, "x")).toEqual(["$: expected integer, got string"]);
+  });
+
+  test("const passes a deep-equal value", () => {
+    expect(validate({ const: "radius" }, "radius")).toEqual([]);
+    expect(validate({ const: { a: [1, 2] } }, { a: [1, 2] })).toEqual([]);
+  });
+
+  test("const fails a different value", () => {
+    expect(validate({ const: "radius" }, "other")).toEqual(['$: "other" does not equal "radius"']);
+    expect(validate({ const: { a: [1, 2] } }, { a: [1, 3] })).toEqual(['$: {"a":[1,3]} does not equal {"a":[1,2]}']);
+  });
+
+  test("minimum passes a value at or above the bound", () => {
+    expect(validate({ type: "integer", minimum: 1 }, 1)).toEqual([]);
+    expect(validate({ type: "integer", minimum: 1 }, 2)).toEqual([]);
+  });
+
+  test("minimum fails a value below the bound", () => {
+    expect(validate({ type: "integer", minimum: 1 }, 0)).toEqual(["$: 0 is less than minimum 1"]);
+  });
+
+  test("maximum passes a value at or below the bound", () => {
+    expect(validate({ type: "integer", maximum: 100 }, 100)).toEqual([]);
+    expect(validate({ type: "integer", maximum: 100 }, 99)).toEqual([]);
+  });
+
+  test("maximum fails a value above the bound", () => {
+    expect(validate({ type: "integer", maximum: 100 }, 101)).toEqual(["$: 101 is greater than maximum 100"]);
+  });
+
+  test("exclusiveMinimum passes a value strictly above the bound", () => {
+    expect(validate({ type: "number", exclusiveMinimum: 0 }, 0.5)).toEqual([]);
+  });
+
+  test("exclusiveMinimum fails a value at or below the bound", () => {
+    expect(validate({ type: "number", exclusiveMinimum: 0 }, 0)).toEqual(["$: 0 is less than or equal to exclusiveMinimum 0"]);
+    expect(validate({ type: "number", exclusiveMinimum: 0 }, -1)).toEqual(["$: -1 is less than or equal to exclusiveMinimum 0"]);
+  });
+
+  test("minLength passes a string with enough code points", () => {
+    expect(validate({ type: "string", minLength: 1 }, "a")).toEqual([]);
+    expect(validate({ type: "string", minLength: 1 }, "\u{1F600}")).toEqual([]);
+  });
+
+  test("minLength fails a shorter string", () => {
+    expect(validate({ type: "string", minLength: 1 }, "")).toEqual(["$: string length 0 is less than minLength 1"]);
+  });
+
+  test("maxItems passes an array within the bound", () => {
+    expect(validate({ type: "array", maxItems: 2 }, [1, 2])).toEqual([]);
+  });
+
+  test("maxItems fails a longer array", () => {
+    expect(validate({ type: "array", maxItems: 2 }, [1, 2, 3])).toEqual(["$: array length 3 is greater than maxItems 2"]);
+  });
+
+  test("patternProperties checks each matching property and additionalProperties skips matched ones", () => {
+    const schema = { type: "object", properties: { a: { type: "integer" } }, patternProperties: { "^x-": { type: "string" } }, additionalProperties: false };
+    expect(validate(schema, { a: 1, "x-foo": "s" })).toEqual([]);
+  });
+
+  test("patternProperties fails a mismatched property and additionalProperties still guards the rest", () => {
+    const schema = { type: "object", properties: { a: { type: "integer" } }, patternProperties: { "^x-": { type: "string" } }, additionalProperties: false };
+    expect(validate(schema, { a: 1, "x-foo": 2 })).toEqual(["$.x-foo: expected string, got integer"]);
+    expect(validate(schema, { a: 1, other: true })).toEqual(["$.other: not allowed"]);
   });
 });

@@ -17,6 +17,7 @@ import { AccessPort } from "@accounts-proxy/core/ports/inbound/access.ts";
 import { DescribeModelsPort, HealthPort, PassthroughPort, RefreshModelsPort } from "@accounts-proxy/core/ports/inbound/routing.ts";
 import { describeCatalog, type DetailedCatalog } from "@accounts-proxy/core/domain/model-details.ts";
 import { OpencodeConfigCodec } from "@accounts-proxy/dialect-opencode/adapters/inbound/opencode-config-codec.ts";
+import { PiConfigCodec } from "@accounts-proxy/dialect-pi/adapters/inbound/pi-config-codec.ts";
 import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import { ProxyTokenStorePort } from "@accounts-proxy/core/ports/outbound/proxy-token.ts";
 import { HashPort } from "@accounts-proxy/core/ports/outbound/system.ts";
@@ -245,7 +246,7 @@ describe("RouteHandler", () => {
     const refresh = new Refresh();
     const logger = new MemoryLogger();
     const errors = new LoggingErrorReporter(logger);
-    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, health: new Health(), describe: models, refresh, opencode: new OpencodeConfigCodec(), origin: ORIGIN }, errors);
+    const handler = new RouteHandler([new AnthropicCodec(), new OpenAiCodec(), new GeminiCodec()], { access: new Access(), passthrough, health: new Health(), describe: models, refresh, opencode: new OpencodeConfigCodec(), pi: new PiConfigCodec(), origin: ORIGIN }, errors);
     return { handler, passthrough, logger, models, refresh };
   };
   const request = (method: string, path: string, over: Partial<InboundRequest> = {}): InboundRequest => ({
@@ -276,6 +277,36 @@ describe("RouteHandler", () => {
     expect((gemini.body as { error: { status: string } }).error.status).toBe("UNAUTHENTICATED");
     expect((await handler.handle(request("GET", "/gemini/v1beta/models", { headers: {}, query: { key: "T" } }))).status).toBe(200);
     expect((await handler.handle(request("GET", "/openai/v1/models", { headers: { "x-api-key": "T" } }))).status).toBe(200);
+  });
+
+  test("GET /.well-known/pi is open: the token command and the configuration URL [feature=pi-config use-case=uc-pi-3 tier=unit polarity=positive]", async () => {
+    const { handler } = make();
+    expect(await json(await handler.handle(request("GET", "/.well-known/pi", { headers: {} })))).toEqual({
+      status: 200,
+      body: { auth: { command: ["ir", "token"], env: "ACCOUNTS_PROXY_TOKEN" }, config: { url: "http://127.0.0.1:4141/pi/models.json" } },
+    });
+  });
+
+  test("POST /.well-known/pi is a 404 [feature=pi-config use-case=uc-pi-3 tier=unit polarity=negative]", async () => {
+    const { handler } = make();
+    expect(await json(await handler.handle(request("POST", "/.well-known/pi", { headers: {} })))).toEqual({ status: 404, body: { error: { code: "not_found", message: "no route POST /.well-known/pi" } } });
+  });
+
+  test("GET /pi/models.json with token serves the pi providers; without token 401; POST is a 404 [feature=pi-config use-case=uc-pi-2 tier=unit polarity=positive]", async () => {
+    const { handler } = make();
+    const config = await json(await handler.handle(request("GET", "/pi/models.json")));
+    expect(config.status).toBe(200);
+    expect(Object.keys((config.body as { providers: object }).providers).sort()).toEqual(["ap-antigravity", "ap-claude"]);
+  });
+
+  test("GET /pi/models.json without token is a 401 [feature=pi-config use-case=uc-pi-2 tier=unit polarity=negative]", async () => {
+    const { handler } = make();
+    expect(await json(await handler.handle(request("GET", "/pi/models.json", { headers: {} })))).toEqual({ status: 401, body: { error: { code: "unauthorized", message: "missing or invalid accounts-proxy token" } } });
+  });
+
+  test("POST /pi/models.json is a 404 [feature=pi-config use-case=uc-pi-2 tier=unit polarity=negative]", async () => {
+    const { handler } = make();
+    expect(await json(await handler.handle(request("POST", "/pi/models.json")))).toEqual({ status: 404, body: { error: { code: "not_found", message: "no route POST /pi/models.json" } } });
   });
 
   test("GET /.well-known/opencode is open: the token command and the configuration URL (rules O1, O5)", async () => {

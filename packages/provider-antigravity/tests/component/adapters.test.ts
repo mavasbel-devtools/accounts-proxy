@@ -610,6 +610,21 @@ class SampleCatalog extends AntigravityCatalogPort {
   }
 }
 
+/** uc-pi-7's non-Gemini target: the live catalog's recorded Claude-on-Vertex entry. */
+const VERTEX = (() => {
+  const recorded = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "..", "..", "tests", "fixtures", "captures", "p0-live", "e5", "fetch-available-models.json"), "utf8")) as { exchanges: { response: { chunks: { text: string }[] } }[] };
+  const body = JSON.parse(recorded.exchanges[0]!.response.chunks.map((chunk) => chunk.text).join("")) as Record<string, unknown>;
+  return toModelDescriptors(body).find((d) => d.wireId === "claude-sonnet-5-5-low")!;
+})();
+
+/** The sample catalog plus that entry, so the cell can be driven on a non-Gemini target. */
+class ClaudeCatalog extends SampleCatalog {
+  override async listing() {
+    const listing = await super.listing();
+    return { source: listing.source, descriptors: [...listing.descriptors, VERTEX] };
+  }
+}
+
 describe("AntigravityNative", () => {
   test("unwraps envelopes, caches and persists signed calls, forwards the signal; persist failures are only warned", async () => {
     const api = new ScriptedApi();
@@ -798,5 +813,47 @@ describe("AntigravityProvider", () => {
     const contents = (api.streams[1]!.body as { contents: { role: string; parts: Record<string, unknown>[] }[] }).contents;
     expect(contents[1]!.parts[0]!["thoughtSignature"]).toBe("SIG-LIVE");
     expect(contents[2]!.role).toBe("model");
+  });
+
+  test("uc-pi-7: an id-less tool loop on a Claude-on-Vertex target reaches the upstream with paired ids [feature=pi-inference use-case=uc-pi-7 tier=component polarity=positive]", async () => {
+    const api = new ScriptedApi();
+    const state = new MemoryState();
+    const logger = new MemoryLogger();
+    const runner = new AntigravityRunner(api, new FixedSession(), state, new SequenceRandom(), new FixedClock(77), new InstantTimer(), logger);
+    const provider = new AntigravityProvider(new ClaudeCatalog(), new AntigravityNative(runner, state, logger), logger);
+    api.stream = async function* () { yield* capture(); };
+    const loop = {
+      contents: [
+        hello.contents[0]!,
+        { role: "model", parts: [{ functionCall: { name: "get_time", args: {} } }] },
+        { role: "user", parts: [{ functionResponse: { name: "get_time", response: { output: "13:00" } } }] },
+      ],
+    };
+    const answer = await provider.passthrough(VERTEX.wireId, raw("generateContent", loop));
+    await decode(answer.body);
+    const contents = (api.streams[0]!.body as { contents: { role: string; parts: Record<string, unknown>[] }[] }).contents;
+    expect(contents[1]!.parts).toEqual([{ functionCall: { id: "ap_call_1", name: "get_time", args: {} } }]);
+    expect(contents[2]!.parts).toEqual([{ functionResponse: { id: "ap_call_1", name: "get_time", response: { output: "13:00" } } }]);
+  });
+
+  test("uc-pi-7: an id the client sent survives untouched on both parts [feature=pi-inference use-case=uc-pi-7 tier=component polarity=negative]", async () => {
+    const api = new ScriptedApi();
+    const state = new MemoryState();
+    const logger = new MemoryLogger();
+    const runner = new AntigravityRunner(api, new FixedSession(), state, new SequenceRandom(), new FixedClock(77), new InstantTimer(), logger);
+    const provider = new AntigravityProvider(new ClaudeCatalog(), new AntigravityNative(runner, state, logger), logger);
+    api.stream = async function* () { yield* capture(); };
+    const loop = {
+      contents: [
+        hello.contents[0]!,
+        { role: "model", parts: [{ functionCall: { id: "toolu_9", name: "get_time", args: {} } }] },
+        { role: "user", parts: [{ functionResponse: { id: "toolu_9", name: "get_time", response: {} } }] },
+      ],
+    };
+    const answer = await provider.passthrough(VERTEX.wireId, raw("generateContent", loop));
+    await decode(answer.body);
+    const contents = (api.streams[0]!.body as { contents: { role: string; parts: Record<string, unknown>[] }[] }).contents;
+    expect(contents[1]!.parts).toEqual([{ functionCall: { id: "toolu_9", name: "get_time", args: {} } }]);
+    expect(contents[2]!.parts).toEqual([{ functionResponse: { id: "toolu_9", name: "get_time", response: {} } }]);
   });
 });

@@ -49,7 +49,7 @@ import { DEFAULT_LOGIN_TIMEOUT_S } from "@accounts-proxy/proxy/adapters/inbound/
 import { PROXY_HELP } from "@accounts-proxy/proxy/adapters/inbound/cli/commands/proxy-commands.ts";
 import { synopses as helpSynopses } from "@accounts-proxy/proxy/adapters/inbound/cli/help-text.ts";
 import { MAX_BODY_BYTES } from "@accounts-proxy/proxy/adapters/inbound/http/node-http-server.ts";
-import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
+import { DETAILED_MODELS_PATH, LOSSY_HEADER, MODELS_SOURCE_HEADER, OPENCODE_CONFIG_PATH, PI_CONFIG_PATH, PI_WELL_KNOWN_PATH, WELL_KNOWN_PATH } from "@accounts-proxy/proxy/adapters/inbound/http/route-handler.ts";
 import { DEFAULT_LOCK_OPTIONS } from "@accounts-proxy/proxy/adapters/outbound/file-lock.ts";
 import { ACCOUNTS_LOCK } from "@accounts-proxy/proxy/adapters/outbound/file-stores.ts";
 import { STATUS_TIMEOUT_MS } from "@accounts-proxy/proxy/application/daemon-status-service.ts";
@@ -98,7 +98,9 @@ function codeOperations(): string[] {
   return [
     "GET /health",
     `GET ${WELL_KNOWN_PATH}`,
+    `GET ${PI_WELL_KNOWN_PATH}`,
     `GET ${OPENCODE_CONFIG_PATH}`,
+    `GET ${PI_CONFIG_PATH}`,
     `GET ${DETAILED_MODELS_PATH}`,
     `POST ${MODEL_REFRESH_PATH}`,
     ...Object.keys(CLAUDE_NATIVE_PATHS).map((p) => `POST ${anthropic}${p}`),
@@ -153,7 +155,7 @@ describe("the documentation is in step with the code", () => {
 
   test("command line: every synopsis of the command tree is a row of the API reference", () => {
     const synopses = helpSynopses(PROXY_HELP);
-    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "account remove <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "serve", "token", "status", "cost [--day <date>] [--since <date>] [--until <date>] [--by <group>] [--json] [--reconcile] [--watch <seconds>] [--budget-daily <usd>] [--budget-monthly <usd>]", "help [<command> [<subcommand>]]"]);
+    expect(synopses).toEqual(["login <provider> [--manual] [--new] [--key] [--timeout-seconds N]", "account list <provider>", "account use <provider> <account-id>", "account remove <provider> <account-id>", "quota <provider>", "models [<provider>] [--json] [--refresh]", "opencode-config", "pi-config", "serve", "token", "status", "cost [--day <date>] [--since <date>] [--until <date>] [--by <group>] [--json] [--reconcile] [--watch <seconds>] [--budget-daily <usd>] [--budget-monthly <usd>]", "help [<command> [<subcommand>]]"]);
     for (const synopsis of synopses) expect(api).toContain(`| \`${synopsis}\` |`);
   });
 

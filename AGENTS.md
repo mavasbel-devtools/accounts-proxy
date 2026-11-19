@@ -28,6 +28,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
     `adapters/outbound`; `provider-gateway` is the shared base the gateway vendors build on.
   - `packages/dialect-*`: `adapters/inbound` codecs.
   - `apps/proxy`: application, `adapters/{inbound,outbound}`, `composition`, `main`.
+  - `apps/pi-extension`: `ports/outbound`, `application`, `adapters/outbound`, `composition`, `main` (a pi extension).
 - **Layers** are recognised by path: `src/domain`, `src/ports/{inbound,outbound}`, `src/application`,
   `src/adapters/{inbound,outbound}`, `src/composition`, `src/main`. A file anywhere else under `src/` fails the gate.
 - **Allowed internal imports:**
@@ -71,6 +72,7 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
 | Antigravity Gemini cell: `functionResponse` parts move to model-role contents (law 7); only `AUTO`/`VALIDATED` function-calling modes | plugin wire law 7; P0-LIVE L6 |
 | Antigravity Gemini cell media: `inlineData` of any type, `fileData` with `fileUri` (+ `mimeType`), `generationConfig.responseModalities` `TEXT`/`IMAGE` and `mediaResolution` `LOW`/`MEDIUM`/`HIGH` pass; other media keys and values are refused | [M1 media probe](docs/reference/2026-10-24-21-05-m1-media-probe.md) (captures `m1/`) |
 | Antigravity Gemini cell: `parametersJsonSchema` (the Gen AI SDK's form of every `$schema` / MCP tool) travels unchanged; `parameters` keeps the law-5 whitelist | [live validation F2](docs/reference/2026-10-13-02-52-live-validation-findings.md) (j1–j4) |
+| Antigravity Gemini cell: on a non-Gemini target every `functionCall` without an `id` gets `ap_call_<n>` (request-scoped, deterministic, never colliding with an id the request carries) and its `functionResponse` the same id, because Claude-on-Vertex requires `tool_use.id` and pi 1.5.2 omits ids for provider-prefixed model ids | pi 1.5.2 `pi-ai/dist/api/google-shared.js:125,235,270`; 400 `messages.1.content.0.tool_use.id: Field required` ([probe](docs/reference/2026-11-18-10-34-antigravity-tool-id-probe.md)) |
 | OpenAI Responses cell: the terminal `response` gets the items of `response.output_item.done` when it arrives with an empty `output`, in the aggregated answer and in the stream (rule I6) | [live validation F1](docs/reference/2026-10-13-02-52-live-validation-findings.md) |
 | OpenAI Responses cell headers: a streaming client gets `content-type: text/event-stream` when plan usage sends none, and every answer forwards `x-oai-request-id` (rule I7) | [OpenAI rules](docs/reference/2026-10-11-23-08-openai-chatgpt-plan-rules.md), captures `l1/openai-resp-*.json` |
 | OpenAI Responses cell request, as opencode v2.1.1 sends it: the body zstd-compressed with `content-encoding: zstd`; the client's `User-Agent` and OpenCode's own headers forwarded as sent, never invented (the proxy's own `User-Agent` only when the client sends none); no explicit `accept`; the model list is the reference catalog's `openai` models with one of opencode's 16 ids, never `GET /v1/models` | recon gaps P1–P4 ([gap report §8](docs/reference/2026-10-21-20-44-recon-gap-report.md#8-openai-opencode-v211-chatgpt-sign-in)) |
@@ -120,9 +122,9 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   renewal failure keeps a still-valid token for `RENEWAL_RETRY_AFTER_MS`. Claude and Antigravity retry once after
   renewing on an upstream 401, only before anything reaches the client.
 - **Local access.** The daemon binds `127.0.0.1` on the configured port only (default 4141; `EADDRINUSE` is fatal).
-  Every route except `/health` and `/.well-known/opencode` requires the proxy token (`<data>/token.json`, 0600),
-  compared in constant time. The well-known manifest carries no secret: the command that prints the token and the
-  configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
+  Every route except `/health`, `/.well-known/opencode` and `/.well-known/pi` requires the proxy token
+  (`<data>/token.json`, 0600), compared in constant time. The well-known manifests carry no secret (both): the
+  command that prints the token and the configuration URL (decision E1, [rules O5](docs/reference/2026-10-16-01-38-model-catalog-rules.md)).
 - **Model details.** A model's detailed record takes each field from its provider's own list first, then from the
   reference catalog `models.opencode.ai` (exact ids), each field with its source; a field neither states is absent.
   Subscription models carry no price. The opencode configuration (`GET /opencode/config.json`, `opencode-config`) uses
@@ -130,7 +132,10 @@ formats: P5 was cancelled on 2026-10-14 and its translation-only code removed (d
   Antigravity; an Antigravity model's limits are its catalog's `maxTokens` / `maxOutputTokens`, never clamped,
   [plan 2026-11-02-21-29](docs/plans/2026-11-02-21-29-antigravity-real-context-window-plan.md)). `claude` and
   `openai` models carry opencode `compatibility` overrides that switch off what those cells refuse (thinking-prefix
-  controls, per-message effort updates; rule O6, live C6).
+  controls, per-message effort updates; rule O6, live C6). The pi configuration (`GET /pi/models.json`,
+  `pi-config`) uses pi's `models.json` schema, one `ap-<provider>` each, every model with its own `api` and
+  `baseUrl` ([rules P1–P7](docs/reference/2026-11-16-13-12-pi-config-rules.md)); `apps/pi-extension` registers
+  them inside pi and runs in pi's Node.js process (no Bun API; `tests/arch/pi-extension-runtime.test.ts`).
   [Rules M1–M6, O1–O6](docs/reference/2026-10-16-01-38-model-catalog-rules.md). A fetched model list and the reference
   catalog are reused for `proxy.yaml` `modelListMaxAgeMinutes` (default 1440); `POST /proxy/v1/models/refresh` and
   `models --refresh` read them now, the latter through the running daemon when one listens

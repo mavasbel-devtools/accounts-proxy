@@ -2,9 +2,11 @@
 // the daemon's HTTP route (P4 plan §2.3, decisions Q2–Q4, amendment B1), and the request the upstream really received
 // is asserted from the replay server's record. Scripted upstream answers cover the stream shapes the cell must handle.
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { chmodSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { E2E_TEST_TIMEOUT_MS } from "@accounts-proxy/scripts/gate/run-tests.ts";
 import { removeTemporary } from "@accounts-proxy/test-support/temporary.ts";
-import { startSignedInDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
+import { makeHome, runProxy, startDaemon, type SignedInDaemon } from "@accounts-proxy/test-support/e2e/proxy-process.ts";
 import { brokenStream, envelopeStream, jsonResponse, ReplayUpstreams } from "@accounts-proxy/test-support/e2e/upstreams.ts";
 
 setDefaultTimeout(E2E_TEST_TIMEOUT_MS);
@@ -13,9 +15,23 @@ const upstreams = new ReplayUpstreams();
 let env: SignedInDaemon;
 beforeAll(async () => {
   upstreams.start();
-  env = await startSignedInDaemon(upstreams.seamEnv());
+  // Authorized test-only deviation (plan amendment 6): on darwin the login spawns the real `open` while the harness
+  // fakes only `xdg-open`, so no login callback can arrive. The daemon child's PATH has home.bin first, so this `open`
+  // fake — exactly the form makeHome uses for `xdg-open` — is found before the system one. On Linux CI browserCommand
+  // still uses `xdg-open`, so this file is inert there. All logins stay replay-only.
+  const home = await makeHome(["providers:", "  claude: {enabled: true, acknowledgeTermsRisk: true}", "  antigravity: {enabled: true, acknowledgeTermsRisk: true}", ""].join("\n"));
+  const opener = join(home.bin, "open");
+  writeFileSync(opener, `#!/bin/sh\nexec "${process.execPath}" "${join(import.meta.dir, "..", "..", "..", "..", "tests", "support", "e2e", "fake-browser.ts")}" "$1"\n`);
+  chmodSync(opener, 0o755);
+  for (const provider of ["antigravity", "claude"]) {
+    const login = await runProxy(home, ["login", provider, "--timeout-seconds", "30"], upstreams.seamEnv());
+    expect(login.code).toBe(0);
+  }
+  const token = (await runProxy(home, ["token"], upstreams.seamEnv())).stdout.trim();
+  env = { home, token, daemon: await startDaemon(home, upstreams.seamEnv()) };
 });
 afterAll(async () => {
+  if (env === undefined) return;
   await env.daemon.stop();
   upstreams.stop();
   removeTemporary(env.home.dir);
@@ -303,5 +319,26 @@ describe("upstream answers", () => {
     expect(element.error.message).toStartWith(`upstream 127.0.0.1:${new URL(upstreams.origin).port} could not be reached: `);
     upstreams.script(GENERATE, () => new Response(`${first}data: {"error"`, { headers: { "content-type": "application/json" } }));
     expect((await call(hello, { method: "streamGenerateContent" })).status).toBe(502);
+  });
+});
+
+describe("tool-call ids on a non-Gemini target (uc-pi-7, AGENTS.md §3 antigravity tool-id law)", () => {
+  const signed = { role: "model", parts: [{ functionCall: { name: "get_time", args: {} }, thoughtSignature: "S1" }] };
+  const toolResult = { role: "user", parts: [{ functionResponse: { name: "get_time", response: { output: "13:00" } } }] };
+
+  test("an id-less tool loop on a Claude-on-Vertex model reaches the upstream with ap_call_1 on both parts [feature=pi-inference use-case=uc-pi-7 tier=e2e polarity=positive]", async () => {
+    const answer = await call({ contents: [user("q"), { role: "model", parts: [{ functionCall: { name: "get_time", args: {} } }] }, toolResult] }, { model: "claude-sonnet-5-5-low" });
+    expect(answer.status).toBe(200);
+    const contents = sent()["contents"] as { role: string; parts: Record<string, unknown>[] }[];
+    expect(contents[1]!.parts).toEqual([{ functionCall: { id: "ap_call_1", name: "get_time", args: {} } }]);
+    expect(contents[2]!.parts).toEqual([{ functionResponse: { id: "ap_call_1", name: "get_time", response: { output: "13:00" } } }]);
+  });
+
+  test("a Gemini-family model receives no synthesized id (the signed call and its result travel unchanged) [feature=pi-inference use-case=uc-pi-7 tier=e2e polarity=negative]", async () => {
+    const answer = await call({ contents: [user("q"), signed, toolResult] });
+    expect(answer.status).toBe(200);
+    const contents = sent()["contents"] as { role: string; parts: Record<string, unknown>[] }[];
+    expect(contents[1]!.parts).toEqual([{ functionCall: { name: "get_time", args: {} }, thoughtSignature: "S1" }]);
+    expect(contents[2]!.parts).toEqual([{ functionResponse: { name: "get_time", response: { output: "13:00" } } }]);
   });
 });

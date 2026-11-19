@@ -293,6 +293,15 @@
     "fetchedAt": "2026-10-16T06:17:03.530Z"
   },
   {
+    "file": "pi-models-schema.json",
+    "url": "https://pi.dev/schemas/models.schema.json",
+    "status": 200,
+    "contentType": "application/schema+json; charset=utf-8",
+    "bytes": 47598,
+    "sha256": "3e4cb1963defc0ea67a25d81a652536ed0a0d480c536db04dabe9d02baad8bdc",
+    "fetchedAt": "2026-11-16T07:50:24.803Z"
+  },
+  {
     "file": "opencode-zen-models.json",
     "url": "https://opencode.ai/inference/v1/models",
     "status": 200,

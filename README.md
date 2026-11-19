@@ -75,17 +75,18 @@ usage, credentials redacted — is written to `.cache/logs/<day>-<pid>-usage.jso
 | HTTP (`curl`) | any of the four token carriers | [§4](docs/reference/2026-10-17-19-26-client-setup.md#4-http-directly) |
 | Claude Code | `ANTHROPIC_BASE_URL` | [§5](docs/reference/2026-10-17-19-26-client-setup.md#5-claude-code-anthropic-messages) |
 | opencode v2 | `opencode auth login http://127.0.0.1:4141` | [§6](docs/reference/2026-10-17-19-26-client-setup.md#6-opencode-v2) |
+| pi ≥ 1.5.2 | `pi install apps/pi-extension` (extension) or `bun run proxy pi-config` (static file) | [pi](docs/reference/2026-10-17-19-26-client-setup.md#pi) |
 
 ## Documentation
 
 | Reference | Content |
 |---|---|
-| [API](docs/reference/2026-10-17-19-26-proxy-api.md) | address and token, `<provider>/<model>`, every route, the proxy headers, every error code and shape, the command line, `proxy.yaml`, the data directory, environment variables, limits and timers |
+| [API](docs/reference/2026-10-17-19-26-proxy-api.md) | address and token, `<provider>/<model>`, every route (including `GET /pi/models.json` and `GET /.well-known/pi`), the proxy headers, every error code and shape, the command line (including `pi-config`), `proxy.yaml`, the data directory, environment variables, limits and timers |
 | [OpenAPI 3.1](docs/reference/2026-10-17-19-26-proxy-openapi.json) | the HTTP API, machine-readable; checked against the real daemon in `verify` |
 | [Providers](docs/reference/2026-10-17-19-26-providers.md) | per provider: sign-in, credentials, renewal, native routes and upstream endpoints, answer headers, model list, quota, live findings |
 | [Format fields](docs/reference/2026-10-17-19-26-format-fields.md) | per native cell, field by field: what passes, what changes, what is refused, and the rule behind it |
 | [Models](docs/reference/2026-10-17-19-26-models.md) | every model of every provider: formats, limits, media, tools, reasoning, price, opencode variants (generated) |
-| [Client setup](docs/reference/2026-10-17-19-26-client-setup.md) | the SDKs, HTTP, Claude Code, opencode, and what a refused request means |
+| [Client setup](docs/reference/2026-10-17-19-26-client-setup.md) | the SDKs, HTTP, Claude Code, opencode, pi, and what a refused request means |
 
 `apps/proxy/tests/unit/docs-in-step.test.ts` and `apps/proxy/tests/e2e/docs.test.ts` keep these documents in step with
 the code inside `bun run verify`.
@@ -179,6 +180,7 @@ also inside one workspace. Relative imports are rejected by the architecture gat
 | `bun run test:e2e` | e2e tier: the real entry as child processes under the coverage preload, the official SDKs, replay upstreams; then the e2e-alone coverage gate (100%; the deferral list is empty: [R1](docs/reference/2026-10-11-11-43-p4-e2e-coverage-r1.md)) |
 | `bun run test:live` | real-account tier (never part of `verify`) |
 | `ACCOUNTS_PROXY_LIVE=1 bun scripts/evidence/live/l1-live-matrix.ts` | the live matrix: every provider's native cells through the daemon with the official SDKs (about 80 small requests; `--only=`, `--scenarios=`) |
+| `bun run proxy pi-config` | prints the pi `models.json` document (one `ap-<provider>` per provider) |
 | `bun run verify` | the full release gate |
 | `bun run fetch:specs` | re-fetch the official wire specs into `docs/reference/specs/` |
 | `bun scripts/evidence/gateway-snapshots.ts` | regenerate the gateways' built-in model lists from the committed vendor lists |
