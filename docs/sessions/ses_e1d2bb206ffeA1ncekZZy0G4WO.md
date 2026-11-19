@@ -396,3 +396,84 @@ Steps 8A.1–8A.7 green, plus two defects that gate 4 found and I fixed.
 **Blast radius proved, not assumed.** `grep -rln 'pi-compatibility-product' --include=*.ts` lists only `scripts/gate/granularity-report.ts`, its unit test, and two header comments (`pi-config-codec.ts:2`, `pi-thinking.ts:1`). No other test reads the design document, so the fix cannot change another tier's outcome.
 
 **Not re-run:** `bun run verify` after the fix (about 40 minutes; it is stage 9's final gate).
+
+## § Live — stage 8, run of 2026-11-19
+
+### The environment
+
+| Item | Value |
+|---|---|
+| Disposable daemon | pid `8562`, `127.0.0.1:4142`, `ACCOUNTS_PROXY_HOME={logs}/live-home`, sharing `{repo}/.cache/accounts.json` |
+| Your daemon | pid `4258`, `127.0.0.1:4141`, health `200` before, during and after; never stopped |
+| Client | `pi` 1.5.2 with `apps/pi-extension` loaded via `-e` |
+| Command | `ACCOUNTS_PROXY_LIVE=1 ACCOUNTS_PROXY_URL=http://127.0.0.1:4142 ACCOUNTS_PROXY_TOKEN=<from live-home/token.json> bun test --timeout 900000 apps/pi-extension/tests/live` |
+| Result | `38 tests across 8 files`, **23 pass / 15 fail**, 104 `expect()`, 103.58 s, exit `1` |
+
+### The law's row is green
+
+`antigravity x google-generative-ai: a tool turn` — **pass**. No `antigravity` failure exists in the run, and the daemon
+log shows `antigravity: streamGenerateContent model=claude-opus-5-5-high (sse) first response received` twice. A5's
+`ap_call_<n>` id law works against the real provider. This is the row stage 8A existed to turn green.
+
+### The 15 reds, each with the cause the daemon recorded
+
+| Provider | API | Upstream | Failing tests | Cause |
+|---|---|---|---|---|
+| claude | anthropic-messages | `claude-fable-5` | tool turn ×1, plus `pi-binary` uc-pi-5 print turn | `HTTP 429` ×10 — the whole subscription's rate window, not one model: `claude-haiku-5-5` and `claude-fable-5-1` also answered `429` to a direct probe |
+| opencode-go | all four | `claude-haiku-5-5`, `crouton-alpha-free`, `beam-free`, `gemini-4-argon` | tool ×4, thinking ×2 | `HTTP 403` ×5 (subscription required), `HTTP 410` ×2 (deprecated), `HTTP 400` ×1 |
+| opencode | anthropic-messages, openai-responses, openai-chat, gemini | `minimax-m2.1-free`, `crouton-alpha-free`, `beam-free`, `gemini-3.5-flash-lite` | tool ×4, thinking ×2 | `HTTP 400` ×12 (`minimax-m2.1-free` withdrawn upstream), `HTTP 410` ×1, `HTTP 429` ×1, `HTTP 402` ×2 |
+| openai | openai-responses | `gpt-5.5` | tool ×1 | `401 invalid_grant` — the account needs the re-login of § 10 |
+
+Every red is provider or account state. No failure traces to this repository's code: the proxy answered each request
+with the upstream's own status, and the cells that ran on working credentials passed.
+
+### Spend
+
+| Figure | Value | Evidence |
+|---|---|---|
+| Ceiling | 19 paid turns (A3/D6) | the live files' `MAX_TOKENS` caps |
+| Paid turns that returned `200` | 2, both `cheaper-inference` free-tier ids | daemon log: `cheaper-inference: openai-chat -> HTTP 200` ×2 |
+| Recorded cost | `0` | `proxy cost --json` → `cost: 0`, `exchanges: 2`, saved as `{logs}/cost-8.3r.json` |
+| Unparsable usage lines | `1853` | same report, `"malformed": 1853` |
+| Verdict | **total spend not measurable from these logs** | 1853 of 3836 lines are request/response records, not usage rows; the reporter counts them malformed. Every paid-looking path returned `429/403/410/402/401`, which bills nothing |
+
+### Residue this run produced, and its removal (step 8.5r)
+
+The disposable daemon wrote `408 MB` of `*-8562-*` logs into your `.cache/logs` beside your own, taking that directory
+to `627 MB` — above the product's 500 MB retention cap. Deleted by absolute path, each proven:
+
+```
+GONE /Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/logs/2026-11-19-8562-proxy.log
+GONE /Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/logs/2026-11-19-8562-usage.1.jsonl
+GONE /Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/logs/2026-11-19-8562-usage.2.jsonl
+GONE /Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/logs/2026-11-19-8562-usage.3.jsonl
+GONE /Users/mavasbel/Dev/repos/devtools/accounts-proxy/.cache/logs/2026-11-19-8562-usage.4.jsonl
+GONE {logs}/cost-home/logs
+GONE {logs}/live-home
+```
+
+After: `.cache/logs` holds only `2026-11-19-4258-proxy.log`, `2026-11-19-4258-usage.2.jsonl`,
+`2026-11-19-4258-usage.3.jsonl` and measures `209M`. `kill -0 8562` fails, `lsof -nP -iTCP:4142` prints nothing, and
+`lsof -nP -iTCP:4141 -sTCP:LISTEN` still names `4258` with `health=200`.
+
+### Step 8.4r — what the comparison found, including the difference
+
+| Check | Result |
+|---|---|
+| `{repo}/.cache/proxy.yaml` | `c1ede66f4d2902ad354077611ba50ae84fe016cb3031b0942f6a0952c610a1f1` — equal to the plan's recorded value |
+| `.cache/locks/` | empty before, empty now |
+| `accounts.json` keys | `providers,schema` |
+| `{repo}/.cache/logs` names | **differ**: `cache-before.txt` lists six `2026-11-18-35662-*` files; none exists now |
+
+The difference is not a repair I may make by hand, so it is reported as found, split by what is known:
+
+- **Known.** At 16:04 six `2026-11-18-35662-*` files existed; at 18:2x none does. Your daemon was restarted between
+  those times (pid `35662` → `4258`, date stamp `2026-11-18` → `2026-11-19`), so it writes new names. My disposable
+  daemon wrote `408 MB` of `-8562-` files into the same directory, which reached `627 MB` against the product's
+  `500 MB` retention cap.
+- **Inferred, not proven.** That the cap's sweep removed the `35662-*` files under the pressure of my `408 MB`. Neither
+  log contains a sweep, retention or deletion line (`grep -niE 'sweep|retention|delet|prune'` finds none in
+  `{logs}/live-8562-proxy.log.evidence` or in your `2026-11-19-4258-proxy.log`), so the mechanism is unproven.
+- **Unknown.** Whether your restart alone would have removed them, and whether any copy survives elsewhere.
+
+I did not delete them and cannot restore them. Their names are preserved in `{logs}/cache-before.txt`.
