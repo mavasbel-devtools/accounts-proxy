@@ -21,9 +21,9 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 ## Stage 2 (shared client rules in packages/core)
 
 - [x] 2.1 shared format choice (subagent ses_e1aef77f9ffeYVrO8L37KeYtDF): `client-connection.ts` + unit tests created; new-test gate PASS (7/7), `test:arch` PASS; `coverage --workspace packages/core` FAIL recorded as PRE-EXISTING (proven by move-aside A/B: identical 14 FAIL lines on the pristine stage-1 tree; `client-connection.ts` itself 100%: 6/6 lines, 7/7 statements, 1/1 functions, 8/8 branches). Decision: keep the files, continue the chain; the plan agent consolidates gate 2.1.2's wording.
-- [ ] 2.2 ClientOrigin rename (same subagent, resumed)
-- [ ] 2.3 dialect-opencode on shared code
-- [ ] 2.4 pi inbound port
+- [x] 2.2 ClientOrigin rename (same subagent, resumed)
+- [x] 2.3 dialect-opencode on shared code
+- [x] 2.4 pi inbound port
 - [x] 2.2 ClientOrigin rename: `client-origin.ts` created, all 6 listed users updated, no extra users; `grep OpencodeOrigin` empty; typecheck exit 0; `bun run test` 1053 pass / 9 fail = exactly the R2 set. Typecheck also exposed a real 2.1 error (`exactOptionalPropertyTypes` on `aiSdkPackage`); fixed in place per 2.2's problems row; 2.1 tests still 7/7.
 - [x] 2.3 dialect-opencode on shared code: golden `cmp` exit 0 over the real 994-model catalog (byte-identical); test diff touches exactly lines 7 and 96 (3 insertions from the mandated import split); `bun test packages/dialect-opencode` 5 pass + 1 pre-existing vendored-reference failure (`@opencode/core/model` missing in `tests/reference`, proven identical on pristine tree by A/B); scoped coverage PASS (100%, complete).
 - [x] 2.4 pi inbound port `PiConfigPort` created; typecheck exit 0; arch 8/8.
@@ -32,12 +32,12 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 ## Stage 3 (packages/dialect-pi)
 
 - [x] 3.1 scaffold: workspace files + arch list + proxy dep created; `bun install` exit 0 (253 installs), frozen re-check exit 0, dialect-pi symlink present. bun.lock also carries Bun 1.4.4's path-normalization of 12 duplicate 1.4.2 nested entries — main session verified every removed version+hash still resolves in the new lock. User accepted the rewrite as a recorded host-Bun consequence 2026-11-16 (plan problems row option a).
-- [ ] 3.2 thinking rules (same subagent resumed)
-- [ ] 3.3 codec
-- [ ] 3.4 component suite over reference catalog
-- [ ] 3.2 thinking rules
-- [ ] 3.3 codec
-- [ ] 3.4 component suite over reference catalog
+- [x] 3.2 thinking rules (same subagent resumed)
+- [x] 3.3 codec
+- [x] 3.4 component suite over reference catalog
+- [x] 3.2 thinking rules
+- [x] 3.3 codec
+- [x] 3.4 component suite over reference catalog
 - [x] 3.2 thinking rules: `pi-thinking.ts` + 13 unit tests, gate 1 13/13, scoped per-file 100% (one test-expectation self-correction: `off` is provider-based, implementation unchanged).
 - [x] 3.3 codec: `pi-config-codec.ts` + 12 unit tests; `bun test packages/dialect-pi` 25/25 (27/27 after 3.4); scoped coverage PASS (100%); arch + typecheck green (arch needed 3.4's component dir; one `toContain` cast fix).
 - [x] 3.4 component over reference catalog: 650 models checked, schema/api/maps/cost assertions + negatives; scoped coverage PASS.
@@ -45,12 +45,12 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 
 ## Stage 4 (routes, command and wiring in apps/proxy)
 
-- [ ] 4.1 route handler (single subagent chain 4.1→4.8 launched as ses_e1ad2a3f6ffelIkby2lsZNrOKH)
-- [ ] 4.2 pi-config command
-- [ ] 4.3 composition root
-- [ ] 4.4 OpenAPI/API reference/docs-in-step
-- [ ] 4.5 component suite
-- [ ] 4.6 e2e configuration through the real process
+- [x] 4.1 route handler (single subagent chain 4.1→4.8 launched as ses_e1ad2a3f6ffelIkby2lsZNrOKH)
+- [x] 4.2 pi-config command
+- [x] 4.3 composition root
+- [x] 4.4 OpenAPI/API reference/docs-in-step
+- [x] 4.5 component suite
+- [x] 4.6 e2e configuration through the real process
 - [x] 4.1 route handler: `bun test daemon.test.ts` 37/37 (96/96 combined with 4.2); manifest open/POST-404, config keys ["ap-antigravity","ap-claude"]/401/POST-404.
 - [x] 4.2 pi-config command: `bun test cli-commands.test.ts` 96/96 combined (after 4.3).
 - [x] 4.3 composition root: typecheck exit 0; `bun run test` exactly the 9 R2 failures (passes under R2); `proxy help pi-config` exit 0 with synopsis.
@@ -127,8 +127,8 @@ Plan: `/Users/mavasbel/Dev/repos/devtools/accounts-proxy/worktrees/feat-pi-compa
 ## Standing-rule update (2026-11-16)
 
 - AGENTS.md gained rule 3.10 (residue: snapshot marker before first step, scan + prove deletions after) and 4.9 (brief scratch dirs + created-file lists). The plan predates both: no snapshot marker exists (cannot be retroacted) — residue will be proved best-effort at the end from `git status --porcelain --ignored`, `git worktree list`, branch/stash listings and the logs-dir inventory. Future briefs (stages 5–8) carry their own scratch dirs and file lists.
-- [ ] 4.8 e2e coverage of the new route code
-- [ ] 4.9 stage 4 gate typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
+- [x] 4.8 e2e coverage of the new route code
+- [x] 4.9 stage 4 gate typecheck exit 0; arch 8/8; `ls packages/dialect-pi/tests` → component e2e live unit; `bun run coverage` exit 1 with exactly the 9 R2 failures (passes under R2). typecheck exit 0; `test:arch` 8 pass; golden `cmp` re-run exit 0; `bun run coverage` exit 1 with exactly the 9 R2 failures (no `unit: coverage gate PASS` line — same as baseline, where the tier fails before any gate line; passes under R2).
 
 ## Stage 1 (pi's schema and the schema checker)
 
