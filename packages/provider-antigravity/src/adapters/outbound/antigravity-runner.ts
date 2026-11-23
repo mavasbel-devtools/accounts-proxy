@@ -7,6 +7,7 @@ import { ProviderAuthRequiredError } from "@accounts-proxy/core/domain/errors.ts
 import type { ClockPort, LoggerPort, RandomPort, TimerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { activeProject } from "@accounts-proxy/provider-antigravity/domain/account.ts";
 import { LOCATION_RETRY_BACKOFF_MS } from "@accounts-proxy/provider-antigravity/domain/constants.ts";
+import { mismatchWarning, type QuotaAdvert } from "@accounts-proxy/provider-antigravity/domain/quota-mismatch.ts";
 import { TrajectoryState } from "@accounts-proxy/provider-antigravity/domain/trajectory.ts";
 import { isLocationGate, isUnauthorized } from "@accounts-proxy/provider-antigravity/domain/upstream.ts";
 import {
@@ -30,6 +31,7 @@ export class AntigravityRunner extends AntigravityRunnerPort {
     private readonly timer: TimerPort,
     private readonly logger: LoggerPort,
     private readonly locationBackoffMs: readonly number[] = LOCATION_RETRY_BACKOFF_MS,
+    private readonly advertisedQuota?: (modelWireId: string) => QuotaAdvert | undefined,
   ) {
     super();
   }
@@ -69,6 +71,8 @@ export class AntigravityRunner extends AntigravityRunnerPort {
           await this.timer.sleep(backoff);
           continue;
         }
+        const warning = mismatchWarning(input.modelWireId, project, error, this.advertisedQuota?.(input.modelWireId));
+        if (warning !== undefined) this.logger.warn(warning);
         throw error;
       }
     }
