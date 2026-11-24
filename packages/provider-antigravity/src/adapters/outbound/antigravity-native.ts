@@ -3,6 +3,7 @@
 // both), and every signed functionCall it carries is cached in memory and in the durable store (law 6).
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import type { StreamEnvelope } from "@accounts-proxy/provider-antigravity/domain/generate.ts";
+import { applyForwardAliases, applyReverseAliases } from "@accounts-proxy/provider-antigravity/domain/namespace-alias.ts";
 import { innerRequest, signedCalls, type GeminiResponse } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
 import {
   AntigravityNativePort,
@@ -36,9 +37,13 @@ export class AntigravityNative extends AntigravityNativePort {
       modelWireId: input.model.wireId,
       modelEnum: input.model.enumPlaceholder,
       turns: input.prepared.turns,
-      build: (snapshot) => innerRequest(input.prepared, snapshot),
+      build: (snapshot) => {
+        const forwarded = applyForwardAliases(innerRequest(input.prepared, snapshot));
+        if (forwarded.skipped) this.logger.info("antigravity: namespace alias already applied; sending upstream request unchanged");
+        return forwarded.value as Record<string, unknown>;
+      },
       map: (envelope) => {
-        const response = unwrapEnvelope(envelope);
+        const response = applyReverseAliases(unwrapEnvelope(envelope)) as GeminiResponse;
         for (const { id, signature } of signedCalls(response)) {
           cache.set(id, signature);
           this.state.saveSignature(id, signature).catch((error: unknown) => this.logger.warn(`antigravity: signature persist failed (${String(error)})`));

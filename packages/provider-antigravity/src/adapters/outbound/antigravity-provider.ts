@@ -12,6 +12,7 @@ import { bodyOf, DROPPED_HEADER, type HttpResponse, type RawRequest } from "@acc
 import { ProviderPort } from "@accounts-proxy/core/ports/outbound/provider.ts";
 import type { LoggerPort } from "@accounts-proxy/core/ports/outbound/system.ts";
 import { advertisedLimits, descriptorDetails } from "@accounts-proxy/provider-antigravity/domain/catalog.ts";
+import { applyReverseAliases, flushReverseBuffer, reverseStreamChunk } from "@accounts-proxy/provider-antigravity/domain/namespace-alias.ts";
 import { aggregateResponses, geminiMethod, prepareGeminiRequest, type GeminiResponse } from "@accounts-proxy/provider-antigravity/domain/native-gemini.ts";
 import type { AntigravityCatalogPort, AntigravityListing, AntigravityNativePort } from "@accounts-proxy/provider-antigravity/ports/outbound/antigravity.ts";
 
@@ -78,7 +79,7 @@ export class AntigravityProvider extends ProviderPort {
       for await (const response of responses) all.push(response);
       if (all.length === 0) throw emptyStream();
       this.logger.info(`${this.id}: generateContent model=${model} -> ${all.length} upstream responses merged`);
-      return { status: 200, headers: { "content-type": "application/json", ...headers }, body: bodyOf(JSON.stringify(aggregateResponses(all))) };
+      return { status: 200, headers: { "content-type": "application/json", ...headers }, body: bodyOf(JSON.stringify(applyReverseAliases(aggregateResponses(all)))) };
     }
 
     const sse = request.query["alt"] === "sse";
@@ -92,7 +93,17 @@ export class AntigravityProvider extends ProviderPort {
   private async *frames(first: GeminiResponse, rest: AsyncIterator<GeminiResponse>, sse: boolean, model: string): AsyncIterable<Uint8Array> {
     const encoder = new TextEncoder();
     let count = 0;
-    const frame = (value: unknown) => (sse ? `data: ${JSON.stringify(value)}\r\n\r\n` : `${count++ > 0 ? ",\r\n" : "["}${JSON.stringify(value)}`);
+    // The streamed reverse edge: one rename buffer per stream (held here, never global), flushed per frame so
+    // frame boundaries never shift; whole tokens are already restored per response upstream (AntigravityNative).
+    let reverseBuffer = "";
+    const renameFrame = (text: string): string => {
+      const step = reverseStreamChunk(reverseBuffer, text);
+      reverseBuffer = step.buffer;
+      const tail = flushReverseBuffer(reverseBuffer);
+      reverseBuffer = "";
+      return step.emit + tail;
+    };
+    const frame = (value: unknown) => renameFrame(sse ? `data: ${JSON.stringify(value)}\r\n\r\n` : `${count++ > 0 ? ",\r\n" : "["}${JSON.stringify(value)}`);
     try {
       yield encoder.encode(frame(first));
       for (;;) {
