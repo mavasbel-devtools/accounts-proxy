@@ -228,3 +228,18 @@ This corrects the earlier `toolCall` attribution: the ~60 s stops were Magic Con
 - [x] S5 `bun run verify` GATE: PASS: 995 unit+component and 269 e2e tests pass, 100% on all tiers, docs lint clean.
   The first run had one component timeout (`container.test.ts` daemon wiring, 5000 ms) while `llama-server` used
   343% CPU (load average 12.9); in isolation it passed 3/3 in 2.4–3.0 s, and the second full run passed with no change.
+
+## 2026-11-11 03:17 — Plan: cheapest similar-performance model routing (drafted, awaiting approval)
+
+- Surveyed the request path (`apps/proxy/src/application/passthrough-service.ts:20-29`), the model record
+  (`packages/core/src/domain/model-details.ts:16-23,49`) and the cost plumbing: the proxy holds a price per model for the
+  four gateway providers and no price for the three subscription cells (rule M5, `model-details.ts:169`), and holds **no**
+  quality notion at all (grep for `score|rank|quality|benchmark` over `packages/*/src` and `apps/proxy/src` returns only
+  prose inside model descriptions).
+- Measured the gap on the daemon's live catalog of 2026-11-10 joined to the BenchLM BenchAlign composite: two models 0.09
+  points apart (`muse-spark-1.2` 65.35, `ling-3.1-flash` 65.26) differ 27.8× in input price.
+- Wrote [docs/plans/2026-11-11-03-17-cheapest-similar-model-routing-plan.md](../plans/2026-11-11-03-17-cheapest-similar-model-routing-plan.md)
+  (`sha256 a34596a0748fb2233e73996d58b390a002bedefbf982379533f6dd41a07e8f2d`): 8 stages, 40 steps, decisions D1–D11,
+  use cases uc-1…uc-7 each with its negative scenario, a closed inventory of 20 created and 14 edited files.
+- No code, no document outside `docs/` and no command outside read-only evidence gathering was run. Nothing is executed
+  before the plan is approved.
